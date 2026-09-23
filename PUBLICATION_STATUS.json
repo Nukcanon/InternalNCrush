@@ -2,21 +2,46 @@
   "version": "1.0.2",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": null,
+  "source_commit": "273fafa86ef583fbae02da910ad139cd68366455",
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
   "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.2",
-  "publication_state": "validation_in_progress",
-  "pages_verified": false,
-  "build_result": "pending",
+  "publication_state": "published_and_verified",
+  "pages_verified": true,
+  "build_result": "success",
   "checks": {
     "functional": "1089/1089",
     "api_unit_tests": "9/9",
     "native_windows_source": true,
     "native_maps": 19,
-    "native_windows_published_zip": false,
+    "native_windows_published_zip": true,
     "public_lobby_loopback_2_clients": true,
-    "docker_https_wss": "pending",
-    "thumbnails": 52
+    "docker_https_wss": true,
+    "thumbnails": 52,
+    "docker_unknown_ca_rejected": true,
+    "docker_wrong_hostname_rejected": true,
+    "docker_internal_api_blocked": true,
+    "docker_architecture": "linux/amd64",
+    "network_2_process": true,
+    "network_hand_and_bloom": true,
+    "network_props_early_and_late": true,
+    "network_lifecycle_8": true,
+    "network_capacity_32": true,
+    "native_published_runs": [
+      {
+        "mode": "menu",
+        "exit_code": 0,
+        "shutdown_texture_warning": false
+      },
+      {
+        "mode": "training",
+        "exit_code": 0,
+        "shutdown_texture_warning": true
+      }
+    ],
+    "ci_functional": "1089/1089",
+    "ci_network_capacity_32": true,
+    "ci_network_lifecycle_8": true,
+    "ci_network_lifecycle_8_delayed": true
   },
   "remaining": [
     "Production domain/NAS deployment not configured",
@@ -26,7 +51,8 @@
     "Competitive weapon/map balance from human playtests",
     "Anonymous-session ban evasion and client-side aim/wallhack detection; visibility filtering not implemented",
     "Godot Compatibility shutdown texture cleanup warnings",
-    "Procedural character/art polish; no motion-capture or bespoke AAA art production"
+    "Procedural character/art polish; no motion-capture or bespoke AAA art production",
+    "12-second native 32-bot sample observed a 193.248 ms worst frame; further frame-spike profiling required"
   ],
   "previous_release": {
     "version": "1.0.1",
@@ -102,5 +128,47 @@
       "image/internal-n-crush-loadout-v101.png": "d49fa50c5807a78f2cc39cd0911e88a6cada59b90a381f3f353545a744de2d3c",
       "image/internal-n-crush-operator-v101.png": "41cdad69c6ecad99034167b5990e03859ca2a198de1244894bc7fc19ed26d112"
     }
+  },
+  "server_validation_commit": "4ea5a9a335b2d7e13df1f59daaf992bb6dd013e0",
+  "build_workflow_run_id": 35893321606,
+  "build_workflow_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35893321606",
+  "server_workflow_run_id": 35893634492,
+  "server_workflow_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35893634492",
+  "native_frame_sample": [
+    {
+      "frames": 7726,
+      "map": 13,
+      "max_ms": 43.294,
+      "mean_ms": 1.55319945638105,
+      "p95_ms": 3.494,
+      "players": 8,
+      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+      "resolution": "(1280, 720)"
+    },
+    {
+      "frames": 1676,
+      "map": 0,
+      "max_ms": 193.248,
+      "mean_ms": 7.18243257756564,
+      "p95_ms": 11.533,
+      "players": 32,
+      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+      "resolution": "(1280, 720)"
+    }
+  ],
+  "site_commit": "2f4c6c9154b5b90af2e322410ac309465b1bb39b",
+  "pages_workflow_run_id": 35895174852,
+  "pages_workflow_url": "https://github.com/Nukcanon/nukcanon/actions/runs/35895174852",
+  "release_sha256": "8f664683b980f091788207a8c2543214b19eb73b4fc7a18bf61da7a37b924198",
+  "release_size_bytes": 49334275,
+  "release_files": 9,
+  "release_published_at": "2026-09-23T17:18:58Z",
+  "verified_at": "2026-09-23T17:24:35.203992+00:00",
+  "website_file_sha256": {
+    "internal-n-crush.html": "edae319b26d6297f0d6dad24c99f0455f104f2adea8fb81cfcd43b2aaef0aa4d",
+    "internal-n-crush-version.json": "9c95b15ebede9992876d1e9964fc4f9b7d9faed4a4387aa187dec630702aeb68",
+    "image/internal-n-crush-medic-v102.png": "e2c297098b5dca03f7faf12b8930f6888b82d244689521c418607f05edc0c0ad",
+    "image/internal-n-crush-loadout-v102.png": "a767106914e1ff81aa70b2e6529faadb1007028d89dcd56ba3e11013603fada0",
+    "image/internal-n-crush-effects-v102.png": "2a33f2eddf46ab4f3ce4ef84d531e87ed97654f8332e86e1a13b24b9fe46de85"
   }
 }

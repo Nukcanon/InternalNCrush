@@ -14,8 +14,25 @@
 
 ## 공개 CI와 배포
 
-최종 Linux 컨테이너/인증서 검증, 32클라이언트와 재접속, 공개 Windows ZIP 재다운로드·EXE 실행, GitHub Pages 바이트 검증 결과를 완료 후 추가합니다. 상태는 저장소 루트 `PUBLICATION_STATUS.json`을 기준으로 확인하세요.
+최종 Linux 컨테이너/인증서 검증, 32클라이언트와 재접속, 공개 Windows ZIP 재다운로드·EXE 실행, GitHub Pages 바이트 검증 결과는 아래에 기록했습니다. 상태는 저장소 루트 `PUBLICATION_STATUS.json`을 기준으로 확인하세요.
 
 ## 검증 범위
 
 단일 Windows PC/CI의 독립 프로세스는 실제 다중 PC 또는 외부 WAN 부하 검사가 아닙니다. 헤드샷은 캡슐 높이 구간이지 본별 충돌이 아닙니다. 절차적 아트와 경쟁 밸런스는 추가 사용자 플레이테스트가 필요합니다. Docker 설치 가능한 ARM64 경로는 포함했지만 실행하지 않은 CPU를 검증 완료로 표시하지 않습니다.
+
+
+## Linux TLS와 로컬 네트워크 최종 확인
+
+- Docker CI [35893634492](https://github.com/Nukcanon/InternalNCrush/actions/runs/35893634492) 성공. Linux amd64 이미지 빌드→실제 Compose 기동→HTTPS API→Godot WSS 클라이언트 2개 입장/경기/사격/동기화 통과. 알 수 없는 CA·잘못된 호스트 이름 거부, 내부 API 경로 404 차단 확인. API 검사 9/9. 서버 검증 커밋 `4ea5a9a335b2d7e13df1f59daaf992bb6dd013e0`.
+- 테스트 CA는 일회용 클라이언트 컨테이너에만 마운트했습니다. 초기화 시점/공개 인증서 읽기 권한 문제를 수정했고 TLS 검증을 비활성화하지 않았습니다. 게임/API 이미지는 비루트 사용자입니다. 초기 프록시 내부 경로 처리 순서도 실제 실패 검사에서 찾아 수정했습니다.
+- 로컬 ENet: 독립 2프로세스 사망/부활/재장비/사격·손잡이·블룸, 32클라이언트 최신 상태 완료 장벽, 8인 재접속/서버 재시작, 움직이는 물체의 기존/늦은 참가 동기화 모두 통과했습니다. 샷건 탄창 감소 검사는 고정 6이 아니라 실제 무기 탄창 수에서 감소한 것을 확인합니다.
+- Windows 짧은 성능 표본: RTX 4080 SUPER, 1280×720, VSync OFF, 준비 5초 후 각 12초. 8인(봇 7) map13 평균 1.553ms / P95 3.494ms / 최대 43.294ms; 32인(봇 31) map0 평균 7.182ms / P95 11.533ms / 최대 193.248ms. `process_frame` 간 벽시계 간격이며 GPU 전용 시간이나 장시간 성능 보장은 아닙니다. 최대 지연이 남아 있으므로 ‘모든 끊김 제거’라고 표현하지 않습니다. 추가 프레임 급증 프로파일링이 필요합니다.
+
+
+## 1.0.2 공개 배포 검증 완료
+
+- [정식 릴리스](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.2), Windows 소스 `273fafa86ef583fbae02da910ad139cd68366455`, [빌드 CI](https://github.com/Nukcanon/InternalNCrush/actions/runs/35893321606) 전체 성공. 기능 1,089/1,089 및 32클라이언트/2프로세스/8인 재접속·재시작·지연 시작/물체 동기화 검사 통과.
+- 공개 ZIP 재다운로드: 49,334,275 bytes, 9 files, SHA-256 `8f664683b980f091788207a8c2543214b19eb73b4fc7a18bf61da7a37b924198`. 압축 무결성과 EXE/PCK 헤더 확인 후 이 ZIP의 EXE로 실제 Windows 메뉴/8인 봇 연습 실행, 정상 종료 및 GDScript 오류 없음. 일부 연습 종료의 텍스처 정리 경고는 여전히 남습니다.
+- [Docker TLS CI](https://github.com/Nukcanon/InternalNCrush/actions/runs/35893634492) 성공, 커밋 `4ea5a9a335b2d7e13df1f59daaf992bb6dd013e0`. Windows 실행 코드와 게임 코드는 동일하며 후속 커밋은 테스트 CA 읽기 권한을 수정한 것입니다. Linux amd64만 실제 컨테이너 실행 검증했습니다.
+- 홈페이지 커밋 `2f4c6c9154b5b90af2e322410ac309465b1bb39b`, [Pages](https://github.com/Nukcanon/nukcanon/actions/runs/35895174852) 성공. HTML/버전 JSON/현재 게임 이미지 3개가 게시 커밋의 Git 파일과 바이트 단위로 일치합니다. 개발 설명 대신 플레이 가이드/멀티플레이 접속 두 영역을 유지했습니다.
+- 실제 외부 운영 도메인/NAS에 서비스를 올린 것은 아닙니다. 운영 절차와 보안/성능의 남은 한계는 위 문서에 기록되어 있습니다.
