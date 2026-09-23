@@ -87,8 +87,12 @@ func set_team(t:int):
 	shape.shape.height=body_height;shape.position.y=body_height*.5
 	protected_visual.scale.y=body_height/1.8
 	if is_instance_valid(character):character.queue_free()
-	character=Character.new();render_root.add_child(character);character.build(role,t);character.motion_seed=motion_seed
+	character=null
+	if game.render_actors:ensure_character()
 	shown_weapon=""
+func ensure_character():
+	if is_instance_valid(character):return
+	character=Character.new();render_root.add_child(character);character.build(shown_role,shown_team);character.motion_seed=motion_seed
 
 func reset_view(yaw:float):
 	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,eye_height(false),0))
@@ -163,7 +167,7 @@ func headless_pose(p:Dictionary):
 	shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
 	camera.position=Vector3(0,eye_height(bool(input_state.crouch)),0)
 func visual(dt:float,p:Dictionary,now:float):
-	visible=p.alive;set_team(int(p.team))
+	visible=p.alive;set_team(int(p.team));ensure_character()
 	protected_visual.visible=p.alive and float(p.get("protect",0))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
 	if p.slot>=2:

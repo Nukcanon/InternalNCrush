@@ -5,6 +5,7 @@ const A=preload("res://scripts/actor.gd")
 const W=preload("res://scripts/arena.gd")
 const UI=preload("res://scripts/ui.gd")
 var demo_mode=false
+var render_actors=DisplayServer.get_name()!="headless"
 var kill_replay:KillReplay
 var bot_navigation:BotNavigation
 var bot_agents={}
@@ -490,10 +491,12 @@ func _physics_process(dt:float):
 		if ping_timer<=0:ping_request.rpc_id(1,Time.get_ticks_msec());ping_timer=1.
 	for id in actors:
 		if players.has(id):
-			if DisplayServer.get_name()=="headless":actors[id].headless_pose(players[id])
+			if not render_actors:actors[id].headless_pose(players[id])
 			else:actors[id].visual(dt,players[id],clock)
 	update_world_visuals(dt)
-	if not demo_mode:update_spectator();ui.refresh()
+	if not demo_mode:
+		update_spectator()
+		if render_actors:ui.refresh()
 @rpc("any_peer","call_remote","unreliable",2)
 func ping_request(sent:int):
 	if server and players.has(multiplayer.get_remote_sender_id()) and rate_limit(multiplayer.get_remote_sender_id(),"ping",.5):

@@ -8,7 +8,7 @@ func expect(ok:bool,label:String):
 	else:failures+=1;printerr("FAIL ",label)
 func run():
 	Catalog.load_all()
-	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"V1","height_test")
+	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"V1","height_test")
 	var actor=g.actors[1]
 	for role in range(6):
 		g.players[1].role=role;actor.set_team(0);actor.reset_view(0)
@@ -64,5 +64,8 @@ func run():
 	expect(is_equal_approx(actor.shape.shape.height,actor.body_height*1.45/1.8),"headless optimization preserves crouch collision")
 	expect(actor.camera.global_position.distance_to(actor.eye())<.001,"headless optimization preserves camera eye height")
 	g.server=true;actor.local=true
+	g.render_actors=false;g.add_player(2,"Headless","headless_stature_identity");g.players[2].role=1;g.actors[2].set_team(1)
+	expect(not is_instance_valid(g.actors[2].character),"headless actors do not instantiate render rigs or animation players")
+	expect(is_equal_approx(g.actors[2].shape.shape.height,1.72),"headless actors retain class dimensions without a render rig")
 	replica.free();g.leave_game();g.free();await process_frame;await process_frame
 	print("V1_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

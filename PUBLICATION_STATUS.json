@@ -9,7 +9,7 @@
   "pages_verified": false,
   "build_result": "pending",
   "checks": {
-    "functional": "446/446",
+    "functional": "448/448",
     "model_height_roles": 6,
     "deterministic_maps": 19,
     "network_props_early_and_late": true,
