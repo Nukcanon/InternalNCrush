@@ -9,14 +9,15 @@
   "pages_verified": false,
   "build_result": "pending",
   "checks": {
-    "functional": "443/443",
+    "functional": "446/446",
     "model_height_roles": 6,
     "deterministic_maps": 19,
     "network_props_early_and_late": true,
     "native_windows_source": true,
     "network_2_process": true,
     "network_lifecycle_8_delayed": true,
-    "network_capacity_32": true
+    "network_capacity_32": true,
+    "capacity_completion_barrier": true
   },
   "remaining": [
     "Actual multi-PC LAN",

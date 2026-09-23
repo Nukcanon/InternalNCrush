@@ -156,6 +156,12 @@ func update_spread(dt:float,now:float):
 	var p=game.players[pid];var w=game.current_weapon(p)
 	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),p.get("mounted",0)>now,velocity.y)
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 5.5)))
+func headless_pose(p:Dictionary):
+	# Keep gameplay transforms and class dimensions, without solving 32 rigs every tick.
+	set_team(int(p.team))
+	if not local and not game.server:global_position=target_pos;rotation.y=aim_yaw
+	shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
+	camera.position=Vector3(0,eye_height(bool(input_state.crouch)),0)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive;set_team(int(p.team))
 	protected_visual.visible=p.alive and float(p.get("protect",0))>now

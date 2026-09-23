@@ -489,7 +489,9 @@ func _physics_process(dt:float):
 		ping_timer-=dt
 		if ping_timer<=0:ping_request.rpc_id(1,Time.get_ticks_msec());ping_timer=1.
 	for id in actors:
-		if players.has(id):actors[id].visual(dt,players[id],clock)
+		if players.has(id):
+			if DisplayServer.get_name()=="headless":actors[id].headless_pose(players[id])
+			else:actors[id].visual(dt,players[id],clock)
 	update_world_visuals(dt)
 	if not demo_mode:update_spectator();ui.refresh()
 @rpc("any_peer","call_remote","unreliable",2)

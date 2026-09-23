@@ -59,5 +59,10 @@ func run():
 	expect(g.arena.prop_states().size()==g.arena.props.size(),"snapshot includes complete prop set")
 	var nav=g.bot_navigation;nav.refresh({},10.,g.arena.props)
 	expect(nav.dynamic_solid.has(nav.cell(prop.global_position)),"bots avoid current movable prop positions")
+	g.server=false;actor.local=false;actor.target_pos=Vector3(2,.12,2);actor.input_state.crouch=true;actor.headless_pose(g.players[1])
+	expect(actor.global_position==actor.target_pos,"headless remote actors still follow server positions")
+	expect(is_equal_approx(actor.shape.shape.height,actor.body_height*1.45/1.8),"headless optimization preserves crouch collision")
+	expect(actor.camera.global_position.distance_to(actor.eye())<.001,"headless optimization preserves camera eye height")
+	g.server=true;actor.local=true
 	replica.free();g.leave_game();g.free();await process_frame;await process_frame
 	print("V1_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)
