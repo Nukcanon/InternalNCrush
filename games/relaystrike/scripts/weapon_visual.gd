@@ -18,7 +18,7 @@ var metal=Color("202b33")
 var edge=Color("586773")
 var light=Color("9baeb6")
 var accent=Color("62bcb3")
-func block(parent:Node,pos:Vector3,size:Vector3,color:Color,tilt=0.) -> MeshInstance3D:return M.box(parent,pos,size,color,Vector3(tilt,0,0),.3)
+func block(parent:Node,pos:Vector3,size:Vector3,color:Color,tilt=0.) -> MeshInstance3D:return M.box(parent,pos,size,color,Vector3(tilt,0,0),.48)
 func tube(parent:Node,pos:Vector3,radius:float,depth:float,color:Color) -> MeshInstance3D:return M.cylinder(parent,pos,radius,depth,color,Vector3(PI/2,0,0))
 func piece(name:String,pos=Vector3.ZERO) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;add_child(n);return n
@@ -67,6 +67,8 @@ func magazine_shape(style:String):
 			block(magazine,Vector3(0,-.15,.012),Vector3(.067,.023,.094),metal)
 func build(w:Dictionary,hands=true):
 	spec=w;name=w.name
+	for color in [metal,edge,light]:
+		var surface=M.material(color);surface.metallic=.55;surface.roughness=.46
 	var idx=int(w.model_index);var role=int(w.role);var pistol=int(w.slot)==1 and w.kind=="gun"
 	accent=[Color("72b7a9"),Color("b0c195"),Color("d6b66b"),Color("dc9c59"),Color("969bca"),Color("69c6ac")][role]
 	reload_style=str(w.reload_style)
@@ -187,14 +189,11 @@ func add_surface_details(pistol:bool,role:int):
 	else:
 		for i in range(6):block(self,Vector3(0,-.085-i*.017,.071),Vector3(.068,.007,.008),edge)
 func make_hand(parent:Node,left:bool,role:int):
-	var side=-1. if left else 1.;var glove=Color("354953");var sleeve=[Color("527b81"),Color("66755c"),Color("637587"),Color("b77b43"),Color("776f88"),Color("c0d4cc")][role]
-	M.box(parent,Vector3.ZERO,Vector3(.082,.082,.11),glove,Vector3(0,0,.1*side),.6)
-	M.box(parent,Vector3(0,.031,.012),Vector3(.076,.025,.077),Color("657880"),Vector3.ZERO,.5)
-	for i in range(4):M.box(parent,Vector3(-side*.035,-.02+i*.015,-.027),Vector3(.038,.012,.05),glove,Vector3(.1,0,.15*side),.6)
-	M.box(parent,Vector3(side*.043,.02,-.031),Vector3(.025,.029,.068),glove,Vector3(-.2,.3*side,0),.55)
-	M.cylinder(parent,Vector3(side*.012,-.023,.092),.043,.12,Color("ba987f"),Vector3(PI/2+.25,.15*side,0),.04,10)
-	M.cylinder(parent,Vector3(side*.075,-.13,.245),.058,.32,sleeve,Vector3(PI/2+.55,.28*side,0),.047,10)
-	M.cylinder(parent,Vector3(side*.02,-.036,.125),.05,.035,glove,Vector3(PI/2+.25,.15*side,0),.05,10)
+	var side=-1. if left else 1.;var skin=Color("ba9279");var glove=Color("48514b")
+	var grip=Node3D.new();parent.add_child(grip);grip.rotation=Vector3(-PI/2,0,side*.15)
+	HumanModel.hand(grip,skin,glove,side)
+	HumanModel.cord(parent,Vector3(side*.012,-.02,.055),Vector3(side*.04,-.06,.20),.037,skin)
+	HumanModel.cord(parent,Vector3(side*.04,-.06,.19),Vector3(side*.11,-.16,.37),.051,Color("6a7d80") if role!=5 else Color("b4b9a9"))
 func animate_reload(t:float,recoil:float,shot_age=10.):
 	magazine.position=mag_origin;magazine.rotation=Vector3.ZERO;action_part.position=action_origin;action_part.rotation=Vector3.ZERO;left_hand.position=hand_origin;left_hand.rotation=Vector3.ZERO;barrel_group.rotation=Vector3.ZERO
 	flash.visible=shot_age<.045

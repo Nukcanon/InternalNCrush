@@ -445,7 +445,7 @@ func refresh_gear_detail():
 	if is_instance_valid(preview_widget):
 		var preview_id=("repair" if role==3 and gear_repair.button_pressed else Rules.SECONDARIES[role]) if preview_kind==1 and preview_secondary else weapon_ids[gear_primary.selected]
 		preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_gadget.selected)
-		preview_caption.text=[Rules.CLASSES[role]+" · "+CharacterVisual.ROLE_NAMES[role],str(w.name),Rules.GADGETS[role]][preview_kind]
+		preview_caption.text=[Rules.CLASSES[role]+" · %d cm"%roundi(HumanModel.HEIGHTS[role]*100)+" · "+CharacterVisual.ROLE_NAMES[role],str(w.name),Rules.GADGETS[role]][preview_kind]
 		if preview_kind==1 and preview_secondary:
 			var sw=Catalog.get_weapon(preview_id)
 			preview_caption.text="FIX · 구조물 수리 · 에너지 100" if sw.kind=="repair" else "%s · 피해 %d · 탄창 %d · 재장전 %.1f초"%[sw.name,sw.damage,sw.mag,sw.reload]

@@ -14,14 +14,14 @@ static func box(parent:Node,pos:Vector3,size:Vector3,color:Color,rot=Vector3.ZER
 	var key=str(size)+str(bevel)
 	if not meshes.has(key):meshes[key]=beveled_box(size,bevel)
 	return instance(parent,meshes[key],pos,color,rot)
-static func cylinder(parent:Node,pos:Vector3,radius:float,height:float,color:Color,rot=Vector3.ZERO,top=-1.,sides=10) -> MeshInstance3D:
+static func cylinder(parent:Node,pos:Vector3,radius:float,height:float,color:Color,rot=Vector3.ZERO,top=-1.,sides=16) -> MeshInstance3D:
 	var key="c"+str([radius,height,top,sides])
 	if not meshes.has(key):
 		var m=CylinderMesh.new();m.top_radius=radius if top<0 else top;m.bottom_radius=radius;m.height=height;m.radial_segments=sides;meshes[key]=m
 	return instance(parent,meshes[key],pos,color,rot)
 static func sphere(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
 	if not meshes.has("sphere"):
-		var m=SphereMesh.new();m.radius=.5;m.height=1.;m.radial_segments=12;m.rings=6;meshes.sphere=m
+		var m=SphereMesh.new();m.radius=.5;m.height=1.;m.radial_segments=20;m.rings=10;meshes.sphere=m
 	var n=instance(parent,meshes.sphere,pos,color);n.scale=size;return n
 static func tapered(parent:Node,pos:Vector3,size:Vector3,color:Color,ratio=.75) -> MeshInstance3D:
 	var mesh=beveled_box(size,.25)

@@ -1,25 +1,22 @@
 {
-  "version": "0.7.0",
+  "version": "1.0.0",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": "d75719830d05dfe6d5576b270b6a5bb95be5afdd",
+  "source_commit": null,
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v0.7.0",
-  "publication_state": "published_verified",
-  "pages_verified": true,
-  "build_result": "success",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.0",
+  "publication_state": "local_validation_remote_pending",
+  "pages_verified": false,
+  "build_result": "pending",
   "checks": {
-    "functional": "351/351",
-    "native_windows_exe": true,
+    "functional": "443/443",
+    "model_height_roles": 6,
+    "deterministic_maps": 19,
+    "network_props_early_and_late": true,
+    "native_windows_source": true,
     "network_2_process": true,
     "network_lifecycle_8_delayed": true,
-    "network_capacity_32": true,
-    "physical_monitors": 2,
-    "display_modes_passed": 6,
-    "github_ci": true,
-    "published_zip_download_integrity": true,
-    "published_zip_native_windows": true,
-    "network_lifecycle_8_default_and_delayed_ci": true
+    "network_capacity_32": true
   },
   "remaining": [
     "Actual multi-PC LAN",
@@ -30,38 +27,9 @@
     "Map balance and procedural animation/art polish"
   ],
   "previous_release": {
-    "version": "0.6.0",
-    "repository": "Nukcanon/nukcanon",
-    "source_commit": "d7f005208df2abdb7a6f8cf50f928ec21dbce31c"
-  },
-  "source_commit_note": "Release source commit; later main commits may update documentation only.",
-  "pages_commit": "3b3322b4b047057633e4fdee2daed0cf42550e6f",
-  "pages_workflow_run_id": 35840069011,
-  "pages_workflow_url": "https://github.com/Nukcanon/nukcanon/actions/runs/35840069011",
-  "build_workflow_run_id": 35839178082,
-  "build_workflow_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35839178082",
-  "release_asset_url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v0.7.0/InternalNCrush_Windows_v0.7.0.zip",
-  "release_sha256": "5cd2ddff00fff41a9c4ddfb7d5744ee856089d27a278293808012ec63a9eace2",
-  "release_bytes": 43613355,
-  "release_file_count": 9,
-  "published_zip_windows_runs": [
-    {
-      "mode": "menu",
-      "exit_code": 0,
-      "shutdown_texture_warning": false
-    },
-    {
-      "mode": "training",
-      "exit_code": 0,
-      "shutdown_texture_warning": true
-    }
-  ],
-  "pages_http_200_verified": [
-    "internal-n-crush.html",
-    "internal-n-crush-version.json",
-    "image/internal-n-crush-rooftop-v070.jpg",
-    "image/internal-n-crush-replay-v070.jpg",
-    "image/internal-n-crush-menu-v070.jpg"
-  ],
-  "verified_at": "2026-09-23T08:59:23.721621+00:00"
+    "version": "0.7.0",
+    "source_commit": "d75719830d05dfe6d5576b270b6a5bb95be5afdd",
+    "release_sha256": "5cd2ddff00fff41a9c4ddfb7d5744ee856089d27a278293808012ec63a9eace2",
+    "build_workflow_run_id": 35839178082
+  }
 }

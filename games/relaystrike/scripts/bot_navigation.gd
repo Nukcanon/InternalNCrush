@@ -48,7 +48,7 @@ func danger(pos:Vector3,amount=2.):
 		for y in range(-2,3):
 			var id=center+Vector2i(x,y)
 			if grid.is_in_boundsv(id):heat[id]=minf(8,heat.get(id,0.)+amount/(1.+Vector2(x,y).length()))
-func refresh(devices:Dictionary,now:float):
+func refresh(devices:Dictionary,now:float,props:Dictionary={}):
 	if now<next_refresh:return
 	next_refresh=now+1.
 	for id in dynamic_solid: grid.set_point_solid(id,static_solid.has(id))
@@ -59,6 +59,9 @@ func refresh(devices:Dictionary,now:float):
 		var lo=cell(d.pos-Vector3(extent.x,0,extent.y));var hi=cell(d.pos+Vector3(extent.x,0,extent.y))
 		for x in range(lo.x,hi.x+1):
 			for y in range(lo.y,hi.y+1):var id=Vector2i(x,y);grid.set_point_solid(id);dynamic_solid[id]=true
+	for prop in props.values():
+		var id=cell(prop.global_position)
+		grid.set_point_solid(id);dynamic_solid[id]=true
 	for id in heat.keys():
 		heat[id]*=.92;grid.set_point_weight_scale(id,(1.3 if arena.wading(point(id)) else 1.)+heat[id])
 		if heat[id]<.1:heat.erase(id)

@@ -1,82 +1,57 @@
-# Internal N Crush — 작업 인계 (0.7.0)
+# Internal N Crush — 1.0.0 작업 인계
 
-최종 작업일: 2026-09-23. 게시 결과는 반드시 옆의 `PUBLICATION_STATUS.json`을 확인하세요.
+작업일: 2026-09-23. 정확한 공개 커밋·빌드·다운로드 해시는 `PUBLICATION_STATUS.json` 확인.
 
-## 소스와 배포 구조
+## 소스와 사이트
 
-- 새 게임 저장소: https://github.com/Nukcanon/InternalNCrush (공개, main)
-- 로컬 작업 저장소: `D:/python_workplace/InternalNCrush/InternalNCrush`
-- 게임 프로젝트: `games/relaystrike`, Godot **4.4.1 Standard / GDScript / Windows x64 / Compatibility**.
-- 홈페이지 주소 유지: https://nukcanon.github.io/nukcanon/internal-n-crush.html
-- 사이트 저장소: https://github.com/Nukcanon/nukcanon
-- 사이트 로컬 체크아웃: `D:/python_workplace/InternalNCrush/site-repository`
-- 원래 0.6.0 스냅샷은 수정하지 않았습니다. 과거 인계는 `games/relaystrike/docs/HANDOFF_V060.md`에 보존했습니다.
-- 0.7.0 소스·배포 상태와 0.6.0의 과거 공개 상태를 혼동하지 마세요.
+- 공개 게임 저장소: https://github.com/Nukcanon/InternalNCrush
+- 로컬: `D:/python_workplace/InternalNCrush/InternalNCrush`, Godot 프로젝트 `games/relaystrike`.
+- 기존 홈페이지 유지: https://nukcanon.github.io/nukcanon/internal-n-crush.html
+- 홈페이지 저장소: `D:/python_workplace/InternalNCrush/site-repository` → Nukcanon/nukcanon.
+- 이전 0.7.0 인계는 `games/relaystrike/docs/HANDOFF_V070.md`, 0.6.0 인계는 `HANDOFF_V060.md`에 보존. 원래 작업 스냅샷은 수정하지 않았습니다.
 
-## 이번에 처리한 사용자 요구
+## 1.0.0 변경
 
-1. **접속 검사**: 서버 109초/각 클라이언트 105초라는 서로 다른 종료 타이머를 없애고, 모든 클라이언트 검사 완료 → 서버가 8명 확인 → Python 실행기 해제 신호 순서로 종료합니다. 105초 유지, 8명, 최신 스냅샷, 재접속·서버 재시작 조건은 유지·강화했습니다. 2번 클라이언트는 자발적 재접속까지 3회 이상 입장을 요구합니다. 시작 간격 1.5초로 마지막 클라이언트를 10초 이상 늦게 시작한 Windows 검사도 통과했습니다.
-2. **Windows 실기**: 기존 0.6.0 EXE와 새 0.7.0 EXE를 실제 Windows에서 실행했습니다. 새 메뉴·설정·리플레이·게임 화면을 네이티브 OpenGL/RTX 4080 SUPER로 확인했습니다. 처음 검사에서 기존 실행이 UDP 27888을 점유해 실패한 것과, 생성 자산이 빠져 발생한 오류를 별도로 해결했습니다.
-3. **화면 설정**: 모니터 선택, 창/테두리 없는 전체 화면/독점 전체 화면, 8K·울트라와이드 프리셋·직접 입력, 15초 유지 확인·자동 복구. 전체 화면은 선택한 모니터의 원본 해상도입니다. 실제 2560×1440 모니터 **2대 × 3가지 모드 = 6회 모두 통과**했습니다. 8K 물리 모니터를 시험했다는 뜻은 아닙니다.
-4. **메인 화면**: 동영상 대신 네트워크와 분리된 오프라인 6인 봇 전투를 실행합니다. 별도 뷰포트와 멀티플레이 컨텍스트를 사용하고 3D 배경 렌더링은 30 FPS입니다. 배경은 무음이며 메뉴 입력을 받지 않습니다.
-5. **모션**: 가속·감속, 출발 시 전방 기울기, 급회전·정지 시 제한된 하체 지연, 제자리 회전 발 디딤, 달리기 팔 스윙, 방향에 맞는 두 관절 다리 계산, 점프 무릎 접기·착지 흡수, 앉기 보간, 상체·하체 회전 분리, 무기 손잡이 양손 IK. 프로시저럴 애니메이션이며 모션 캡처 자산을 사용한 것은 아닙니다.
-6. **디자인·음향**: 캐릭터 장구류·헬멧·장갑, 총기 조작부·레일·총구·그립, 엄폐물 부품과 체결부, 공병 포탑 구동부·센서·방열부·삼각대. 탄피 12각형 몸체·테두리·뇌관·빈 탄구, 최대 72개/8초. 피격음은 저음 중심의 둔탁한 타격음, 킬 확대 전용 효과음 포함 총 53 WAV. 비조준 반동을 키우고 조준 반동은 상대적으로 억제합니다.
-7. **맵**: 19개 전장의 외곽을 모서리가 잘린 비직사각형으로 변경. COURTYARD(7), SWITCHBACK(9), ROOFTOP(16), MARKET LOOP(17)는 새 건물 배치·굽은 골목·경사로·테라스로 재설계했습니다. ROOFTOP의 중앙 거점도 높아졌습니다. 물리 충돌과 봇 경로 높이가 같은 경사로 데이터를 사용합니다. 다른 15개 맵 내부를 전부 새로 만든 것은 아닙니다.
-8. **킬 표시·사망 연출**: 킬피드 약 1/4 면적, 배경 알파 0.48. 수신 기록 기반 1인칭 리플레이 2.5초 + 공격자 3인칭 확대 1초, 전용 효과음. 공격자·무기·정밀 명중 여부·리플레이 표시, SPACE/ESC 스킵, 부활 시 종료. 환경 피해와 자살은 공격자 리플레이를 만들지 않습니다. 포탑 처치는 포탑 시점을 명시합니다.
-9. **저장소 분리**: 게임 소스·릴리스는 새 저장소로 이동하고 기존 사이트는 주소와 공통 디자인을 유지합니다. 구 저장소 게임 경로는 이전 안내를 남기는 방식입니다. 정확한 공개 결과는 JSON 확인.
+- 사용자 요청대로 버전을 **1.0.0**으로 변경했습니다. 미술 방향은 카툰 스타일을 유지한 사람의 비율과 실물 기반 장비·환경입니다.
+- `human_model.gd`에서 6개 병과·2개 팀 캐릭터를 다시 만들었습니다. 네모난 팔다리와 얼굴 전체를 덮던 바이저 대신 연속 곡면의 어깨·흉곽·골반·팔·다리, 드러난 얼굴·턱·귀·코·눈꺼풀·머리카락, 손바닥·손가락, 천 조끼·접힌 소매·주름·신발 끈을 사용합니다. 병과별 모자·헤드셋·도구·가방·의료 표식이 다릅니다.
+- 병과별 키: 돌격 180, 정찰 172, 중화기 188, 공병 176, 통제 183, 메딕 170cm. 모델뿐 아니라 충돌 캡슐·시점·머리 판정·이름표·킬 리플레이에도 같은 비율을 사용합니다. 병과 OFF는 공통 돌격 체형입니다.
+- 앉기 시 머리가 기존 1.15m 충돌체 밖에 노출되던 불일치를 수정했습니다. 기준 체형의 앉은 높이 1.45m, 눈높이 1.30m로 실제 표시 자세에 맞췄습니다. 각 병과 키에 비례합니다. 기존 가감속·급회전 하체 관성·달리기 팔 스윙·점프·착지·앉기 보간·양손 IK는 유지합니다.
+- 총기 모서리를 부드럽게 하고 금속 반사를 조정했습니다. 1인칭 팔과 손도 곡면·손가락 형태로 다시 만들었습니다. 공통 원통·구의 분할을 늘려 장비·포탑·가젯에도 적용합니다. 나무는 원통 줄기·가지·여러 수관으로 구성합니다.
+- 19개 맵에 벤치, 식물 화분, 설비함, 분리수거함, 팔레트/천 자루, 밸브/파이프, 작업대, 케이블 릴을 추가합니다. 고정 소품은 바닥 충돌과 봇 장애물 데이터를 함께 만듭니다. 경사로·거점·스폰·보급 지점을 피하고 배치할 때마다 양 팀에서 모든 목표까지 연결되는 길을 확인합니다.
+- `interactive_prop.gd`: 드럼통(9kg), 나무 상자(4kg), 교통 콘(0.8kg), 연료통(2kg), 타이어(3kg). 총격의 방향과 명중 위치에 따라 밀림·회전·넘어짐·굴러감이 발생합니다. 게임 체감에 맞춰 충격량을 조정했으며 엄밀한 탄도/재질 파괴 시뮬레이션은 아닙니다. 연료통이 폭발하거나 소품이 파괴되지는 않습니다.
+- 물리 계산은 서버/오프라인 봇 시연에서만 수행하고 클라이언트는 고정된 물체에 서버 위치·회전을 보간합니다. 늦은 참가도 전체 상태를 받습니다. 이동 물체는 맵당 최대 24개, 속도 8m/s/회전 10rad/s로 제한합니다. 시작 위치에서 24m 이상 벗어나거나 맵 아래로 떨어지면 복원하며 새 경기·라운드에도 초기화합니다. 봇 회피 경로와 킬 리플레이에도 물체 위치를 반영합니다.
+- 물체·장식 배치는 전용 난수 시드로 결정하며 게임의 전역 난수에 의존하지 않습니다. 19개 맵을 두 번씩 생성해 배치와 물체 ID 일치를 검사합니다.
 
-## 검증과 남은 문제
+## 검증
 
-- 기존 316개 + 신규 35개 = **351개 기능 검사 통과**. 가속이 추가되어 기존 속도 검사는 한 프레임 즉시 최대 속도 대신 가속 후 원래 최고 속도 도달을 검사하도록 갱신했습니다. 정지 정확도 검사도 실제로 달린 뒤 정지하게 했습니다. 버전 갱신 검사는 현재 버전보다 큰 값을 생성합니다.
-- 2프로세스 ENet: 피해 통지·장비 예약·처치·부활·재사격 통과.
-- Windows ENet 8인: 각 105초, 시작 간격 1.5초, 자발적 재접속, 서버 재시작, 최종 8명/신선한 스냅샷 모두 통과.
-- Windows ENet 32명: 동시 접속과 오류 없는 클라이언트 종료 통과.
-- Windows 디스플레이: 2개 실제 모니터, 6가지 모드 전환 통과. 설정 화면 레이아웃 시각 검토.
-- 새 EXE의 네이티브 메뉴 실행과 봇 연습, 종료 코드·화면 캡처 확인. ZIP 생성기에서 파일 수·EXE/PCK 헤더·ZIP 무결성·SHA-256 검증.
-- **남음**: 서로 다른 PC 사이 실제 LAN(이번에는 동일 Windows 호스트의 독립 프로세스), 장시간 32인 교전, 내장그래픽/저사양 GPU, 다양한 DPI·세로 모니터 조합과 맵 밸런스.
-- **남음**: 일부 렌더 검토와 새 릴리스 EXE의 봇 연습 종료 때 Godot 4.4.1 Compatibility의 `Texture with GL ID ... leaked 349524 bytes` 정리 메시지가 재현됩니다. 실행 중 스크립트 오류와 구별하세요. 프로세스 종료 코드는 0이며 플레이 중 스크립트 오류는 없지만, 이 종료 시 GPU 자원 정리 경고의 근본 원인은 아직 해결하지 못했습니다.
-- 리플레이는 영상 녹화가 아니라 로컬 수신 위치·조준·실제 사격 시작/끝 좌표의 재구성입니다. 90프레임/최대 512개 사격 이벤트로 제한합니다. 지연·수신 누락, 장치 파괴 시점과 자세의 세부 보간 때문에 원래 공격자 화면과 완전히 같지는 않습니다. 기록 부족이면 건너뜁니다.
-- 모션과 디자인은 자체 제작 스타일입니다. 상용 게임 자산·모션캡처 수준의 완성을 보장하지 않으며 플레이 피드백에 따른 추가 조정이 가능합니다.
+- 기존 351개와 신규 92개 = **443개 기능 검사**. 얼굴/몸 곡면 법선, 6병과 모델·시점·충돌 높이, 19개 맵 소품 종류/개수/결정성, 실제 사격 함수의 탄약 소비와 물체 충격, 회전, 클라이언트 권한, 잘못된 좌표 거부, 초기화와 봇 회피를 검사합니다.
+- 새 ENet 3프로세스 검사: 서버의 총격 충격 → 기존 클라이언트 → 충격 후 참가한 클라이언트의 동일 위치 확인 및 동기화 종료.
+- 기존 2프로세스 피해·재장비·부활·사격, 8인 재접속·서버 재시작·지연 시작, 32명 접속을 재검사합니다. 최종 결과/CI 상태는 JSON의 checks 확인.
+- Windows RTX 4080 SUPER/OpenGL에서 모델·맵·메뉴 실제 봇 전투·킬 리플레이 화면을 확인했습니다. 스크린샷과 로그는 `validation/v1-*`, `validation/windows`, `validation/v1-visual`에 있으며 생성 검증 결과라 Git에서는 제외합니다.
+- 이전 Windows 디스플레이 검증(모니터 2대 × 3모드 = 6회)은 0.7.0에서 수행했습니다. 1.0에서는 화면 설정 로직을 바꾸지 않았습니다.
 
-## 최종 공개 확인
+## 남은 문제와 검증 범위
 
-- **0.7.0 게시 완료**. 릴리스 소스: `d75719830d05dfe6d5576b270b6a5bb95be5afdd`. 이후 문서 전용 커밋은 빌드 코드 변경이 아닙니다.
-- [새 저장소 CI 35839178082](https://github.com/Nukcanon/InternalNCrush/actions/runs/35839178082): 351개 기능 검사, 2프로세스 전투, 8인 기본/지연 접속 생명주기, 32명 접속, Windows 내보내기·ZIP 게시 모두 성공.
-- [0.7.0 릴리스](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v0.7.0): 공개 알파. ZIP 43,613,355 bytes / 9 files.
-- ZIP SHA-256: `5cd2ddff00fff41a9c4ddfb7d5744ee856089d27a278293808012ec63a9eace2`.
-- 공개 다운로드 주소에서 ZIP과 SHA256SUMS를 다시 받아 해시·압축 무결성·EXE/PCK 헤더를 확인했습니다. 해당 다운로드 EXE를 실제 Windows에서 메뉴와 8인 봇 연습으로 각각 실행했고 종료 코드는 모두 0입니다. 봇 연습 종료 시 아래에 기록한 텍스처 경고는 재현됐습니다.
-- 사이트 커밋: `3b3322b4b047057633e4fdee2daed0cf42550e6f`. [Pages 35840069011](https://github.com/Nukcanon/nukcanon/actions/runs/35840069011) 성공. 공개 HTML·버전 JSON(0.7.0)·새 이미지 3장 HTTP 200 및 게시 내용 일치 확인. 브라우저에서 새 다운로드/소스 링크·갤러리 확인.
-- 옛 저장소 `games/relaystrike`는 이전 안내 README만 남겼고, 옛 게임 빌드 워크플로는 제거했습니다. 과거 소스 Git 기록과 0.6.0 이전 릴리스는 보존됩니다.
-- 초기 source push 실행 35839169346은 같은 커밋의 수동 배포 검사로 대체되어 취소됐습니다. 실제 게시 판정은 성공한 35839178082를 사용하세요. 구 저장소 0.6.0의 실패 실행은 과거 기록입니다.
+- 일부 네이티브 종료에서 Godot 4.4.1 Compatibility의 `Texture with GL ID ... leaked 349524 bytes` 경고가 남습니다. 플레이 중 스크립트 오류와 다르며, 근본 해결됐다고 주장하지 않습니다.
+- 실제 서로 다른 PC 사이 LAN, 장시간 32인 전투, 저사양/내장 GPU, 물리적 8K 화면·여러 DPI는 추가 검증 대상입니다. 이번 네트워크 검사는 동일 PC의 독립 ENet 프로세스와 GitHub CI에서 진행합니다.
+- 물리 물체는 저해상도 프록시 충돌 형상을 사용하고 클라이언트 화면은 보간되므로 고지연 상황에서는 서버 위치와 순간 차이가 날 수 있습니다. 모든 맵의 경쟁 밸런스를 확정한 것은 아닙니다.
+- 사람 모델은 자체 제작 절차적 카툰 모델입니다. 기존 모션은 프로시저럴 관절/IK 기반이고 스킨 가중치 기반 고급 근육 변형이나 모션캡처를 사용하지 않습니다. 관절 접힘, 의복 질감과 얼굴 표정은 추가 미술 다듬기 영역입니다.
+- 킬 리플레이는 수신 기록 재구성이며 영상 녹화와 다릅니다. 이동 소품은 기록된 포즈로 재생합니다. 장치 파괴 시점 등 일부 일시 효과는 원래 화면과 다를 수 있습니다.
 
-## 주요 파일
+## 빌드와 테스트
 
-| 영역 | 파일 (`games/relaystrike` 기준) |
-|---|---|
-| 연결 종료 동기화 | `tests/network_lifecycle.gd`, `tests/run_network_lifecycle.py` |
-| 이동·비조준 반동 | `scripts/actor.gd` |
-| 관성·발/팔 IK·캐릭터 생성 | `scripts/character_visual.gd` |
-| 총기·포탑·탄피 | `scripts/weapon_visual.gd`, `scripts/combat_fx.gd` |
-| 맵·경사로·봇 경로 | `scripts/arena.gd`, `scripts/urban_layout.gd`, `scripts/bot_navigation.gd` |
-| 모니터·설정·미리듣기 | `scripts/game.gd`, `scripts/ui.gd` |
-| 실시간 메뉴·킬 연출 | `scripts/menu_demo.gd`, `scripts/kill_replay.gd`, `scripts/kill_feed.gd` |
-| 음원 생성 | `tools/build_audio.py` |
-| 신규 검증·Windows 시각 검사 | `tests/test_v07.gd`, `tests/windows_display.gd`, `tests/windows_smoke.gd`, `tests/motion_review.gd` |
-
-## 재빌드와 실행
-
-로컬 도구는 작업 공간의 `.tools/godot/Godot_v4.4.1-stable_win64_console.exe`입니다. 공식 4.4.1 Windows export templates를 `%APPDATA%/Godot/export_templates/4.4.1.stable`에 설치했습니다. 도구와 인증은 Git에 넣지 않습니다.
+공식 Godot 4.4.1 Standard를 사용합니다. 로컬 실행 파일은 작업 공간 `.tools/godot/Godot_v4.4.1-stable_win64_console.exe`. Git에는 도구·인증·생성 오디오/모델/폰트를 넣지 않습니다.
 
 ```powershell
 python games/relaystrike/tools/prepare_assets.py
 godot --headless --path games/relaystrike --editor --import --quit
 godot --headless --path games/relaystrike --script res://tools/build_models.gd
 godot --headless --path games/relaystrike --editor --import --quit
-godot --path games/relaystrike
+godot --headless --path games/relaystrike --script res://tests/test_v1.gd
+python games/relaystrike/tests/run_network_props.py
+godot --path games/relaystrike --script res://tests/visual_v1.gd
 ```
 
-CI가 기능·네트워크 검사 및 Windows 내보내기를 수행합니다. 현재 빌드 호스트는 Ubuntu이며 Windows 템플릿으로 내보냅니다. 네이티브 Windows 실행 검증은 이 PC에서 별도로 수행했습니다. 소스 push는 검토용 빌드 아티팩트를 생성하고, `workflow_dispatch`일 때만 릴리스를 게시합니다. 게임 버전 변경 시 소스·EXE ZIP·릴리스 태그·사이트 링크·버전 JSON을 같이 갱신하세요. 실사용 ZIP에는 EXE/PCK/StartServer.cmd/라이선스 9개 파일만 포함합니다.
+Python 네트워크 검사에는 `GODOT` 환경 변수로 Godot 실행 파일 전체 경로를 지정합니다. UDP 27888의 다른 서버를 먼저 확인하세요. 테스트는 사용자 프로필을 읽거나 저장하지 않으며, GUI 확인에는 `-- --no-save-profile --no-update-check`를 사용합니다.
 
-테스트 결과 로그와 캡처는 로컬 `validation` 폴더 및 작업 공간의 `*-tests.log`, `network-*.log`, `windows-*.log`에 있습니다. 테스트용 `--no-save-profile`은 사용자 설정을 저장하지 않습니다. Headless 검사도 사용자 설정을 읽거나 덮어쓰지 않습니다.
-
-참고한 공개 설계 설명: Ubisoft의 [Far Cry 6 이동 애니메이션](https://news.ubisoft.com/en-gb/article/27176jslYNMPt7vBfCaRQ1/far-cry-6-how-ai-helped-animate-yaras-hero), [동작 전환 관성](https://www.ubisoft.com/en-us/studio/laforge/news/6xXL85Q3bF2vEj76xmnmIu/introducing-learned-motion-matching). 해당 게임의 코드·자산을 가져오지는 않았습니다.
+CI는 Ubuntu에서 검사 후 Windows 템플릿으로 내보내고, workflow_dispatch일 때 1.0.0 릴리스를 게시합니다. 실제 Windows 실행은 이 PC에서 별도 검증합니다. 버전·소스 커밋·릴리스 ZIP·사이트/버전 JSON을 함께 맞추세요.

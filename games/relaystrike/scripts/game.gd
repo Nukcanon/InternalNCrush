@@ -183,7 +183,7 @@ func setup_input():
 		var ev=InputEventKey.new();ev.physical_keycode=binds[k];InputMap.action_add_event(k,ev)
 func build_world():
 	if arena:arena.queue_free()
-	arena=W.new();add_child(arena);arena.build(int(options.map))
+	arena=W.new();arena.props_authoritative=server or demo_mode;add_child(arena);arena.build(int(options.map))
 	bot_navigation=BotNavigation.new();bot_navigation.build(arena);bot_agents.clear()
 	if not is_instance_valid(spectator_camera):
 		spectator_camera=Camera3D.new();spectator_camera.near=.1;spectator_camera.far=350;add_child(spectator_camera)
@@ -308,6 +308,8 @@ func choose_spawn(id:int) -> Vector3:
 	var best=pts[0];var best_score=-1e9
 	for pos in pts:
 		var enemy_distance=160.;var ally_distance=60.;var exposed=0.;var occupied=false
+		for prop in arena.props.values():
+			if prop.global_position.distance_to(pos)<1.5:occupied=true
 		for other in players:
 			if other==id or not players[other].alive:continue
 			var distance=pos.distance_to(actors[other].position)
@@ -497,7 +499,7 @@ func ping_request(sent:int):
 @rpc("authority","call_remote","unreliable",2)
 func ping_reply(sent:int):ping_ms=maxi(0,Time.get_ticks_msec()-sent)
 func server_tick(dt:float):
-	if bot_navigation:bot_navigation.refresh(devices,clock)
+	if bot_navigation:bot_navigation.refresh(devices,clock,arena.props)
 	for id in players:
 		var p=players[id];var a=actors[id]
 		if id<0:bot_input(id,dt)
@@ -671,9 +673,9 @@ func process_trigger(id:int):
 			p.burst_left=maxi(0,p.burst_left-1)
 			if mode=="burst" and p.burst_left==0:p.fire_ready=clock+.3
 func current_weapon(p:Dictionary) -> Dictionary:return C.get_weapon(p.primary if p.slot==0 else p.secondary)
-func ray(from:Vector3,to:Vector3,exclude:Array=[],mask:int=7) -> Dictionary:
+func ray(from:Vector3,to:Vector3,exclude:Array=[],mask:int=15) -> Dictionary:
 	var q=PhysicsRayQueryParameters3D.create(from,to,mask);q.exclude=exclude;return get_world_3d().direct_space_state.intersect_ray(q)
-func clear_line(from:Vector3,to:Vector3,exclude:Array=[]) -> bool:return ray(from,to,exclude,1|4).is_empty()
+func clear_line(from:Vector3,to:Vector3,exclude:Array=[]) -> bool:return ray(from,to,exclude,1|4|8).is_empty()
 func fire(id:int):
 	var p=players[id];var a=actors[id]
 	if p.slot>1 or not can_attack(p) or clock<p.fire_ready or p.reload>0 or clock<a.sprint_release or a.last_sprint or p.shield>clock:return
@@ -697,10 +699,11 @@ func fire(id:int):
 		if collider is Actor:
 			var q=players[collider.pid]
 			if not q.alive:continue
-			var head=hit.position.y-collider.position.y>(.86 if collider.input_state.crouch else 1.38)
+			var head=hit.position.y-collider.position.y>collider.head_threshold()
 			if head:dmg*=1.5
 			dmg*=R.damage_water(arena.submerged(hit.position),arena.wading(a.position),not arena.wading(collider.position))
 			damage(collider.pid,dmg,id,head,wid)
+		elif collider is InteractiveProp:collider.hit(hit.position,(hit.position-origin).normalized(),dmg)
 		elif collider.has_meta("device"):damage_device(int(collider.get_meta("device")),dmg,id)
 		elif pellet==0:wall_mark.rpc(hit.position,hit.normal)
 	effect.rpc("shot",origin,last_end,id,clock)
@@ -799,7 +802,7 @@ func valid_placement(pos:Vector3,yaw:float=0.) -> bool:
 	if absf(pos.x)>94 or absf(pos.z)>71 or arena.wading(pos):return false
 	for s in arena.sites:
 		if s.distance_to(pos)<5:return false
-	var query=PhysicsShapeQueryParameters3D.new();var shape=BoxShape3D.new();shape.size=Vector3(3.4,1.1,1.2);query.shape=shape;query.transform=Transform3D(Basis(Vector3.UP,yaw),pos+Vector3(0,.7,0));query.collision_mask=7
+	var query=PhysicsShapeQueryParameters3D.new();var shape=BoxShape3D.new();shape.size=Vector3(3.4,1.1,1.2);query.shape=shape;query.transform=Transform3D(Basis(Vector3.UP,yaw),pos+Vector3(0,.7,0));query.collision_mask=15
 	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 func add_device(kind:String,pos:Vector3,id:int,hp:float) -> int:
 	var did=next_device;next_device+=1
@@ -993,6 +996,7 @@ func check_objectives(dt:float):
 				if alive[attackers]==0 and team_count(attackers)>0:finish_round(1-attackers,"공격팀 전원 Dead");return
 				if alive[1-attackers]==0 and team_count(1-attackers)>0:finish_round(attackers,"수비팀 전원 Dead")
 func start_match():
+	if server and arena:arena.reset_props()
 	kill_events.clear()
 	if is_instance_valid(ui.damage_indicator):ui.damage_indicator.clear_hits()
 	if not server:return
@@ -1013,6 +1017,7 @@ func enforce_medics():
 				n+=1
 				if n>R.medic_cap(team_count(team)):p.role=0;p.primary="a1";p.secondary="pistol";equip_ammo(p)
 func begin_round():
+	if server and arena:arena.reset_props()
 	round_no+=1;bot_attack_site=randi()%2;phase="buy";remaining=20.;bomb={"planted":false,"site":-1,"time":0.,"actor":0,"progress":0.,"position":Vector3.ZERO}
 	for did in devices.keys():remove_device(did)
 	fields.clear();drops.clear()
@@ -1051,7 +1056,7 @@ func broadcast_state(force:bool,target_peer:int=0):
 		var p=players[id];var a=actors[id];var d=p.duplicate();d.erase("token");d.erase("contributors");d.pos=a.position;d.yaw=a.aim_yaw;d.pitch=a.aim_pitch;d.crouch=a.input_state.crouch;d.velocity=a.velocity;d.grounded=a.is_on_floor();d.sprint=a.last_sprint;d.ads=a.input_state.ads;d.spread_angle=a.spread_angle;list.append(d)
 	var supplies=[]
 	for s in arena.supplies:supplies.append(s.ready)
-	var state={"clock":clock,"phase":phase,"remaining":remaining,"scores":scores,"tickets":tickets,"round":round_no,"players":list,"devices":devices,"fields":fields,"drops":drops,"zones":zone_owner,"supplies":supplies,"bomb":bomb}
+	var state={"clock":clock,"phase":phase,"remaining":remaining,"scores":scores,"tickets":tickets,"round":round_no,"players":list,"devices":devices,"fields":fields,"drops":drops,"zones":zone_owner,"supplies":supplies,"bomb":bomb,"props":arena.prop_states()}
 	if multiplayer.get_peers().size()>0:
 		snapshot_sequence+=1;state.sequence=snapshot_sequence
 		state.team_policy={"teams":options.teams,"next_teams":options.next_teams};state.vote=vote
@@ -1103,6 +1108,7 @@ func receive_state(s:Dictionary):
 	for id in players.keys():
 		if not present.has(id):players.erase(id);actors[id].queue_free();actors.erase(id)
 	devices=s.devices
+	arena.receive_props(s.get("props",[]))
 	for i in range(mini(s.supplies.size(),arena.supplies.size())):arena.supplies[i].ready=s.supplies[i]
 	if old_phase!=phase:
 		if phase=="lobby":ui.lobby()

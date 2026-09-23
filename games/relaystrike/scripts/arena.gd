@@ -16,6 +16,8 @@ var bounds=Vector2(100,90)
 var building=false
 var playable_polygon=PackedVector2Array()
 var walk_surfaces=[]
+var props_authoritative=false
+var props={}
 var architecture:Node3D
 var chunk_count=0
 static var world_font:Font
@@ -96,8 +98,14 @@ func cover(pos:Vector3,width=4.):
 			detail(pos+Vector3(-width*.42+i*.52,.93,side*.427),Vector3(.12,.17,.017),Color("d7b260"),Vector3(0,0,-.4))
 		for x in [-width*.45,width*.45]:pipe(pos+Vector3(x,.58,side*.45),.028,.02,Color("66777b"),Vector3(PI/2,0,0))
 func tree(pos:Vector3):
-	box(pos+Vector3(0,2.1,0),Vector3(.7,4.2,.7),Color("897759"))
-	M.sphere(architecture,pos+Vector3(0,5.5,0),Vector3(5.8,5.8,5.8),Color("789b79"));M.sphere(architecture,pos+Vector3(-1.7,4.7,.7),Vector3(3.4,3.4,3.4),Color("8fa782"))
+	var trunk=StaticBody3D.new();architecture.add_child(trunk);trunk.position=pos;trunk.collision_layer=1;trunk.collision_mask=0
+	var collision=CollisionShape3D.new();var shape=CylinderShape3D.new();shape.radius=.32;shape.height=3.8;collision.shape=shape;collision.position.y=1.9;trunk.add_child(collision)
+	M.cylinder(trunk,Vector3(0,1.9,0),.36,3.8,Color("87745a"),Vector3.ZERO,.18,16)
+	obstacles.append(Rect2(Vector2(pos.x-.85,pos.z-.85),Vector2(1.7,1.7)))
+	for i in range(7):
+		var angle=i*2.399;var end=Vector3(cos(angle)*1.1,3.4+float(i%3)*.55,sin(angle)*1.1)
+		HumanModel.cord(trunk,Vector3(0,2.2+i*.12,0),end,.07,Color("87745a"))
+		HumanModel.oval(trunk,end+Vector3.UP*.6,Vector3(2.6,2.1,2.5),Color("779261") if i%2==0 else Color("94a678"))
 func build(which:int):
 	map_index=which;indoors=which in [2,3,6,8,11,14,15];has_water=which in [0,5];bounds=MapLayouts.extent(which);building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 	box(Vector3(0,-.5,0),Vector3(bounds.x*2,1,bounds.y*2),Color("b9b5a5") if has_water else Color("c5b69a"))
@@ -154,6 +162,7 @@ func build(which:int):
 		M.merge_children(n);var label=text3d("AMMO",Vector3(0,.6,0),Color("e1d6a3"),21,n);label.visibility_range_end=20
 		supplies.append({"pos":pos,"node":n,"ready":0.})
 	if which<6:MapLayouts.finish_detail(self,which)
+	WorldDressing.build(self)
 	building=false;batch_architecture();apply_surface_detail()
 	var environment=WorldEnvironment.new();var e=Environment.new();e.background_mode=Environment.BG_SKY
 	var sky=Sky.new();var sky_material=ProceduralSkyMaterial.new();sky_material.sky_top_color=Color("76a4c0");sky_material.sky_horizon_color=Color("ced9d6");sky_material.ground_horizon_color=Color("c0c4b6");sky_material.ground_bottom_color=Color("86947f");sky.sky_material=sky_material;e.sky=sky
@@ -271,3 +280,13 @@ func walk_height(pos:Vector3) -> float:
 		if surface.rect.has_point(Vector2(pos.x,pos.z)):
 			height=maxf(height,lerpf(surface.low,surface.high,(pos.z-surface.rect.position.y)/surface.rect.size.y))
 	return height
+
+func prop_states() -> Array:
+	var result=[]
+	for prop in props.values():result.append(prop.state())
+	return result
+func receive_props(states:Array):
+	for state in states:
+		if state is Array and state.size()==3 and props.has(int(state[0])):props[int(state[0])].receive(state[1],state[2])
+func reset_props():
+	for prop in props.values():prop.reset_home()

@@ -15,6 +15,7 @@ var event={}
 var overlay:CanvasLayer
 var viewport:SubViewport
 var stage:Node3D
+var replay_arena:Arena
 var camera:Camera3D
 var models={}
 var gun:WeaponVisual
@@ -36,8 +37,8 @@ func capture(dt:float):
 	for id in game.players:
 		if not game.actors.has(id):continue
 		var p=game.players[id];var a=game.actors[id]
-		actors[id]={"pos":a.position,"yaw":a.aim_yaw,"pitch":a.aim_pitch,"role":p.role,"team":p.team,"weapon":p.primary if p.slot==0 else p.secondary,"alive":p.alive,"grounded":a.is_on_floor() if game.server or a.local else a.net_grounded,"shot":p.get("shot_time",-100.),"crouch":a.input_state.crouch,"sprint":a.last_sprint if game.server or a.local else a.net_sprint,"velocity":a.velocity if game.server or a.local else a.net_velocity,"gait":a.gait if game.server or a.local else a.net_gait}
-	history.append({"time":Time.get_ticks_msec()/1000.,"actors":actors,"devices":game.devices.duplicate(true)})
+		actors[id]={"pos":a.position,"yaw":a.aim_yaw,"pitch":a.aim_pitch,"role":a.shown_role if a.shown_role>=0 else p.role,"team":p.team,"weapon":p.primary if p.slot==0 else p.secondary,"alive":p.alive,"grounded":a.is_on_floor() if game.server or a.local else a.net_grounded,"shot":p.get("shot_time",-100.),"crouch":a.input_state.crouch,"sprint":a.last_sprint if game.server or a.local else a.net_sprint,"velocity":a.velocity if game.server or a.local else a.net_velocity,"gait":a.gait if game.server or a.local else a.net_gait}
+	history.append({"time":Time.get_ticks_msec()/1000.,"actors":actors,"devices":game.devices.duplicate(true),"props":game.arena.prop_states() if game.arena else []})
 	while history.size()>MAX_FRAMES:history.pop_front()
 func request(kill:Dictionary):
 	if int(kill.victim)!=game.local_id or int(kill.attacker)==game.local_id or int(kill.attacker)==0:return
@@ -58,6 +59,7 @@ func _process(dt):
 	for i in range(frames.size()-1):
 		if frames[i].time<=time and frames[i+1].time>=time:left=frames[i];right=frames[i+1];break
 	var blend=clampf((time-left.time)/maxf(.001,right.time-left.time),0,1)
+	replay_arena.receive_props(left.get("props",[]))
 	for id in models:
 		if not left.actors.has(id):models[id].visible=false;continue
 		var a=left.actors[id];var b=right.actors.get(id,a);var node=models[id]
@@ -75,7 +77,7 @@ func _process(dt):
 	var state=left.actors[killer];var attacker=models[killer]
 	if elapsed<FIRST_PERSON_SECONDS:
 		attacker.visible=false;gun.visible=true
-		camera.position=attacker.position+Vector3.UP*(1.05 if state.crouch else 1.62)
+		camera.position=attacker.position+Vector3.UP*(1.30 if state.crouch else 1.62)*HumanModel.HEIGHTS[int(state.role)]/1.8
 		camera.rotation=Vector3(lerpf(state.pitch,right.actors.get(killer,state).pitch,blend),attacker.rotation.y,0)
 		if event.weapon=="turret":
 			camera.position=event.get("origin",camera.position)+Vector3.UP*.1
@@ -86,7 +88,7 @@ func _process(dt):
 			punch_played=true;title.text="킬 리플레이 · 처치한 플레이어 · "+str(event.attacker_name);game.play_sound("kill_sting",Vector3.ZERO,false)
 		attacker.visible=true;gun.visible=false
 		var t=clampf((elapsed-FIRST_PERSON_SECONDS)/PORTRAIT_SECONDS,0,1)
-		var focus=attacker.position+Vector3.UP*1.40
+		var focus=attacker.position+Vector3.UP*1.40*HumanModel.HEIGHTS[int(state.role)]/1.8
 		var facing=Basis(Vector3.UP,attacker.rotation.y)
 		var desired=focus+facing*Vector3(.55,.22,-lerpf(3.2,1.35,1.-pow(1.-t,3)))
 		var hit=stage.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(focus,desired,1))
@@ -104,7 +106,7 @@ func begin(kill:Dictionary):
 	var container=SubViewportContainer.new();container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);container.stretch=true;container.mouse_filter=Control.MOUSE_FILTER_IGNORE;overlay.add_child(container)
 	viewport=SubViewport.new();viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.gui_disable_input=true;viewport.audio_listener_enable_3d=false;container.add_child(viewport)
 	stage=Node3D.new();viewport.add_child(stage)
-	var arena=Arena.new();stage.add_child(arena);arena.build(int(game.options.map))
+	var arena=Arena.new();stage.add_child(arena);arena.build(int(game.options.map));replay_arena=arena
 	fx=CombatFX.new();stage.add_child(fx)
 	for device in frames.back().get("devices",{}).values():
 		var node=Node3D.new();stage.add_child(node);node.position=device.pos;node.rotation.y=device.yaw;CombatFX.device(node,device.kind,int(device.team))

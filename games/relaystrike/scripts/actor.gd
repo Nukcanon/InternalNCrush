@@ -20,6 +20,7 @@ var character:CharacterVisual
 var protected_visual:MeshInstance3D
 var item_signature=""
 var reload_stage=-1
+var body_height=1.8
 var shown_role=-1
 var shown_team=-1
 var spread_angle=.4
@@ -60,7 +61,7 @@ var turn_sway=0.
 var shot_serial=0
 func _ready():
 	motion_seed=fposmod(float(pid)*2.39996,TAU)
-	collision_layer=2;collision_mask=1|4
+	collision_layer=2;collision_mask=1|4|8
 	shape=CollisionShape3D.new();var cap=CapsuleShape3D.new();cap.radius=.34;cap.height=1.8;shape.shape=cap;shape.position.y=.9;add_child(shape)
 	render_root=Node3D.new();add_child(render_root)
 	tag=Label3D.new();tag.font=game.ui.theme.default_font;tag.position.y=2.;tag.font_size=32;tag.outline_size=8;tag.outline_modulate=Color("101f2d");tag.pixel_size=.004;tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;add_child(tag)
@@ -82,23 +83,28 @@ func set_team(t:int):
 	var role=int(game.players[pid].role) if game.options.classes else 0
 	if role==shown_role and t==shown_team:return
 	shown_role=role;shown_team=t
+	body_height=HumanModel.HEIGHTS[role];tag.position.y=body_height+.18
+	shape.shape.height=body_height;shape.position.y=body_height*.5
+	protected_visual.scale.y=body_height/1.8
 	if is_instance_valid(character):character.queue_free()
 	character=Character.new();render_root.add_child(character);character.build(role,t);character.motion_seed=motion_seed
 	shown_weapon=""
 
 func reset_view(yaw:float):
-	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,1.62,0))
+	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,eye_height(false),0))
 	input_state.yaw=yaw;input_state.pitch=0.;input_state.crouch=false;input_state.sprint=false;input_state.fire=false;input_state.ads=false;input_state.x=0.;input_state.z=0.;input_state.jump=false
 	aim_yaw=yaw;aim_pitch=0.;rotation=Vector3(0,yaw,0);last_sprint=false;sprint_release=0.;old_visual_pos=global_position;spread_angle=.4;visual_spread=.4;seen_shot=-100.;recoil=0.;land_kick=0.
 	gait=0.;net_gait=0.;turn_sway=0.;previous_yaw=yaw
 	if local:
 		camera.current=true
 		if is_instance_valid(game.ui.damage_indicator):game.ui.damage_indicator.clear_hits()
-func eye() -> Vector3:return global_position+Vector3(0,1.05 if input_state.crouch else 1.62,0)
+func eye_height(crouched:bool) -> float:return (1.30 if crouched else 1.62)*body_height/1.8
+func head_threshold() -> float:return (1.14 if input_state.crouch else 1.46)*body_height/1.8
+func eye() -> Vector3:return global_position+Vector3.UP*eye_height(bool(input_state.crouch))
 func direction() -> Vector3:return Basis(Vector3.UP,aim_yaw)*Basis(Vector3.RIGHT,aim_pitch)*Vector3.FORWARD
 func muzzle_world() -> Vector3:
 	var desired=eye()+Basis(Vector3.UP,aim_yaw)*Vector3(.2,-.23,0)+direction()*.55
-	var hit=game.ray(eye(),desired,[get_rid()],1|4)
+	var hit=game.ray(eye(),desired,[get_rid()],1|4|8)
 	return hit.position+hit.normal*.03 if not hit.is_empty() else desired
 func visual_muzzle() -> Vector3:
 	return view_weapon.muzzle.global_position if is_instance_valid(view_weapon) and view_weapon.visible else muzzle_world()
@@ -108,11 +114,11 @@ func react_hit(push:Vector3):
 func simulate(dt:float,now:float,can_move:bool):
 	aim_yaw=float(input_state.yaw);aim_pitch=clampf(float(input_state.pitch),-1.45,1.45);rotation.y=aim_yaw
 	var crouch=bool(input_state.crouch)
-	if not crouch and shape.shape.height<1.8:
-		var q=PhysicsRayQueryParameters3D.create(global_position+Vector3.UP,global_position+Vector3.UP*1.85,1|4);q.exclude=[get_rid()]
+	if not crouch and shape.shape.height<body_height-.01:
+		var q=PhysicsRayQueryParameters3D.create(global_position+Vector3.UP,global_position+Vector3.UP*(body_height+.05),1|4|8);q.exclude=[get_rid()]
 		crouch=not get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 	input_state.crouch=crouch
-	shape.shape.height=1.15 if crouch else 1.8;shape.position.y=shape.shape.height*.5
+	shape.shape.height=(1.45/1.8*body_height) if crouch else body_height;shape.position.y=shape.shape.height*.5
 
 	var sprint=bool(input_state.sprint) and not crouch and not input_state.ads and not input_state.fire
 	if last_sprint and not sprint:sprint_release=now+.5
@@ -181,7 +187,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if not local:
 		if not game.server:global_position=global_position.lerp(target_pos,minf(1,dt*14));rotation.y=lerp_angle(rotation.y,aim_yaw,minf(1,dt*15))
-		shape.shape.height=1.15 if input_state.crouch else 1.8;shape.position.y=shape.shape.height*.5
+		shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
 		tag.visible=game.players.has(game.local_id) and (p.team==game.players[game.local_id].team or p.mark>now)
 		tag.modulate=Color("ffae65") if p.mark>now else Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
@@ -193,7 +199,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	elif not reloading:reload_stage=-1
 	var ads=input_state.ads and p.slot<2 and not reloading;var scoped=ads and float(w.zoom)<=38
 	ads_blend=lerpf(ads_blend,1. if ads else 0.,1.-exp(-dt*14));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
-	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(1.62,1.05,crouch_blend)-land_kick
+	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
 	camera.fov=lerpf(camera.fov,float(w.zoom) if ads else 88. if sprint else 82.,1.-exp(-dt*12))
 	var base=Vector3(.255,-.255,-.46).lerp(Vector3(0,-.14,-.5),ads_blend)
 	var motion=move_blend*(1.-ads_blend*.93)

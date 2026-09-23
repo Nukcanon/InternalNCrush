@@ -119,82 +119,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 static func joint(parent:Node,name:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;parent.add_child(n);return n
 static func make_rig(which:int,side:int) -> Node3D:
-	var root=Node3D.new();root.name=ROLE_NAMES[which]
-	var team_color=Color("17baff") if side==0 else Color("ff931f")
-	var cloth=Color("344f63") if side==0 else Color("675344")
-	var plate=Color("c9d2cd") if which==5 else Color("788b8e") if which==3 else Color("476679") if side==0 else Color("80634e")
-	var dark=Color("243844");var accent=ROLE_ACCENTS[which];var skin=Color("be987e")
-	var h=joint(root,"Hips",Vector3(0,.94,0));var torso=joint(h,"Chest",Vector3(0,.3,0))
-	M.tapered(h,Vector3(0,.005,0),Vector3(.43,.25,.28),cloth,.83)
-	M.box(h,Vector3(0,.065,-.01),Vector3(.48,.055,.31),dark)
-	M.box(h,Vector3(0,.065,-.178),Vector3(.085,.055,.022),accent)
-	M.tapered(torso,Vector3(0,.015,0),Vector3(.52 if which!=2 else .61,.46,.31),cloth,.75)
-	M.tapered(torso,Vector3(0,.015,-.135),Vector3(.42,.36,.12),plate,.87)
-	M.box(torso,Vector3(0,.158,-.21),Vector3(.30,.035,.025),Color("d9f7ff") if side==0 else Color("fff0bc"))
-	M.box(torso,Vector3(0,.12,.19),Vector3(.36,.08,.045),team_color.lightened(.26))
-	for side_x in [-1,1]:
-		M.box(torso,Vector3(side_x*.188,.05,-.19),Vector3(.034,.33,.038),dark,Vector3(0,0,side_x*-.15))
-		var arm=joint(torso,"LeftArm" if side_x<0 else "RightArm",Vector3(side_x*.29,.13,0))
-		M.tapered(arm,Vector3(0,-.135,0),Vector3(.19,.29,.21),cloth,.82)
-		M.box(arm,Vector3(side_x*.024,-.045,.006),Vector3(.23 if which==2 else .19,.16,.245),team_color,Vector3(0,0,side_x*.13))
-		M.box(arm,Vector3(side_x*.128,-.04,0),Vector3(.018,.095,.16),team_color.lightened(.28))
-		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0));M.sphere(elbow,Vector3.ZERO,Vector3(.145,.15,.15),dark)
-		M.tapered(elbow,Vector3(0,-.115,0),Vector3(.145,.235,.17),plate if which in [2,5] else cloth,.76)
-		M.box(elbow,Vector3(0,-.235,0),Vector3(.16,.055,.185),dark)
-		var hand=joint(elbow,"Hand",Vector3(0,-.275,0));M.box(hand,Vector3.ZERO,Vector3(.10,.095,.10),dark)
-		M.box(hand,Vector3(side_x*-.07,.008,-.026),Vector3(.035,.066,.075),accent if which==3 else dark)
-		var thigh=joint(h,"LeftLeg" if side_x<0 else "RightLeg",Vector3(side_x*.14,-.025,0))
-		M.tapered(thigh,Vector3(0,-.2,0),Vector3(.215,.39,.24),cloth,.8)
-		M.box(thigh,Vector3(side_x*.04,-.16,.01),Vector3(.22,.055,.25),dark)
-		var knee=joint(thigh,"Knee",Vector3(0,-.415,0));M.box(knee,Vector3(0,-.02,-.11),Vector3(.17,.16,.065),plate)
-		M.tapered(knee,Vector3(0,-.19,0),Vector3(.17,.36,.195),cloth,.9)
-		var foot=joint(knee,"Foot",Vector3(0,-.415,0));M.box(foot,Vector3(0,.03,-.06),Vector3(.19,.14,.29),dark,Vector3.ZERO,.4)
-		M.box(foot,Vector3(0,-.035,-.067),Vector3(.195,.042,.30),Color("182b35"))
-		M.box(foot,Vector3(0,.045,-.2),Vector3(.19,.07,.04),team_color)
-	var head=joint(torso,"Head",Vector3(0,.36,0))
-	M.cylinder(torso,Vector3(0,.255,0),.095,.14,skin)
-	M.sphere(head,Vector3(0,.035,0),Vector3(.29,.35,.30),skin)
-	M.sphere(head,Vector3(0,.107,.016),Vector3(.34,.27,.36),plate if which==5 else accent if which==3 else team_color)
-	M.box(head,Vector3(0,.061,-.172),Vector3(.29,.112,.073),Color("1b3442"),Vector3.ZERO,.45)
-	M.box(head,Vector3(0,.087,-.216),Vector3(.24,.022,.012),Color("89d2d6"),Vector3.ZERO,.1)
-	for x in [-.18,.18]:M.cylinder(head,Vector3(x,.034,.015),.07,.055,dark,Vector3(0,0,PI/2))
-	match which:
-		0:
-			for x in [-.085,.085]:M.box(torso,Vector3(x,-.048,-.228),Vector3(.12,.14,.05),accent,Vector3(-.12,0,0))
-			M.box(torso,Vector3(.13,.14,.22),Vector3(.13,.28,.14),dark)
-			M.cylinder(torso,Vector3(.15,.42,.22),.008,.35,accent)
-		1:
-			M.sphere(head,Vector3(0,.105,.055),Vector3(.45,.35,.44),accent)
-			M.box(head,Vector3(0,.088,-.23),Vector3(.255,.085,.02),Color("273d41"))
-			M.tapered(torso,Vector3(0,-.12,.21),Vector3(.5,.66,.085),accent,.68)
-			M.box(torso,Vector3(-.16,.05,-.225),Vector3(.09,.28,.04),Color("c1c9ad"))
-		2:
-			M.box(torso,Vector3(0,.08,.255),Vector3(.46,.48,.23),dark)
-			for x in [-.33,.33]:M.box(torso,Vector3(x,.17,0),Vector3(.26,.17,.37),plate,Vector3(0,0,sign(x)*.18))
-			M.box(head,Vector3(0,-.061,-.14),Vector3(.31,.16,.18),plate)
-			for x in [-.1,.1]:M.box(torso,Vector3(x,-.1,-.25),Vector3(.085,.22,.11),accent)
-		3:
-			M.cylinder(head,Vector3(0,.12,0),.235,.03,accent,Vector3.ZERO,-1.,12)
-			M.box(head,Vector3(0,.225,0),Vector3(.047,.05,.29),Color("efd19c"))
-			for x in [-.26,.26]:M.box(h,Vector3(x,-.05,.01),Vector3(.15,.18,.22),accent)
-			M.cylinder(torso,Vector3(.13,.02,.255),.048,.47,accent)
-			M.box(torso,Vector3(-.1,.045,.235),Vector3(.21,.32,.12),dark)
-			M.box(h,Vector3(.29,-.23,-.02),Vector3(.05,.31,.05),Color("a9b3b0"),Vector3(0,0,.2))
-		4:
-			for x in [-.11,.11]:M.cylinder(head,Vector3(x,-.073,-.176),.06,.08,plate,Vector3(PI/2,0,0))
-			for x in [-.14,.14]:M.cylinder(torso,Vector3(x,.04,.27),.083,.48,accent)
-			M.box(torso,Vector3(0,.1,-.217),Vector3(.18,.12,.06),accent)
-		5:
-			M.box(torso,Vector3(0,.02,.255),Vector3(.4,.4,.18),Color("dce1d1"))
-			M.box(torso,Vector3(0,.03,.356),Vector3(.065,.24,.016),accent);M.box(torso,Vector3(0,.03,.357),Vector3(.24,.065,.016),accent)
-			M.box(torso,Vector3(0,.08,-.213),Vector3(.045,.16,.025),accent);M.box(torso,Vector3(0,.08,-.214),Vector3(.16,.045,.025),accent)
-			for x in [-.2,.2]:M.cylinder(h,Vector3(x,-.12,-.1),.033,.16,accent)
-	M.box(torso,Vector3(0,.07,.17),Vector3(.38,.3,.045),team_color)
-	role_badge(torso,which,Vector3(0,.10,-.26),1.)
-	role_badge(torso,which,Vector3(0,.09,.39),1.4)
-	M.box(head,Vector3(0,.17,-.153),Vector3(.25,.04,.03),team_color)
-	joint(torso,"WeaponSocket",Vector3(.10,-.13,-.37))
-	add_uniform_detail(root,h,torso,head,which,team_color,dark,accent)
+	var root=HumanModel.build(which,side);root.name=ROLE_NAMES[which]
 	M.merge_rig(root);add_clips(root)
 	return root
 static func role_badge(parent:Node3D,which:int,pos:Vector3,factor:float):
@@ -288,30 +213,6 @@ func solve_feet(dt:float,move:Vector3,crouched:bool,sprinting:bool,phase:float):
 		leg.rotation=Vector3(angles.x,0,lateral)
 		knee.rotation=Vector3(angles.y,0,0)
 		foot.rotation=Vector3(angles.z+(.11*sin(p/.62*PI) if stance else -.1*sin((p-.62)/.38*PI)),0,-lateral)
-
-static func add_uniform_detail(root:Node3D,h:Node3D,torso:Node3D,head:Node3D,which:int,team_color:Color,dark:Color,accent:Color):
-	var fabric=Color("54656a");var hardware=Color("9aabac")
-	# Plate carrier, stitched webbing, magazine retention and independent pouches.
-	for row in range(4):
-		M.box(torso,Vector3(0,-.10+row*.058,-.207),Vector3(.37,.015,.012),fabric)
-	for x in [-.125,0,.125]:
-		M.tapered(torso,Vector3(x,-.105,-.24),Vector3(.104,.17,.055),dark,.90)
-		M.box(torso,Vector3(x,-.015,-.25),Vector3(.09,.019,.05),fabric)
-		M.box(torso,Vector3(x,-.08,-.272),Vector3(.016,.12,.008),hardware)
-	for sign_x in [-1,1]:
-		M.box(torso,Vector3(sign_x*.155,.13,-.195),Vector3(.055,.21,.035),dark,Vector3(0,0,sign_x*.11))
-		M.box(torso,Vector3(sign_x*.155,.185,-.22),Vector3(.042,.045,.01),hardware)
-		M.box(h,Vector3(sign_x*.255,-.12,.055),Vector3(.10,.19,.16),fabric,Vector3(0,0,sign_x*.08))
-		var leg=h.get_node("LeftLeg" if sign_x<0 else "RightLeg")
-		M.box(leg,Vector3(sign_x*.108,-.20,.012),Vector3(.05,.17,.15),fabric)
-		var arm=torso.get_node("LeftArm" if sign_x<0 else "RightArm")
-		M.box(arm,Vector3(sign_x*.018,-.10,-.105),Vector3(.13,.11,.025),dark)
-		M.box(arm,Vector3(sign_x*.018,-.12,-.12),Vector3(.12,.026,.012),team_color)
-		M.box(head,Vector3(sign_x*.16,.105,.01),Vector3(.03,.043,.19),dark)
-		for z in [-.07,.01,.08]:M.box(head,Vector3(sign_x*.18,.11,z),Vector3(.02,.023,.025),hardware)
-	M.tapered(head,Vector3(0,-.075,-.122),Vector3(.22,.13,.07),dark,.7)
-	M.box(head,Vector3(.06,.20,-.01),Vector3(.045,.03,.12),hardware)
-	for y in [-.07,-.035,0.]:M.box(head,Vector3(0,y,-.167),Vector3(.12,.008,.007),fabric)
 
 func grip_weapon(dt:float):
 	var weapon:Node3D
