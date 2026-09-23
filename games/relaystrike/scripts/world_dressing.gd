@@ -38,7 +38,7 @@ static func build(arena:Node):
 			body.position=pos+Vector3.UP*(half+.025);body.rotation.y=rng.randf_range(-PI,PI);body.configure(moving_count,kind,arena.props_authoritative)
 			arena.add_child(body);arena.props[moving_count]=body;moving_count+=1
 		else:
-			var type=fixed_count%8;fixed_count+=1
+			var type=fixed_count%12;fixed_count+=1
 			var node=Node3D.new();arena.architecture.add_child(node);node.position=pos;node.rotation.y=rng.randf_range(-PI,PI)
 			furniture(node,type,arena.indoors)
 			# A conservative collision footprint and matching nav envelope keep dense props traversable.
@@ -111,3 +111,38 @@ static func furniture(n:Node3D,type:int,indoors:bool):
 			for z in [-.47,.47]:M.cylinder(n,Vector3(0,.48,z),.49,.08,wood,Vector3(PI/2,0,0),-1.,20)
 			for i in range(10):
 				var ring=TorusMesh.new();ring.inner_radius=.28;ring.outer_radius=.32;ring.rings=16;ring.ring_segments=8;M.instance(n,ring,Vector3(0,.48,-.35+i*.075),dark,Vector3(PI/2,0,0))
+		8: # Rolling diagnostic cart: shelf, monitor, cables and rubber casters.
+			for x in [-.43,.43]:
+				for z in [-.32,.32]:
+					M.cylinder(n,Vector3(x,.13,z),.10,.08,dark,Vector3(0,0,PI/2),-1.,12)
+					H.cord(n,Vector3(x,.20,z),Vector3(x,1.02,z),.025,metal)
+			for y in [.28,.9]:M.box(n,Vector3(0,y,0),Vector3(.98,.07,.77),metal)
+			M.box(n,Vector3(0,1.23,.14),Vector3(.69,.47,.10),dark,Vector3(-.16,0,0))
+			M.box(n,Vector3(0,1.23,.078),Vector3(.58,.35,.015),Color("467a84"),Vector3(-.16,0,0))
+			for i in range(4):M.box(n,Vector3(-.12,1.13+i*.058,.04),Vector3(.31,.016,.009),Color("8bc1bd"))
+			M.box(n,Vector3(0,.96,-.19),Vector3(.49,.04,.19),Color("9daaa4"))
+			M.box(n,Vector3(.17,.5,0),Vector3(.31,.37,.44),dark)
+		9: # Emergency station; a glazed recess, extinguisher and pressure gauge.
+			M.box(n,Vector3(0,.83,0),Vector3(.78,1.60,.55),Color("aab2a6"))
+			M.box(n,Vector3(0,.82,-.29),Vector3(.60,1.16,.03),dark)
+			M.cylinder(n,Vector3(0,.71,-.33),.14,.72,Color("b5664d"),Vector3.ZERO,-1.,20)
+			M.cylinder(n,Vector3(0,1.09,-.33),.07,.08,metal)
+			M.box(n,Vector3(0,1.16,-.34),Vector3(.21,.045,.07),dark)
+			H.cord(n,Vector3(.07,1.11,-.32),Vector3(.2,.88,-.34),.021,dark)
+			M.cylinder(n,Vector3(0,.98,-.48),.045,.018,Color("eee3c8"),Vector3(PI/2,0,0),-1.,12)
+			M.box(n,Vector3(0,1.49,-.292),Vector3(.54,.08,.02),Color("709786"))
+		10: # Industrial fan housing with angled blades and protective grille.
+			M.box(n,Vector3(0,.75,0),Vector3(1.10,1.42,.72),metal)
+			M.cylinder(n,Vector3(0,.91,-.4),.40,.06,dark,Vector3(PI/2,0,0),-1.,28)
+			for i in range(5):
+				var rotor=Node3D.new();n.add_child(rotor);rotor.position=Vector3(0,.91,-.44);rotor.rotation.z=i*TAU/5.
+				M.tapered(rotor,Vector3(.17,0,0),Vector3(.28,.12,.025),Color("9dabaa"),.65)
+			for i in range(7):M.box(n,Vector3(-.3+i*.1,.91,-.47),Vector3(.012,.65,.012),Color("53646a"))
+			for y in [.23,.31]:M.box(n,Vector3(0,y,-.38),Vector3(.81,.025,.035),dark)
+		11: # Stack of weathered delivery cases with offset lids and straps.
+			for i in range(3):
+				var center=Vector3((i%2)*.06,.24+i*.40,0)
+				M.box(n,center,Vector3(1.12,.37,.76),Color("a28d66") if i%2 else Color("75867b"),Vector3.ZERO,.5)
+				M.box(n,center+Vector3.UP*.18,Vector3(1.15,.055,.80),dark)
+				for x in [-.36,.36]:M.box(n,center+Vector3(x,0,-.392),Vector3(.035,.34,.022),Color("c9b887"))
+				M.box(n,center+Vector3(0,.04,-.405),Vector3(.20,.07,.025),dark)

@@ -3,3 +3,5 @@ validation/
 *.log
 __pycache__/
 .DS_Store
+services/matchmaker/.env
+**/.venv/

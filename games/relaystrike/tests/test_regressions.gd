@@ -13,7 +13,7 @@ func arm(wid:String):
 func click(seq:int):
 	g.actors[1].input_state.fire=true;g.actors[1].input_state.trigger_seq=seq;g.process_trigger(1)
 func run():
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.host_game();g.set_physics_process(false);g.add_player(2,"Observer","test_observer_12345")
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false);g.add_player(2,"Observer","test_observer_12345")
 	g.players[2].team=g.players[1].team;g.phase="combat";g.remaining=500;g.clock=100
 	var a=g.actors[1];var p=g.players[1];g.actors[2].position=Vector3(45,0,50)
 	for cycle in range(3):
@@ -54,10 +54,10 @@ func run():
 	key.physical_keycode=KEY_E;expect(InputMap.event_is_action(key,"use"),"E keeps interaction")
 	arm("a1");a.position=Vector3(25,0,60);a.reset_view(0);a.input_state.z=-1;g.options.mode=0
 	for step in range(40):a.simulate(.016,g.clock,true)
-	expect(is_equal_approx(absf(a.velocity.z),7.4),"default movement increased to 7.4")
+	expect(is_equal_approx(absf(a.velocity.z),7.4*Catalog.get_weapon("a1").move_speed_scale),"movement includes weapon mobility")
 	a.input_state.sprint=true
 	for step in range(40):a.simulate(.016,g.clock,true)
-	expect(is_equal_approx(absf(a.velocity.z),11.2),"sprint increased to 11.2")
+	expect(is_equal_approx(absf(a.velocity.z),11.2*Catalog.get_weapon("a1").move_speed_scale),"sprint includes weapon mobility")
 	a.position=Vector3(120,-6,110);a.input_state.z=0;a.simulate(.016,g.clock,true)
 	expect(absf(a.position.x)<=98 and absf(a.position.z)<=88 and a.position.y>=0,"out of map fallback restores playable bounds")
 	a.position=Vector3(25,0,60);a.reset_view(0);await physics_frame;await physics_frame
@@ -70,7 +70,7 @@ func run():
 		p.primary=wid;p.protect=0.;p.slot=0;a.visual(.016,p,g.clock)
 		expect(is_instance_valid(a.view_weapon.muzzle) and a.view_weapon.find_children("*","MeshInstance3D",true,false).size()>4,"complete procedural model "+wid)
 		for fraction in [.1,.5,.9]:a.view_weapon.animate_reload(fraction,0)
-	arm("r2");a.input_state.ads=true;a.visual(.5,p,g.clock)
+	arm("r2");a.input_state.ads=true;a.visual(.8,p,g.clock)
 	expect(not a.view_weapon.visible,"scoped ADS removes opaque weapon from center")
 	arm("a1");a.input_state.ads=true;a.visual(.5,p,g.clock)
 	expect(a.view_weapon.visible and a.gun.position.y<-.1,"rifle ADS keeps model below aiming center")

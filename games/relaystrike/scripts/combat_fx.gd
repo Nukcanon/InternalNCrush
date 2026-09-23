@@ -2,10 +2,16 @@ extends Node3D
 class_name CombatFX
 var field_nodes={}
 var transients=[]
+var healing={}
+var grenade_nodes={}
+var status_nodes={}
+var ragdolls=[]
+var active_lights=0
+static var cloud_shader:Shader
 const M=preload("res://scripts/mesh_factory.gd")
 func clear():
 	for child in get_children():child.queue_free()
-	field_nodes.clear();transients.clear();casings.clear();scuffs.clear()
+	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();active_lights=0
 func group(pos:Vector3) -> Node3D:
 	while transients.size()>=96:
 		var old=transients.pop_front()
@@ -13,6 +19,26 @@ func group(pos:Vector3) -> Node3D:
 	var node=Node3D.new();add_child(node);node.position=pos;transients.append(node);return node
 func glow(color:Color) -> StandardMaterial3D:
 	var mat=StandardMaterial3D.new();mat.albedo_color=color;mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;mat.cull_mode=BaseMaterial3D.CULL_DISABLED;return mat
+func cloud(color:Color,fire:bool=false) -> ShaderMaterial:
+	if cloud_shader==null:
+		cloud_shader=Shader.new();cloud_shader.code="""
+shader_type spatial;
+render_mode unshaded, cull_back, depth_draw_never;
+uniform vec4 tint:source_color=vec4(.4,.45,.47,1.);
+uniform float opacity=.7;
+uniform bool fire=false;
+varying vec3 p;
+void vertex(){p=VERTEX;VERTEX+=NORMAL*(sin(VERTEX.x*13.+TIME*3.)*sin(VERTEX.z*11.-TIME*2.))*.045;}
+void fragment(){
+ float turbulence=.5+.25*sin(p.x*17.+TIME*4.)*sin(p.y*13.-TIME*3.)+.18*sin(p.z*21.+TIME*2.);
+ float edge=smoothstep(.04,.65,abs(dot(normalize(NORMAL),normalize(VIEW))));
+ vec3 smoke=mix(tint.rgb*.66,tint.rgb*1.18,turbulence);
+ vec3 flame=mix(vec3(.65,.12,.025),mix(tint.rgb,vec3(1.,.86,.47),turbulence*.65),edge);
+ ALBEDO=fire?flame:smoke;
+ ALPHA=opacity*edge*mix(.62,1.,turbulence);
+}
+"""
+	var mat=ShaderMaterial.new();mat.shader=cloud_shader;mat.set_shader_parameter("tint",color);mat.set_shader_parameter("fire",fire);mat.set_shader_parameter("opacity",color.a);return mat
 func finish(node:Node3D,seconds:float):
 	var tween=node.create_tween();tween.tween_interval(seconds);tween.tween_callback(node.queue_free)
 func ring(parent:Node3D,radius:float,color:Color) -> MeshInstance3D:
@@ -27,6 +53,7 @@ func beam(from:Vector3,to:Vector3,heal=false):
 	if heal:
 		var end=group(to);var halo=ring(end,.19,Color(.3,1,.75,.55));halo.rotation.x=PI/2;finish(end,.12)
 func burst(kind:String,pos:Vector3,color:Color):
+	if kind in ["explosion","turret_break","cover_break"]:explosion(pos,kind!="cover_break");return
 	var node=group(pos+Vector3.UP*.15);var explosive=kind=="explosion";var radius=5.5 if explosive else 1.9 if kind=="flash" else 1.15
 	var life=.85 if explosive else .48;var halo=ring(node,.5,color);halo.position.y=.04
 	var tween=node.create_tween().set_parallel(true);tween.tween_property(halo,"scale",Vector3(radius,.6,radius),life).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT);tween.tween_property(halo.material_override,"albedo_color:a",0.,life)
@@ -47,16 +74,19 @@ func sync_fields(fields:Array,now:float):
 		if not field_nodes.has(key):
 			var node=Node3D.new();add_child(node);node.position=field.pos;field_nodes[key]=node
 			if field.kind=="smoke":
-				var mesh=MeshInstance3D.new();var sphere=SphereMesh.new();sphere.radius=5;sphere.height=10;sphere.radial_segments=32;sphere.rings=16;mesh.mesh=sphere;mesh.position.y=2;node.add_child(mesh)
-				var shader=Shader.new();shader.code="shader_type spatial; render_mode unshaded, cull_disabled; uniform float opacity=0.98; varying vec3 p; void vertex(){p=VERTEX;} void fragment(){float n=sin(p.x*1.7+TIME*.35)*sin(p.z*1.8-TIME*.28)+sin(p.y*2.8+TIME*.5)*.35; float edge=pow(1.0-abs(dot(NORMAL,VIEW)),1.5); ALBEDO=mix(vec3(.39,.47,.51),vec3(.66,.73,.73),.5+n*.10)+edge*.025; ALPHA=opacity;}"
-				var mat=ShaderMaterial.new();mat.shader=shader;mesh.material_override=mat;mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				for i in range(10):
+					var offset=Vector3(0,1.6,0) if i==0 else Vector3(sin(i*2.4)*2.6,1.2+float(i%3)*.8,cos(i*2.4)*2.6)
+					var mesh=M.sphere(node,offset,Vector3.ONE*(8. if i==0 else 4.3),Color.WHITE)
+					mesh.material_override=cloud(Color(.54,.61,.63,.99 if i==0 else .78));mesh.set_meta("density",.99 if i==0 else .78);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			else:
 				var color=Color(.2,.68,1,.8) if field.team==0 else Color(1,.54,.18,.8);ring(node,5.,color).position.y=.06;ring(node,4.7,Color(color,.32)).position.y=.065
 				var disc=M.cylinder(node,Vector3(0,.025,0),4.9,.02,Color(color,.10),Vector3.ZERO,-1.,48);disc.material_override=glow(Color(color,.10))
 				for i in range(12):
 					var a=TAU*i/12.;M.sphere(node,Vector3(cos(a)*4.7,.15,sin(a)*4.7),Vector3(.14,.3,.14),Color(color,1.))
 		var node=field_nodes[key]
-		if field.kind=="smoke":node.get_child(0).material_override.set_shader_parameter("opacity",minf(.99,maxf(0.,float(field.until)-now)*.99))
+		if field.kind=="smoke":
+			var fade=clampf(float(field.until)-now,0.,1.)*clampf((now-float(field.get("starts",now-1.)))/.35,0.,1.)
+			for cloud_mesh in node.get_children():cloud_mesh.material_override.set_shader_parameter("opacity",float(cloud_mesh.get_meta("density"))*fade)
 		else:node.rotation.y=sin(now*.6)*.015
 	for key in field_nodes.keys():
 		if not live.has(key):field_nodes[key].queue_free();field_nodes.erase(key)
@@ -127,6 +157,7 @@ func eject_case(origin:Vector3,right:Vector3,up:Vector3,ground_y:float,seed_valu
 	var variation=sin(float(seed_value)*2.31)
 	casings.append({"node":node,"velocity":right*(1.55+variation*.22)+up*(1.15+variation*.12),"floor":ground_y+.025,"age":0.,"bounced":false,"spin":Vector3(8,12,9+variation*3)})
 func _process(dt:float):
+	update_healing(dt)
 	for item in casings.duplicate():
 		if not is_instance_valid(item.node):casings.erase(item);continue
 		item.age+=dt
@@ -154,3 +185,104 @@ func scuff(pos:Vector3):
 	var node=MeshInstance3D.new();var plane=PlaneMesh.new();plane.size=Vector2(.26,.19);node.mesh=plane;node.position=pos;node.rotation.y=randf()*TAU;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.material_override=glow(Color(.22,.25,.25,.28));add_child(node);scuffs.append(node)
 	var fade=node.create_tween();fade.tween_interval(3.5);fade.tween_property(node.material_override,"albedo_color:a",0.,1.);fade.tween_callback(node.queue_free)
+
+func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:float):
+	if active_lights>=6:return
+	var light=OmniLight3D.new();add_child(light);light.position=pos;light.light_color=color;light.light_energy=energy;light.omni_range=radius;light.omni_attenuation=1.5;light.shadow_enabled=false;active_lights+=1
+	light.tree_exited.connect(func():active_lights=maxi(0,active_lights-1))
+	var t=light.create_tween();t.tween_property(light,"light_energy",0.,seconds);t.tween_callback(light.queue_free)
+func muzzle_light(pos:Vector3):temporary_light(pos,Color("ffc77b"),1.3,3.8,.075)
+func explosion(pos:Vector3,fire:bool=true):
+	var node=group(pos);node.set_meta("explosion",true)
+	temporary_light(pos+Vector3.UP*.3,Color("ffb05c"),5.,11.,.38)
+	var tween=node.create_tween().set_parallel(true)
+	var shock=ring(node,.65,Color(1,.82,.5,.75));shock.position.y=.06
+	tween.tween_property(shock,"scale",Vector3(8.,1.,8.),.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT);tween.tween_property(shock.material_override,"albedo_color:a",0.,.55)
+	if fire:
+		for i in range(7):
+			var core=M.sphere(node,Vector3(sin(i*2.4)*.45,.25+float(i%3)*.22,cos(i*2.4)*.45),Vector3.ONE*(.35+float(i%3)*.15),Color.WHITE)
+			core.material_override=cloud(Color(1.,.40+float(i%2)*.18,.08,.80),true);core.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			tween.tween_property(core,"scale",Vector3.ONE*(1.9+float(i%3)*.5),.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tween.tween_property(core.material_override,"shader_parameter/opacity",0.,.40).set_delay(.08)
+	for i in range(12):
+		var direction=Vector3(sin(i*2.4),.35+float(i%4)*.3,cos(i*2.4)).normalized()
+		var smoke=M.sphere(node,direction*.25,Vector3.ONE*.45,Color.WHITE);smoke.material_override=cloud(Color(.36,.38,.40,.66));smoke.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		tween.tween_property(smoke,"position",direction*2.6+Vector3.UP*.8,1.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(smoke,"scale",Vector3.ONE*(2.1+float(i%3)*.3),1.6);tween.tween_property(smoke.material_override,"shader_parameter/opacity",0.,1.35).set_delay(.25)
+	for i in range(20):
+		var velocity=Vector3(randf_range(-4.,4.),randf_range(2.,6.),randf_range(-4.,4.))
+		var shard=M.box(node,Vector3.ZERO,Vector3(.055,.04,.14) if i%3 else Vector3(.12,.07,.14),Color("ffbb64") if i%3 else Color("52616b"));shard.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if i%3:shard.material_override=glow(Color("ffd88d"))
+		tween.tween_method(func(t):
+			if is_instance_valid(shard):shard.position=velocity*t+Vector3.DOWN*5.*t*t;shard.rotation=Vector3(t*8.,t*4.,t*5.),0.,1.,.85)
+		tween.tween_property(shard,"scale",Vector3.ZERO,.35).set_delay(.55)
+	finish(node,1.9)
+func skill_burst(role:int,pos:Vector3,color:Color):
+	var node=group(pos);var radius=[2.5,12.,2.2,2.,5.,2.4][role]
+	for i in range(3):
+		var halo=ring(node,.55,Color(color,.75));halo.position.y=.12+i*.35
+		var t=node.create_tween().set_parallel(true);t.tween_property(halo,"scale",Vector3(radius,1.,radius),.75).set_delay(i*.08);t.tween_property(halo.material_override,"albedo_color:a",0.,.7).set_delay(i*.08)
+	finish(node,1.05)
+func healing_link(game:Node,from:Vector3,to:Vector3,owner:int,target:int,repairing:bool=false):
+	if not healing.has(owner):
+		var node=Node3D.new();add_child(node);var mesh=MeshInstance3D.new();mesh.mesh=ImmediateMesh.new();mesh.material_override=glow(Color("8affce") if not repairing else Color("ffc978"));mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.add_child(mesh)
+		var halo=ring(node,.22,Color(.3,1.,.7,.7));healing[owner]={"node":node,"mesh":mesh,"halo":halo}
+	var link=healing[owner];link.merge({"game":game,"from":from,"to":to,"target":target,"until":Time.get_ticks_msec()+240,"repair":repairing},true)
+func update_healing(_dt:float):
+	var seconds=Time.get_ticks_msec()/1000.
+	for owner in healing.keys():
+		var link=healing[owner]
+		if Time.get_ticks_msec()>int(link.until) or not is_instance_valid(link.game):link.node.queue_free();healing.erase(owner);continue
+		var from:Vector3=link.from;var to:Vector3=link.to;var game=link.game
+		if game.actors.has(owner):from=game.actors[owner].visual_muzzle()
+		if game.actors.has(link.target):
+			var target=game.actors[link.target];to=target.position+Vector3.UP*(.90 if target.input_state.crouch else 1.15)*target.body_height/1.8
+		if from.distance_squared_to(to)<.001:continue
+		link.node.position=Vector3.ZERO
+		var forward=(to-from).normalized();var right=forward.cross(Vector3.UP).normalized()
+		if right.length_squared()<.01:right=Vector3.RIGHT
+		var up=right.cross(forward).normalized();var mesh:ImmediateMesh=link.mesh.mesh;mesh.clear_surfaces();mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+		for strand in range(2):
+			for i in range(18):
+				var points=[]
+				for step in [i,i+1]:
+					var t=step/18.;var wave=t*TAU*2.-seconds*9.+strand*PI;var amplitude=sin(t*PI)*(.085 if not link.repair else .035)
+					var center=from.lerp(to,t)+right*sin(wave)*amplitude+up*cos(wave)*amplitude
+					for side in range(5):points.append(center+(right*cos(side*TAU/5.)+up*sin(side*TAU/5.))*(.025 if strand else .045))
+				for side in range(5):
+					var next=(side+1)%5
+					for index in [side,next,side+5,next,next+5,side+5]:mesh.surface_add_vertex(points[index])
+		mesh.surface_end();link.halo.position=to;link.halo.scale=Vector3.ONE*(1.+sin(seconds*10.)*.22);link.halo.rotation=Vector3(PI/2,seconds,0)
+func sync_grenades(items:Array,now:float):
+	var live={}
+	for item in items:
+		live[item.id]=true
+		if not grenade_nodes.has(item.id):
+			var node=Node3D.new();add_child(node);EquipmentPreview.grenade_model(node);M.merge_children(node);grenade_nodes[item.id]=node
+		var node=grenade_nodes[item.id];node.position=item.pos-Vector3.UP*.17;node.rotation=Vector3.ZERO if item.held else Vector3(now*4.,now*3.,now*2.)
+	for id in grenade_nodes.keys():
+		if not live.has(id):grenade_nodes[id].queue_free();grenade_nodes.erase(id)
+func sync_status(game:Node,now:float):
+	var live={}
+	for id in game.players:
+		var p=game.players[id]
+		if not p.alive or not game.actors.has(id):continue
+		for status in ["shield","cleanse","mark","mounted"]:
+			if float(p.get(status,0))<=now:continue
+			var key=str(id)+status;live[key]=true
+			if not status_nodes.has(key):
+				var node=Node3D.new();add_child(node);status_nodes[key]=node
+				var color=Color("67d4ff") if p.team==0 else Color("ffc36d")
+				if status=="shield":
+					var shield=M.sphere(node,Vector3(0,1.,-.3),Vector3(1.15,1.65,.28),color);shield.material_override=glow(Color(color,.22));shield.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				else:
+					for y in [.14,1.1]:ring(node,.52,Color(color,.62)).position.y=y
+			var node=status_nodes[key];node.position=game.actors[id].position;node.rotation.y=game.actors[id].aim_yaw
+			if status!="shield":node.scale=Vector3.ONE*(1.+sin(now*5.)*.035)
+	for key in status_nodes.keys():
+		if not live.has(key):status_nodes[key].queue_free();status_nodes.erase(key)
+func ragdoll(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,facing:float,crouched:bool,velocity:Vector3):
+	while ragdolls.size()>=6:
+		var old=ragdolls.pop_front()
+		if is_instance_valid(old):old.queue_free()
+	var node=PhysicsRagdoll.new();add_child(node);node.build(source,pos,push,role,team,facing,crouched,velocity);ragdolls.append(node)

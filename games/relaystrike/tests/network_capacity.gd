@@ -14,7 +14,7 @@ func run():
 		if arg.begins_with("--label="):label=arg.trim_prefix("--label=")
 	started=Time.get_ticks_msec();g=load("res://scripts/game.gd").new();g.name="Capacity";root.add_child(g)
 	if label=="server":
-		g.dedicated=true;g.host_game();FileAccess.open(control.path_join("server.ready"),FileAccess.WRITE).store_string("ready")
+		g.dedicated=true;g.options.map=0;g.options.max_players=32;g.host_game();FileAccess.open(control.path_join("server.ready"),FileAccess.WRITE).store_string("ready")
 	else:
 		g.profile.nick="CAPACITY_"+label;g.profile.token="capacity_unique_identity_"+label;g.join_game("127.0.0.1")
 	physics_frame.connect(drive)

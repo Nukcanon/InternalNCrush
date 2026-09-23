@@ -30,6 +30,8 @@ var pelvis_yaw=0.
 var turn_phase=0.
 var previous_velocity=Vector3.ZERO
 var acceleration_lean=Vector3.ZERO
+var lean_velocity=Vector3.ZERO
+var lag_velocity=Vector3.ZERO
 var lower_lag=Vector3.ZERO
 var pose_grounded=true
 var landing_compression=0.
@@ -57,10 +59,14 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	motion_clock+=dt
 	visual_crouch=lerpf(visual_crouch,1. if crouch else 0.,1.-exp(-dt*10))
 	visual_sprint=lerpf(visual_sprint,1. if sprint and speed>.6 else 0.,1.-exp(-dt*9))
-	var local_velocity=global_basis.inverse()*move
-	var acceleration=(local_velocity-previous_velocity)/maxf(dt,.005);previous_velocity=local_velocity
-	lower_lag=lower_lag.lerp(Vector3(clampf(-acceleration.x*.002,-.075,.075),0,clampf(-acceleration.z*.002,-.08,.08)),1.-exp(-dt*8))
-	acceleration_lean=acceleration_lean.lerp(Vector3(clampf(acceleration.z*.004,-.13,.13),0,clampf(-acceleration.x*.003,-.1,.1)),1.-exp(-dt*9))
+	var frame=global_basis.orthonormalized();var local_velocity=frame.inverse()*move
+	# Differentiate world velocity before changing frames: turning in place must not invent acceleration.
+	var acceleration=frame.inverse()*((move-previous_velocity)/maxf(dt,.005));previous_velocity=move
+	var lean_target=Vector3(clampf(acceleration.z*.007,-.24,.21),0,clampf(-acceleration.x*.006,-.20,.20))
+	var lag_target=Vector3(clampf(-acceleration.x*.0028,-.09,.09),0,clampf(-acceleration.z*.0028,-.095,.095))
+	var spring_dt=minf(dt,.033)
+	lean_velocity+=(lean_target-acceleration_lean)*100.*spring_dt-lean_velocity*17.*spring_dt;acceleration_lean+=lean_velocity*spring_dt
+	lag_velocity+=(lag_target-lower_lag)*90.*spring_dt-lag_velocity*15.*spring_dt;lower_lag+=lag_velocity*spring_dt
 	pelvis_yaw=clampf(pelvis_yaw-turn*dt,-.55,.55)
 	pelvis_yaw=move_toward(pelvis_yaw,0,dt*(5. if speed>.25 else .85))
 	turn_phase+=absf(turn)*dt*.8
@@ -93,7 +99,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	var movement=clampf(speed/7.4,0,1) if grounded else 0.
 	var breath=sin(motion_clock*1.9+motion_seed)
 	var aiming=clampf(pitch,-.9,.9)
-	chest.rotation=Vector3(-aiming*.45+visual_crouch*.13-visual_sprint*.10+acceleration_lean.x*.8+breath*.008,-pelvis_yaw*.72+sin(cycle)*movement*.07,-local_velocity.x*.006+sin(cycle)*movement*.025)
+	chest.rotation=Vector3(-aiming*.45+visual_crouch*.13-visual_sprint*.20+acceleration_lean.x+breath*.008,-pelvis_yaw*.72+sin(cycle)*movement*.09,-local_velocity.x*.008+acceleration_lean.z+sin(cycle)*movement*.03)
 	head.rotation=Vector3(-aiming*.55-landing_compression*.25,-pelvis_yaw*.28-sin(cycle)*movement*.03,0)
 	var right_target=Vector3(.98+aiming*.55,-.08,-.21)
 	var left_target=Vector3(1.15+aiming*.55,.32,.27)
@@ -111,7 +117,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	right_elbow.rotation=Vector3(lerpf(.92,.7+sin(cycle)*.14,visual_sprint),0,0)
 	left_elbow.rotation=Vector3(lerpf(.38,.70+cos(cycle)*.23,visual_sprint)-reach*.35,0,0)
 	socket.position=Vector3(.07,-.09-visual_sprint*.08+cos(cycle)*movement*.012,-.07+visual_sprint*.08)
-	socket.rotation=Vector3(-aiming*.5+visual_sprint*.3-kick*.08,visual_sprint*.12-turn*.012,visual_sprint*.18-reach*.18+sin(cycle)*movement*.035)
+	socket.rotation=Vector3(-aiming*.5+visual_sprint*(.3+sin(cycle)*.10)-kick*.08,visual_sprint*.12-turn*.012,visual_sprint*(.18+sin(cycle)*.06)-reach*.18+sin(cycle)*movement*.035)
 	hit_time=maxf(0,hit_time-dt);var hit=sin(hit_time/.32*PI)*.2
 	chest.rotation+=Vector3(hit*.45,0,hit*hit_sign);head.rotation.x-=hit*.4
 	grip_weapon(dt)
@@ -221,7 +227,7 @@ func grip_weapon(dt:float):
 	if not is_instance_valid(weapon):return
 	var right_target=chest.to_local(weapon.right_hand.global_position)
 	var left_target=chest.to_local(weapon.left_hand.global_position)
-	solve_arm(right_arm,right_elbow,right_target,Vector3(1,-.65,.25),dt,1.)
+	solve_arm(right_arm,right_elbow,right_target,Vector3(1,-.65,.25),dt,1.-visual_sprint*.2)
 	solve_arm(left_arm,left_elbow,left_target,Vector3(-1,-.4,.1),dt,1.-visual_sprint)
 func solve_arm(arm:Node3D,elbow:Node3D,target:Vector3,pole:Vector3,dt:float,weight:float):
 	var delta=target-arm.position
@@ -235,3 +241,20 @@ func solve_arm(arm:Node3D,elbow:Node3D,target:Vector3,pole:Vector3,dt:float,weig
 	arm.quaternion=arm.quaternion.slerp(upper,weight)
 	var lower_direction=arm.basis.inverse()*(target-elbow_pos).normalized()
 	elbow.quaternion=elbow.quaternion.slerp(Quaternion(Vector3.DOWN,lower_direction.normalized()),weight)
+
+func throw_pose(started:float,held:bool,until:float,now:float):
+	if held:
+		right_arm.rotation=Vector3(1.6,-.35,-.28);right_elbow.rotation.x=.9
+		left_arm.rotation=Vector3(1.5,.35,.18);left_elbow.rotation.x=.55
+		chest.rotation.y-=.08;head.rotation.x-=.04
+	elif until>now:
+		var phase=clampf(1.-(until-now)/.45,0.,1.)
+		right_arm.rotation=Vector3(lerpf(2.1,.25,phase),-.15,-.20);right_elbow.rotation.x=lerpf(.9,.15,phase)
+		chest.rotation.y+=sin(phase*PI)*.15
+
+func slide_pose(phase:float):
+	var weight=sin(clampf(phase*4.,0.,1.)*PI*.5)*sin(clampf((1.-phase)*4.,0.,1.)*PI*.5)
+	hips.position.y=lerpf(hips.position.y,.43,weight);chest.rotation.x+=weight*.22;hips.rotation.z-=weight*.13
+	var left=hips.get_node("LeftLeg");var right=hips.get_node("RightLeg")
+	left.rotation.x=lerpf(left.rotation.x,1.18,weight);left.get_node("Knee").rotation.x=lerpf(left.get_node("Knee").rotation.x,-.35,weight)
+	right.rotation.x=lerpf(right.rotation.x,.7,weight);right.get_node("Knee").rotation.x=lerpf(right.get_node("Knee").rotation.x,-1.65,weight)

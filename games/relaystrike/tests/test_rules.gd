@@ -11,7 +11,7 @@ func run():
 	expect(Rules.loss_reward(1)==1900 and Rules.loss_reward(2)==3000 and Rules.loss_reward(8)==3300,"loss economy")
 	expect(Rules.damage_water(true,true,true)==.5 and Rules.damage_water(false,false,false)==1,"water attenuation applied once")
 	expect(Rules.ammo_pickup(120)==30,"partial ammo refill")
-	var g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.host_game();g.set_physics_process(false)
+	var g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false)
 	g.add_player(1,"Test One","test_one_123456789");g.add_player(2,"Test Two","test_two_123456789")
 	g.phase="combat";g.clock=100;g.players[1].protect=0.;g.players[2].protect=0.
 	g.actors[1].position=Vector3(0,0,60);g.actors[2].position=Vector3(0,0,55)

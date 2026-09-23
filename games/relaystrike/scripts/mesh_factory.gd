@@ -2,7 +2,7 @@ extends RefCounted
 class_name MeshFactory
 static var materials={}
 static var meshes={}
-static var vertex_material:StandardMaterial3D
+static var vertex_material:ShaderMaterial
 static func material(color:Color) -> StandardMaterial3D:
 	if materials.has(color):return materials[color]
 	var m=StandardMaterial3D.new();m.albedo_color=color;m.roughness=.82
@@ -54,17 +54,17 @@ static func beveled_box(size:Vector3,amount=.16) -> ArrayMesh:
 static func merge_children(parent:Node3D):
 	var children=[]
 	for child in parent.get_children():
-		if child is MeshInstance3D and child.material_override is StandardMaterial3D and child.material_override.albedo_color.a>=1:children.append(child)
+		if child is MeshInstance3D and child.visible and child.mesh.get_surface_count()>0 and child.material_override is StandardMaterial3D and child.material_override.albedo_color.a>=1:children.append(child)
 	if children.size()<2:return
 	if vertex_material==null:
-		vertex_material=StandardMaterial3D.new();vertex_material.vertex_color_use_as_albedo=true;vertex_material.vertex_color_is_srgb=false;vertex_material.roughness=.84
+		vertex_material=SurfaceFinish.equipment_material()
 	var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for child in children:
 		var arrays=child.mesh.surface_get_arrays(0);var vertices=arrays[Mesh.ARRAY_VERTEX];var normals=arrays[Mesh.ARRAY_NORMAL];var indices=arrays[Mesh.ARRAY_INDEX]
 		var count=indices.size() if indices!=null and indices.size()>0 else vertices.size()
 		for j in range(count):
 			var i=indices[j] if indices!=null and indices.size()>0 else j
-			st.set_color(child.material_override.albedo_color.srgb_to_linear());st.set_normal((child.transform.basis.inverse().transposed()*normals[i]).normalized());st.add_vertex(child.transform*vertices[i])
+			st.set_uv2(Vector2(child.material_override.roughness,child.material_override.metallic));st.set_color(child.material_override.albedo_color.srgb_to_linear());st.set_normal((child.transform.basis.inverse().transposed()*normals[i]).normalized());st.add_vertex(child.transform*vertices[i])
 		parent.remove_child(child);child.free()
 	st.set_material(vertex_material);var node=MeshInstance3D.new();node.name="Geometry";node.mesh=st.commit();parent.add_child(node)
 static func merge_rig(parent:Node3D):

@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.0.1"
+const VERSION = "1.0.2"
 const MAPS = ["TIDAL YARD · 항구", "DRY DOCK · 물류 기지", "FOUNDRY · 주조 공장", "RESEARCH · 연구동", "MESA RELAY · 사막 관측소", "CANAL DISTRICT · 운하 지구", "TRANSIT HALL · 환승 터미널", "COURTYARD · 안뜰", "WORKSHOP · 정비소", "SWITCHBACK · 굽은 골목", "ORCHARD · 과수원", "POWER ROOM · 전력실", "FOUNTAIN · 분수 광장", "CARGO ROW · 적재 구역", "TWIN LAB · 쌍둥이 실험실", "FOUNDRY EAST · 동부 공장", "ROOFTOP · 옥상", "MARKET LOOP · 순환 시장", "QUARRY PASS · 채석 통로"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8]
 static func maps_for_size(count:int) -> Array:
@@ -19,7 +19,7 @@ const CLASSES = ["돌격", "정찰", "중화기", "공병", "통제", "메딕"]
 const MODES = ["팀 데스매치", "개인전", "제한 부활 팀전", "거점 점령", "설치 / 해체"]
 const GADGETS = ["보호판", "표식기", "거치대", "엄폐물", "연막탄", "응급 키트"]
 const SKILLS = ["기동", "감지 파동", "방호", "포탑", "둔화 구역", "상태 정화"]
-const GADGET_HELP = ["보호판: 방어구 +25, 최대 50", "표식기: 조준한 상대를 4초 표시", "거치대: 앉아서 사용, 15초 동안 정지 사격 정확도 증가", "엄폐물: 조준 방향에 설치, 내구도별 선택", "연막탄 / 4 섬광탄: 선택 후 클릭하여 사용", "응급 키트: 가까운 아군 또는 자신을 25 회복"]
+const GADGET_HELP = ["보호판 또는 파편 수류탄 선택 · 수류탄은 G 누르고 준비, 놓아 투척, 3초 지연", "표식기: 조준한 상대를 4초 표시", "거치대: 앉아서 사용, 15초 동안 정지 사격 정확도 증가", "엄폐물: 조준 방향에 설치, 내구도별 선택", "연막탄 / 4 섬광탄: 선택 후 클릭하여 사용", "응급 키트: 가까운 아군 또는 자신을 25 회복"]
 const SKILL_HELP = ["기동: 짧은 고속 이동", "감지 파동: 가까운 상대 3초 표시", "방호: 4초 동안 전방 피해 감소", "포탑: 30초 충전, 조준 후 다시 F로 업그레이드", "둔화 구역: 8초 동안 상대 이동 방해", "상태 정화: 자신 또는 아군의 방해 효과 제거"]
 const SECONDARIES = ["pistol", "heavy_pistol", "auto_pistol", "eng_pistol", "burst_pistol", "med_pistol"]
 static func medic_cap(count:int) -> int:
@@ -33,7 +33,7 @@ static func ammo_pickup(capacity:int) -> int:
 static func rating(p:Dictionary) -> float:
 	return (p.get("kills",0)*100.0 + p.get("assists",0)*50.0 + p.get("objective",0)*35.0 + p.get("healed",0)*0.3 - p.get("deaths",0)*25.0) / maxf(1.0,p.get("played",60.0)/60.0)
 static func default_options() -> Dictionary:
-	return {"room":"Internal N Crush", "mode":0,"map":0,"max_players":32,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":0,"lives":3,"shared_lives":false,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":7}
+	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":0,"lives":3,"shared_lives":false,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":7}
 static func balanced_ids(ps:Dictionary) -> Dictionary:
 	var ids=ps.keys()
 	ids.sort_custom(func(a,b):return rating(ps[a])>rating(ps[b]))
@@ -42,3 +42,8 @@ static func balanced_ids(ps:Dictionary) -> Dictionary:
 		var t=0 if teams[0].size()<teams[1].size() else 1 if teams[1].size()<teams[0].size() else (0 if sums[0]<=sums[1] else 1)
 		teams[t].append(id);sums[t]+=rating(ps[id])
 	return teams
+
+static func sanitize_room(options:Dictionary):
+	options.map=clampi(int(options.get("map",13)),0,MAPS.size()-1)
+	options.max_players=clampi(int(options.get("max_players",8)),2,int(MAP_PLAYERS[options.map]))
+	options.bots=clampi(int(options.get("bots",0)),0,int(options.max_players)-1)

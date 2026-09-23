@@ -6,7 +6,7 @@ static func spread(w:Dictionary,speed:float,ads:bool,crouch:bool,sprint:bool,gro
 	var aiming=clampf(aim_fraction,0.,1.) if aim_fraction>=0 else (1. if ads else 0.)
 	var base=lerpf(float(w.spread),float(w.get("ads_spread",float(w.spread)*.22)),aiming)
 	var penalty=float(w.get("move_spread",1.))*movement
-	if crouch:base*=.68;penalty*=.65
+	if crouch:base*=.85 if int(w.pellets)>1 else .68;penalty*=.65
 	penalty*=lerpf(1.,float(w.get("ads_move_scale",.45)),aiming);bloom*=lerpf(1.,.65,aiming)
 	if not grounded:penalty+=(1.8 if int(w.pellets)==1 else 1.3)+minf(absf(vertical_speed)*.18,1.8)
 	if sprint:penalty+=2.6

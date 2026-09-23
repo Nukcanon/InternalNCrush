@@ -42,7 +42,10 @@ func _gui_input(event):
 static func gadget_model(parent:Node3D,role:int,variant:int):
 	var m=MeshFactory;var dark=Color("304955");var light=Color("c2d4d8");var accent=CharacterVisual.ROLE_ACCENTS[role]
 	match role:
-		0:m.box(parent,Vector3(0,.25,0),Vector3(.43,.55,.09),Color("7294ae"),Vector3.ZERO,.55);m.box(parent,Vector3(0,.26,-.055),Vector3(.27,.35,.025),dark,Vector3.ZERO,.4)
+		0:
+			if variant==1:
+				grenade_model(parent);m.merge_children(parent);return
+			m.box(parent,Vector3(0,.25,0),Vector3(.43,.55,.09),Color("7294ae"),Vector3.ZERO,.55);m.box(parent,Vector3(0,.26,-.055),Vector3(.27,.35,.025),dark,Vector3.ZERO,.4)
 		1:m.cylinder(parent,Vector3(0,.12,0),.18,.2,dark);m.cylinder(parent,Vector3(0,.24,0),.14,.04,accent);m.cylinder(parent,Vector3(.08,.4,0),.016,.36,light)
 		2:
 			for x in [-.22,.22]:m.cylinder(parent,Vector3(x,.16,0),.025,.4,light,Vector3(0,0,sign(x)*-.55))
@@ -56,3 +59,10 @@ static func gadget_model(parent:Node3D,role:int,variant:int):
 		5:
 			m.box(parent,Vector3(0,.22,0),Vector3(.55,.4,.18),light,Vector3.ZERO,.5);m.box(parent,Vector3(0,.22,-.1),Vector3(.07,.25,.025),accent);m.box(parent,Vector3(0,.22,-.101),Vector3(.25,.07,.025),accent)
 	m.merge_children(parent)
+static func grenade_model(parent:Node3D):
+	var m=MeshFactory;var shell=Color("657350");var steel=Color("889895")
+	HumanModel.loft(parent,Vector3(0,.16,0),[Vector4(-.14,.04,.04,0),Vector4(-.10,.09,.09,0),Vector4(.06,.095,.095,0),Vector4(.13,.065,.065,0)],shell,24)
+	for y in [.08,.16,.24]:m.cylinder(parent,Vector3(0,y,0),.098,.015,Color("36473c"),Vector3.ZERO,-1,24)
+	m.cylinder(parent,Vector3(0,.31,0),.042,.055,steel)
+	m.box(parent,Vector3(.071,.20,0),Vector3(.022,.26,.047),steel,Vector3(0,0,.16))
+	var ring=TorusMesh.new();ring.inner_radius=.025;ring.outer_radius=.032;ring.rings=16;ring.ring_segments=6;m.instance(parent,ring,Vector3(-.05,.32,0),steel,Vector3(PI/2,0,0))

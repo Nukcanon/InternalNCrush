@@ -1,0 +1,30 @@
+name: Docker lobby and encrypted gameplay
+on:
+  push:
+    paths: ['services/**', 'games/relaystrike/**', '.github/workflows/matchmaker.yml', '.dockerignore']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: matchmaker-validation
+  cancel-in-progress: true
+jobs:
+  docker-tls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: API authentication, reservations and limits
+        run: |
+          pip install -r services/matchmaker/requirements.txt httpx==0.28.1
+          python -m unittest services.matchmaker.test_service -v
+      - name: Compose Linux build and certificate-verified HTTPS/WSS gameplay
+        run: python services/matchmaker/test_docker.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-tls-validation
+          path: validation/docker-v102/*.log

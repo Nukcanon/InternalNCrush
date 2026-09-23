@@ -25,7 +25,7 @@ func _draw():
 	keycap("Ctrl",Vector2(18,272),66,true)
 	keycap("Space",Vector2(172,272),244,true)
 	callout("Esc","메뉴",Vector2(18,44),true);callout("1","1–4 장비 선택",Vector2(135,73),true);callout("R","R 재장전",Vector2(318,44),true)
-	callout("W","WASD 이동",Vector2(365,330),false);callout("Shift","Shift 달리기",Vector2(18,371),false);callout("Ctrl","Ctrl 앉기",Vector2(18,333),false);callout("Space","Space 점프",Vector2(290,389),false)
+	callout("W","WASD 이동",Vector2(365,330),false);callout("Shift","Shift 달리기 · 두 번 눌러 슬라이딩",Vector2(18,371),false);callout("Ctrl","Ctrl 앉기",Vector2(18,333),false);callout("Space","Space 점프",Vector2(290,389),false)
 	var mouse=Rect2(673,130,129,191);var style=StyleBoxFlat.new();style.bg_color=Color("233a4a");style.border_color=Color("7b96a6");style.set_border_width_all(2);style.set_corner_radius_all(46);draw_style_box(style,mouse)
 	draw_line(Vector2(737,130),Vector2(737,231),color,2);draw_line(Vector2(675,229),Vector2(800,229),color,2)
 	var wheel=StyleBoxFlat.new();wheel.bg_color=color;wheel.set_corner_radius_all(5);draw_style_box(wheel,Rect2(731,164,12,34))

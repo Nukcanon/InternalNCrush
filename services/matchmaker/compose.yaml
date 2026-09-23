@@ -1,0 +1,41 @@
+services:
+  arena:
+    build:
+      context: ../..
+      dockerfile: services/matchmaker/Dockerfile
+    init: true
+    restart: unless-stopped
+    environment:
+      PUBLIC_BASE_URL: https://${DOMAIN:?Set DOMAIN in .env}
+      MAX_ROOMS: ${MAX_ROOMS:-4}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 4g
+    cpus: 4
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [private]
+  gateway:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      arena:
+        condition: service_healthy
+    networks: [private]
+networks:
+  private:
+volumes:
+  caddy_data:
+  caddy_config:

@@ -118,8 +118,8 @@ func build(which:int):
 	if vertical_map:VerticalLayout.build(self,which)
 	elif which<2:
 		# Broad navigation lanes, traversable warehouse passages, and readable cover heights.
-		for x in [-44,0,44]:detail(Vector3(x,.009,0),Vector3(22,.015,172),Color("a2acaa"))
-		for z in [-75,0,75]:detail(Vector3(0,.012,z),Vector3(190,.012,12),Color("a2acaa"))
+		for x in [-44,0,44]:detail(Vector3(x,.035,0),Vector3(22,.018,172),Color("a2acaa"))
+		for z in [-75,0,75]:detail(Vector3(0,.07,z),Vector3(190,.018,12),Color("a2acaa"))
 		for sx in [-1,1]:
 			for sz in [-1,1]:
 				warehouse(Vector3(sx*43,0,sz*51),which)
@@ -155,8 +155,8 @@ func build(which:int):
 	else:MapLayouts.build_sized(self,which)
 	for i in range(zones.size()):
 		var pos=zones[i]
-		for x in [-6,6]:detail(pos+Vector3(x,.025,0),Vector3(.16,.025,12),Color("e3bf68"))
-		for z in [-6,6]:detail(pos+Vector3(0,.025,z),Vector3(12,.025,.16),Color("e3bf68"))
+		for x in [-6,6]:detail(pos+Vector3(x,.12,0),Vector3(.16,.018,12),Color("e3bf68"))
+		for z in [-6,6]:detail(pos+Vector3(0,.12,z),Vector3(11.7,.018,.16),Color("e3bf68"))
 		text3d(["A","C","B"][i],pos+Vector3(0,3.4,0),Color("f5e0a1"),65)
 		if i!=1:
 			box(pos+Vector3(-5,.45,-5),Vector3(1.2,.9,1.2),Color("486773"));detail(pos+Vector3(-5,.92,-5),Vector3(.9,.035,.8),Color("78b0b2"))
@@ -170,17 +170,14 @@ func build(which:int):
 		M.merge_children(n);var label=text3d("AMMO",Vector3(0,.6,0),Color("e1d6a3"),21,n);label.visibility_range_end=20
 		supplies.append({"pos":pos,"node":n,"ready":0.})
 	if which<6 and not vertical_map:MapLayouts.finish_detail(self,which)
+	CombatLayout.build(self)
 	WorldDressing.build(self)
-	building=false;batch_architecture();apply_surface_detail()
-	var environment=WorldEnvironment.new();var e=Environment.new();e.background_mode=Environment.BG_SKY
-	var sky=Sky.new();var sky_material=ProceduralSkyMaterial.new();sky_material.sky_top_color=Color("76a4c0");sky_material.sky_horizon_color=Color("ced9d6");sky_material.ground_horizon_color=Color("c0c4b6");sky_material.ground_bottom_color=Color("86947f");sky.sky_material=sky_material;e.sky=sky
-	e.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;e.ambient_light_color=Color("c8deec");e.ambient_light_energy=.68 if indoors else .42
-	e.tonemap_mode=Environment.TONE_MAPPER_LINEAR;environment.environment=e;add_child(environment)
-	var sun=DirectionalLight3D.new();sun.name="Sun";sun.rotation_degrees=Vector3(-52,-28,0);sun.light_color=Color("fff0d2");sun.light_energy=.35 if indoors else .9;sun.shadow_enabled=true;sun.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS;sun.directional_shadow_max_distance=75;sun.shadow_bias=.08;add_child(sun)
+	building=false;SurfaceCleanup.clean(architecture);batch_architecture();apply_surface_detail()
+	ArenaLighting.build(self)
 func batch_architecture():
 	var meshes=[];gather_meshes(architecture,meshes);var chunks={}
 	for mesh in meshes:
-		if not mesh.material_override is StandardMaterial3D or mesh.material_override.albedo_color.a<1:continue
+		if not mesh.visible or mesh.mesh.get_surface_count()==0 or not mesh.material_override is StandardMaterial3D or mesh.material_override.albedo_color.a<1:continue
 		var pos=mesh.global_position;var key=Vector2i(int(floor(pos.x/32)),int(floor(pos.z/32)))
 		if not chunks.has(key):var n=Node3D.new();architecture.add_child(n);chunks[key]=n
 		var transform=mesh.global_transform;mesh.get_parent().remove_child(mesh);chunks[key].add_child(mesh);mesh.global_transform=transform
@@ -229,8 +226,7 @@ func bridge(z:float):
 		var node=MeshInstance3D.new();node.mesh=mesh.commit();node.material_override=mat(Color("a1ada6"));body.add_child(node)
 	building=prior
 func apply_surface_detail():
-	var shader=Shader.new();shader.code="shader_type spatial; varying vec3 wp; varying vec3 wn; void vertex(){wp=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;wn=normalize(MODEL_NORMAL_MATRIX*NORMAL);} float noise(vec3 p){return fract(sin(dot(floor(p),vec3(12.989,78.233,37.719)))*43758.5453);} void fragment(){vec3 base=COLOR.rgb; float grain=noise(wp*24.0)*.08+.94; float grid=abs(wn.y)>.65?min(fract(wp.x*.25),fract(wp.z*.25)):fract(wp.y*1.6); float seam=smoothstep(.008,.025,grid); ALBEDO=base*grain*mix(.82,1.0,seam);ROUGHNESS=.78;}"
-	var material=ShaderMaterial.new();material.shader=shader
+	var material=SurfaceFinish.world_material()
 	var list=[];gather_meshes(architecture,list)
 	for mesh in list:
 		if mesh.name=="Geometry":mesh.material_override=material
@@ -264,7 +260,7 @@ func build_perimeter(which:int):
 		# Outside skyline masses break the uniform wall height without blocking lanes.
 		if not indoors:
 			var outward=center.normalized()*5.
-			detail(Vector3(center.x+outward.x,height+2.,center.y+outward.y),Vector3(delta.length()*.55,5.,5.),Color("7b9193"),Vector3(0,yaw,0))
+			detail(Vector3(center.x+outward.x,(height+4.5)*.5,center.y+outward.y),Vector3(delta.length()*.55,height+4.5,5.),Color("7b9193"),Vector3(0,yaw,0))
 func terrace(center:Vector3,size:Vector2,height:float,color:Color):
 	var prior=building;building=false
 	box(center+Vector3.UP*(height*.5),Vector3(size.x,height,size.y),color)

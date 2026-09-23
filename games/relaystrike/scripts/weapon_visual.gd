@@ -146,7 +146,7 @@ func build(w:Dictionary,hands=true):
 	for part in [self,barrel_group,magazine,action_part]:
 		var geo=part.get_node_or_null("Geometry")
 		if geo:
-			var finish=MeshFactory.vertex_material.duplicate();finish.roughness=.48;finish.metallic=.32;geo.material_override=finish
+			var finish=MeshFactory.vertex_material.duplicate();finish.set_shader_parameter("finish_roughness",.48);finish.set_shader_parameter("finish_metallic",.32);geo.material_override=finish
 	if hands:
 		for mesh in find_children("*","MeshInstance3D",true,false):mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	flash=Node3D.new();flash.name="MuzzleFlash";muzzle.add_child(flash)

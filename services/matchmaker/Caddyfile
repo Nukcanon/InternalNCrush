@@ -1,0 +1,30 @@
+{
+	email {$ACME_EMAIL}
+}
+{$DOMAIN} {
+	request_body {
+		max_size 4KB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+	@internal path /internal/*
+	respond @internal 404
+	handle_path /game/0* {
+		reverse_proxy arena:27900
+	}
+	handle_path /game/1* {
+		reverse_proxy arena:27901
+	}
+	handle_path /game/2* {
+		reverse_proxy arena:27902
+	}
+	handle_path /game/3* {
+		reverse_proxy arena:27903
+	}
+	handle {
+		reverse_proxy arena:8080
+	}
+}

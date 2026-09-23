@@ -128,8 +128,9 @@ static func finish_detail(a:Node,which:int):
 			for x in [-78,78]:a.detail(Vector3(x,.024,z),Vector3(.14,.02,3),Color("e1d7ab"))
 
 static func extent(which:int) -> Vector2:
+	if which in [2,3]:return Vector2(58,54)
 	if which<6:return Vector2(100,90)
-	if which==6:return Vector2(72,64)
+	if which==6:return Vector2(52,50)
 	return Vector2(26,30) if which<13 else Vector2(36,42)
 
 # Each row is a distinct layout: normalized x/z center and width/depth.

@@ -67,7 +67,7 @@ func _ready():
 	shape=CollisionShape3D.new();var cap=CapsuleShape3D.new();cap.radius=.34;cap.height=1.8;shape.shape=cap;shape.position.y=.9;add_child(shape)
 	render_root=Node3D.new();add_child(render_root)
 	tag=Label3D.new();tag.font=game.ui.theme.default_font;tag.position.y=2.;tag.font_size=32;tag.outline_size=8;tag.outline_modulate=Color("101f2d");tag.pixel_size=.004;tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;add_child(tag)
-	camera=Camera3D.new();camera.position.y=1.62;camera.fov=82;camera.far=350;camera.near=.025;add_child(camera)
+	camera=Camera3D.new();camera.position.y=1.62;camera.fov=82;camera.far=300;camera.near=.08;add_child(camera)
 	gun=Node3D.new();camera.add_child(gun)
 	item_model=Node3D.new();gun.add_child(item_model)
 	protected_visual=MeshInstance3D.new();var shield=CapsuleMesh.new();shield.radius=.54;shield.height=2.05;protected_visual.mesh=shield;protected_visual.position.y=1.;render_root.add_child(protected_visual)
@@ -109,31 +109,39 @@ func eye_height(crouched:bool) -> float:return (1.30 if crouched else 1.62)*body
 func head_threshold() -> float:return (1.14 if input_state.crouch else 1.46)*body_height/1.8
 func eye() -> Vector3:return global_position+Vector3.UP*eye_height(bool(input_state.crouch))
 func direction() -> Vector3:return Basis(Vector3.UP,aim_yaw)*Basis(Vector3.RIGHT,aim_pitch)*Vector3.FORWARD
+func desired_muzzle() -> Vector3:return eye()+Basis(Vector3.UP,aim_yaw)*Vector3(.2*handedness,-.23,0)+direction()*.55
 func muzzle_world() -> Vector3:
-	var desired=eye()+Basis(Vector3.UP,aim_yaw)*Vector3(.2*handedness,-.23,0)+direction()*.55
+	var desired=desired_muzzle()
 	var hit=game.ray(eye(),desired,[get_rid()],1|4|8)
 	return hit.position+hit.normal*.03 if not hit.is_empty() else desired
 func visual_muzzle() -> Vector3:
-	return view_weapon.muzzle.global_position if is_instance_valid(view_weapon) and view_weapon.visible else muzzle_world()
+	if local and is_instance_valid(view_weapon) and view_weapon.visible:return view_weapon.muzzle.global_position
+	if not local and is_instance_valid(world_weapon) and world_weapon.visible:return world_weapon.muzzle.global_position
+	return muzzle_world()
 func react_hit(push:Vector3):
 	hit_recoil=1.;hit_side=clampf(global_basis.x.dot(push),-1,1)
 	if is_instance_valid(character):character.react(hit_side)
 func simulate(dt:float,now:float,can_move:bool):
 	aim_yaw=float(input_state.yaw);aim_pitch=clampf(float(input_state.pitch),-1.45,1.45);rotation.y=aim_yaw
-	var crouch=bool(input_state.crouch)
+	var sliding=game.players.get(pid,{}).get("slide_until",0)>now
+	var crouch=bool(input_state.crouch) or sliding
 	if not crouch and shape.shape.height<body_height-.01:
 		var q=PhysicsRayQueryParameters3D.create(global_position+Vector3.UP,global_position+Vector3.UP*(body_height+.05),1|4|8);q.exclude=[get_rid()]
 		crouch=not get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 	input_state.crouch=crouch
 	shape.shape.height=(1.45/1.8*body_height) if crouch else body_height;shape.position.y=shape.shape.height*.5
 
-	var sprint=bool(input_state.sprint) and not crouch and not input_state.ads and not input_state.fire
+	var cooking=game.players.get(pid,{}).get("cooking",0)>0
+	var sprint=not cooking and bool(input_state.sprint) and not crouch and not input_state.ads and not input_state.fire
 	if last_sprint and not sprint:sprint_release=now+.5
 	last_sprint=sprint
 	var speed=11.2 if sprint else 3.1 if crouch else 4.4 if input_state.ads else 7.4
 	if game.arena and game.arena.wading(global_position):speed*=.72
 	if game.players.has(pid):
 		var p=game.players[pid]
+		var weapon=game.current_weapon(p)
+		if input_state.ads and p.slot<2:speed=float(weapon.get("ads_speed",4.4))
+		elif p.slot<2:speed*=float(weapon.get("move_speed_scale",1.))
 		if p.get("slow",0)>now:speed*=.6
 		if p.get("shield",0)>now:speed*=.6
 		if p.get("dash",0)>now:speed*=2
@@ -141,7 +149,10 @@ func simulate(dt:float,now:float,can_move:bool):
 	var wish=Vector3(float(input_state.x),0,float(input_state.z)).limit_length(1)
 	wish=Basis(Vector3.UP,aim_yaw)*wish
 	var target_velocity=wish*speed if can_move else Vector3.ZERO
-	var acceleration=48. if wish.length_squared()>.01 else 64.
+	if sliding and can_move:
+		var p=game.players[pid];var age=now-float(p.slide_started);target_velocity=p.slide_direction*maxf(4.,11.5-age*9.)
+		if not is_on_floor():p.slide_until=now
+	var acceleration=90. if sliding else 48. if wish.length_squared()>.01 else 64.
 	if not is_on_floor():acceleration=16.
 	var planar=Vector2(velocity.x,velocity.z).move_toward(Vector2(target_velocity.x,target_velocity.z),acceleration*dt)
 	velocity.x=planar.x;velocity.z=planar.y
@@ -163,6 +174,7 @@ func update_spread(dt:float,now:float):
 	var p=game.players[pid];var w=game.current_weapon(p)
 	aim_progress=move_toward(aim_progress,1. if input_state.ads and p.slot<2 and p.reload<=now else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001))
 	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),p.get("mounted",0)>now,velocity.y,aim_progress)
+	if p.get("slide_until",0)>now:target+=2.3
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 5.5)))
 func headless_pose(p:Dictionary):
 	# Keep gameplay transforms and class dimensions, without solving 32 rigs every tick.
@@ -175,7 +187,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
 	protected_visual.visible=p.alive and float(p.get("protect",0))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
-	if p.slot>=2:
+	if p.slot>=2 or p.get("cooking",0)>0:
 		var signature=str([p.role,p.gadget,p.slot])
 		if signature!=item_signature:
 			item_signature=signature
@@ -197,8 +209,10 @@ func visual(dt:float,p:Dictionary,now:float):
 	bob=phase*TAU
 	var yaw_delta=wrapf(aim_yaw-previous_yaw,-PI,PI);previous_yaw=aim_yaw;turn_sway=lerpf(turn_sway,clampf(yaw_delta/maxf(dt,.001),-4,4),1.-exp(-dt*10))
 	character.update_pose(dt,moving_velocity,sprint,bool(input_state.crouch),grounded,aim_pitch,progress,recoil,phase,turn_sway)
+	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/.72,0.,1.))
+	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	if is_instance_valid(world_weapon):
-		world_weapon.visible=p.slot<2;world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.visible=p.slot<2 and p.get("cooking",0)==0;world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if not local:
 		if not game.server:global_position=global_position.lerp(target_pos,minf(1,dt*14));rotation.y=lerp_angle(rotation.y,aim_yaw,minf(1,dt*15))
@@ -225,18 +239,21 @@ func visual(dt:float,p:Dictionary,now:float):
 	if sprint:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
 	if reloading:
 		base+=Vector3(.035,.015,.085)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
+	if p.get("cooking",0)>0:base+=Vector3(-.08,.07,.05);rotation_target+=Vector3(.25,.15,-.22)
+	if float(p.get("throw_until",-100.))>now:base.z-=sin((.45-float(p.throw_until)+now)/.45*PI)*.32
 	var swap=clampf((float(p.get("switch_until",0))-now)/.32,0,1);base.y-=swap*.32;rotation_target.z-=swap*.3
 	base.x-=turn_sway*.004*(1.-ads_blend*.85)
 	base.z+=recoil*(.105 if w.slot==1 else .155)*lerpf(1.,.38,ads_blend);base.y+=recoil*.025*(1.-ads_blend);base.y-=land_kick*.6
 	base.x*=handedness;rotation_target.y*=handedness;rotation_target.z*=handedness
 	gun.position=gun.position.lerp(base,1.-exp(-dt*20));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22))
-	view_weapon.visible=p.slot<2 and not scoped;item_model.visible=p.slot>=2;view_weapon.animate_reload(progress,recoil,age)
+	var cooking=p.get("cooking",0)>0
+	view_weapon.visible=p.slot<2 and not scoped and not cooking;item_model.visible=p.slot>=2 or cooking;view_weapon.animate_reload(progress,recoil,age)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 12.)))
 
 func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false
-	seen_shot=at;shot_serial+=1;recoil=minf(1.45,recoil*.35+1.)
+	seen_shot=at;shot_serial+=1;recoil=minf(1.8,recoil*.35+float(game.current_weapon(game.players[pid]).get("recoil_kick",1.)))
 	if local and is_instance_valid(view_weapon) and is_instance_valid(game.combat_fx) and game.players.has(pid) and game.players[pid].slot<2:
 		var source=gun.to_global(Vector3(.09,.01,-.16))
 		game.combat_fx.eject_case(source,camera.global_basis.x,camera.global_basis.y,global_position.y,shot_serial+pid)

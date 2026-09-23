@@ -72,6 +72,6 @@ func run():
 	expect(actor.aim_progress>0 and actor.aim_progress<1.,"ADS accuracy transitions over the weapon-specific aiming time")
 	g.ui.gear();g.ui.preview_kind=1;g.ui.refresh_gear_detail();g.ui.refresh_gear_cards()
 	expect(g.ui.role_cards.get_child_count()==6 and g.ui.gear_cards.get_child_count()>=3,"equipment selector exposes operator and weapon picture cards")
-	expect("안정성" in g.ui.gear_detail.text and "휴대성" in g.ui.gear_detail.text and not g.ui.gear_primary.get_parent().visible,"weapon stats appear alongside visual selection")
+	expect(g.ui.stat_graph.visible and g.ui.stat_graph.rows.any(func(row):return row[0]=="안정성") and g.ui.stat_graph.rows.any(func(row):return row[0]=="휴대성") and not g.ui.gear_primary.get_parent().visible,"weapon stats appear alongside visual selection")
 	g.leave_game();g.free();await process_frame
 	print("V101_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

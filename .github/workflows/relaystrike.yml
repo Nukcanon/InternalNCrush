@@ -37,30 +37,18 @@ jobs:
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: python3 games/relaystrike/tests/run_network_capacity.py
-      - name: Rules, gameplay and network lifecycle
+      - name: Functional regressions and network security
+        env:
+          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
+        run: python3 games/relaystrike/tests/run_functional.py
+      - name: Independent network clients, lifecycle and movable props
+        env:
+          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: |
           set -euo pipefail
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_rules.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_regressions.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_ai_aim.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_bots.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v04.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v05.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_kill_feed.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v06.gd
-          GODOT=/tmp/godot/Godot_v4.4.1-stable_linux.x86_64 python3 games/relaystrike/tests/run_network_probe.py
-          GODOT=/tmp/godot/Godot_v4.4.1-stable_linux.x86_64 python3 games/relaystrike/tests/run_network_lifecycle.py
-      - name: New display, motion, replay and traversal checks
-        run: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v07.gd
-      - name: Human stature, dressing and authoritative physics props
-        run: |
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v1.gd
-          GODOT=/tmp/godot/Godot_v4.4.1-stable_linux.x86_64 python3 games/relaystrike/tests/run_network_props.py
-      - name: Weapon handling, display choices and layered map traversal
-        run: |
-          set -euo pipefail
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v101.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_vertical_traversal.gd
+          python3 games/relaystrike/tests/run_network_probe.py
+          python3 games/relaystrike/tests/run_network_lifecycle.py
+          python3 games/relaystrike/tests/run_network_props.py
       - name: Late-start lifecycle regression
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
@@ -77,9 +65,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view internal-n-crush-v1.0.1 >/dev/null 2>&1 || gh release create internal-n-crush-v1.0.1 --target "$GITHUB_SHA" --title "Internal N Crush 1.0.1" --notes-file games/relaystrike/docs/RELEASE_NOTES.md --latest
-          gh release upload internal-n-crush-v1.0.1 out/InternalNCrush_Windows_v1.0.1.zip out/SHA256SUMS.txt --clobber
+          gh release view internal-n-crush-v1.0.2 >/dev/null 2>&1 || gh release create internal-n-crush-v1.0.2 --target "$GITHUB_SHA" --title "Internal N Crush 1.0.2" --notes-file games/relaystrike/docs/RELEASE_NOTES.md --latest
+          gh release upload internal-n-crush-v1.0.2 out/InternalNCrush_Windows_v1.0.2.zip out/SHA256SUMS.txt --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.0.1.zip
+          path: out/InternalNCrush_Windows_v1.0.2.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: functional-validation
+          path: validation/functional-v102/*.log

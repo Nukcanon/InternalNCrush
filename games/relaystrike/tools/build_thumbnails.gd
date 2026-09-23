@@ -8,7 +8,7 @@ func run():
 	for id in Catalog.weapons:jobs.append([id,1,0,id,0])
 	for role in range(6):
 		jobs.append(["role"+str(role),0,role,Catalog.first(role),0])
-		for variant in range(3 if role==3 else 2 if role==4 else 1):jobs.append(["gadget"+str(role)+"_"+str(variant),2,role,Catalog.first(role),variant])
+		for variant in range(3 if role==3 else 2 if role in [0,4] else 1):jobs.append(["gadget"+str(role)+"_"+str(variant),2,role,Catalog.first(role),variant])
 		jobs.append(["skill"+str(role),4,role,Catalog.first(role),0])
 	for variant in range(3):jobs.append(["armor"+str(variant),3,0,"a1",variant])
 	for job in jobs:
