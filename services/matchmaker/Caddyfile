@@ -10,8 +10,9 @@
 		X-Content-Type-Options nosniff
 		-Server
 	}
-	@internal path /internal/*
-	respond @internal 404
+	handle /internal/* {
+		respond 404
+	}
 	handle_path /game/0* {
 		reverse_proxy arena:27900
 	}

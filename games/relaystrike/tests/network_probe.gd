@@ -42,7 +42,7 @@ func drive():
 		ticks+=1
 		a.input_state.yaw=.5;a.input_state.pitch=0.;a.input_state.fire=true;a.input_state.trigger_seq=1;a.input_state.x=.3
 		if ticks%2==0:g.send_input.rpc_id(1,a.input_state)
-		if p.primary=="e1" and p.mag.e1<6:
+		if p.primary=="e1" and p.mag.e1<int(Catalog.get_weapon("e1").mag):
 			var offset=a.camera.global_position-a.eye()
 			var horizontal=Vector2(offset.x,offset.z).length()
 			# Landing compression intentionally offsets the camera vertically by up to 5.5 cm.
