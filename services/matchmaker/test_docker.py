@@ -42,6 +42,9 @@ try:
     compose("up", "-d", "--build", "--wait", "--wait-timeout", "180")
     compose("exec", "-T", "gateway", "caddy", "validate", "--config", "/etc/caddy/Caddyfile")
     compose("cp", "gateway:/data/caddy/pki/authorities/local/root.crt", str(OUT / "root.crt"))
+    # Caddy stores certificates with owner-only mode; this public CA must be readable
+    # by UID 10001 in isolated client containers. No private key is copied or exposed.
+    (OUT / "root.crt").chmod(0o644)
     (OUT / "override.cfg").write_text('[network]\ntls/certificate_bundle_override="/tmp/test-ca.crt"\n')
     context = ssl.create_default_context(cafile=str(OUT / "root.crt"))
     for _ in range(30):
