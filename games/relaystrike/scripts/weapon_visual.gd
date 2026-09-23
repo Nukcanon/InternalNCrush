@@ -1,0 +1,219 @@
+extends Node3D
+class_name WeaponVisual
+const M=preload("res://scripts/mesh_factory.gd")
+var magazine:Node3D
+var action_part:Node3D
+var left_hand:Node3D
+var right_hand:Node3D
+var barrel_group:Node3D
+var muzzle:Marker3D
+var flash:Node3D
+var spec={}
+var mag_origin=Vector3.ZERO
+var action_origin=Vector3.ZERO
+var hand_origin=Vector3.ZERO
+var length=.7
+var reload_style="rifle"
+var metal=Color("202b33")
+var edge=Color("586773")
+var light=Color("9baeb6")
+var accent=Color("62bcb3")
+func block(parent:Node,pos:Vector3,size:Vector3,color:Color,tilt=0.) -> MeshInstance3D:return M.box(parent,pos,size,color,Vector3(tilt,0,0),.3)
+func tube(parent:Node,pos:Vector3,radius:float,depth:float,color:Color) -> MeshInstance3D:return M.cylinder(parent,pos,radius,depth,color,Vector3(PI/2,0,0))
+func piece(name:String,pos=Vector3.ZERO) -> Node3D:
+	var n=Node3D.new();n.name=name;n.position=pos;add_child(n);return n
+func rail(z:float,count:int):
+	block(self,Vector3(0,.072,z),Vector3(.065,.025,count*.03),metal)
+	for i in range(count):block(self,Vector3(0,.087,z+(i-count*.5)*.029),Vector3(.078,.012,.015),edge)
+func stock(style:String):
+	if style=="wire":
+		for x in [-.035,.035]:block(self,Vector3(x,-.005,.078),Vector3(.014,.025,.2),light)
+		block(self,Vector3(0,-.03,.172),Vector3(.085,.14,.03),metal)
+	elif style=="solid":
+		block(self,Vector3(0,-.038,.082),Vector3(.085,.125,.22),edge,-.12)
+		block(self,Vector3(0,-.048,.182),Vector3(.095,.17,.032),metal)
+	elif style=="wood":
+		block(self,Vector3(0,-.045,.065),Vector3(.083,.12,.23),Color("94714e"),-.2)
+		block(self,Vector3(0,-.068,.18),Vector3(.09,.15,.036),metal)
+	else:
+		block(self,Vector3(0,.003,.07),Vector3(.046,.045,.2),metal)
+		block(self,Vector3(0,-.038,.14),Vector3(.085,.12,.095),edge,-.14)
+func sight(scoped:bool,compact=false):
+	if scoped:
+		block(self,Vector3(0,.095,-.19),Vector3(.032,.075,.19),metal)
+		tube(self,Vector3(0,.143,-.22),.04 if compact else .049,.19 if compact else .31,edge)
+		for z in [-.115,-.29]:tube(self,Vector3(0,.143,z),.055,.025,metal)
+		tube(self,Vector3(0,.143,-.383 if not compact else -.327),.045,.012,Color("438a9c"))
+		M.cylinder(self,Vector3(0,.197,-.21),.024,.034,metal)
+	else:
+		for x in [-.027,.027]:block(self,Vector3(x,.085,-.09),Vector3(.01,.035,.034),light)
+		block(self,Vector3(0,.076,-length*.82),Vector3(.009,.027,.024),accent)
+func magazine_shape(style:String):
+	match style:
+		"drum":
+			tube(magazine,Vector3(0,-.04,0),.105,.095,metal);tube(magazine,Vector3(0,-.04,-.054),.074,.016,edge)
+		"box":
+			block(magazine,Vector3(0,-.06,0),Vector3(.18,.17,.145),Color("64745e"))
+			block(magazine,Vector3(0,-.062,-.078),Vector3(.14,.085,.012),Color("8e9a79"))
+		"curve":
+			block(magazine,Vector3(0,-.045,0),Vector3(.054,.1,.093),edge,-.13)
+			block(magazine,Vector3(0,-.127,.02),Vector3(.056,.09,.091),edge,-.35)
+			block(magazine,Vector3(0,-.172,.039),Vector3(.065,.025,.1),metal,-.35)
+		"pistol":block(magazine,Vector3(0,-.045,0),Vector3(.06,.078,.077),edge,-.14)
+		"tube":tube(magazine,Vector3(0,0,-.1),.025,.3,edge)
+		_:
+			block(magazine,Vector3(0,-.062,0),Vector3(.055,.175,.085),edge,-.09)
+			for y in [-.02,-.06,-.1]:block(magazine,Vector3(.029,y,-.003),Vector3(.006,.006,.069),metal)
+			block(magazine,Vector3(0,-.15,.012),Vector3(.067,.023,.094),metal)
+func build(w:Dictionary,hands=true):
+	spec=w;name=w.name
+	var idx=int(w.model_index);var role=int(w.role);var pistol=int(w.slot)==1 and w.kind=="gun"
+	accent=[Color("72b7a9"),Color("b0c195"),Color("d6b66b"),Color("dc9c59"),Color("969bca"),Color("69c6ac")][role]
+	reload_style=str(w.reload_style)
+	barrel_group=piece("Barrel");magazine=piece("Magazine",Vector3(0,-.09,-.18));action_part=piece("Action",Vector3(0,.027,-.17))
+	var model=w.name
+	if pistol:
+		length=.3 if model!="CHIME" else .4
+		block(self,Vector3(0,-.022,-.10),Vector3(.078,.085,.25),metal)
+		block(action_part,Vector3(0,.024,.026),Vector3(.081,.074,length*.8),edge)
+		block(self,Vector3(0,-.13,.025),Vector3(.073,.18,.088),metal,-.19)
+		block(self,Vector3(0,-.1,-.064),Vector3(.084,.018,.082),light)
+		tube(barrel_group,Vector3(0,.022,-length*.7),.021,.14,metal)
+		magazine.position=Vector3(0,-.19,.046);magazine_shape("pistol")
+		if model=="CHIME":
+			tube(self,Vector3(0,-.013,-.073),.064,.105,Color("84918e"))
+			block(self,Vector3(0,.069,-.19),Vector3(.082,.034,.28),edge)
+		elif model=="SPARK":block(self,Vector3(0,-.012,-.17),Vector3(.11,.115,.16),edge);length=.32
+		elif model=="RIVET":tube(self,Vector3(0,.021,-.32),.045,.1,edge)
+		elif model=="TRIO":block(self,Vector3(0,.079,-.12),Vector3(.064,.028,.11),accent)
+		elif model=="FEATHER":metal=Color("7b9994");block(self,Vector3(0,.048,-.1),Vector3(.083,.04,.22),metal)
+		sight(false)
+	elif w.kind in ["heal","repair"]:
+		length=.43 if w.kind=="heal" else .29
+		block(self,Vector3(0,0,-.12),Vector3(.15,.17,.34),Color("d1dad2"))
+		block(self,Vector3(0,-.13,.005),Vector3(.08,.17,.11),metal,-.12)
+		for x in [-.086,.086]:tube(self,Vector3(x,.006,-.15),.056,.23,accent)
+		block(self,Vector3(0,.096,-.15),Vector3(.085,.025,.14),Color("223a44"));block(self,Vector3(0,.111,-.15),Vector3(.062,.006,.09),accent)
+		if w.kind=="heal":
+			for x in [-.054,.054]:tube(barrel_group,Vector3(x,.025,-.365),.025,.11,light)
+			M.box(self,Vector3(.157,.02,-.12),Vector3(.008,.10,.028),Color.WHITE);M.box(self,Vector3(.158,.02,-.12),Vector3(.008,.028,.10),Color.WHITE)
+		else:
+			for x in [-.06,.06]:block(barrel_group,Vector3(x,0,-.32),Vector3(.025,.04,.16),light)
+			magazine.position=Vector3(0,-.13,-.15);block(magazine,Vector3.ZERO,Vector3(.12,.095,.18),accent)
+	else:
+		length={"VECTOR-24":.66,"RAPID-9":.59,"ATLAS":.76,"TRIAD":.68,"SCOUT":.88,"MONOLITH":1.06,"ECHO":.79,"LARK":.7,"KESTREL":.84,"ANCHOR":.78,"BASTION":.9,"PULSE":.83,"TIDAL":.68,"FOLD":.44,"SWIFT":.43,"FLUX":.42,"LINE":.53,"HIVE":.55,"PIPER":.59}.get(model,.65)
+		var bullpup=model in ["RAPID-9","KESTREL","FLUX"]
+		var receiver_width=.14 if role==2 else .115 if model in ["TIDAL","HIVE"] else .095
+		block(self,Vector3(0,0,-.20),Vector3(receiver_width,.14,.39),metal)
+		block(self,Vector3(0,-.037,-.33),Vector3(receiver_width*.83,.1,.21),edge)
+		block(self,Vector3(0,-.14,.014 if not bullpup else -.16),Vector3(.064,.17,.09),metal,-.2)
+		block(self,Vector3(0,-.104,-.065 if not bullpup else -.24),Vector3(.075,.018,.085),edge)
+		stock("wood" if model in ["ATLAS","PULSE"] else "wire" if model in ["SWIFT","LINE","SCOUT"] else "solid" if bullpup or role==2 else "adjustable")
+		var handguard=Vector3(receiver_width*.9,.11,length*.3)
+		block(barrel_group,Vector3(0,.006,-length*.60),handguard,Color("ab855d") if model=="PULSE" else edge)
+		tube(barrel_group,Vector3(0,.025,-length*.78),.025 if role!=3 else .033,length*.34,metal)
+		tube(barrel_group,Vector3(0,.025,-length*.955),.035 if role!=3 else .041,.06,edge)
+		for i in range(4):
+			block(barrel_group,Vector3(handguard.x*.52,.018,-length*(.50+i*.045)),Vector3(.005,.027,.018),metal)
+		magazine.position=Vector3(0,-.087,.05 if bullpup else -.17)
+		magazine_shape("box" if role==2 else "drum" if model in ["HIVE","TIDAL"] else "tube" if model in ["PULSE","FOLD"] else "curve" if model in ["ATLAS","PIPER"] else "straight")
+		rail(-.17,6 if role!=4 else 4);sight(role==1,model in ["LARK","KESTREL"])
+		block(action_part,Vector3(.045,0,0),Vector3(.037,.033,.10),light)
+		if model=="MONOLITH":
+			block(self,Vector3(0,-.045,-.45),Vector3(.13,.075,.47),Color("798b86"))
+			for x in [-.075,.075]:block(self,Vector3(x,-.14,-.62),Vector3(.018,.22,.025),metal,.35)
+		elif model=="SCOUT":tube(self,Vector3(.075,.012,-.08),.022,.095,light)
+		elif model=="TRIAD":block(self,Vector3(.064,.01,-.17),Vector3(.032,.088,.17),accent)
+		elif model=="BASTION":
+			block(self,Vector3(0,.11,-.20),Vector3(.035,.11,.16),metal)
+			for i in range(5):tube(self,Vector3(-.085-i*.014,-.025,-.19),.008,.09,Color("bdac74"))
+		elif model=="FOLD":
+			stock("wood");tube(barrel_group,Vector3(.063,.025,-.31),.033,.26,edge)
+		elif model=="FLUX":block(self,Vector3(0,.105,-.15),Vector3(.038,.035,.3),light)
+		elif model=="HIVE":tube(self,Vector3(0,.105,-.26),.042,.27,accent)
+		elif model=="PIPER":
+			block(self,Vector3(.053,0,-.2),Vector3(.018,.093,.29),Color("c9d8d0"));tube(self,Vector3(-.08,-.03,-.18),.035,.19,accent)
+		block(self,Vector3(receiver_width*.51,.025,-.1),Vector3(.008,.025,.086),accent)
+	muzzle=Marker3D.new();muzzle.name="Muzzle";muzzle.position=Vector3(0,.025,-length);barrel_group.add_child(muzzle)
+	mag_origin=magazine.position;action_origin=action_part.position
+	left_hand=piece("LeftHand",Vector3(-.045,-.074,-.34 if not pistol else -.047));hand_origin=left_hand.position
+	right_hand=piece("RightHand",Vector3(.024,-.155,-.16 if model in ["RAPID-9","KESTREL","FLUX"] else .035))
+	if hands:make_hand(left_hand,true,role);make_hand(right_hand,false,role)
+	add_surface_details(pistol,role)
+	M.merge_rig(self)
+	for part in [self,barrel_group,magazine,action_part]:
+		var geo=part.get_node_or_null("Geometry")
+		if geo:
+			var finish=MeshFactory.vertex_material.duplicate();finish.roughness=.48;finish.metallic=.32;geo.material_override=finish
+	if hands:
+		for mesh in find_children("*","MeshInstance3D",true,false):mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	flash=Node3D.new();flash.name="MuzzleFlash";muzzle.add_child(flash)
+	M.cylinder(flash,Vector3(0,0,-.08),.058,.16,Color("ffeac0"),Vector3(PI/2,0,0),.012,5)
+	flash.visible=false
+func add_surface_details(pistol:bool,role:int):
+	var side=.046 if pistol else .073 if role==2 else .054
+	for sign_x in [-1,1]:
+		for z in [-.065,-.235]:
+			M.cylinder(self,Vector3(side*sign_x,.004,z),.009,.008,light,Vector3(0,0,PI/2),-1.,8)
+		# Dark inset, machined slide serrations and receiver panel seams.
+		block(self,Vector3(side*sign_x,.033,-.18),Vector3(.008,.029,.075),metal.darkened(.35))
+		for i in range(5):block(self,Vector3(side*sign_x,.025,-.04-i*.017),Vector3(.005,.045,.006),light.darkened(.1),.15)
+	if not pistol:
+		for i in range(5):tube(barrel_group,Vector3(0,.025,-length*.84-i*.015),.028,.005,light.darkened(.2))
+		block(self,Vector3(.016,-.1,-.078),Vector3(.012,.052,.021),light,.2)
+		block(self,Vector3(0,-.129,-.068),Vector3(.055,.012,.09),metal)
+		for i in range(4):block(self,Vector3(0,-.13+i*.022,.063),Vector3(.066,.009,.008),edge)
+	# Receiver controls, trigger guard, inspection markings and machined muzzle.
+	var polymer=Color("344049")
+	for sign_x in [-1,1]:
+		block(self,Vector3(side*sign_x,-.035,-.115),Vector3(.008,.047,.16),polymer)
+		for i in range(3):block(self,Vector3(side*sign_x,-.03,-.07-i*.011),Vector3(.009,.004,.005),light)
+		M.cylinder(self,Vector3(side*sign_x,-.026,-.015),.013,.013,metal,Vector3(0,0,PI/2),-1,12)
+		block(self,Vector3(side*sign_x,-.016,-.028),Vector3(.012,.01,.039),edge,.25)
+	block(self,Vector3(side+.009,.019,-.19),Vector3(.013,.036,.089),Color("111b22"))
+	block(action_part,Vector3(side+.006,0,-.025),Vector3(.012,.023,.051),light)
+	for x in [-.030,.030]:block(self,Vector3(x,-.108,-.068),Vector3(.009,.055,.10),metal,.12)
+	block(self,Vector3(0,-.136,-.055),Vector3(.066,.01,.08),metal)
+	block(self,Vector3(0,-.11,-.06),Vector3(.01,.04,.015),light,-.3)
+	tube(barrel_group,Vector3(0,.025,-length-.002),.026 if pistol else .028,.006,Color("10191e"))
+	if not pistol:
+		var guard_z=-length*.6
+		for x in [-.055,.055]:
+			for i in range(6):block(barrel_group,Vector3(x,-.005,guard_z+.075-i*.025),Vector3(.006,.024,.017),Color("17232b"))
+		for i in range(5):block(self,Vector3(0,-.04+i*.022,.192),Vector3(.081,.009,.016),polymer)
+		M.cylinder(self,Vector3(-.052,-.026,.123),.015,.012,light,Vector3(0,0,PI/2),-1,12)
+		# A raised hand stop makes the front grip read clearly in first person.
+		block(barrel_group,Vector3(0,-.085,guard_z+.02),Vector3(.054,.08,.047),polymer,.12)
+	else:
+		for i in range(6):block(self,Vector3(0,-.085-i*.017,.071),Vector3(.068,.007,.008),edge)
+func make_hand(parent:Node,left:bool,role:int):
+	var side=-1. if left else 1.;var glove=Color("354953");var sleeve=[Color("527b81"),Color("66755c"),Color("637587"),Color("b77b43"),Color("776f88"),Color("c0d4cc")][role]
+	M.box(parent,Vector3.ZERO,Vector3(.082,.082,.11),glove,Vector3(0,0,.1*side),.6)
+	M.box(parent,Vector3(0,.031,.012),Vector3(.076,.025,.077),Color("657880"),Vector3.ZERO,.5)
+	for i in range(4):M.box(parent,Vector3(-side*.035,-.02+i*.015,-.027),Vector3(.038,.012,.05),glove,Vector3(.1,0,.15*side),.6)
+	M.box(parent,Vector3(side*.043,.02,-.031),Vector3(.025,.029,.068),glove,Vector3(-.2,.3*side,0),.55)
+	M.cylinder(parent,Vector3(side*.012,-.023,.092),.043,.12,Color("ba987f"),Vector3(PI/2+.25,.15*side,0),.04,10)
+	M.cylinder(parent,Vector3(side*.075,-.13,.245),.058,.32,sleeve,Vector3(PI/2+.55,.28*side,0),.047,10)
+	M.cylinder(parent,Vector3(side*.02,-.036,.125),.05,.035,glove,Vector3(PI/2+.25,.15*side,0),.05,10)
+func animate_reload(t:float,recoil:float,shot_age=10.):
+	magazine.position=mag_origin;magazine.rotation=Vector3.ZERO;action_part.position=action_origin;action_part.rotation=Vector3.ZERO;left_hand.position=hand_origin;left_hand.rotation=Vector3.ZERO;barrel_group.rotation=Vector3.ZERO
+	flash.visible=shot_age<.045
+	flash.rotation.z=shot_age*100
+	if t<0:
+		action_part.position.z+=recoil*.045
+		if spec.name=="PULSE":
+			var pump=maxf(0,sin(clampf((shot_age-.12)/.45,0,1)*PI))*.075;left_hand.position.z+=pump
+		if spec.name in ["SCOUT","MONOLITH"]:action_part.position.z+=maxf(0,sin(clampf((shot_age-.15)/.55,0,1)*PI))*.08
+		return
+	var u=clampf(t,0,1);var remove=smoothstep(.15,.4,u)*(1.-smoothstep(.52,.76,u));var latch=sin(clampf((u-.78)/.22,0,1)*PI)
+	match reload_style:
+		"shell":
+			var cycle=sin(clampf((u-.13)/.73,0,1)*PI*3);left_hand.position+=Vector3(.04,-.06,.17)*absf(cycle);left_hand.rotation.z=-absf(cycle)*.2
+		"break":
+			barrel_group.rotation.x=sin(u*PI)*-.5;left_hand.position+=Vector3(.05,-.04,.18)*sin(u*PI)
+		"box":
+			action_part.rotation.x=-sin(u*PI)*1.3;magazine.position+=Vector3(-.21,-.11,0)*remove;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.08,0,.03),sin(u*PI));left_hand.position.y+=latch*.12
+		"pistol":
+			magazine.position+=Vector3(0,-.22,.04)*remove;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.045,-.055,.015),sin(u*PI));action_part.position.z+=latch*.065
+		_:
+			magazine.position+=Vector3(-.06,-.25,.06)*remove;magazine.rotation.x=-remove*.18;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.04,-.05,0),sin(u*PI));left_hand.position+=Vector3(-.04,.15,0)*latch;action_part.position.z+=latch*.07

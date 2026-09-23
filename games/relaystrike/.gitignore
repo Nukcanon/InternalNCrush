@@ -1,0 +1,10 @@
+.godot/
+assets/audio/*.wav
+assets/audio/*.import
+assets/Korean.ttf
+assets/Korean.ttf.import
+*.uid
+__pycache__/
+assets/models/*.scn
+assets/models/*.glb
+assets/models/*.import

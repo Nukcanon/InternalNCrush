@@ -1,0 +1,31 @@
+{
+  "version": "0.7.0",
+  "repository": "https://github.com/Nukcanon/InternalNCrush",
+  "source_branch": "main",
+  "source_commit": null,
+  "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v0.7.0",
+  "publication_state": "local_verified_remote_pending",
+  "pages_verified": false,
+  "build_result": "local_windows_pass_remote_pending",
+  "checks": {
+    "functional": "351/351",
+    "native_windows_exe": true,
+    "network_2_process": true,
+    "network_lifecycle_8_delayed": true,
+    "network_capacity_32": true,
+    "physical_monitors": 2,
+    "display_modes_passed": 6
+  },
+  "remaining": [
+    "Actual multi-PC LAN",
+    "Long-duration 32-player combat",
+    "Integrated GPU performance",
+    "Godot 4.4.1 Compatibility texture cleanup warnings on some native/exe shutdowns"
+  ],
+  "previous_release": {
+    "version": "0.6.0",
+    "repository": "Nukcanon/nukcanon",
+    "source_commit": "d7f005208df2abdb7a6f8cf50f928ec21dbce31c"
+  }
+}

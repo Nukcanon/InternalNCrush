@@ -1,0 +1,11 @@
+# Internal N Crush sound credits
+
+Build sources, including `tools/audio_source.zip` (mono 44.1 kHz PCM) and the editing script, are available at https://github.com/Nukcanon/nukcanon/tree/internal-n-crush-v0.6.0/games/relaystrike. Development source files are not bundled with the playable ZIP. `tools/build_audio.py` documents the complete edits: trimming, pitch/resampling, filtering, layering, short early reflections, fades, and gain staging. No audio from Metal Slug, Call of Duty, Counter-Strike, or VALORANT is included.
+
+- **Q009 — Q009's weapon sounds.** https://opengameart.org/content/q009s-weapon-sounds (pack uploaded by Calinou). License: Creative Commons Attribution-ShareAlike 3.0 Unported, https://creativecommons.org/licenses/by-sa/3.0/. Source files prefixed `q_` derive from this pack. All `assets/audio/gun_*.wav` are adaptations of Q009's sounds, mixed and edited for Internal N Crush, and are distributed under **CC BY-SA 3.0**. The original license text is retained in `assets/AUDIO_Q009_LICENSE.txt`. This license applies to those sound assets, independently of the MIT game code.
+- **Kenney — Impact Sounds; Interface Sounds.** https://kenney.nl/assets/impact-sounds and https://kenney.nl/assets/interface-sounds. CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/. Concrete and grass footsteps, mechanical/metal/glass/soft impacts and short interface cues are used and edited. Original notice: `assets/AUDIO_KENNEY_LICENSE.txt`.
+- **rubberduck — 25 CC0 bang / firework SFX.** https://opengameart.org/content/25-cc0-bang-firework-sfx. CC0 1.0. Recorded fireworks/bangs are used as low-frequency layers, explosions and deployment tails. Sources: `cannon_01`, `bang_03`, `shot_01`, `fw_02`.
+
+Non-Q009-derived mixed audio is offered under CC0 1.0. The per-file license is also recorded in `assets/audio_manifest.json`. The authors do not endorse this game. No DRM or additional restrictions are applied to these assets.
+
+0.7.0: `hurt` and `armor_hurt` use deterministic low-mid synthesis plus the credited CC0 impact/cloth sources. `kill_sting` is original deterministic synthesis (CC0-1.0). See tools/build_audio.py for reproducible recipes.
