@@ -3,7 +3,6 @@ var peer:WebSocketMultiplayerPeer
 var elapsed=0.
 func _initialize():call_deferred("run")
 func run():
-	if not OS.get_environment("INC_TEST_CA").is_empty():ProjectSettings.set_setting("network/tls/certificate_bundle_override",OS.get_environment("INC_TEST_CA"))
 	peer=WebSocketMultiplayerPeer.new();peer.handshake_timeout=4.
 	if peer.create_client(OS.get_environment("INC_TEST_URL"))!=OK:print("TLS_REJECT_PASS");quit();return
 func _process(dt):

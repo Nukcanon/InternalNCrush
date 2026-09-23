@@ -239,7 +239,8 @@ func join_game(ip:String):
 	multiplayer.multiplayer_peer=peer;server=false;connection_busy=true;connection_deadline=Time.get_ticks_msec()+15000;ui.notice("서버에 연결 중… 취소하거나 다시 시도할 수 있습니다.")
 func connected():
 	local_id=multiplayer.get_unique_id();peer_opened(1)
-	register.rpc_id(1,profile.nick,profile.token,options.password,R.VERSION,join_ticket);join_ticket=""
+	# Public admission uses its signed identity; do not disclose the persistent LAN token.
+	register.rpc_id(1,profile.nick,"" if not join_ticket.is_empty() else profile.token,"" if not join_ticket.is_empty() else options.password,R.VERSION,join_ticket);join_ticket=""
 func request_leave():
 	if not server and phase!="menu" and multiplayer.multiplayer_peer.get_connection_status()==MultiplayerPeer.CONNECTION_CONNECTED:
 		depart.rpc_id(1);await get_tree().create_timer(.12).timeout

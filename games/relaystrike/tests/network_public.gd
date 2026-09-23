@@ -7,8 +7,6 @@ var done=false
 func _initialize():call_deferred("run")
 func run():
 	var config=JSON.parse_string(OS.get_environment("INC_TEST_JOIN"))
-	# Private test CA only; the shipped client keeps Godot's default trust store.
-	if not OS.get_environment("INC_TEST_CA").is_empty():ProjectSettings.set_setting("network/tls/certificate_bundle_override",OS.get_environment("INC_TEST_CA"))
 	g=load("res://scripts/game.gd").new();g.name="Game";root.add_child(g);g.input_timer=1e6;g.profile.nick="PUBLIC_TEST";g.profile.token="untrusted_local_profile_token"
 	g.join_ticket=config.ticket;g.join_game(config.url);started=Time.get_ticks_msec();physics_frame.connect(drive)
 func drive():

@@ -30,13 +30,19 @@ def api(path, data=None, token="", method=None, context=None):
         return json.load(response)
 
 def client_command(image, name, script, extra):
-    return ["docker", "run", "--rm", "--name", name, "--network", "host", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "-v", f"{OUT / 'root.crt'}:/tmp/test-ca.crt:ro"] + [arg for key, value in extra.items() for arg in ["-e", f"{key}={value}"]] + ["--entrypoint", "godot", image, "--headless", "--path", "/app/games/relaystrike", "--script", "res://tests/" + script + ".gd", "--", "--no-save-profile", "--no-update-check"]
+    mounts = ["-v", f"{OUT / 'root.crt'}:/tmp/test-ca.crt:ro"]
+    if "INC_TEST_CA" in extra:
+        # Godot reads its default CA bundle during engine startup, before SceneTree._initialize.
+        # Mount this only into disposable test clients, never the server image or release.
+        mounts += ["-v", f"{OUT / 'override.cfg'}:/app/games/relaystrike/override.cfg:ro"]
+    return ["docker", "run", "--rm", "--name", name, "--network", "host", "--cap-drop", "ALL", "--security-opt", "no-new-privileges"] + mounts + [arg for key, value in extra.items() for arg in ["-e", f"{key}={value}"]] + ["--entrypoint", "godot", image, "--headless", "--path", "/app/games/relaystrike", "--script", "res://tests/" + script + ".gd", "--", "--no-save-profile", "--no-update-check"]
 
 try:
     compose("config", "--quiet")
     compose("up", "-d", "--build", "--wait", "--wait-timeout", "180")
     compose("exec", "-T", "gateway", "caddy", "validate", "--config", "/etc/caddy/Caddyfile")
     compose("cp", "gateway:/data/caddy/pki/authorities/local/root.crt", str(OUT / "root.crt"))
+    (OUT / "override.cfg").write_text('[network]\ntls/certificate_bundle_override="/tmp/test-ca.crt"\n')
     context = ssl.create_default_context(cafile=str(OUT / "root.crt"))
     for _ in range(30):
         try:

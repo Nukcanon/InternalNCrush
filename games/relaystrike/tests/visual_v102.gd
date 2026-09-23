@@ -3,6 +3,7 @@ var g:Node
 var output="res://../../validation/v102-visual"
 func _initialize():call_deferred("run")
 func capture(label:String):
+	if "--gallery" in OS.get_cmdline_user_args() and is_instance_valid(g.ui.stats):g.ui.stats.hide()
 	for i in range(6):
 		if label=="medic-link":g.combat_fx.healing_link(g,g.actors[-1].visual_muzzle(),g.actors[-2].position+Vector3.UP*1.15,-1,-2)
 		await process_frame
