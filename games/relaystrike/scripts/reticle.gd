@@ -7,7 +7,7 @@ func _draw():
 	if not p.alive or p.flash>game.clock:return
 	var a=game.actors[game.local_id];var center=size*.5
 	var color=Color("d6fff4");var ads=a.input_state.ads and p.slot<2
-	var scoped=ads and float(game.current_weapon(p).zoom)<=38 and p.reload<=game.clock
+	var scoped=ads and float(game.current_weapon(p).zoom)<=38 and p.reload<=game.clock and a.ads_blend>.9
 	if scoped:
 		var radius=minf(size.x,size.y)*.36
 		var reach=maxf(size.x,size.y)*2

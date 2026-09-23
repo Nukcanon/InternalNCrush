@@ -1,12 +1,13 @@
 extends RefCounted
 class_name AimModel
-static func spread(w:Dictionary,speed:float,ads:bool,crouch:bool,sprint:bool,grounded:bool,bloom:float,mounted=false,vertical_speed=0.) -> float:
+static func spread(w:Dictionary,speed:float,ads:bool,crouch:bool,sprint:bool,grounded:bool,bloom:float,mounted=false,vertical_speed=0.,aim_fraction:float=-1.) -> float:
 	if w.kind!="gun":return .1
 	var movement=clampf(speed/7.4,0,1.5)
-	var base=float(w.spread);var penalty=float(w.get("move_spread",1.))*movement
+	var aiming=clampf(aim_fraction,0.,1.) if aim_fraction>=0 else (1. if ads else 0.)
+	var base=lerpf(float(w.spread),float(w.get("ads_spread",float(w.spread)*.22)),aiming)
+	var penalty=float(w.get("move_spread",1.))*movement
 	if crouch:base*=.68;penalty*=.65
-	if ads:
-		base*=.85 if int(w.pellets)>1 else .22;penalty*=.65 if int(w.pellets)>1 else .38;bloom*=.5
+	penalty*=lerpf(1.,float(w.get("ads_move_scale",.45)),aiming);bloom*=lerpf(1.,.65,aiming)
 	if not grounded:penalty+=(1.8 if int(w.pellets)==1 else 1.3)+minf(absf(vertical_speed)*.18,1.8)
 	if sprint:penalty+=2.6
 	if mounted and speed<.3:base*=.35;bloom*=.35
@@ -20,8 +21,8 @@ static func pixel_radius(angle_degrees:float,fov:float,height:float) -> float:re
 
 static func spray_offset(w:Dictionary,index:int) -> Vector2:
 	if w.kind!="gun" or int(w.pellets)>1:return Vector2.ZERO
-	var scale=.7 if int(w.role)==4 else 1.15 if int(w.role)==2 else .9
-	if w.fire_mode=="semi":return Vector2(0,minf(index,4)*.23)
+	var scale=float(w.get("pattern_scale",1.5))
+	if w.fire_mode=="semi":return Vector2(sin(index*.8)*.06,minf(index,8)*.42)*scale
 	# Original game pattern: initial vertical stem, then horizontal branches.
 	if index<8:return Vector2(sin(index*.8)*.055,index*.29)*scale
 	var phase=(index-8)%22;var x=0.
@@ -34,10 +35,13 @@ static func recover(p:Dictionary,w:Dictionary,dt:float,now:float):
 	var age=maxf(0,now-float(p.get("shot_time",-100.)))
 	var phase=float(p.get("spray_phase",p.get("spray_index",0)))
 	var long_burst=phase>6.
-	var delay=.22 if long_burst else .12
+	var delay=float(w.get("recovery_delay",.26))+(.07 if long_burst else 0.)
 	if age>delay:
-		p.bloom=move_toward(float(p.get("bloom",0)),0.,dt*(.9 if long_burst else 1.9))
+		p.bloom=move_toward(float(p.get("bloom",0)),0.,dt*float(w.get("bloom_recovery",3.))*(.7 if long_burst else 1.))
 		phase=move_toward(phase,0.,dt*(18. if long_burst else 25.));p.spray_phase=phase;p.spray_index=int(phase)
-static func current_spray(w:Dictionary,p:Dictionary) -> Vector2:
+static func current_spray(w:Dictionary,p:Dictionary,aim_fraction:float=0.,crouch:bool=false) -> Vector2:
 	var phase=float(p.get("spray_phase",p.get("spray_index",0)))
-	return spray_offset(w,int(floor(phase))).lerp(spray_offset(w,int(floor(phase))+1),fmod(phase,1.))
+	return spray_offset(w,int(floor(phase))).lerp(spray_offset(w,int(floor(phase))+1),fmod(phase,1.))*lerpf(1.,.68,aim_fraction)*(.82 if crouch else 1.)
+static func reticle_angle(w:Dictionary,p:Dictionary,cone:float,aim_fraction:float=0.,crouch:bool=false) -> float:
+	# Envelope around the screen centre includes both random spread and pattern recoil.
+	return cone+current_spray(w,p,aim_fraction,crouch).length()

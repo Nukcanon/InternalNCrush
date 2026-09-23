@@ -53,6 +53,9 @@ var preview_kind=0
 var preview_secondary=false
 var preview_caption:Label
 var role_detail:Label
+var role_cards:HBoxContainer
+var gear_cards:GridContainer
+var gear_category=0
 var team_columns:HBoxContainer
 var team_signature=""
 var scoreboard:MatchScoreboard
@@ -279,21 +282,29 @@ func settings():
 		displays.append("모니터 %d · %d × %d · %.0f Hz"%[i+1,native.x,native.y,DisplayServer.screen_get_refresh_rate(i)])
 	var monitor=option("출력 모니터",displays,int(game.profile.monitor))
 	var mode=option("화면 모드",["창 모드","전체 화면 (테두리 없음)","전체 화면 (독점)"],maxi(0,int(game.profile.display_mode)))
-	var resolutions=[Vector2i(1280,720),Vector2i(1600,900),Vector2i(1920,1080),Vector2i(1920,1200),Vector2i(2560,1080),Vector2i(2560,1440),Vector2i(2560,1600),Vector2i(3440,1440),Vector2i(3840,1600),Vector2i(3840,2160),Vector2i(5120,1440),Vector2i(5120,2880),Vector2i(7680,2160),Vector2i(7680,4320)]
-	for i in range(DisplayServer.get_screen_count()):
-		var native=DisplayServer.screen_get_size(i)
-		if not native in resolutions:resolutions.append(native)
+	var resolutions=[]
 	var current=game.display_window_size()
-	if not current in resolutions:resolutions.append(current)
-	var names=[]
-	for size in resolutions:names.append("%d × %d"%[size.x,size.y])
-	var resolution=option("창 해상도",names,resolutions.find(current))
-	var dimensions=HBoxContainer.new();stack.add_child(dimensions)
+	var resolution=option("창 해상도",[],0);resolution.name="ResolutionChoices"
+	var dimensions=HBoxContainer.new();dimensions.name="CustomResolution";stack.add_child(dimensions)
 	var dimension_label=label("직접 입력",18,dimensions);dimension_label.custom_minimum_size.x=125;dimension_label.autowrap_mode=TextServer.AUTOWRAP_OFF
-	var width=SpinBox.new();width.min_value=640;width.max_value=32768;width.value=current.x;width.custom_minimum_size.x=190;width.size_flags_vertical=Control.SIZE_SHRINK_CENTER;dimensions.add_child(width)
+	var width=SpinBox.new();width.min_value=640;width.max_value=32768;width.value=current.x;width.custom_minimum_size.x=190;dimensions.add_child(width)
 	var times_label=label("×",18,dimensions);times_label.custom_minimum_size.x=25;times_label.autowrap_mode=TextServer.AUTOWRAP_OFF
-	var height=SpinBox.new();height.min_value=360;height.max_value=32768;height.value=current.y;height.custom_minimum_size.x=190;height.size_flags_vertical=Control.SIZE_SHRINK_CENTER;dimensions.add_child(height)
-	resolution.item_selected.connect(func(i):width.value=resolutions[i].x;height.value=resolutions[i].y)
+	var height=SpinBox.new();height.min_value=360;height.max_value=32768;height.value=current.y;height.custom_minimum_size.x=190;dimensions.add_child(height)
+	var update_visibility=func():
+		resolution.disabled=mode.selected!=0;dimensions.visible=mode.selected==0 and resolution.selected==resolutions.size()
+	var update_choices=func():
+		var native=DisplayServer.screen_get_size(monitor.selected)
+		if native.x<640 or native.y<360:native=Vector2i(1280,720)
+		resolutions.assign(DisplayOptions.resolutions_for(native));resolution.clear()
+		width.max_value=native.x;height.max_value=native.y
+		for size in resolutions:resolution.add_item("%d × %d%s"%[size.x,size.y," · 모니터 원본" if size==native else ""])
+		resolution.add_item("직접 입력")
+		var size=Vector2i(int(width.value),int(height.value));var found=resolutions.find(size)
+		resolution.select(found if found>=0 else resolutions.size());update_visibility.call()
+	resolution.item_selected.connect(func(i):
+		if i<resolutions.size():width.value=resolutions[i].x;height.value=resolutions[i].y
+		update_visibility.call())
+	monitor.item_selected.connect(func(_i):update_choices.call());mode.item_selected.connect(func(_i):update_visibility.call());update_choices.call()
 	button("화면 설정 적용",func():
 		var previous=game.profile.duplicate(true)
 		game.profile.monitor=monitor.selected;game.profile.display_mode=mode.selected;game.profile.width=int(width.value);game.profile.height=int(height.value)
@@ -381,25 +392,27 @@ func sensitivity_control(title:String,value:float,low:float,high:float,callback:
 func gear():
 	if not game.players.has(game.local_id):return
 	var p=game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
-	make_panel("장비 선택",1160);screen="gear";preview_kind=0;preview_secondary=false
-	label("크레딧은 구매 시간에 사용 · 전투 중 변경은 다음 라운드 예약" if game.options.mode==4 else "전투 중 선택한 장비는 다음 부활에 적용됩니다.",15)
-	var outer=stack;var split=HBoxContainer.new();split.add_theme_constant_override("separation",26);outer.add_child(split)
-	var form=VBoxContainer.new();form.custom_minimum_size.x=540;form.size_flags_horizontal=Control.SIZE_EXPAND_FILL;form.add_theme_constant_override("separation",10);split.add_child(form);stack=form
-	gear_class=option("병과",["돌격 · 소총","정찰 · 저격 / 지정사수","중화기 · 기관총","공병 · 샷건 / 구조물","통제 · 기관단총","메딕 · 회복 / 지원"],chosen,func(_i):preview_kind=0;refresh_weapons())
+	make_panel("오퍼레이터 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
+	# Hidden selectors preserve one canonical loadout state for networking and menus.
+	gear_class=option("병과",Rules.CLASSES,chosen);gear_class.get_parent().hide()
 	gear_class.disabled=not game.options.classes
-	gear_primary=option("주무기",[],0,func(_i):preview_kind=1;preview_secondary=false;refresh_gear_detail())
-	gear_armor=option("방어구",["없음","경량 +25"+(" · 300" if game.options.mode==4 else ""),"중량 +50"+(" · 600" if game.options.mode==4 else "")],int(queued.get("armor",int(p.armor_max)/25)),func(_i):refresh_gear_detail())
-	gear_gadget=option("가젯 구성",[],0,func(_i):preview_kind=2;refresh_gear_detail())
-	gear_repair=check("권총 대신 FIX 수리 도구",queued.get("repair",p.secondary=="repair"),func(_v):preview_kind=1;preview_secondary=true;refresh_gear_detail())
-	role_detail=label("",15);role_detail.modulate=Color("8fcbed")
-	gear_detail=label("",15);gear_detail.modulate=Color("d2e2ec")
-	gear_price=label("",18)
-	var right=VBoxContainer.new();right.custom_minimum_size.x=445;right.size_flags_horizontal=Control.SIZE_EXPAND_FILL;right.add_theme_constant_override("separation",8);split.add_child(right)
-	var tabs=HBoxContainer.new();right.add_child(tabs)
-	for i in range(4):
-		var choice=i;var tab=button(["캐릭터","주무기","보조","가젯"][i],func():preview_kind=[0,1,1,2][choice];preview_secondary=choice==2;refresh_gear_detail(),tabs);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	preview_widget=EquipmentPreview.new();right.add_child(preview_widget)
-	preview_caption=label("",16,right);label("마우스로 끌어 회전할 수 있습니다.",13,right)
+	gear_primary=option("주무기",[],0);gear_primary.get_parent().hide()
+	gear_armor=option("방어구",["없음","경량 +25","중량 +50"],int(queued.get("armor",int(p.armor_max)/25)));gear_armor.get_parent().hide()
+	gear_gadget=option("가젯",[],0);gear_gadget.get_parent().hide()
+	gear_repair=check("FIX",queued.get("repair",p.secondary=="repair"),func(_v):refresh_gear_detail());gear_repair.hide()
+	role_cards=HBoxContainer.new();role_cards.add_theme_constant_override("separation",8);stack.add_child(role_cards)
+	var outer=stack;var split=HBoxContainer.new();split.add_theme_constant_override("separation",20);outer.add_child(split)
+	var form=VBoxContainer.new();form.custom_minimum_size.x=625;split.add_child(form)
+	var tabs=HBoxContainer.new();form.add_child(tabs)
+	for i in range(5):
+		var category=i;var tab=button(["주무기","보조","가젯","방어구","스킬"][i],func():gear_category=category;preview_secondary=category==1;preview_kind=[1,1,2,3,4][category];refresh_gear_detail();refresh_gear_cards(),tabs);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	var scroll=ScrollContainer.new();scroll.custom_minimum_size=Vector2(625,290);form.add_child(scroll)
+	gear_cards=GridContainer.new();gear_cards.columns=3;gear_cards.add_theme_constant_override("h_separation",8);gear_cards.add_theme_constant_override("v_separation",8);scroll.add_child(gear_cards)
+	role_detail=label("",17,form);role_detail.modulate=Color("8fcbed")
+	var right=VBoxContainer.new();right.custom_minimum_size.x=440;right.size_flags_horizontal=Control.SIZE_EXPAND_FILL;split.add_child(right)
+	preview_widget=EquipmentPreview.new();right.add_child(preview_widget);preview_widget.custom_minimum_size=Vector2(440,145);preview_widget.size_flags_vertical=Control.SIZE_SHRINK_BEGIN
+	preview_caption=label("",21,right)
+	gear_detail=label("",17,right);gear_detail.modulate=Color("d2e2ec")
 	stack=outer
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);outer.add_child(actions);pin_actions(actions)
 	gear_submit=button("선택 적용",func():
@@ -407,14 +420,48 @@ func gear():
 	button("돌아가기",func():
 		if game.phase=="lobby":lobby()
 		else:clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED,actions)
+	gear_price=label("",17,actions);gear_price.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	notice_label=label("",14);notice_label.modulate=Color("80cfef")
 	refresh_weapons()
 	var wanted=queued.get("primary",p.primary)
 	if wanted in weapon_ids:gear_primary.select(weapon_ids.find(wanted))
-	gear_gadget.select(mini(gear_gadget.item_count-1,int(queued.get("gadget",p.gadget))));refresh_gear_detail()
+	gear_gadget.select(mini(gear_gadget.item_count-1,int(queued.get("gadget",p.gadget))));refresh_gear_detail();refresh_gear_cards()
+func image_card(parent:Node,key:String,caption:String,selected:bool,callback:Callable,width=199,height=126) -> Button:
+	var card=Button.new();card.custom_minimum_size=Vector2(width,height);card.toggle_mode=true;card.button_pressed=selected;parent.add_child(card);card.pressed.connect(callback)
+	var content=VBoxContainer.new();content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);content.offset_left=6;content.offset_right=-6;content.offset_top=4;content.offset_bottom=-4;content.mouse_filter=Control.MOUSE_FILTER_IGNORE;card.add_child(content)
+	var picture=TextureRect.new();picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;picture.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;picture.size_flags_vertical=Control.SIZE_EXPAND_FILL;picture.mouse_filter=Control.MOUSE_FILTER_IGNORE;content.add_child(picture)
+	var path="res://assets/thumbnails/"+key+".png"
+	if ResourceLoader.exists(path):picture.texture=load(path)
+	var text=Label.new();text.text=caption;text.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;text.add_theme_font_size_override("font_size",16);text.mouse_filter=Control.MOUSE_FILTER_IGNORE;content.add_child(text)
+	return card
+func refresh_gear_cards():
+	if not is_instance_valid(gear_cards):return
+	for child in role_cards.get_children():role_cards.remove_child(child);child.queue_free()
+	for role in range(6):
+		var selected_role=role
+		var card=image_card(role_cards,"role"+str(role),Rules.CLASSES[role]+" · "+HumanModel.IDENTITIES[role],gear_class.selected==role,func():gear_class.select(selected_role);preview_kind=0;refresh_weapons();refresh_gear_cards(),174,104)
+		card.disabled=not game.options.classes;card.tooltip_text="%d cm · %s"%[roundi(HumanModel.HEIGHTS[role]*100),Rules.GADGET_HELP[role]]
+	for child in gear_cards.get_children():gear_cards.remove_child(child);child.queue_free()
+	var role=gear_class.selected
+	match gear_category:
+		0:
+			for i in range(weapon_ids.size()):
+				var index=i;var w=Catalog.get_weapon(weapon_ids[i])
+				image_card(gear_cards,weapon_ids[i],w.name,gear_primary.selected==i,func():gear_primary.select(index);preview_kind=1;preview_secondary=false;refresh_gear_detail();refresh_gear_cards())
+		1:
+			for id in ([Rules.SECONDARIES[role],"repair"] if role==3 else [Rules.SECONDARIES[role]]):
+				var wid=id;image_card(gear_cards,id,Catalog.get_weapon(id).name,gear_repair.button_pressed if id=="repair" else not gear_repair.button_pressed,func():gear_repair.button_pressed=wid=="repair";preview_kind=1;preview_secondary=true;refresh_gear_detail();refresh_gear_cards())
+		2:
+			for i in range(gear_gadget.item_count):
+				var index=i;image_card(gear_cards,"gadget"+str(role)+"_"+str(i),gear_gadget.get_item_text(i).split(" · ")[0],gear_gadget.selected==i,func():gear_gadget.select(index);preview_kind=2;refresh_gear_detail();refresh_gear_cards())
+		3:
+			for i in range(3):
+				var index=i;image_card(gear_cards,"armor"+str(i),["기본 복장","경량 방어구","중량 방어구"][i],gear_armor.selected==i,func():gear_armor.select(index);preview_kind=3;refresh_gear_detail();refresh_gear_cards())
+		4:image_card(gear_cards,"skill"+str(role),Rules.SKILLS[role],true,func():preview_kind=4;refresh_gear_detail())
 func selected_loadout() -> Dictionary:
 	return {"role":gear_class.selected,"primary":weapon_ids[gear_primary.selected],"armor":gear_armor.selected,"gadget":gear_gadget.selected,"repair":gear_repair.button_pressed}
 func refresh_weapons():
+	if gear_class.selected!=3:gear_repair.button_pressed=false
 	gear_primary.clear();weapon_ids=[]
 	for id in Catalog.list_for(gear_class.selected,game.options.classes):
 		var w=Catalog.get_weapon(id)
@@ -427,28 +474,35 @@ func refresh_weapons():
 		elif gear_class.selected==4:items=["연막 2 + 섬광 1","연막 1 + 섬광 2"]
 		else:items=[Rules.GADGETS[gear_class.selected]]
 		for item in items:gear_gadget.add_item(item)
-		gear_repair.visible=gear_class.selected==3
+		gear_repair.hide()
 	refresh_gear_detail()
 func refresh_gear_detail():
 	if not is_instance_valid(gear_detail) or weapon_ids.is_empty():return
-	var w=Catalog.get_weapon(weapon_ids[gear_primary.selected]);var role=gear_class.selected
+	var role=gear_class.selected;var p=game.players[game.local_id]
+	var preview_id=("repair" if role==3 and gear_repair.button_pressed else Rules.SECONDARIES[role]) if preview_kind==1 and preview_secondary else weapon_ids[gear_primary.selected]
+	var w=Catalog.get_weapon(preview_id)
 	var mode={"auto":"연발","semi":"단발","burst":"3점사"}.get(w.get("fire_mode","auto"),"")
-	var secondary="FIX" if role==3 and gear_repair.button_pressed else Catalog.get_weapon(Rules.SECONDARIES[role]).name
-	gear_detail.text="%s  ·  피해 %d%s  ·  탄창 %d  ·  재장전 %.1f초\n2 보조무기: %s\n3 가젯: %s\nF 스킬: %s"%[mode,w.damage," × "+str(int(w.pellets)) if w.pellets>1 else "",w.mag,w.reload,secondary,Rules.GADGET_HELP[role],Rules.SKILL_HELP[role]]
-	gear_detail.text+="\n예비탄 %d  ·  분당 %d발  ·  피해 감소 시작 %.0fm"%[w.reserve,60./maxf(.01,float(w.interval)),w.reach]
-	role_detail.text="체력 100  ·  기본 방어구 0  ·  걷기 %.1f / 달리기 %.1fm/s\n%s"%[6.66 if int(w.role)==2 else 7.4,10.08 if int(w.role)==2 else 11.2,["소총으로 전선을 유지하고 보호판과 기동 사용","저격총·지정사수소총으로 원거리 지원 및 표식","기관총·거치대 사용. 무거운 주무기는 이동 10% 감소","샷건·엄폐물·포탑. 수리 도구는 권총을 대신함","기관단총과 연막·섬광으로 이동 경로 통제","LINK 지속 회복 / PIPER 전투 회복탄 2초 간격"][role]]
-	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 24/초 · 거리 10m\n에너지 180 · 회복 중인 아군 중복 회복 제한\n"+Rules.GADGET_HELP[role]+"\n"+Rules.SKILL_HELP[role]
-	if not game.options.skills:gear_detail.text+=" (스킬 OFF)"
-	if not game.options.classes:gear_detail.text+="\n병과 OFF · 가젯/스킬 없이 공격 무기 사용"
-	var p=game.players[game.local_id];var cost=game.loadout_cost(p,selected_loadout())
-	gear_price.text="예상 비용 %d / 보유 %d 크레딧"%[cost,p.cash] if game.options.mode==4 else "장비 선택 무료 · 기본 체력 100 / 기본 방어구 없음"
-	if is_instance_valid(preview_widget):
-		var preview_id=("repair" if role==3 and gear_repair.button_pressed else Rules.SECONDARIES[role]) if preview_kind==1 and preview_secondary else weapon_ids[gear_primary.selected]
-		preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_gadget.selected)
-		preview_caption.text=[Rules.CLASSES[role]+" · %d cm"%roundi(HumanModel.HEIGHTS[role]*100)+" · "+CharacterVisual.ROLE_NAMES[role],str(w.name),Rules.GADGETS[role]][preview_kind]
-		if preview_kind==1 and preview_secondary:
-			var sw=Catalog.get_weapon(preview_id)
-			preview_caption.text="FIX · 구조물 수리 · 에너지 100" if sw.kind=="repair" else "%s · 피해 %d · 탄창 %d · 재장전 %.1f초"%[sw.name,sw.damage,sw.mag,sw.reload]
+	preview_caption.text=w.name+" · "+str(w.get("category",mode))
+	gear_detail.text="피해 %d%s    /    %s · 분당 %d발\n탄창 %d · 예비탄 %d    /    재장전 %.1f초\n안정성 %d / 100    /    조준 속도 %d ms\n무게 %.2f kg    /    휴대성 %d / 100\n기본 퍼짐 %.2f°    /    조준 시 %.2f°\n피해 감소 시작 %.0f m"%[w.damage," × "+str(int(w.pellets)) if w.pellets>1 else "",mode,60./maxf(.01,float(w.interval)),w.mag,w.reserve,w.reload,w.get("stability",0),w.get("ads_ms",250),w.get("weight_kg",0),w.get("portability",0),w.spread,w.get("ads_spread",0),w.reach]
+	gear_detail.tooltip_text="안정성↑: 연속 사격 퍼짐 감소 · 조준 시간↓: 더 빠른 조준\n무게↑ / 휴대성↓: 이동 중 퍼짐 증가 · 퍼짐은 반각 기준"
+	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 24/초\n유효 거리 10 m · 에너지 180\n아군을 향해 발사하면 지속 회복합니다.\n같은 아군에게 여러 LINK 효과는 중첩되지 않습니다."
+	if w.kind=="repair":gear_detail.text="FIX · 구조물 수리 · 에너지 100\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
+	if preview_kind==0:
+		preview_caption.text=HumanModel.IDENTITIES[role]+" · "+Rules.CLASSES[role]+" · %d cm"%roundi(HumanModel.HEIGHTS[role]*100)
+		gear_detail.text=["소총으로 전선을 유지하는 돌격수.","스코프 사격과 표식으로 시야를 확보하는 정찰수.","기관총과 방호로 거점을 지키는 중화기병.","샷건과 엄폐물, 자동 포탑을 운용하는 공병.","기관단총과 연막·섬광으로 경로를 통제하는 지원병.","회복 도구와 의료 카빈으로 팀을 지원하는 메딕."][role]+"\n\n"+Rules.GADGET_HELP[role]+"\n"+Rules.SKILL_HELP[role]
+	elif preview_kind==2:
+		preview_caption.text=gear_gadget.get_item_text(gear_gadget.selected);gear_detail.text=Rules.GADGET_HELP[role]+"\n\n3 가젯 선택 · 클릭 사용 · G 즉시 사용"
+		if role==3:gear_detail.text+="\n내구도 %d · 조준한 방향에 배치"%[250,500,800][gear_gadget.selected]
+	elif preview_kind==3:
+		preview_caption.text=["기본 복장","경량 방어구 · +25","중량 방어구 · +50"][gear_armor.selected];gear_detail.text="방어구는 체력보다 먼저 피해를 흡수합니다.\n기본 체력 100 · 기본 방어구 0\n"+("비용 %d 크레딧"%[0,300,600][gear_armor.selected] if game.options.mode==4 else "장비 선택은 무료입니다.")
+	elif preview_kind==4:
+		preview_caption.text=Rules.SKILLS[role];gear_detail.text=Rules.SKILL_HELP[role]+"\n\nF 사용 · 충전 완료 후 사용 가능"
+	if not game.options.skills and preview_kind==4:gear_detail.text+="\n현재 방에서는 스킬이 꺼져 있습니다."
+	var primary=Catalog.get_weapon(weapon_ids[gear_primary.selected])
+	role_detail.text="%s  /  %s\n%s"%[Rules.CLASSES[role],primary.name,"선택한 장비는 다음 부활에 적용" if game.phase=="combat" else "카드를 선택하고 장비 적용을 누르세요."]
+	var cost=game.loadout_cost(p,selected_loadout())
+	gear_price.text="비용 %d / 보유 %d"%[cost,p.cash] if game.options.mode==4 else "장비 선택 무료"
+	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.selected)
 	gear_submit.text="구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" else "다음 부활에 적용 예약" if game.options.mode!=4 else "다음 라운드 구매 예약"
 func toggle_pause():
 	if is_instance_valid(panel):clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED;return

@@ -16,6 +16,10 @@ var bounds=Vector2(100,90)
 var building=false
 var playable_polygon=PackedVector2Array()
 var walk_surfaces=[]
+var floor_holes=[]
+var navigation_goals=[]
+var navigation_blocks=[]
+var vertical_map=false
 var props_authoritative=false
 var props={}
 var architecture:Node3D
@@ -35,6 +39,7 @@ func box(pos:Vector3,size:Vector3,color:Color,solid=true,parent:Node=null) -> No
 	if solid:
 		node.collision_layer=1;node.collision_mask=0
 		var c=CollisionShape3D.new();var shape=BoxShape3D.new();shape.size=size;c.shape=shape;node.add_child(c)
+		if vertical_map:navigation_blocks.append(AABB(pos-size*.5,size))
 		if building and pos.y+size.y*.5>.35 and pos.y-size.y*.5<1.9:obstacles.append(Rect2(Vector2(pos.x-size.x*.5,pos.z-size.z*.5),Vector2(size.x,size.z)).grow(.6))
 	return node
 func text3d(txt:String,pos:Vector3,color:Color,size:int=32,parent:Node=null):
@@ -107,10 +112,11 @@ func tree(pos:Vector3):
 		HumanModel.cord(trunk,Vector3(0,2.2+i*.12,0),end,.07,Color("87745a"))
 		HumanModel.oval(trunk,end+Vector3.UP*.6,Vector3(2.6,2.1,2.5),Color("779261") if i%2==0 else Color("94a678"))
 func build(which:int):
-	map_index=which;indoors=which in [2,3,6,8,11,14,15];has_water=which in [0,5];bounds=MapLayouts.extent(which);building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
-	box(Vector3(0,-.5,0),Vector3(bounds.x*2,1,bounds.y*2),Color("b9b5a5") if has_water else Color("c5b69a"))
+	map_index=which;vertical_map=VerticalLayout.enabled(which);indoors=which in [2,3,6,8,11,14,15];has_water=which in [0,5];bounds=MapLayouts.extent(which);building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
+	if not vertical_map:box(Vector3(0,-.5,0),Vector3(bounds.x*2,1,bounds.y*2),Color("b9b5a5") if has_water else Color("c5b69a"))
 	build_perimeter(which)
-	if which<2:
+	if vertical_map:VerticalLayout.build(self,which)
+	elif which<2:
 		# Broad navigation lanes, traversable warehouse passages, and readable cover heights.
 		for x in [-44,0,44]:detail(Vector3(x,.009,0),Vector3(22,.015,172),Color("a2acaa"))
 		for z in [-75,0,75]:detail(Vector3(0,.012,z),Vector3(190,.012,12),Color("a2acaa"))
@@ -155,13 +161,15 @@ func build(which:int):
 		if i!=1:
 			box(pos+Vector3(-5,.45,-5),Vector3(1.2,.9,1.2),Color("486773"));detail(pos+Vector3(-5,.92,-5),Vector3(.9,.035,.8),Color("78b0b2"))
 	var supply_positions=[Vector3(-30,.3,0),Vector3(30,.3,0),Vector3(0,.3,-49),Vector3(0,.3,49)] if which<6 else [Vector3(-bounds.x*.55,.3,0),Vector3(bounds.x*.55,.3,0),Vector3(0,.3,-bounds.y*.52),Vector3(0,.3,bounds.y*.52)]
-	for pos in supply_positions:
+	for supply_pos in supply_positions:
+		var pos=supply_pos
+		if vertical_map:pos.y=walk_height(pos)+.3
 		var n=Node3D.new();add_child(n);n.position=pos
 		M.box(n,Vector3.ZERO,Vector3(.9,.5,.65),Color("455f56"));M.box(n,Vector3(0,.265,0),Vector3(.96,.05,.7),Color("798e6c"))
 		for x in [-.31,.31]:M.box(n,Vector3(x,0,-.334),Vector3(.07,.3,.03),Color("d2ba76"))
 		M.merge_children(n);var label=text3d("AMMO",Vector3(0,.6,0),Color("e1d6a3"),21,n);label.visibility_range_end=20
 		supplies.append({"pos":pos,"node":n,"ready":0.})
-	if which<6:MapLayouts.finish_detail(self,which)
+	if which<6 and not vertical_map:MapLayouts.finish_detail(self,which)
 	WorldDressing.build(self)
 	building=false;batch_architecture();apply_surface_detail()
 	var environment=WorldEnvironment.new();var e=Environment.new();e.background_mode=Environment.BG_SKY
@@ -183,6 +191,7 @@ func gather_meshes(node:Node,out:Array):
 		if child is MeshInstance3D:out.append(child)
 		else:gather_meshes(child,out)
 func point_clear(pos:Vector3) -> bool:
+	if vertical_map:return navigation_clear(pos) and navigation_heights(pos).any(func(height):return absf(height-pos.y)<.45)
 	if not playable_polygon.is_empty() and not Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),playable_polygon):return false
 	if absf(pos.x)>bounds.x-6 or absf(pos.z)>bounds.y-6:return false
 	for rect in obstacles:
@@ -235,6 +244,9 @@ func submerged(pos:Vector3) -> bool:return wading(pos) and pos.y<=.61
 func solid_rotated(pos:Vector3,size:Vector3,color:Color,yaw:float) -> Node3D:
 	var prior=building;building=false
 	var body=box(pos,size,color);body.rotation.y=yaw;building=prior
+	if vertical_map:
+		var rotated_size=Vector3(absf(cos(yaw))*size.x+absf(sin(yaw))*size.z,size.y,absf(sin(yaw))*size.x+absf(cos(yaw))*size.z)
+		navigation_blocks[-1]=AABB(pos-rotated_size*.5,rotated_size)
 	if prior and pos.y-size.y*.5<1.9 and pos.y+size.y*.5>.35:
 		var extent=Vector2(absf(cos(yaw))*size.x+absf(sin(yaw))*size.z,absf(sin(yaw))*size.x+absf(cos(yaw))*size.z)
 		obstacles.append(Rect2(Vector2(pos.x,pos.z)-extent*.5,extent).grow(.6))
@@ -275,6 +287,12 @@ func ramp(center:Vector3,size:Vector2,low:float,high:float,color:Color):
 		var angle=atan2(high-low,size.y)
 		detail(center+Vector3(x,(low+high)*.5+.022,0),Vector3(.07,.03,sqrt(size.y*size.y+(high-low)*(high-low))),Color("d7ba71"),Vector3(-angle,0,0))
 func walk_height(pos:Vector3) -> float:
+	if vertical_map:
+		var heights=navigation_heights(pos)
+		var best=0.;var distance=INF
+		for y in heights:
+			if absf(y-pos.y)<distance:distance=absf(y-pos.y);best=y
+		return best
 	var height=0.
 	for surface in walk_surfaces:
 		if surface.rect.has_point(Vector2(pos.x,pos.z)):
@@ -290,3 +308,24 @@ func receive_props(states:Array):
 		if state is Array and state.size()==3 and props.has(int(state[0])):props[int(state[0])].receive(state[1],state[2])
 func reset_props():
 	for prop in props.values():prop.reset_home()
+
+func navigation_heights(pos:Vector3) -> Array:
+	var result=[];var point=Vector2(pos.x,pos.z);var hole=false
+	for rect in floor_holes:
+		if rect.has_point(point):hole=true;break
+	if not hole:result.append(0.)
+	for surface in walk_surfaces:
+		if surface.rect.has_point(point):
+			var height=lerpf(surface.low,surface.high,(pos.z-surface.rect.position.y)/surface.rect.size.y)
+			if not height in result:result.append(height)
+	return result
+func navigation_clear(pos:Vector3) -> bool:
+	for surface in walk_surfaces:
+		if surface.low==surface.high or not surface.rect.has_point(Vector2(pos.x,pos.z)):continue
+		var top=lerpf(surface.low,surface.high,(pos.z-surface.rect.position.y)/surface.rect.size.y)
+		if pos.y+.15<top and pos.y+1.85>minf(surface.low,surface.high)-.4:return false
+	if absf(pos.x)>bounds.x-2 or absf(pos.z)>bounds.y-2:return false
+	if not Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),playable_polygon):return false
+	for block in navigation_blocks:
+		if pos.x>block.position.x-.5 and pos.x<block.end.x+.5 and pos.z>block.position.z-.5 and pos.z<block.end.z+.5 and pos.y+.15<block.end.y and pos.y+1.85>block.position.y:return false
+	return true

@@ -1,6 +1,10 @@
 extends RefCounted
 class_name BotNavigation
 var grid=AStarGrid2D.new()
+var layers=AStar3D.new()
+var layer_cells={}
+var layer_ground={}
+var layer_dynamic={}
 var static_solid={}
 var dynamic_solid={}
 var heat={}
@@ -19,6 +23,37 @@ func build(world:Node):
 			var world_point=point(id)
 			if absf(world_point.x)>arena.bounds.x-2 or absf(world_point.z)>arena.bounds.y-2 or (not arena.playable_polygon.is_empty() and not Geometry2D.is_point_in_polygon(Vector2(world_point.x,world_point.z),arena.playable_polygon)):grid.set_point_solid(id);static_solid[id]=true
 			if not grid.is_point_solid(id):grid.set_point_weight_scale(id,1.3 if arena.wading(point(id)) else 1.)
+	if arena.vertical_map:build_layers()
+func build_layers():
+	layers.clear();layer_cells.clear();layer_ground.clear()
+	for x in range(100):
+		for z in range(90):
+			var cell_id=Vector2i(x,z);var horizontal=Vector3(-99+x*2,0,-89+z*2)
+			for height in arena.navigation_heights(horizontal):
+				var pos=Vector3(horizontal.x,height,horizontal.z)
+				if not arena.navigation_clear(pos):continue
+				var id=layers.get_available_point_id();layers.add_point(id,pos)
+				if not layer_cells.has(cell_id):layer_cells[cell_id]=[]
+				layer_cells[cell_id].append(id)
+				if absf(height)<.1:layer_ground[id]=cell_id;layers.set_point_disabled(id,grid.is_point_solid(cell_id))
+	for cell_id in layer_cells:
+		for offset in [Vector2i(1,0),Vector2i(0,1)]:
+			var other=cell_id+offset
+			if not layer_cells.has(other):continue
+			for id in layer_cells[cell_id]:
+				for next in layer_cells[other]:
+					var from=layers.get_point_position(id);var to=layers.get_point_position(next)
+					if connects_surface(from,to):layers.connect_points(id,next)
+func connects_surface(from:Vector3,to:Vector3) -> bool:
+	if absf(from.y-to.y)>1.1:return false
+	var previous=from.y
+	for step in range(1,5):
+		var point=from.lerp(to,step/4.);var height=INF;var best=INF
+		for y in arena.navigation_heights(point):
+			if absf(y-point.y)<best:best=absf(y-point.y);height=y
+		if not is_finite(height) or absf(height-previous)>.38 or not arena.navigation_clear(Vector3(point.x,height,point.z)):return false
+		previous=height
+	return true
 func cell(pos:Vector3) -> Vector2i:return Vector2i(clampi(int(round((pos.x+99)/2)),0,99),clampi(int(round((pos.z+89)/2)),0,89))
 func point(id:Vector2i) -> Vector3:
 	var pos=Vector3(-99+id.x*2,0,-89+id.y*2)
@@ -38,6 +73,12 @@ func nearest(pos:Vector3) -> Vector2i:
 		if best!=start:return best
 	return start
 func route(from:Vector3,to:Vector3) -> PackedVector3Array:
+	if arena.vertical_map:
+		if arena.building:
+			for id in layer_ground:layers.set_point_disabled(id,grid.is_point_solid(layer_ground[id]) or layer_dynamic.has(id))
+		if layers.get_point_count()==0:return PackedVector3Array()
+		var start_id=layers.get_closest_point(from);var end_id=layers.get_closest_point(to)
+		return layers.get_point_path(start_id,end_id)
 	var start=nearest(from);var end=nearest(to);var out=PackedVector3Array()
 	if grid.is_point_solid(start) or grid.is_point_solid(end):return out
 	for id in grid.get_id_path(start,end,true):out.append(point(id))
@@ -51,17 +92,30 @@ func danger(pos:Vector3,amount=2.):
 func refresh(devices:Dictionary,now:float,props:Dictionary={}):
 	if now<next_refresh:return
 	next_refresh=now+1.
-	for id in dynamic_solid: grid.set_point_solid(id,static_solid.has(id))
+	for id in layer_dynamic:layers.set_point_disabled(id,layer_ground.has(id) and static_solid.has(layer_ground[id]))
+	layer_dynamic.clear()
+	for id in dynamic_solid:
+		grid.set_point_solid(id,static_solid.has(id))
+		for point_id in layer_cells.get(id,[]):
+			if layer_ground.has(point_id):layers.set_point_disabled(point_id,static_solid.has(id))
 	dynamic_solid.clear()
 	for d in devices.values():
 		var extent=Vector2(2.4,1.3) if d.kind=="cover" else Vector2(1.1,1.1)
 		var c=absf(cos(d.yaw));var s=absf(sin(d.yaw));extent=Vector2(extent.x*c+extent.y*s,extent.x*s+extent.y*c)
 		var lo=cell(d.pos-Vector3(extent.x,0,extent.y));var hi=cell(d.pos+Vector3(extent.x,0,extent.y))
 		for x in range(lo.x,hi.x+1):
-			for y in range(lo.y,hi.y+1):var id=Vector2i(x,y);grid.set_point_solid(id);dynamic_solid[id]=true
+			for y in range(lo.y,hi.y+1):
+				var id=Vector2i(x,y)
+				if not arena.vertical_map or absf(d.pos.y)<.5:grid.set_point_solid(id);dynamic_solid[id]=true
+				block_layer(id,d.pos.y,1.8)
 	for prop in props.values():
 		var id=cell(prop.global_position)
-		grid.set_point_solid(id);dynamic_solid[id]=true
+		if not arena.vertical_map or absf(prop.global_position.y)<1.2:grid.set_point_solid(id);dynamic_solid[id]=true
+		block_layer(id,prop.global_position.y,1.4)
 	for id in heat.keys():
 		heat[id]*=.92;grid.set_point_weight_scale(id,(1.3 if arena.wading(point(id)) else 1.)+heat[id])
 		if heat[id]<.1:heat.erase(id)
+
+func block_layer(cell_id:Vector2i,height:float,tolerance:float):
+	for id in layer_cells.get(cell_id,[]):
+		if absf(layers.get_point_position(id).y-height)<tolerance:layers.set_point_disabled(id,true);layer_dynamic[id]=true

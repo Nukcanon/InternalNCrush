@@ -9,8 +9,8 @@ func _ready():
 	stretch=true;size_flags_horizontal=Control.SIZE_EXPAND_FILL;size_flags_vertical=Control.SIZE_EXPAND_FILL;custom_minimum_size=Vector2(330,270)
 	viewport=SubViewport.new();viewport.size=Vector2i(440,330);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_WHEN_VISIBLE;viewport.msaa_3d=Viewport.MSAA_2X;add_child(viewport)
 	stage=Node3D.new();viewport.add_child(stage)
-	var world=WorldEnvironment.new();var env=Environment.new();env.background_mode=Environment.BG_COLOR;env.background_color=Color("142632");env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color.WHITE;env.ambient_light_energy=.7;world.environment=env;stage.add_child(world)
-	var key=DirectionalLight3D.new();key.rotation_degrees=Vector3(-35,150,0);key.light_energy=1.1;stage.add_child(key)
+	var world=WorldEnvironment.new();var env=Environment.new();env.background_mode=Environment.BG_COLOR;env.background_color=Color("263b46");env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color.WHITE;env.ambient_light_energy=.95;world.environment=env;stage.add_child(world)
+	var key=DirectionalLight3D.new();key.rotation_degrees=Vector3(-35,150,0);key.light_energy=1.3;stage.add_child(key)
 	camera=Camera3D.new();stage.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.current=true
 func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 	if not is_instance_valid(stage):return
@@ -19,9 +19,21 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 	if kind==0:
 		var c=CharacterVisual.new();model.add_child(c);c.build(role,team);c.animator.play("idle");c.animator.advance(.3)
 		var gun=WeaponVisual.new();c.socket.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.scale=Vector3.ONE*.8
-		model.rotation.y=-.35;camera.position=Vector3(0,1.1,-4);camera.look_at(Vector3(0,.95,0));camera.size=2.5
+		model.rotation.y=-.35;camera.position=Vector3(0,1.4,-4);camera.look_at(Vector3(0,1.3,0));camera.size=1.3
 	elif kind==1:
-		var gun=WeaponVisual.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.rotation.y=PI/2;camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0));camera.size=1.15
+		var gun=WeaponVisual.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.rotation.y=PI/2;camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0));camera.size=.63
+		var meshes=gun.find_children("*","MeshInstance3D",true,false);var bounds=AABB();var first=true
+		for mesh in meshes:
+			var box=mesh.global_transform*mesh.get_aabb()
+			bounds=box if first else bounds.merge(box);first=false
+		var focus=bounds.get_center();camera.position=focus+Vector3(0,.35,-3);camera.look_at(focus);camera.size=maxf(.52,bounds.size.x*.70)
+	elif kind==3:
+		HumanModel.loft(model,Vector3(0,.15,0),[Vector4(-.2,.17,.13,0),Vector4(.05,.20,.14,0),Vector4(.18,.17,.11,0)],Color("718891") if gadget==0 else Color("596552") if gadget==1 else Color("3c514f"))
+		for x in [-.12,0,.12]:HumanModel.oval(model,Vector3(x,.10,-.15),Vector3(.10,.15,.06),Color("6e7d63"))
+		camera.position=Vector3(.5,.6,-3);camera.look_at(Vector3(0,.15,0));camera.size=1.0
+	elif kind==4:
+		if role==3:CombatFX.device(model,"turret",team);camera.position=Vector3(1,1.5,-3);camera.look_at(Vector3(0,.6,0));camera.size=2.0
+		else:gadget_model(model,role,gadget);camera.position=Vector3(1,.9,-3);camera.look_at(Vector3(0,.2,0));camera.size=1.3
 	else:
 		gadget_model(model,role,gadget);camera.position=Vector3(1,.9,-3);camera.look_at(Vector3(0,.2,0));camera.size=1.3
 func _gui_input(event):

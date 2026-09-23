@@ -27,6 +27,8 @@ var spread_angle=.4
 var visual_spread=.4
 var move_blend=0.
 var ads_blend=0.
+var aim_progress=0.
+var handedness=1
 var crouch_blend=0.
 var land_kick=0.
 var was_grounded=true
@@ -98,7 +100,8 @@ func reset_view(yaw:float):
 	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,eye_height(false),0))
 	input_state.yaw=yaw;input_state.pitch=0.;input_state.crouch=false;input_state.sprint=false;input_state.fire=false;input_state.ads=false;input_state.x=0.;input_state.z=0.;input_state.jump=false
 	aim_yaw=yaw;aim_pitch=0.;rotation=Vector3(0,yaw,0);last_sprint=false;sprint_release=0.;old_visual_pos=global_position;spread_angle=.4;visual_spread=.4;seen_shot=-100.;recoil=0.;land_kick=0.
-	gait=0.;net_gait=0.;turn_sway=0.;previous_yaw=yaw
+	gait=0.;net_gait=0.;turn_sway=0.;previous_yaw=yaw;aim_progress=0.;ads_blend=0.
+	handedness=int(game.players.get(pid,{}).get("hand",1))
 	if local:
 		camera.current=true
 		if is_instance_valid(game.ui.damage_indicator):game.ui.damage_indicator.clear_hits()
@@ -107,7 +110,7 @@ func head_threshold() -> float:return (1.14 if input_state.crouch else 1.46)*bod
 func eye() -> Vector3:return global_position+Vector3.UP*eye_height(bool(input_state.crouch))
 func direction() -> Vector3:return Basis(Vector3.UP,aim_yaw)*Basis(Vector3.RIGHT,aim_pitch)*Vector3.FORWARD
 func muzzle_world() -> Vector3:
-	var desired=eye()+Basis(Vector3.UP,aim_yaw)*Vector3(.2,-.23,0)+direction()*.55
+	var desired=eye()+Basis(Vector3.UP,aim_yaw)*Vector3(.2*handedness,-.23,0)+direction()*.55
 	var hit=game.ray(eye(),desired,[get_rid()],1|4|8)
 	return hit.position+hit.normal*.03 if not hit.is_empty() else desired
 func visual_muzzle() -> Vector3:
@@ -154,11 +157,12 @@ func simulate(dt:float,now:float,can_move:bool):
 	update_spread(dt,now)
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
 	global_position.x=clampf(global_position.x,-bound.x+2,bound.x-2);global_position.z=clampf(global_position.z,-bound.y+2,bound.y-2)
-	if global_position.y< -4:global_position.y=.2;velocity.y=0
+	if global_position.y< (-12. if game.arena and game.arena.vertical_map else -4.):global_position.y=.2;velocity.y=0
 func update_spread(dt:float,now:float):
 	if not game.players.has(pid):return
 	var p=game.players[pid];var w=game.current_weapon(p)
-	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),p.get("mounted",0)>now,velocity.y)
+	aim_progress=move_toward(aim_progress,1. if input_state.ads and p.slot<2 and p.reload<=now else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001))
+	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),p.get("mounted",0)>now,velocity.y,aim_progress)
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 5.5)))
 func headless_pose(p:Dictionary):
 	# Keep gameplay transforms and class dimensions, without solving 32 rigs every tick.
@@ -167,7 +171,8 @@ func headless_pose(p:Dictionary):
 	shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
 	camera.position=Vector3(0,eye_height(bool(input_state.crouch)),0)
 func visual(dt:float,p:Dictionary,now:float):
-	visible=p.alive;set_team(int(p.team));ensure_character()
+	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
+	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
 	protected_visual.visible=p.alive and float(p.get("protect",0))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
 	if p.slot>=2:
@@ -207,10 +212,11 @@ func visual(dt:float,p:Dictionary,now:float):
 		reload_stage=stage
 		if stage>0:game.play_sound("magazine" if stage==1 else "bolt",Vector3.ZERO,false)
 	elif not reloading:reload_stage=-1
-	var ads=input_state.ads and p.slot<2 and not reloading;var scoped=ads and float(w.zoom)<=38
-	ads_blend=lerpf(ads_blend,1. if ads else 0.,1.-exp(-dt*14));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
+	var ads=input_state.ads and p.slot<2 and not reloading
+	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
+	var scoped=ads and float(w.zoom)<=38 and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
-	camera.fov=lerpf(camera.fov,float(w.zoom) if ads else 88. if sprint else 82.,1.-exp(-dt*12))
+	camera.fov=lerpf(88. if sprint else 82.,float(w.zoom),ads_blend)
 	var base=Vector3(.255,-.255,-.46).lerp(Vector3(0,-.14,-.5),ads_blend)
 	var motion=move_blend*(1.-ads_blend*.93)
 	base.y+=sin(now*1.9)*.002*(1.-move_blend)*(1.-ads_blend)
@@ -222,9 +228,11 @@ func visual(dt:float,p:Dictionary,now:float):
 	var swap=clampf((float(p.get("switch_until",0))-now)/.32,0,1);base.y-=swap*.32;rotation_target.z-=swap*.3
 	base.x-=turn_sway*.004*(1.-ads_blend*.85)
 	base.z+=recoil*(.105 if w.slot==1 else .155)*lerpf(1.,.38,ads_blend);base.y+=recoil*.025*(1.-ads_blend);base.y-=land_kick*.6
+	base.x*=handedness;rotation_target.y*=handedness;rotation_target.z*=handedness
 	gun.position=gun.position.lerp(base,1.-exp(-dt*20));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22))
 	view_weapon.visible=p.slot<2 and not scoped;item_model.visible=p.slot>=2;view_weapon.animate_reload(progress,recoil,age)
-	visual_spread=lerpf(visual_spread,spread_angle,1.-exp(-dt*20))
+	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
+	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 12.)))
 
 func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false

@@ -18,7 +18,8 @@ func run():
 			clear=clear and candidates.size()>=7
 			for pos in candidates:clear=clear and arena.point_clear(pos) and absf(pos.z)<=arena.bounds.y-6
 			for zone in arena.zones:
-				connected=connected and arena.point_clear(zone) and nav.route(candidates[0],zone).size()>1 and nav.point(nav.nearest(zone)).distance_to(zone)<3.
+				var route=nav.route(candidates[0],zone)
+				connected=connected and arena.point_clear(zone) and route.size()>1 and route[-1].distance_to(zone)<3.
 		expect(clear,"map "+str(index)+" bounded clear spawn region")
 		expect(connected,"map "+str(index)+" both teams reach all objectives")
 		arena.queue_free();await process_frame;await process_frame

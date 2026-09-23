@@ -1,38 +1,24 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": "06d9bcf41ae7b4f0072d22de4e7527d2aa1f1b11",
+  "source_commit": null,
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.0",
-  "publication_state": "published_and_verified",
-  "pages_verified": true,
-  "build_result": "success",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.1",
+  "publication_state": "local_validation_complete_publication_pending",
+  "pages_verified": false,
+  "build_result": "pending",
   "checks": {
-    "functional": "448/448",
-    "model_height_roles": 6,
-    "deterministic_maps": 19,
-    "network_props_early_and_late": true,
+    "functional": "756/756 local; CI pending",
     "native_windows_source": true,
+    "native_windows_published_zip": false,
     "network_2_process": true,
-    "network_lifecycle_8_delayed": true,
+    "network_hand_and_bloom": true,
+    "network_props_early_and_late": true,
+    "network_lifecycle_8": true,
     "network_capacity_32": true,
-    "capacity_completion_barrier": true,
-    "ci_functional": "448/448",
-    "native_windows_published_zip": true,
-    "native_published_runs": [
-      {
-        "mode": "menu",
-        "exit_code": 0,
-        "shutdown_texture_warning": false
-      },
-      {
-        "mode": "training",
-        "exit_code": 0,
-        "shutdown_texture_warning": true
-      }
-    ],
-    "capacity_paced_startup": true
+    "display_monitors": 2,
+    "display_modes_per_monitor": 3
   },
   "remaining": [
     "Actual multi-PC LAN",
@@ -43,44 +29,9 @@
     "Map balance and procedural animation/art polish"
   ],
   "previous_release": {
-    "version": "0.7.0",
-    "source_commit": "d75719830d05dfe6d5576b270b6a5bb95be5afdd",
-    "release_sha256": "5cd2ddff00fff41a9c4ddfb7d5744ee856089d27a278293808012ec63a9eace2",
-    "build_workflow_run_id": 35839178082
-  },
-  "build_workflow_run_id": 35848531087,
-  "build_workflow_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35848531087",
-  "site_commit": "115ddb2dd889860e802e19882f1e2a102817808c",
-  "pages_workflow_run_id": 35849549083,
-  "pages_workflow_url": "https://github.com/Nukcanon/nukcanon/actions/runs/35849549083",
-  "release_sha256": "685cc468301b72a6125aa91c96fe7427ab925265b00959e41f930403d04f7b03",
-  "release_size_bytes": 47620501,
-  "release_files": 9,
-  "release_published_at": "2026-09-23T10:32:19Z",
-  "verified_at": "2026-09-23T10:36:07.924950+00:00",
-  "website_file_sha256": {
-    "internal-n-crush.html": "4eb4875f301c9e443a9e4f71eb86f5dfd43d2b289194a25c1a21161a06c6eeea",
-    "internal-n-crush-version.json": "705f5e244229493ee06e69f5af0b066b5d0aa1eb92548a8d1d98bd81953371ea",
-    "image/internal-n-crush-market-v100.jpg": "be5907ef367d06ed5e6258132694ec3dccfc8336fc4ada521a0cc98ac413f5aa",
-    "image/internal-n-crush-human-v100.jpg": "c34d4a051fa4bfa0f36affbd178a39779a1ff8c4def3aecffd9b574534955399",
-    "image/internal-n-crush-operators-v100.jpg": "5b78289326e5e217541b4924b42d6a8f420009cb78101f788b387751d7136878"
-  },
-  "ci_investigation": [
-    {
-      "run": 35845360732,
-      "issue": "Legacy 12-second client lifetime ended before all 32 joined"
-    },
-    {
-      "run": 35846611819,
-      "issue": "All-at-once process startup exceeded capacity completion deadline"
-    },
-    {
-      "run": 35847757032,
-      "issue": "Paced startup still stalled during later client loading; one connection lost"
-    },
-    {
-      "run": 35848531087,
-      "issue": "Removed headless actor render rigs, AnimationPlayers and HUD refresh; full CI passed"
-    }
-  ]
+    "version": "1.0.0",
+    "source_commit": "06d9bcf41ae7b4f0072d22de4e7527d2aa1f1b11",
+    "release_sha256": "685cc468301b72a6125aa91c96fe7427ab925265b00959e41f930403d04f7b03",
+    "build_workflow_run_id": 35848531087
+  }
 }

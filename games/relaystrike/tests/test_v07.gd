@@ -41,7 +41,7 @@ func run():
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.playable_polygon.size()==8,"map %d has a nonrectangular perimeter"%index)
 		expect(arena.walk_surfaces.size()>=6,"map %d has traversable terraces and ramps"%index)
-		var terrace=Vector3(arena.bounds.x*.78,0,arena.bounds.y*.025)
+		var terrace=arena.sites[1]
 		expect(arena.walk_height(terrace)>1.5,"map %d navigation recognizes terrace elevation"%index)
 		await physics_frame;await physics_frame
 		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(terrace+Vector3.UP*5,terrace-Vector3.UP,1))
@@ -53,7 +53,7 @@ func run():
 	replay.request({"attacker":0,"victim":1});expect(replay.pending.is_empty(),"environmental deaths cannot invent an attacker replay")
 	replay.request({"attacker":1,"victim":1});expect(replay.pending.is_empty(),"self-eliminations do not fabricate killer footage")
 	replay.reset();expect(replay.history.is_empty() and not replay.active,"leaving the room clears replay state")
-	expect(is_equal_approx(KillReplay.FIRST_PERSON_SECONDS+KillReplay.PORTRAIT_SECONDS,3.5),"2.5 second replay plus 1 second portrait fits the 4 second respawn")
+	expect(is_equal_approx(KillReplay.TOTAL_SECONDS,3.8),"2.3 second replay, .5 second death and 1 second portrait fit the 4 second respawn")
 	g.profile.width=5120;g.profile.height=1440;expect(g.display_window_size()==Vector2i(5120,1440),"ultrawide custom dimensions are preserved")
 	g.profile.width=7680;g.profile.height=4320;expect(g.display_window_size()==Vector2i(7680,4320),"8K dimensions are accepted")
 	var manifest=JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio_manifest.json"))

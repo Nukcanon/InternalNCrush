@@ -2,7 +2,9 @@ extends RefCounted
 class_name HumanModel
 const M=preload("res://scripts/mesh_factory.gd")
 const HEIGHTS=[1.80,1.72,1.88,1.76,1.83,1.70]
-const WIDTHS=[1.0,.94,1.08,1.01,.98,.95]
+const WIDTHS=[1.0,.92,1.08,1.01,.98,.93]
+const FEMALE_ROLES=[1,5]
+const IDENTITIES=["MASON", "SERA", "BRIGGS", "REED", "VALE", "MINA"]
 static func joint(parent:Node,label:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=label;n.position=pos;parent.add_child(n);return n
 # Elliptical cross sections make anatomical volumes and fabric, with continuous normals.
@@ -34,42 +36,60 @@ static func hand(parent:Node,skin:Color,glove:Color,side:float):
 		cord(parent,Vector3(x,-.044-length,-.01),Vector3(x,-.052-length,-.028),.009,skin)
 	cord(parent,Vector3(side*.039,.005,-.008),Vector3(side*.052,-.025,-.032),.014,glove)
 static func face(parent:Node,which:int,skin:Color,hair:Color):
-	# Open face, jaw, cheekbones, ears, nose bridge, eyelids and lips.
-	loft(parent,Vector3.ZERO,[Vector4(-.105,.028,.040,-.012),Vector4(-.09,.063,.067,-.01),Vector4(-.045,.098,.086,0),Vector4(.018,.113,.102,.004),Vector4(.065,.109,.106,.007),Vector4(.115,.091,.091,.014),Vector4(.143,.046,.051,.018),Vector4(.150,.002,.002,.018)],skin,24)
+	var female=which in FEMALE_ROLES
+	var jaw=.052 if female else .063+which*.001
+	var eye_color=[Color("5d725f"),Color("796046"),Color("4c382b"),Color("6c858a"),Color("89734f"),Color("483b34")][which]
+	# Sculpted face volumes: narrower jaw, cheek plane, brow ridge and chin.
+	loft(parent,Vector3.ZERO,[Vector4(-.106,.028,.041,-.018),Vector4(-.086,jaw,.067,-.012),Vector4(-.045,.089 if female else .098,.086,0),Vector4(.010,.104 if female else .110,.101,.004),Vector4(.060,.105,.104,.007),Vector4(.11,.092,.095,.014),Vector4(.142,.052,.06,.018),Vector4(.151,.002,.002,.018)],skin,32)
 	for side in [-1,1]:
-		oval(parent,Vector3(side*.11,.006,.008),Vector3(.039,.070,.038),skin)
-		oval(parent,Vector3(side*.117,.008,-.011),Vector3(.014,.038,.016),skin.darkened(.18))
-		oval(parent,Vector3(side*.043,.044,-.095),Vector3(.035,.014,.012),Color("d7cebc"))
-		oval(parent,Vector3(side*.043,.044,-.103),Vector3(.014,.015,.005),Color("526466") if which%2==0 else Color("685242"))
-		oval(parent,Vector3(side*.043,.044,-.106),Vector3(.006,.009,.002),Color("233238"))
-		cord(parent,Vector3(side*.027,.063,-.097),Vector3(side*.065,.065,-.088),.004,hair)
-		cord(parent,Vector3(side*.026,.052,-.102),Vector3(side*.062,.053,-.097),.0025,skin.darkened(.3))
-	oval(parent,Vector3(0,.015,-.099),Vector3(.025,.067,.034),skin)
-	oval(parent,Vector3(0,-.010,-.119),Vector3(.035,.025,.038),skin.lightened(.035))
-	cord(parent,Vector3(-.024,-.055,-.081),Vector3(.024,-.055,-.081),.004,skin.darkened(.28))
-	oval(parent,Vector3(0,-.064,-.077),Vector3(.041,.010,.011),skin.darkened(.09))
+		oval(parent,Vector3(side*.108,.002,.007),Vector3(.032,.060,.035),skin)
+		oval(parent,Vector3(side*.116,.004,-.008),Vector3(.012,.032,.016),skin.darkened(.19))
+		# Sclera stays seated behind the lids; iris, pupil and catchlight are separate.
+		oval(parent,Vector3(side*.043,.040,-.096),Vector3(.039,.016,.014),Color("dfdbcf"))
+		oval(parent,Vector3(side*.043,.040,-.105),Vector3(.014,.014,.004),eye_color)
+		oval(parent,Vector3(side*.043,.040,-.1075),Vector3(.006,.008,.002),Color("172124"))
+		oval(parent,Vector3(side*.041,.043,-.109),Vector3(.0025,.0025,.001),Color("f4f1df"))
+		cord(parent,Vector3(side*.024,.041,-.102),Vector3(side*.036,.049,-.102),.003,skin.darkened(.25))
+		cord(parent,Vector3(side*.036,.049,-.102),Vector3(side*.062,.044,-.095),.0032,skin.darkened(.28))
+		cord(parent,Vector3(side*.024,.038,-.102),Vector3(side*.060,.034,-.096),.0022,skin.lightened(.04))
+		cord(parent,Vector3(side*.022,.063,-.093),Vector3(side*.047,.068,-.096),.003 if female else .004,hair)
+		cord(parent,Vector3(side*.047,.068,-.096),Vector3(side*.065,.061,-.086),.0032,hair)
+		oval(parent,Vector3(side*.012,-.012,-.118),Vector3(.016,.013,.018),skin.darkened(.035))
+		oval(parent,Vector3(side*.011,-.017,-.124),Vector3(.008,.004,.003),skin.darkened(.36))
+	# A tapered bridge and rounded tip avoid a peg-shaped nose.
+	loft(parent,Vector3(0,0,-.083),[Vector4(-.018,.008,.026,-.019),Vector4(-.007,.014 if female else .017,.029,-.023),Vector4(.017,.011,.021,-.01),Vector4(.064,.007,.009,0)],skin.lightened(.025),20)
+	oval(parent,Vector3(0,-.043,-.090),Vector3(.038,.010,.010),skin.darkened(.18))
+	cord(parent,Vector3(-.023,-.045,-.089),Vector3(0,-.047,-.096),.0025,skin.darkened(.38))
+	cord(parent,Vector3(0,-.047,-.096),Vector3(.023,-.045,-.089),.0025,skin.darkened(.38))
+	oval(parent,Vector3(0,-.053,-.086),Vector3(.036,.010,.011),skin.darkened(.08))
+	oval(parent,Vector3(0,-.080,-.060),Vector3(.059 if female else .071,.030,.029),skin)
 	if which in [0,3,4]:
-		loft(parent,Vector3(0,0,.003),[Vector4(-.090,.041,.044,-.01),Vector4(-.070,.067,.071,0),Vector4(-.039,.079,.079,0)],hair.lightened(.12),20)
-	# A fitted scalp follows the skull; no full-face visor or box helmet.
-	loft(parent,Vector3(0,0,.007),[Vector4(.070,.108,.108,.009),Vector4(.115,.098,.100,.012),Vector4(.151,.055,.068,.014),Vector4(.16,.002,.002,.014)],hair,24)
-	for i in range(5):
-		cord(parent,Vector3(-.075+i*.029,.115,-.063),Vector3(-.046+i*.024,.151,.012),.008,hair.lightened(.10))
+		for side in [-1,1]:
+			cord(parent,Vector3(side*.075,-.033,-.048),Vector3(side*.045,-.081,-.051),.007,hair.lightened(.25))
+			cord(parent,Vector3(side*.045,-.081,-.051),Vector3(side*.015,-.090,-.053),.007,hair.lightened(.25))
+	loft(parent,Vector3(0,0,.007),[Vector4(.074,.108,.105,.009),Vector4(.112,.100,.100,.012),Vector4(.151,.058,.07,.014),Vector4(.165,.002,.002,.014)],hair,28)
+	for i in range(7):
+		cord(parent,Vector3(-.075+i*.023,.104,-.072),Vector3(-.045+i*.019,.153,.006),.002,hair.lightened(.06))
+	if female:
+		for side in [-1,1]:
+			oval(parent,Vector3(side*.092,.022,.06),Vector3(.061,.20 if which==5 else .15,.12),hair)
+		if which==1:
+			oval(parent,Vector3(0,.066,.133),Vector3(.090,.12,.10),hair)
+			cord(parent,Vector3(0,.03,.143),Vector3(0,-.11,.153),.027,hair)
+			cord(parent,Vector3(-.028,.015,.15),Vector3(.028,.015,.15),.008,Color("779085"))
 	if which==1:
-		oval(parent,Vector3(0,.123,.018),Vector3(.27,.09,.23),Color("5c6954"))
-		oval(parent,Vector3(.028,.165,.010),Vector3(.15,.025,.15),Color("6e7b5e"))
+		oval(parent,Vector3(-.014,.131,.013),Vector3(.26,.065,.23),Color("5c6954"))
 	elif which==2:
 		loft(parent,Vector3(0,.012,.014),[Vector4(.067,.119,.117,0),Vector4(.093,.124,.12,0),Vector4(.151,.085,.092,0),Vector4(.17,.008,.014,0)],Color("5c696b"),24)
 	elif which==3:
-		oval(parent,Vector3(0,.14,0),Vector3(.25,.07,.24),Color("bb955c"))
-		oval(parent,Vector3(0,.108,-.117),Vector3(.21,.018,.12),Color("a5804f"))
+		oval(parent,Vector3(0,.14,0),Vector3(.25,.07,.24),Color("bb955c"));oval(parent,Vector3(0,.108,-.117),Vector3(.21,.018,.12),Color("a5804f"))
 	elif which==5:
-		oval(parent,Vector3(0,.133,.002),Vector3(.24,.058,.23),Color("d1c9ab"))
-		oval(parent,Vector3(0,.111,-.115),Vector3(.18,.016,.095),Color("c7c3ae"))
+		oval(parent,Vector3(0,.136,.014),Vector3(.22,.045,.20),Color("d1c9ab"))
 	# Small communication headset leaves the face and human silhouette readable.
 	oval(parent,Vector3(.118,.012,.014),Vector3(.038,.059,.051),Color("414947"))
 	cord(parent,Vector3(.125,-.004,0),Vector3(.061,-.055,-.10),.005,Color("383f3f"))
 static func build(which:int,team:int) -> Node3D:
-	var root=Node3D.new();root.name="Operator";root.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,WIDTHS[which]);root.set_meta("height_m",HEIGHTS[which])
+	var root=Node3D.new();root.name="Operator";root.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,WIDTHS[which]);root.set_meta("height_m",HEIGHTS[which]);root.set_meta("gender","female" if which in FEMALE_ROLES else "male");root.set_meta("identity",IDENTITIES[which])
 	var skin=[Color("bd9278"),Color("d8b098"),Color("91674f"),Color("c69b77"),Color("a5775c"),Color("d0aa91")][which]
 	var hair=[Color("463931"),Color("352f2d"),Color("302927"),Color("655346"),Color("55514b"),Color("583f31")][which]
 	var shirt=Color("718891") if team==0 else Color("98806a")
@@ -78,21 +98,21 @@ static func build(which:int,team:int) -> Node3D:
 	var team_color=Color("4d9ac0") if team==0 else Color("d29358")
 	var dark=Color("383d39")
 	var hips=joint(root,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
-	loft(hips,Vector3.ZERO,[Vector4(-.12,.11,.10,0),Vector4(-.08,.183,.127,.01),Vector4(.02,.19,.13,0),Vector4(.105,.17,.115,0)],trousers)
-	loft(chest,Vector3.ZERO,[Vector4(-.22,.16,.107,0),Vector4(-.12,.181,.12,.01),Vector4(.02,.214,.132,0),Vector4(.14,.235,.128,0),Vector4(.20,.211,.103,0),Vector4(.245,.075,.065,0)],shirt,20)
-	loft(chest,Vector3(0,0,-.010),[Vector4(-.17,.172,.124,0),Vector4(-.1,.190,.138,0),Vector4(.06,.220,.145,0),Vector4(.15,.196,.128,0)],vest,20)
+	loft(hips,Vector3.ZERO,[Vector4(-.15,.10,.10,0),Vector4(-.09,.168,.127,.01),Vector4(.02,.172,.13,0),Vector4(.105,.158,.115,0)],trousers)
+	loft(chest,Vector3.ZERO,[Vector4(-.22,.16,.107,0),Vector4(-.12,.181,.12,.01),Vector4(.02,.194,.132,0),Vector4(.14,.204,.128,0),Vector4(.20,.183,.103,0),Vector4(.245,.075,.065,0)],shirt,20)
+	loft(chest,Vector3(0,0,-.010),[Vector4(-.17,.172,.124,0),Vector4(-.1,.190,.138,0),Vector4(.06,.198,.145,0),Vector4(.15,.177,.128,0)],vest,20)
 	for side in [-1,1]:
 		cord(chest,Vector3(side*.15,-.12,-.119),Vector3(side*.148,.192,-.076),.023,vest.lightened(.12))
-		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.26,.13,0))
-		oval(arm,Vector3(-side*.026,-.014,0),Vector3(.16,.17,.16),shirt)
-		loft(arm,Vector3.ZERO,[Vector4(-.285,.049,.051,0),Vector4(-.20,.065,.064,0),Vector4(-.12,.078,.076,0),Vector4(-.045,.088,.083,0),Vector4(.016,.052,.058,0)],shirt)
+		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.218,.135,0))
+		oval(arm,Vector3(-side*.026,-.014,0),Vector3(.135,.16,.15),shirt)
+		loft(arm,Vector3.ZERO,[Vector4(-.285,.049,.051,0),Vector4(-.20,.065,.064,0),Vector4(-.12,.069,.070,0),Vector4(-.045,.075,.075,0),Vector4(.016,.052,.058,0)],shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.19,.069,.069,0),Vector4(-.155,.075,.074,0)],team_color)
 		for y in [-.21,-.24]:loft(arm,Vector3.ZERO,[Vector4(y-.01,.061,.061,0),Vector4(y,.068,.067,0),Vector4(y+.01,.061,.061,0)],shirt.darkened(.05))
 		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0))
 		loft(elbow,Vector3.ZERO,[Vector4(-.275,.031,.034,0),Vector4(-.22,.04,.043,0),Vector4(-.10,.059,.056,0),Vector4(-.02,.053,.052,0),Vector4(.02,.043,.044,0)],skin)
 		loft(elbow,Vector3.ZERO,[Vector4(-.065,.058,.057,0),Vector4(-.020,.058,.057,0),Vector4(.008,.052,.051,0)],shirt)
 		var palm=joint(elbow,"Hand",Vector3(0,-.275,0));hand(palm,skin,dark,side)
-		var leg=joint(hips,"LeftLeg" if side<0 else "RightLeg",Vector3(side*.128,-.025,0))
+		var leg=joint(hips,"LeftLeg" if side<0 else "RightLeg",Vector3(side*.099,-.025,0))
 		loft(leg,Vector3.ZERO,[Vector4(-.43,.064,.069,0),Vector4(-.34,.068,.074,0),Vector4(-.17,.088,.093,.009),Vector4(-.03,.105,.102,0),Vector4(.02,.087,.096,0)],trousers)
 		oval(leg,Vector3(side*.078,-.19,.012),Vector3(.065,.15,.12),trousers.lightened(.12))
 		var knee=joint(leg,"Knee",Vector3(0,-.415,0))
@@ -103,13 +123,15 @@ static func build(which:int,team:int) -> Node3D:
 		oval(foot,Vector3(0,.025,-.065),Vector3(.155,.14,.27),dark)
 		loft(foot,Vector3(0,0,-.06),[Vector4(-.045,.052,.08,0),Vector4(-.032,.079,.138,0),Vector4(-.015,.079,.136,0)],dark.darkened(.28))
 		for k in range(3):cord(foot,Vector3(-.038,.078,-.035-k*.025),Vector3(.038,.078,-.035-k*.025),.004,Color("9c947b"))
-	loft(hips,Vector3.ZERO,[Vector4(.066,.191,.137,0),Vector4(.103,.181,.124,0)],dark)
+	loft(hips,Vector3.ZERO,[Vector4(.066,.175,.137,0),Vector4(.103,.165,.124,0)],dark)
 	M.box(hips,Vector3(0,.083,-.13),Vector3(.047,.03,.018),Color("9b9d89"),Vector3.ZERO,.6)
 	for x in [-.12,0,.12]:
 		oval(chest,Vector3(x,-.112,-.143),Vector3(.101,.15,.066),vest.darkened(.13))
 		cord(chest,Vector3(x-.035,-.045,-.15),Vector3(x+.035,-.045,-.15),.006,vest.lightened(.25))
 	loft(chest,Vector3(0,.256,0),[Vector4(-.025,.059,.056,0),Vector4(.07,.055,.054,0)],skin)
 	var head=joint(chest,"Head",Vector3(0,.36,0));face(head,which,skin,hair)
+	if which in FEMALE_ROLES:
+		chest.scale=Vector3(.96,1.,.95);head.scale=Vector3(1.03,1.,1.03)
 	# Role-specific soft gear: radio, scout scarf, padded vest, tool roll, satchel, medical bag.
 	if which==1:
 		loft(chest,Vector3(0,.23,0),[Vector4(-.035,.11,.085,0),Vector4(.01,.075,.073,0)],Color("899274"))

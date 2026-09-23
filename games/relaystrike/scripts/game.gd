@@ -183,6 +183,7 @@ func setup_input():
 		if not InputMap.has_action(k):InputMap.add_action(k)
 		var ev=InputEventKey.new();ev.physical_keycode=binds[k];InputMap.action_add_event(k,ev)
 func build_world():
+	if is_instance_valid(kill_replay):kill_replay.reset()
 	if arena:arena.queue_free()
 	arena=W.new();arena.props_authoritative=server or demo_mode;add_child(arena);arena.build(int(options.map))
 	bot_navigation=BotNavigation.new();bot_navigation.build(arena);bot_agents.clear()
@@ -302,6 +303,7 @@ func spawn(id:int):
 		var requested=p.pending_loadout.duplicate();p.pending_loadout={};commit_loadout(id,requested)
 	var best=choose_spawn(id)
 	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.hp=100.;p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;p.gadget_count=2 if p.role==3 else 3 if p.role==4 else 1;p.smoke=1 if p.role==4 and p.gadget==1 else 2;p.flash_count=2 if p.role==4 and p.gadget==1 else 1;p.last_hit=clock;p.contributors={};p.spectator=false
+	p.hand=-1 if randf()<.12 else 1
 	a.reset_view(0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
 	if id==local_id:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func choose_spawn(id:int) -> Vector3:
@@ -690,7 +692,7 @@ func fire(id:int):
 	if int(p.mag.get(wid,0))<=0:begin_reload(id);return
 	p.mag[wid]-=1;p.fire_ready=clock+float(w.interval)
 	var spread=a.spread_angle
-	var spray=AimModel.current_spray(w,p)
+	var spray=AimModel.current_spray(w,p,a.aim_progress,bool(a.input_state.crouch))
 	p.shot_time=clock;p.spray_phase=float(p.get("spray_phase",0))+1.;p.spray_index=int(p.spray_phase);p.bloom=minf(float(w.get("bloom_max",1.2)),float(p.get("bloom",0))+float(w.get("shot_bloom",.12)))
 	var origin=a.muzzle_world();var eye=a.eye();var last_end=origin+a.direction()*200
 	for pellet in range(int(w.pellets)):
@@ -707,13 +709,13 @@ func fire(id:int):
 			var head=hit.position.y-collider.position.y>collider.head_threshold()
 			if head:dmg*=1.5
 			dmg*=R.damage_water(arena.submerged(hit.position),arena.wading(a.position),not arena.wading(collider.position))
-			damage(collider.pid,dmg,id,head,wid)
+			damage(collider.pid,dmg,id,head,wid,origin,hit.position)
 		elif collider is InteractiveProp:collider.hit(hit.position,(hit.position-origin).normalized(),dmg)
 		elif collider.has_meta("device"):damage_device(int(collider.get_meta("device")),dmg,id)
 		elif pellet==0:wall_mark.rpc(hit.position,hit.normal)
-	effect.rpc("shot",origin,last_end,id,clock)
+	effect.rpc("shot",origin,last_end,id,clock,{"weapon":wid,"bloom":p.bloom,"spray_phase":p.spray_phase})
 	if int(p.mag[wid])==0:begin_reload(id)
-func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:String="world",hit_origin:Vector3=Vector3.INF):
+func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:String="world",hit_origin:Vector3=Vector3.INF,hit_point:Vector3=Vector3.INF):
 	if not players.has(target) or not players[target].alive:return
 	var p=players[target]
 	if p.protect>clock:return
@@ -750,7 +752,7 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 		for aid in p.contributors:
 			if aid!=source and players.has(aid) and clock-p.contributors[aid]<8:players[aid].assists+=1
 		var attacker=players.get(source,{})
-		kill_event.rpc({"attacker":source,"attacker_name":str(attacker.get("nick","환경")),"attacker_team":int(attacker.get("team",-1)),"victim":target,"victim_name":str(p.nick),"victim_team":int(p.team),"weapon":weapon_id,"critical":critical,"origin":origin,"victim_pos":actors[target].position})
+		kill_event.rpc({"attacker":source,"attacker_name":str(attacker.get("nick","환경")),"attacker_team":int(attacker.get("team",-1)),"victim":target,"victim_name":str(p.nick),"victim_team":int(p.team),"weapon":weapon_id,"critical":critical,"origin":origin,"hit_point":hit_point if hit_point.is_finite() else actors[target].eye()-Vector3.UP*.3,"victim_pos":actors[target].position})
 @rpc("authority","call_local","reliable",0)
 func kill_event(event:Dictionary):
 	var item=event.duplicate(true);kill_serial+=1;item.serial=kill_serial;item.received=Time.get_ticks_msec();kill_events.append(item)
@@ -1158,8 +1160,12 @@ func announce(message:String):
 @rpc("authority","call_local","reliable",0)
 func announcement(message:String):ui.notice(message)
 @rpc("authority","call_local","unreliable",2)
-func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.):
+func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,shot_state:Dictionary={}):
 	if dedicated:return
+	if kind=="shot" and players.has(owner) and not shot_state.is_empty():
+		var p=players[owner]
+		if shot_at>=float(p.get("shot_time",-100.)) and (p.primary if p.slot==0 else p.secondary)==shot_state.weapon:
+			p.shot_time=shot_at;p.bloom=shot_state.bloom;p.spray_phase=shot_state.spray_phase;p.spray_index=int(p.spray_phase)
 	if kind=="shot" and is_instance_valid(kill_replay):kill_replay.record_shot(from,to,owner)
 	var sound={"heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","skill":"skill","smoke":"smoke"}.get(kind,"")
 	if kind=="shot":sound="gun_"+(players[owner].primary if players[owner].slot==0 else players[owner].secondary) if players.has(owner) else "gun_a1"
@@ -1221,6 +1227,7 @@ func cycle_spectator():
 	if ids.is_empty():spectator_target=0;return
 	spectator_target=ids[(ids.find(spectator_target)+1)%ids.size()]
 func update_spectator():
+	if is_instance_valid(kill_replay) and kill_replay.active:return
 	if dedicated or not players.has(local_id) or not is_instance_valid(spectator_camera):return
 	var local_actor=actors[local_id]
 	if players[local_id].alive:

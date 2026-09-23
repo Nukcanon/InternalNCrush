@@ -24,6 +24,7 @@ func drive():
 	if server_mode:
 		for id in g.players:
 			var p=g.players[id]
+			p.hand=-1
 			if p.alive and not p.get("pending_loadout",{}).is_empty() and not killed.has(id):
 				p.protect=0.;g.damage(id,1000,0);killed[id]=true;print("PROBE_SERVER_ELIMINATION")
 		return
@@ -47,9 +48,10 @@ func drive():
 			# Landing compression intentionally offsets the camera vertically by up to 5.5 cm.
 			# The original regression detached the camera horizontally and moved the observed actor.
 			print("PROBE_RESPAWN_SHOT primary=",p.primary," mag=",p.mag.e1," camera_xz=",horizontal," camera_y=",offset.y," repair=",p.secondary)
+			print("PROBE_HAND ",p.get("hand",0)," BLOOM ",p.get("bloom",0)," SPRAY ",p.get("spray_phase",0))
 			print("PROBE_KILL_FEED ",saw_feed)
 			print("PROBE_DAMAGE_FEEDBACK ",saw_damage)
-			done=true;finish_probe(0 if horizontal<.001 and absf(offset.y)<.07 and not a.camera.top_level and p.secondary=="repair" and saw_feed and saw_damage else 1)
+			done=true;finish_probe(0 if horizontal<.001 and absf(offset.y)<.07 and not a.camera.top_level and p.secondary=="repair" and saw_feed and saw_damage and p.get("hand",0)==-1 and p.get("bloom",0)>0 and p.get("spray_phase",0)>0 else 1)
 
 func finish_probe(code:int):
 	g.set_physics_process(false)

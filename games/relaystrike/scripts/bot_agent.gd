@@ -143,6 +143,9 @@ func choose_action():
 	if target!=0 and now-last_seen<4:action="investigate";set_goal(last_known);return
 	action="patrol"
 	if a.position.distance_to(goal)<3 or path.is_empty():
+		if game.arena.vertical_map:
+			var goals=game.arena.navigation_goals+game.arena.zones
+			roam_index=(roam_index+1)%goals.size();set_goal(goals[roam_index]);return
 		roam_index=(roam_index+1)%5
 		set_goal([game.arena.zones[0],Vector3(-game.arena.bounds.x*.66,0,game.arena.bounds.y/3.),game.arena.zones[1],game.arena.zones[2],Vector3(game.arena.bounds.x*.66,0,-game.arena.bounds.y/3.)][roam_index])
 func set_goal(pos:Vector3):

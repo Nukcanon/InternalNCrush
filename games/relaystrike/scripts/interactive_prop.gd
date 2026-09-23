@@ -64,7 +64,7 @@ func _physics_process(dt:float):
 		# Do not write cached velocities every frame: that erases queued ray-hit impulses.
 		if linear_velocity.length_squared()>64.:linear_velocity=linear_velocity.limit_length(8.)
 		if angular_velocity.length_squared()>100.:angular_velocity=angular_velocity.limit_length(10.)
-		if global_position.y< -3. or global_position.distance_to(home.origin)>24.:reset_home()
+		if global_position.y< -12. or global_position.distance_to(home.origin)>24.:reset_home()
 	elif received:
 		global_transform=global_transform.interpolate_with(target,1.-exp(-dt*18))
 func state() -> Array:

@@ -4,18 +4,21 @@ const M=preload("res://scripts/mesh_factory.gd")
 const H=preload("res://scripts/human_model.gd")
 const KINDS=["barrel","crate","cone","canister","tire"]
 static func allowed(arena:Node,pos:Vector3,placed:Array) -> bool:
-	if absf(pos.x)<4. or absf(pos.z)<4. or arena.wading(pos) or arena.walk_height(pos)>.1:return false
+	if arena.vertical_map:
+		for surface in arena.walk_surfaces:
+			if (surface.low!=surface.high or surface.low<2.) and surface.rect.grow(1.3).has_point(Vector2(pos.x,pos.z)):return false
+	if absf(pos.x)<4. or absf(pos.z)<4. or arena.wading(pos) or absf(arena.walk_height(pos))>.1 or (arena.vertical_map and not 0. in arena.navigation_heights(pos)):return false
 	if not arena.point_clear(pos):return false
 	for obstacle in arena.obstacles:
 		if obstacle.grow(1.2).has_point(Vector2(pos.x,pos.z)):return false
 	for spawn in arena.ffa_spawns:
 		if pos.distance_to(spawn)<5.:return false
-	for goal in arena.zones+arena.sites:
+	for goal in arena.zones+arena.sites+arena.navigation_goals:
 		if pos.distance_to(goal)<7.5:return false
 	for supply in arena.supplies:
 		if pos.distance_to(supply.pos)<4.:return false
 	for old in placed:
-		if pos.distance_to(old)<5.2:return false
+		if pos.distance_to(old)<(4.4 if arena.bounds.x<=36 else 5.2):return false
 	return true
 static func build(arena:Node):
 	var rng=RandomNumberGenerator.new();rng.seed=641029+arena.map_index*179
@@ -42,6 +45,7 @@ static func build(arena:Node):
 			var body=StaticBody3D.new();node.add_child(body);body.collision_layer=1;body.collision_mask=0
 			var collision=CollisionShape3D.new();var shape=BoxShape3D.new();shape.size=Vector3(1.45,.95,1.35) if type in [0,1,4,6] else Vector3(1.2,1.55,1.1);collision.shape=shape;collision.position.y=shape.size.y*.5;body.add_child(collision)
 			arena.obstacles.append(Rect2(Vector2(pos.x-1.25,pos.z-1.25),Vector2(2.5,2.5)))
+			if arena.vertical_map:arena.navigation_blocks.append(AABB(pos-Vector3(.9,0,.9),Vector3(1.8,shape.size.y,1.8)))
 	arena.set_meta("dressing_count",fixed_count);arena.set_meta("interactive_count",moving_count)
 static func preserve_routes(nav:BotNavigation,arena:Node,pos:Vector3) -> bool:
 	var lo=nav.cell(pos-Vector3(1.25,0,1.25));var hi=nav.cell(pos+Vector3(1.25,0,1.25));var changed=[]
@@ -52,7 +56,7 @@ static func preserve_routes(nav:BotNavigation,arena:Node,pos:Vector3) -> bool:
 	for team in [0,1]:
 		var starts=arena.spawn_points[team].filter(func(point):return arena.point_clear(point))
 		var start=starts[0] if not starts.is_empty() else Vector3(0,.12,(-1 if team==0 else 1)*(arena.bounds.y-10))
-		for goal in arena.zones+arena.sites:
+		for goal in arena.zones+arena.sites+arena.navigation_goals:
 			var path=nav.route(start,goal)
 			if path.size()<2 or path[-1].distance_to(goal)>4.5:
 				for cell in changed:nav.grid.set_point_solid(cell,false)
