@@ -17,7 +17,13 @@ with tempfile.TemporaryDirectory(prefix='inc-capacity-') as directory:
             assert processes[0].poll() is None and time.monotonic()<deadline,'Server not ready'
             time.sleep(.1)
         for i in range(32):
-            launch(str(i));time.sleep(float(os.environ.get('CAPACITY_STAGGER','.08')))
+            launch(str(i))
+            # Keep existing clients connected while pacing cold process startup on CI.
+            while not (control/f'client{i}.ready').exists():
+                assert all(p.poll() is None for p in processes),'Peer left during startup'
+                assert time.monotonic()<deadline,f'Client {i} did not finish joining'
+                time.sleep(.1)
+            time.sleep(float(os.environ.get('CAPACITY_STAGGER','.08')))
         while not (control/'server.ok').exists():
             assert all(p.poll() is None for p in processes),'Peer left before capacity barrier'
             assert time.monotonic()<deadline,'Capacity barrier timeout'

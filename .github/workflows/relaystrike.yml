@@ -27,12 +27,19 @@ jobs:
           unzip -p /tmp/templates.tpz templates/windows_release_x86_64.exe > ~/.local/share/godot/export_templates/4.4.1.stable/windows_release_x86_64.exe
           unzip -p /tmp/templates.tpz templates/windows_debug_x86_64.exe > ~/.local/share/godot/export_templates/4.4.1.stable/windows_debug_x86_64.exe
           python3 games/relaystrike/tools/prepare_assets.py
-      - name: Import, bake original models, and test
+      - name: Import and bake original models
         run: |
           set -euo pipefail
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --editor --import --quit
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tools/build_models.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --editor --import --quit
+      - name: 32-client capacity with paced startup
+        env:
+          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
+        run: python3 games/relaystrike/tests/run_network_capacity.py
+      - name: Rules, gameplay and network lifecycle
+        run: |
+          set -euo pipefail
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_rules.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_regressions.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_ai_aim.gd
@@ -43,7 +50,6 @@ jobs:
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v06.gd
           GODOT=/tmp/godot/Godot_v4.4.1-stable_linux.x86_64 python3 games/relaystrike/tests/run_network_probe.py
           GODOT=/tmp/godot/Godot_v4.4.1-stable_linux.x86_64 python3 games/relaystrike/tests/run_network_lifecycle.py
-          GODOT=/tmp/godot/Godot_v4.4.1-stable_linux.x86_64 python3 games/relaystrike/tests/run_network_capacity.py
       - name: New display, motion, replay and traversal checks
         run: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path games/relaystrike --script res://tests/test_v07.gd
       - name: Human stature, dressing and authoritative physics props

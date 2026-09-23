@@ -5,6 +5,8 @@ var label=""
 var started=0
 var checked=false
 var finishing=false
+var ready=false
+var next_report=0
 func _initialize():call_deferred("run")
 func run():
 	for arg in OS.get_cmdline_user_args():
@@ -18,6 +20,11 @@ func run():
 	physics_frame.connect(drive)
 func drive():
 	if finishing:return
+	var now=Time.get_ticks_msec()
+	if now>next_report:
+		next_report=now+15000;print("CAPACITY_PROGRESS ",label," phase=",g.phase," peers=",g.players.size()," busy=",g.connection_busy," seq=",g.received_sequence)
+	if label!="server" and not ready and g.phase=="lobby" and g.received_sequence>=0:
+		ready=true;FileAccess.open(control.path_join("client"+label+".ready"),FileAccess.WRITE).store_string("joined")
 	if Time.get_ticks_msec()-started>180000:finish(false);return
 	if FileAccess.file_exists(control.path_join("release")):finish(true);return
 	if label=="server":
