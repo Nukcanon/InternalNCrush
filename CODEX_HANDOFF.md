@@ -38,6 +38,17 @@
 - 리플레이는 영상 녹화가 아니라 로컬 수신 위치·조준·실제 사격 시작/끝 좌표의 재구성입니다. 90프레임/최대 512개 사격 이벤트로 제한합니다. 지연·수신 누락, 장치 파괴 시점과 자세의 세부 보간 때문에 원래 공격자 화면과 완전히 같지는 않습니다. 기록 부족이면 건너뜁니다.
 - 모션과 디자인은 자체 제작 스타일입니다. 상용 게임 자산·모션캡처 수준의 완성을 보장하지 않으며 플레이 피드백에 따른 추가 조정이 가능합니다.
 
+## 최종 공개 확인
+
+- **0.7.0 게시 완료**. 릴리스 소스: `d75719830d05dfe6d5576b270b6a5bb95be5afdd`. 이후 문서 전용 커밋은 빌드 코드 변경이 아닙니다.
+- [새 저장소 CI 35839178082](https://github.com/Nukcanon/InternalNCrush/actions/runs/35839178082): 351개 기능 검사, 2프로세스 전투, 8인 기본/지연 접속 생명주기, 32명 접속, Windows 내보내기·ZIP 게시 모두 성공.
+- [0.7.0 릴리스](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v0.7.0): 공개 알파. ZIP 43,613,355 bytes / 9 files.
+- ZIP SHA-256: `5cd2ddff00fff41a9c4ddfb7d5744ee856089d27a278293808012ec63a9eace2`.
+- 공개 다운로드 주소에서 ZIP과 SHA256SUMS를 다시 받아 해시·압축 무결성·EXE/PCK 헤더를 확인했습니다. 해당 다운로드 EXE를 실제 Windows에서 메뉴와 8인 봇 연습으로 각각 실행했고 종료 코드는 모두 0입니다. 봇 연습 종료 시 아래에 기록한 텍스처 경고는 재현됐습니다.
+- 사이트 커밋: `3b3322b4b047057633e4fdee2daed0cf42550e6f`. [Pages 35840069011](https://github.com/Nukcanon/nukcanon/actions/runs/35840069011) 성공. 공개 HTML·버전 JSON(0.7.0)·새 이미지 3장 HTTP 200 및 게시 내용 일치 확인. 브라우저에서 새 다운로드/소스 링크·갤러리 확인.
+- 옛 저장소 `games/relaystrike`는 이전 안내 README만 남겼고, 옛 게임 빌드 워크플로는 제거했습니다. 과거 소스 Git 기록과 0.6.0 이전 릴리스는 보존됩니다.
+- 초기 source push 실행 35839169346은 같은 커밋의 수동 배포 검사로 대체되어 취소됐습니다. 실제 게시 판정은 성공한 35839178082를 사용하세요. 구 저장소 0.6.0의 실패 실행은 과거 기록입니다.
+
 ## 주요 파일
 
 | 영역 | 파일 (`games/relaystrike` 기준) |
@@ -64,7 +75,7 @@ godot --headless --path games/relaystrike --editor --import --quit
 godot --path games/relaystrike
 ```
 
-CI가 기능·네트워크 검사 및 Windows 내보내기를 수행합니다. 소스 push는 검토용 빌드 아티팩트를 생성하고, `workflow_dispatch`일 때만 릴리스를 게시합니다. 게임 버전 변경 시 소스·EXE ZIP·릴리스 태그·사이트 링크·버전 JSON을 같이 갱신하세요. 실사용 ZIP에는 EXE/PCK/StartServer.cmd/라이선스 9개 파일만 포함합니다.
+CI가 기능·네트워크 검사 및 Windows 내보내기를 수행합니다. 현재 빌드 호스트는 Ubuntu이며 Windows 템플릿으로 내보냅니다. 네이티브 Windows 실행 검증은 이 PC에서 별도로 수행했습니다. 소스 push는 검토용 빌드 아티팩트를 생성하고, `workflow_dispatch`일 때만 릴리스를 게시합니다. 게임 버전 변경 시 소스·EXE ZIP·릴리스 태그·사이트 링크·버전 JSON을 같이 갱신하세요. 실사용 ZIP에는 EXE/PCK/StartServer.cmd/라이선스 9개 파일만 포함합니다.
 
 테스트 결과 로그와 캡처는 로컬 `validation` 폴더 및 작업 공간의 `*-tests.log`, `network-*.log`, `windows-*.log`에 있습니다. 테스트용 `--no-save-profile`은 사용자 설정을 저장하지 않습니다. Headless 검사도 사용자 설정을 읽거나 덮어쓰지 않습니다.
 
