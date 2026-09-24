@@ -1,25 +1,29 @@
 class_name WebMaterials
 extends RefCounted
 static var cache={}
+static var flat_shader:Shader
 static func simplify(material:Material) -> Material:
-	if not material is ShaderMaterial:return material
 	if cache.has(material):return cache[material]
+	if material is StandardMaterial3D:
+		if material.transparency!=BaseMaterial3D.TRANSPARENCY_DISABLED:return material
+		var simple=material.duplicate();simple.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;simple.albedo_texture=null;simple.normal_enabled=false;simple.roughness_texture=null;simple.metallic_texture=null
+		cache[material]=simple;return simple
+	if not material is ShaderMaterial:return material
 	var code=material.shader.code
 	if not ("material_atlas" in code or "operator_atlas" in code or "finish_roughness" in code):return material
-	var shader=Shader.new()
-	var human="skin_texture" in code
-	var hand="uniform vec4 tint" in code
-	shader.code="""shader_type spatial;
+	if flat_shader==null:
+		flat_shader=Shader.new()
+		flat_shader.code="""shader_type spatial;
 render_mode unshaded;
-uniform sampler2D skin_texture:source_color,filter_linear_mipmap;
 uniform vec4 tint:source_color=vec4(1.0);
-varying float shade;
-void vertex(){shade=.62+.38*max(dot(normalize(MODEL_NORMAL_MATRIX*NORMAL),normalize(vec3(.35,.85,.4))),0.0);}
-void fragment(){ALBEDO=BASE_COLOR*shade;}
-""".replace("BASE_COLOR","(UV2.y<1.0?texture(skin_texture,UV).rgb*.78:COLOR.rgb)" if human else "tint.rgb" if hand else "COLOR.rgb")
-	var result=ShaderMaterial.new();result.shader=shader
-	if human:result.set_shader_parameter("skin_texture",material.get_shader_parameter("skin_texture"))
-	if hand:result.set_shader_parameter("tint",material.get_shader_parameter("tint"))
+uniform float vertex_color=1.0;
+varying vec3 shaded_color;
+void vertex(){float shade=.62+.38*max(dot(normalize(MODEL_NORMAL_MATRIX*NORMAL),normalize(vec3(.35,.85,.4))),0.0);shaded_color=mix(tint.rgb,COLOR.rgb,vertex_color)*shade;}
+void fragment(){ALBEDO=shaded_color;}
+"""
+	var result=ShaderMaterial.new();result.shader=flat_shader
+	if "uniform vec4 tint" in code:
+		result.set_shader_parameter("tint",material.get_shader_parameter("tint"));result.set_shader_parameter("vertex_color",0.)
 	cache[material]=result;return result
 static func apply(root:Node):
 	for node in root.find_children("*","MeshInstance3D",true,false):

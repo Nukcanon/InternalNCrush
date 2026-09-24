@@ -18,7 +18,7 @@ func run():
 		var pose=HumanModel.pose_rig(role);root.add_child(pose)
 		for side in ["LeftArm","RightArm"]:
 			var arm=rig.get_node("Hips/Chest/"+side)
-			expect(is_equal_approx(arm.position.y,.175),"raised female shoulder socket")
+			expect(is_equal_approx(arm.position.y,.105),"shared male shoulder socket")
 			expect(arm.position==pose.get_node("Hips/Chest/"+side).position,"visible and hit pose shoulders match")
 		rig.free();pose.free()
 	for index in range(Rules.MAPS.size()):
@@ -74,7 +74,7 @@ func run():
 	await physics_frame;await physics_frame
 	var own_node=game.device_nodes[tower]
 	var meshes=own_node.find_children("*","MeshInstance3D",true,false)
-	expect(not meshes.is_empty() and meshes[0].material_overlay!=null and meshes[0].material_overlay.no_depth_test,"own device silhouette renders through walls")
+	expect(not meshes.is_empty() and meshes[0].material_overlay!=null and "hint_depth_texture" in meshes[0].material_overlay.shader.code,"own device silhouette renders through walls")
 	DeploymentSilhouette.apply(own_node,game.devices[tower],-1)
 	expect(meshes[0].material_overlay==null,"other players devices have no silhouette")
 	DeploymentSilhouette.apply(own_node,game.devices[tower],1)
@@ -145,10 +145,10 @@ func run():
 	game.players[-3].alive=true;game.players[-3].team=1;game.players[-3].cleanse=0.;game.actors[-3].position=Vector3(2,60.25,-30)
 	await physics_frame
 	expect(MarkerTracker.select_target(game,1)==-1,"passive marker selects closest enemy to scope center")
-	for i in range(9):MarkerTracker.tick(game,1,.1)
-	expect(game.players[-1].mark==0.,"less than one second never marks")
+	for i in range(19):MarkerTracker.tick(game,1,.1)
+	expect(game.players[-1].mark==0.,"less than two seconds never marks")
 	MarkerTracker.tick(game,1,.1)
-	expect(game.players[-1].mark==game.clock+6. and game.players[-3].mark==0.,"one-second scope dwell marks exactly one enemy for six seconds")
+	expect(game.players[-1].mark==game.clock+6. and game.players[-3].mark==0.,"two-second scope dwell marks exactly one enemy for six seconds")
 	MarkerTracker.tick(game,1,.1);game.actors[1].input_state.ads=false;MarkerTracker.tick(game,1,.1)
 	expect(game.players[1].marker_progress==0.,"leaving scope clears partial lock")
 	game.players[1].gadget=9

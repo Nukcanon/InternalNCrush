@@ -20,6 +20,8 @@ static func restore(arena:Node,index:int) -> bool:
 	for item in state.doors:arena.add_door(item.pos,item.yaw)
 	arena.set_meta("navigation_cache",source.get_meta("navigation_cache"))
 	source.free();GraphicsOptions.apply_world(arena)
+	if OS.has_feature("web"):
+		var batch=WebPropBatch.new();arena.add_child(batch);batch.build(arena.props)
 	return true
 static func save(arena:Node,path:String) -> Error:
 	var source=Node3D.new();source.name="CachedArena"

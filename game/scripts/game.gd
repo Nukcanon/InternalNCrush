@@ -116,7 +116,6 @@ func _ready():
 		if int(profile.graphics_quality)!=3:profile.merge({"graphics_quality":0 if TouchControls.supported() else 1,"shadow_quality":0,"decor_quality":0 if TouchControls.supported() else 1,"antialias":0},true)
 		profile.performance_revision=2
 	setup_input();apply_display_settings()
-	if OS.has_feature("web") and not demo_mode:add_child(WebRenderer.new())
 	if OS.has_feature("web"):get_viewport().size_changed.connect(apply_display_settings)
 	GraphicsOptions.apply(self)
 	internet=InternetLobby.new();internet.game=self;add_child(internet)
@@ -1066,7 +1065,7 @@ func use_skill(id:int):
 func use_gadget(id:int):
 	if int(players[id].gadget)==9:feedback(id,"","해체 키트 · 장치 앞에서 E를 10초 유지");return
 	var p=players[id];var a=actors[id]
-	if MarkerTracker.equipped(p):feedback(id,"","표식기 자동 추적 · 무기 조준경으로 적을 1초간 추적하세요.");return
+	if MarkerTracker.equipped(p):feedback(id,"","표식기 자동 추적 · 무기 조준경으로 적을 2초간 추적하세요.");return
 	if not options.classes or not can_attack(p) or phase!="combat" or p.gadget_count<=0 or clock<p.gadget_ready:return
 	if GrenadeLogic.equipped(p):
 		if GrenadeLogic.begin(self,id):GrenadeLogic.release(self,id)

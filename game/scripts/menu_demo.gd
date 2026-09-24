@@ -7,7 +7,7 @@ var elapsed=0.
 var multiplayer_path:NodePath
 var render_accumulator=0.
 func _ready():
-	stretch=true;stretch_shrink=3 if OS.has_feature("web") else 1;mouse_filter=Control.MOUSE_FILTER_IGNORE
+	stretch=true;stretch_shrink=1;mouse_filter=Control.MOUSE_FILTER_IGNORE
 	viewport=SubViewport.new();viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.handle_input_locally=false;viewport.gui_disable_input=true;viewport.audio_listener_enable_3d=false;add_child(viewport)
 	GraphicsOptions.apply_viewport(viewport)
 	multiplayer_path=viewport.get_path();get_tree().set_multiplayer(SceneMultiplayer.new(),multiplayer_path)

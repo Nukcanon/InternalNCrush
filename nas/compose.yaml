@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       MAX_ROOMS: ${MAX_ROOMS:-128}
-      GAME_VERSION: 1.1.2
+      GAME_VERSION: 1.1.3
       ALLOWED_ORIGINS: https://nukcanon.github.io
       TRUST_PROXY: "1"
       TURN_URLS: ${TURN_URLS:-}

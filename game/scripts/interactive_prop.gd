@@ -64,6 +64,7 @@ func configure(id:int,type:String,authority:bool):
 	M.merge_children(self)
 func _ready():
 	home=global_transform;target=home
+	if authoritative:sleeping_state_changed.connect(func():set_physics_process(not sleeping))
 func hit(point:Vector3,direction:Vector3,damage:float):
 	if not authoritative:return
 	sleeping=false

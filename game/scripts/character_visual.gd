@@ -311,6 +311,7 @@ func solve_arm(arm:Node3D,elbow:Node3D,target:Vector3,pole:Vector3,dt:float,weig
 	hand.quaternion=hand.quaternion.slerp(desired.get_rotation_quaternion(),weight)
 
 func throw_pose(started:float,held:bool,until:float,now:float):
+	if not held and until<=now:return
 	if held:
 		right_arm.rotation=Vector3(1.6,-.35,-.28);right_elbow.rotation.x=.9
 		left_arm.rotation=Vector3(1.5,.35,.18);left_elbow.rotation.x=.55

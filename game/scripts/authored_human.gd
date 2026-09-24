@@ -37,7 +37,7 @@ static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trouse
 				var uv=info.face_uvs[face_id][corner]
 				st.set_uv(Vector2(uv[0],uv[1]))
 				st.set_bones(bones);st.set_weights(weights);st.set_color(color.srgb_to_linear());st.set_uv2(Vector2(.67 if surface_kind==0 else .9,float(surface_kind)+.01))
-				var neck_adjust=.03*smoothstep(1.44,1.54,p[1]) if which==1 else 0.
+				var neck_adjust=0.
 				st.add_vertex(Vector3(p[0],p[1]-.94-neck_adjust,p[2]))
 		st.generate_normals();st.index();meshes[key]=st.commit()
 	var mesh=MeshInstance3D.new();mesh.name="SculptedShirt";mesh.mesh=meshes[key];mesh.material_override=SurfaceFinish.human_material(which);mesh.set_meta("authored_anatomy",true);root.get_node("Hips").add_child(mesh)

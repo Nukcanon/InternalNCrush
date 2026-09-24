@@ -230,8 +230,9 @@ func headless_pose(p:Dictionary):
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),game.clock)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
+	if not p.alive:tag.hide();return
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
-	protected_visual.visible=p.alive and float(p.get("protect",0))>now
+	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
 	if p.slot>=2 or p.get("cooking",0)>0:
 		var signature=str([p.role,p.gadget,p.slot])
@@ -267,7 +268,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		TargetReveal.apply(self,p)
 		if not game.server:global_position=global_position.lerp(target_pos,minf(1,dt*14));rotation.y=lerp_angle(rotation.y,aim_yaw,minf(1,dt*15))
 		shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
-		tag.visible=game.players.has(game.local_id) and (p.team==game.players[game.local_id].team or TargetReveal.visible_to(game,pid,game.local_id))
+		tag.visible=game.players.has(game.local_id) and p.team==game.players[game.local_id].team
 		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
 	var reloading=p.reload>now

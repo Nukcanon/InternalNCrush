@@ -1,5 +1,6 @@
 class_name MarkerTracker
 extends RefCounted
+const DWELL_SECONDS=2.
 static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)!=9
 static func select_target(game:Node,id:int) -> int:
 	var p=game.players[id];var a=game.actors[id];var w=game.current_weapon(p)
@@ -30,6 +31,6 @@ static func tick(game:Node,id:int,dt:float):
 	p.marker_target=target
 	if target==0:return
 	p.marker_progress=float(p.get("marker_progress",0))+elapsed
-	if p.marker_progress>=1.-.00001:
+	if p.marker_progress>=DWELL_SECONDS-.00001:
 		TargetReveal.mark(game,target,id,6.);p.marker_progress=0.
 		game.feedback(target,"","표식 감지 · 6초 동안 위치가 노출됩니다.")

@@ -148,3 +148,12 @@ def bake(gender):
     print(gender,len(points),'vertices',len(triangles),'triangles',result['eyes'])
 if __name__=='__main__':
     for gender in ['male','female']:bake(gender)
+    male=json.loads((ROOT/'male.json').read_text())
+    female=json.loads((ROOT/'female.json').read_text())
+    for i,body in enumerate(male['vertices']):
+        weight=smooth(1.53,1.60,body[1])
+        female['vertices'][i]=[round(v,6) for v in mix(body,female['vertices'][i],weight)]
+        female['weights'][i]=male['weights'][i]
+        female['kinds'][i]=male['kinds'][i]
+    (ROOT/'female.json').write_text(json.dumps(female,separators=(',',':')))
+    print('Female: male body/neck/shoulders and skin weights; female face above jaw')

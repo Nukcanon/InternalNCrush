@@ -259,7 +259,7 @@
     "name": "MONOLITH",
     "role": 1,
     "slot": 0,
-    "damage": 98,
+    "damage": 100,
     "interval": 2.35,
     "mag": 4,
     "reserve": 16,
@@ -289,9 +289,11 @@
     "falloff_end": 240,
     "min_damage_scale": 0.85,
     "zone_multipliers": {
-      "head": 1.85,
+      "head": 1.0,
       "torso": 1.0,
-      "legs": 0.65
+      "legs": 1.0,
+      "hands": 0.6,
+      "feet": 0.6
     },
     "ads_speed": 1.45,
     "move_speed_scale": 0.914,

@@ -102,7 +102,8 @@ func warm_one():
 		if not ghost_props.has(id):
 			var prop=game.arena.props[id];var node=Node3D.new();stage.add_child(node);ghost_props[id]=node
 			for child in prop.get_children():
-				if child is MeshInstance3D:node.add_child(child.duplicate())
+				if child is MeshInstance3D:
+					var copy=child.duplicate();node.add_child(copy);copy.show()
 			return
 	for id in game.device_nodes:
 		if not ghost_devices.has(id) and game.devices.has(id):

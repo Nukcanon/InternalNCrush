@@ -31,7 +31,7 @@ static func build(ui:Node):
 	var profile=ui.game.profile
 	ui.check("유혈 효과 · 기본 꺼짐",bool(profile.get("blood_effects",false)),func(on):profile.blood_effects=on;apply(ui.game);ui.game.save_profile())
 	if OS.has_feature("web"):
-		ui.label("바로 플레이는 경량 그래픽을 사용합니다. 실시간 광원·그림자·안티앨리어싱은 끄고, 3D 해상도는 성능에 맞춰 자동 조절합니다. 메뉴와 HUD 글자는 선명도를 유지합니다.",17)
+		ui.label("바로 플레이는 경량 그래픽을 사용합니다. 실시간 광원·그림자·안티앨리어싱은 끄고, 화면 해상도는 자동 변경하지 않습니다. 모델·재질·장식 처리량을 줄이고 메뉴와 HUD 글자는 선명도를 유지합니다.",17)
 		ui.option("최대 프레임",["제한 없음","30 FPS","60 FPS"],maxi(0,[0,30,60].find(int(profile.frame_limit))),func(i):profile.frame_limit=[0,30,60][i])
 		ui.label("연막·폭발·회복·스킬 표시는 유지됩니다.",17)
 		ui.button("그래픽 설정 적용",func():apply(ui.game);ui.game.save_profile();ui.notice("그래픽 설정을 적용했습니다."))

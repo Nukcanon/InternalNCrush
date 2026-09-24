@@ -13,7 +13,7 @@ func run():
 			var selected=arrays[Mesh.ARRAY_INDEX]
 			for lod in range(importer.get_surface_lod_count(0)):
 				var indices=importer.get_surface_lod_indices(0,lod)
-				if indices.size()>=6000 and indices.size()<selected.size():selected=indices
+				if indices.size()>=1800 and indices.size()<selected.size():selected=indices
 			arrays[Mesh.ARRAY_INDEX]=selected
 			var intermediate=ArrayMesh.new();intermediate.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 			var surface=SurfaceTool.new();surface.create_from(intermediate,0);surface.deindex();surface.index()
@@ -39,7 +39,7 @@ func run():
 				var selected=arrays[Mesh.ARRAY_INDEX]
 				for lod in range(importer.get_surface_lod_count(0)):
 					var indices=importer.get_surface_lod_indices(0,lod)
-					if indices.size()>=maxi(120,int(original*.25)) and indices.size()<selected.size():selected=indices
+					if indices.size()>=maxi(90,int(original*.10)) and indices.size()<selected.size():selected=indices
 				arrays[Mesh.ARRAY_INDEX]=selected
 				var intermediate=ArrayMesh.new();intermediate.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 				var surface=SurfaceTool.new();surface.create_from(intermediate,0);surface.deindex();surface.index();surface.set_material(visual.mesh.surface_get_material(surface_index));surface.commit(mesh)

@@ -279,7 +279,7 @@ func sync_status(game:Node,now:float):
 	for id in game.players:
 		var p=game.players[id]
 		if not p.alive or not game.actors.has(id):continue
-		for status in ["shield","cleanse","mark","mounted","invulnerable"]:
+		for status in ["shield","mounted"]:
 			if float(p.get(status,0))<=now:continue
 			var key=str(id)+status;live[key]=true
 			if not status_nodes.has(key):

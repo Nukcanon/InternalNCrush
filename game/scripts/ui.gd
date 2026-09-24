@@ -592,6 +592,7 @@ func refresh_gear_detail():
 	gear_detail.text="피해 %d%s    /    %s · 분당 %d발\n탄창 %d · 예비탄 %d    /    재장전 %.1f초\n안정성 %d / 100    /    조준 속도 %d ms\n무게 %.2f kg    /    휴대성 %d / 100\n기본 퍼짐 %.2f°    /    조준 시 %.2f°\n피해 감소 시작 %.0f m"%[w.damage," × "+str(int(w.pellets)) if w.pellets>1 else "",mode,60./maxf(.01,float(w.interval)),w.mag,w.reserve,w.reload,w.get("stability",0),w.get("ads_ms",250),w.get("weight_kg",0),w.get("portability",0),w.spread,w.get("ads_spread",0),w.reach]
 	gear_detail.tooltip_text="안정성↑: 연속 사격 퍼짐 감소 · 조준 시간↓: 더 빠른 조준\n무게↑ / 휴대성↓: 이동 중 퍼짐 증가 · 퍼짐은 반각 기준"
 	gear_detail.text="머리 ×%.2f · 몸통 ×1 · 다리 ×%.2f\n조준 이동 %.2f m/s · 비조준 %.1f° / 조준 %.1f°"%[w.zone_multipliers.head,w.zone_multipliers.legs,float(w.get("ads_speed",4.4))*.5,w.spread,w.ads_spread]
+	if w.name=="MONOLITH":gear_detail.text="머리·몸통·팔·다리 100 / 손·발 60 피해\n방어구 및 120m 이후 거리 감소 적용\n4발 · 사격 간격 2.35초 · 재장전 3.8초"
 	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 24/초\n유효 거리 10 m · 에너지 180\n아군을 향해 발사하면 지속 회복합니다.\n같은 아군에게 여러 LINK 효과는 중첩되지 않습니다."
 	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n12m 이후 탄환 피해 감소 · 48m에서 10%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
 	if w.kind=="repair":gear_detail.text="FIX · 구조물 수리 · 에너지 100\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
@@ -717,7 +718,7 @@ func refresh():
 	ammo.text=str(int(p.mag.get(wid,0)))+" / "+("∞" if game.options.infinite else str(int(p.reserve.get(wid,0))))
 	if w.kind=="heal":ammo.text="%d / 180"%p.energy;weapon_title.text="LINK  /  회복 에너지"
 	if w.kind=="repair":ammo.text="%d / 100"%p.repair_energy;weapon_title.text="FIX  /  수리 에너지"
-	if p.slot>=2:weapon_title.text=Rules.GADGETS[p.role] if p.role!=4 else "섬광탄" if p.slot==3 else "연막탄";ammo.text="스코프로 1초 추적 · 자동" if MarkerTracker.equipped(p) else "클릭하여 사용"
+	if p.slot>=2:weapon_title.text=Rules.GADGETS[p.role] if p.role!=4 else "섬광탄" if p.slot==3 else "연막탄";ammo.text="스코프로 2초 추적 · 자동" if MarkerTracker.equipped(p) else "클릭하여 사용"
 	if p.reload>game.clock:ammo.text="재장전 %.1f"%(p.reload-game.clock)
 	health.add_theme_color_override("font_color",Color("6bc7ff") if p.team==0 else Color("ffa35f"))
 	var skill="준비" if p.skill_ready<=game.clock else "%.0f초"%ceil(p.skill_ready-game.clock)

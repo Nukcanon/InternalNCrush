@@ -2,19 +2,19 @@ extends RefCounted
 class_name HumanModel
 const M=preload("res://scripts/mesh_factory.gd")
 const HEIGHTS=[1.80,1.72,1.88,1.76,1.83,1.70]
-const WIDTHS=[1.0,.92,1.08,1.01,.98,.93]
+const WIDTHS=[1.0,.95,1.08,1.01,.98,.95]
 const FEMALE_ROLES=[1,5]
 const IDENTITIES=["MASON", "SERA", "BRIGGS", "REED", "VALE", "MINA"]
 const SKIN_COLORS=[Color("b3a28c"),Color("c7b69f"),Color("89765f"),Color("b9a48a"),Color("9b866e"),Color("c2b099")]
 static func joint(parent:Node,label:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=label;n.position=pos;parent.add_child(n);return n
 static func pose_rig(which:int) -> Node3D:
-	var rig=Node3D.new();rig.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,WIDTHS[which])
+	var rig=Node3D.new();rig.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,1.0 if which in FEMALE_ROLES else WIDTHS[which])
 	var hips=joint(rig,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
-	joint(chest,"Head",Vector3(0,.33 if which==1 else .36,0));joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
+	joint(chest,"Head",Vector3(0,.36,0));joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
 	for side in [-1,1]:
 		var prefix="Left" if side<0 else "Right"
-		var arm=joint(chest,prefix+"Arm",Vector3(side*(.195 if which in FEMALE_ROLES else .207),.175 if which in FEMALE_ROLES else .105,0))
+		var arm=joint(chest,prefix+"Arm",Vector3(side*.207,.105,0))
 		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0));joint(elbow,"Hand",Vector3(0,-.275,0))
 		var leg=joint(hips,prefix+"Leg",Vector3(side*.099,-.025,0));var knee=joint(leg,"Knee",Vector3(0,-.415,0));joint(knee,"Foot",Vector3(0,-.415,0))
 	return rig
@@ -106,7 +106,7 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 	oval(parent,Vector3(.092,.012,.014),Vector3(.038,.059,.051),Color("414947"))
 	cord(parent,Vector3(.099,-.004,0),Vector3(.061,-.055,-.10),.005,Color("383f3f"))
 static func build(which:int,team:int) -> Node3D:
-	var root=Node3D.new();root.name="Operator";root.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,WIDTHS[which]);root.set_meta("height_m",HEIGHTS[which]);root.set_meta("gender","female" if which in FEMALE_ROLES else "male");root.set_meta("identity",IDENTITIES[which])
+	var root=Node3D.new();root.name="Operator";root.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,1.0 if which in FEMALE_ROLES else WIDTHS[which]);root.set_meta("height_m",HEIGHTS[which]);root.set_meta("gender","female" if which in FEMALE_ROLES else "male");root.set_meta("identity",IDENTITIES[which])
 	var skin=SKIN_COLORS[which]
 	var hair=[Color("463931"),Color("352f2d"),Color("302927"),Color("655346"),Color("55514b"),Color("583f31")][which]
 	var shirt=Color("718891") if team==0 else Color("98806a")
@@ -123,7 +123,7 @@ static func build(which:int,team:int) -> Node3D:
 
 	for side in [-1,1]:
 		M.box(chest,Vector3(side*.132,.055,-.177),Vector3(.041,.28,.018),vest.lightened(.10),Vector3(-.12,0,side*-.10),.4)
-		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*(.195 if which in FEMALE_ROLES else .207),.175 if which in FEMALE_ROLES else .105,0))
+		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.207,.105,0))
 		oval(arm,Vector3(-side*.028,-.025,0),Vector3(.119,.15,.131),shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.285,.046,.048,0),Vector4(-.20,.058,.058,0),Vector4(-.12,.061,.062,0),Vector4(-.045,.065,.068,0),Vector4(.016,.05,.056,0)],shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.19,.069,.069,0),Vector4(-.155,.075,.074,0)],team_color)
@@ -149,7 +149,7 @@ static func build(which:int,team:int) -> Node3D:
 		M.box(chest,Vector3(x,-.112,-.194),Vector3(.09,.14,.038),vest.darkened(.10),Vector3.ZERO,.32)
 		cord(chest,Vector3(x-.035,-.045,-.211),Vector3(x+.035,-.045,-.211),.006,vest.lightened(.25))
 	loft(chest,Vector3(0,.256,0),[Vector4(-.025,.059,.056,0),Vector4(.07,.055,.054,0)],skin)
-	var head=joint(chest,"Head",Vector3(0,.33 if which==1 else .36,0));face(head,which,skin,hair)
+	var head=joint(chest,"Head",Vector3(0,.36,0));face(head,which,skin,hair)
 	if which in FEMALE_ROLES:
 		pass # Authored female anatomy shares the animation skeleton.
 	# Role-specific soft gear: radio, scout scarf, padded vest, tool roll, satchel, medical bag.

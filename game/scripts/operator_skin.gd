@@ -78,6 +78,11 @@ static func _append_geometry(node:Node3D,rig:Node3D,index:int,rest:Array,st:Surf
 					st.set_normal((transform.basis.inverse().transposed()*normals[k]).normalized());st.add_vertex(position)
 		elif child is Node3D and not child.has_meta("deform_bone") and child.name!="WeaponSocket":_append_geometry(child,rig,index,rest,st)
 static func sync(rig:Node3D,skeleton:Skeleton3D):
+	if rig.get_meta("pose_owner",0)!=rig.get_instance_id():
+		var nodes=[]
+		for path in PATHS:nodes.append(rig.get_node(path))
+		rig.set_meta("pose_nodes",nodes);rig.set_meta("pose_owner",rig.get_instance_id())
+	var nodes:Array=rig.get_meta("pose_nodes")
 	for i in range(PATHS.size()):
-		var node:Node3D=rig.get_node(PATHS[i]);var pose=node.transform
+		var node:Node3D=nodes[i];var pose=node.transform
 		skeleton.set_bone_pose_position(i,pose.origin);skeleton.set_bone_pose_rotation(i,pose.basis.orthonormalized().get_rotation_quaternion());skeleton.set_bone_pose_scale(i,pose.basis.get_scale())

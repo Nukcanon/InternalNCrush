@@ -14,6 +14,8 @@ func run():
 			importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,body.mesh.surface_get_arrays(0),[],{},SurfaceFinish.human_material(role))
 			importer.generate_lods(60.,60.,[]);body.mesh=importer.get_mesh();body.set_meta("lod_count",importer.get_surface_lod_count(0))
 			print("OPERATOR_LOD ",role,"/",team," levels=",importer.get_surface_lod_count(0))
+			if node.has_meta("pose_nodes"):node.remove_meta("pose_nodes")
+			if node.has_meta("pose_owner"):node.remove_meta("pose_owner")
 			MeshFactory.own_recursive(node,node)
 			var scene=PackedScene.new();scene.pack(node);var path="res://assets/models/operator_%d_%d.scn"%[role,team];ResourceSaver.save(scene,path,ResourceSaver.FLAG_COMPRESS)
 			if art_source:
