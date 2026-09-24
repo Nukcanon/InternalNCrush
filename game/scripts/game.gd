@@ -414,7 +414,7 @@ func spawn(id:int):
 		var requested=p.pending_loadout.duplicate();p.pending_loadout={};commit_loadout(id,requested)
 	var best=choose_spawn(id)
 	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.cooking=0;p.slide_until=0.;p.hp=100.;p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;p.gadget_count=2 if p.role==3 else 3 if p.role==4 else 1;p.smoke=1 if p.role==4 and p.gadget==1 else 2;p.flash_count=2 if p.role==4 and p.gadget==1 else 1;p.last_hit=clock;p.contributors={};p.spectator=false
-	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.
+	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.;p.reveal_to={}
 	p.hand=-1 if randf()<.12 else 1
 	a.reset_view((0. if p.team==MatchFlow.attackers(self) else PI) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else 0. if options.get("practice",false) and id==1 else 0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
 	if id==local_id:capture_pointer()
@@ -1029,7 +1029,7 @@ func grant_invulnerability(id:int,target:int):
 	if target==0 or not players.has(target) or not players[target].alive:return
 	var p=players[id]
 	if p.skill_ready>clock:return
-	players[target].invulnerable=clock+4.;players[target].cleanse=clock+4.;players[target].slow=0.;players[target].mark=0.;players[target].flash=0.
+	players[target].invulnerable=clock+4.;players[target].cleanse=clock+4.;players[target].slow=0.;players[target].mark=0.;players[target].reveal_to={};players[target].flash=0.
 	p.invul_select=0.;p.skill_ready=clock+AbilityBalance.COOLDOWNS[5]
 	feedback(id,"heal","4초 무적 · "+str(players[target].nick));feedback(target,"heal","무적 보호 · 4초")
 	effect.rpc("skill",actors[target].position,Vector3.ZERO,id)
@@ -1046,7 +1046,7 @@ func use_skill(id:int):
 			var radius=maxf(AbilityBalance.SCAN_RANGE,arena.bounds.length()*.5)
 			for qid in players:
 				if players[qid].alive and enemies(p,players[qid]) and a.position.distance_to(actors[qid].position)<radius and players[qid].get("cleanse",0)<=clock:
-					players[qid].mark=clock+4.;feedback(qid,"","감지 파동 노출 · 4초 동안 위치가 표시됩니다.")
+					TargetReveal.mark(self,qid,id,4.);feedback(qid,"","감지 파동 노출 · 4초 동안 위치가 표시됩니다.")
 			p.skill_ready=clock+40.;announce(p.nick+" · 감지 파동")
 		2:p.shield=clock+6.;p.skill_ready=clock+AbilityBalance.COOLDOWNS[2]
 		3:Deployment.begin(self,id,"turret");return
@@ -1074,7 +1074,7 @@ func use_gadget(id:int):
 		1:
 			var tid=aim_player(id,160,false)
 			if tid==0:feedback(id,"","표식할 상대를 조준하세요.");return
-			if players[tid].get("cleanse",0)<=clock:players[tid].mark=clock+6;feedback(tid,"","표식 감지 · 6초 동안 위치가 노출됩니다.")
+			if players[tid].get("cleanse",0)<=clock:TargetReveal.mark(self,tid,id,6.);feedback(tid,"","표식 감지 · 6초 동안 위치가 노출됩니다.")
 		2:
 			if not a.input_state.crouch:feedback(id,"","앉아서 거치대를 사용하세요.");return
 			p.mounted=clock+15

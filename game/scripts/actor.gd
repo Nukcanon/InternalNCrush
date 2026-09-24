@@ -264,10 +264,11 @@ func visual(dt:float,p:Dictionary,now:float):
 		world_weapon.visible=p.slot<2 and p.get("cooking",0)==0;world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if not local:
+		TargetReveal.apply(self,p)
 		if not game.server:global_position=global_position.lerp(target_pos,minf(1,dt*14));rotation.y=lerp_angle(rotation.y,aim_yaw,minf(1,dt*15))
 		shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
-		tag.visible=game.players.has(game.local_id) and (p.team==game.players[game.local_id].team or p.mark>now)
-		tag.modulate=Color("ffae65") if p.mark>now else Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
+		tag.visible=game.players.has(game.local_id) and (p.team==game.players[game.local_id].team or TargetReveal.visible_to(game,pid,game.local_id))
+		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
 	var reloading=p.reload>now
 	var stage=0 if progress<.3 else 1 if progress<.76 else 2

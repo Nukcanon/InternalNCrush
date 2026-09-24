@@ -124,6 +124,19 @@ func run():
 	await physics_frame;await physics_frame
 	expect(not game.ray(shooter.eye(),sight,[shooter.get_rid()],1).is_empty(),"ADS cannot fire through full-height wall")
 	barrier.free()
+	game.options.mode=0;game.players[1].team=0;game.players[-2].team=0;game.players[-1].team=1;game.players[-1].alive=true
+	TargetReveal.mark(game,-1,1,4.)
+	expect(TargetReveal.visible_to(game,-1,1) and TargetReveal.visible_to(game,-1,-2),"scan silhouette is shared with every teammate")
+	game.players[-3].team=1
+	expect(not TargetReveal.visible_to(game,-1,-3),"opposing team does not receive reveal")
+	game.clock+=4.1
+	expect(not TargetReveal.visible_to(game,-1,1),"scan silhouette expires after four seconds")
+	TargetReveal.mark(game,-1,1,6.);game.clock+=5.
+	expect(TargetReveal.visible_to(game,-1,-2),"marker silhouette remains for six seconds")
+	game.players[-1].mark=0.
+	expect(not TargetReveal.visible_to(game,-1,1),"cleanse removes reveal immediately")
+	game.options.mode=1;TargetReveal.mark(game,-1,1,4.)
+	expect(TargetReveal.visible_to(game,-1,1) and not TargetReveal.visible_to(game,-1,-2),"free-for-all reveal belongs only to its source")
 	game.leave_game();game.free();await process_frame
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)
