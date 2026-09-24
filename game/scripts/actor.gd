@@ -275,7 +275,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
 	var scoped=ads and float(w.zoom)<=38 and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
-	camera.fov=lerpf(88. if sprint else 82.,float(w.zoom),ads_blend)
+	camera.fov=lerpf(88. if sprint else 82.,SniperScope.fov(game.profile,w),ads_blend)
 	var base=Vector3(.255,-.255,-.46).lerp(Vector3(0,-.14,-.5),ads_blend)
 	var motion=move_blend*(1.-ads_blend*.93)
 	base.y+=sin(now*1.9)*.002*(1.-move_blend)*(1.-ads_blend)

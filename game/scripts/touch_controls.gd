@@ -44,6 +44,9 @@ func _process(_dt):
 	if not visible and was_active:reset()
 	was_active=visible
 	if visible:
+		if SniperScope.active(game):
+			buttons["zoom_out"]=Rect2(970,305,105,70);buttons["zoom_in"]=Rect2(1090,305,105,70)
+		else:buttons.erase("zoom_out");buttons.erase("zoom_in")
 		if Input.mouse_mode!=Input.MOUSE_MODE_VISIBLE:Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 		queue_redraw()
 func press(action:String,on:bool):
@@ -55,6 +58,7 @@ func press(action:String,on:bool):
 	if not on:return
 	if action.begins_with("slot"):game.command("slot",{"slot":int(action.trim_prefix("slot"))});return
 	match action:
+		"zoom_in","zoom_out":SniperScope.change(game,1 if action=="zoom_in" else -1)
 		"fire":
 			if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish();return
 			if not game.players[game.local_id].alive:game.cycle_spectator();return
@@ -102,6 +106,7 @@ func _input(event):
 			var actor=game.actors.get(game.local_id)
 			if actor:
 				var sensitivity=float(game.profile.get("touch_sensitivity",.0028))*(.65 if held.get("ads",false) else 1.)
+				if SniperScope.active(game):sensitivity=float(game.profile.get("touch_sensitivity",.0028))*SniperScope.sensitivity(game,true)
 				if game.players[game.local_id].alive:actor.input_state.yaw-=delta.x*sensitivity;actor.input_state.pitch=clampf(actor.input_state.pitch-delta.y*sensitivity,-1.45,1.45)
 				else:game.spectator_yaw-=delta.x*sensitivity;game.spectator_pitch=clampf(game.spectator_pitch-delta.y*sensitivity,-1.2,1.2)
 		get_viewport().set_input_as_handled()
@@ -116,6 +121,7 @@ func _draw():
 	var labels={"fire":"발사","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"보조 발사","gear":"병과 / 장비","mode":"설치 모드","menu":"메뉴","score":"기록"}
 	var p=game.players.get(game.local_id,{})
 	labels.use=BombLogic.use_label(game,game.local_id)
+	labels.zoom_in="배율 +";labels.zoom_out="배율 −"
 	for action in buttons:
 		var rect:Rect2=buttons[action];var color=Color(.04,.075,.10,.40) if not held.get(action,false) else Color(.18,.48,.54,.75)
 		if action=="fire":draw_circle(rect.get_center(),rect.size.x*.5,color);draw_arc(rect.get_center(),rect.size.x*.5,0,TAU,48,Color(.86,.96,1,.6),2.,true)

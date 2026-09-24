@@ -56,7 +56,7 @@ var bomb={"planted":false,"site":-1,"time":0.0,"actor":0,"progress":0.0,"positio
 var server=false
 var dedicated=false
 var local_id=1
-var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":0,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028}
+var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"sniper_mouse_sensitivity":.75,"sniper_touch_sensitivity":.65,"scope_zoom":{},"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":0,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028}
 var bot_start_loadout={}
 var pending_loadout={"role":0,"primary":"a1","secondary":"pistol","armor":0,"team":-1,"gadget":0}
 var snapshot_timer=0.0
@@ -551,6 +551,7 @@ func _unhandled_input(event):
 	if event is InputEventMouseMotion:
 		if Input.mouse_mode!=Input.MOUSE_MODE_CAPTURED and not (event.button_mask&(MOUSE_BUTTON_MASK_LEFT|MOUSE_BUTTON_MASK_RIGHT)):return
 		var sensitivity=float(profile.sensitivity)*(float(profile.ads_sensitivity) if a.input_state.ads and players[local_id].alive else 1.)
+		if SniperScope.active(self):sensitivity=float(profile.sensitivity)*SniperScope.sensitivity(self)
 		if players[local_id].alive:
 			a.input_state.yaw-=event.relative.x*sensitivity;a.input_state.pitch=clampf(a.input_state.pitch-event.relative.y*sensitivity,-1.45,1.45)
 		else:
@@ -558,7 +559,9 @@ func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT and players[local_id].alive:
 		trigger_seq+=1;a.input_state.trigger_seq=trigger_seq
 	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and players[local_id].alive:
-		cycle_weapon(-1 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1);get_viewport().set_input_as_handled()
+		if SniperScope.active(self):SniperScope.change(self,1 if event.button_index==MOUSE_BUTTON_WHEEL_UP else -1)
+		else:cycle_weapon(-1 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1)
+		get_viewport().set_input_as_handled()
 	for index in range(3,5):
 		if event.is_action_pressed("item"+str(index)):command("slot",{"slot":index-1})
 	if event.is_action_pressed("sprint") and not event.is_echo():

@@ -407,6 +407,9 @@ func settings():
 	label("전체 화면에서도 게임 해상도를 낮출 수 있습니다. 낮을수록 화면은 덜 선명하지만 그래픽 부하가 줄어듭니다.",17)
 	sensitivity_control("마우스 감도",float(game.profile.sensitivity)/.0023,.15,4.,func(v):game.profile.sensitivity=v*.0023;game.save_profile())
 	sensitivity_control("정조준 감도 배율",float(game.profile.ads_sensitivity),.2,1.5,func(v):game.profile.ads_sensitivity=v;game.save_profile())
+	sensitivity_control("저격 조준 마우스 감도",float(game.profile.sniper_mouse_sensitivity),.1,2.,func(v):game.profile.sniper_mouse_sensitivity=v;game.save_profile())
+	sensitivity_control("저격 조준 터치 감도",float(game.profile.sniper_touch_sensitivity),.1,2.,func(v):game.profile.sniper_touch_sensitivity=v;game.save_profile())
+	label("저격 조준 중 휠로 배율 조절 · SCOUT 4/8× · MONOLITH 4/8/16×. 마지막 배율을 총마다 기억합니다. 모바일은 배율 ± 버튼을 사용합니다.",16)
 	label("화면과 감도 설정은 다음 실행에도 유지됩니다.",14)
 	stack=tabs[1]
 	GraphicsOptions.build(self)

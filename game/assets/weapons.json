@@ -248,7 +248,11 @@
     "spray_frequency": 1.8,
     "spray_seed": 1.48,
     "spray_direction": -1,
-    "pattern_recovery": 31.65
+    "pattern_recovery": 31.65,
+    "scope_steps": [
+      4,
+      8
+    ]
   },
   "r2": {
     "name": "MONOLITH",
@@ -298,7 +302,12 @@
     "spray_frequency": 1.6,
     "spray_seed": 1.85,
     "spray_direction": 1,
-    "pattern_recovery": 27.7
+    "pattern_recovery": 27.7,
+    "scope_steps": [
+      4,
+      8,
+      16
+    ]
   },
   "r3": {
     "name": "ECHO",

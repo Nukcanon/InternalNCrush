@@ -100,6 +100,19 @@ func run():
 	game.actors[1].position+=Vector3.RIGHT*20;game.players[1].skill_ready=game.clock+9.
 	expect(AbilityBalance.skill_state(game,1).remaining==9.,"away from turret HUD follows placement cooldown")
 	expect(TurretLogic.ROCKET_SPEED==30.,"missile velocity raised from 18 to 30 m/s")
+	game.players[1].role=1;game.players[1].primary="r1";game.players[1].slot=0;game.actors[1].input_state.ads=true
+	expect(SniperScope.active(game) and SniperScope.magnification(game.profile,Catalog.get_weapon("r1"))==4.,"sniper default is four times magnification")
+	SniperScope.change(game,1);SniperScope.change(game,1)
+	expect(SniperScope.magnification(game.profile,Catalog.get_weapon("r1"))==8.,"SCOUT maximum is eight times")
+	game.actors[1].input_state.ads=false;game.actors[1].input_state.ads=true
+	expect(SniperScope.magnification(game.profile,Catalog.get_weapon("r1"))==8.,"scope reentry retains selected zoom")
+	game.players[1].primary="r2";SniperScope.change(game,1);SniperScope.change(game,1)
+	expect(SniperScope.magnification(game.profile,Catalog.get_weapon("r2"))==16.,"MONOLITH supports sixteen times")
+	expect(SniperScope.fov(game.profile,Catalog.get_weapon("r2"))<7.,"sixteen times uses optical field of view")
+	game.profile.sniper_mouse_sensitivity=1.2;game.profile.sniper_touch_sensitivity=.4
+	expect(is_equal_approx(SniperScope.sensitivity(game),.3) and is_equal_approx(SniperScope.sensitivity(game,true),.1),"independent mouse and touch sniper sensitivities scale with zoom")
+	game.players[1].primary="r3"
+	expect(not SniperScope.active(game) and SniperScope.fov(game.profile,Catalog.get_weapon("r3"))==25.,"designated marksman zoom unchanged")
 	game.leave_game();game.free();await process_frame
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)
