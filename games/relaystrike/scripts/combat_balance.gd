@@ -14,6 +14,15 @@ static func damage_at(w:Dictionary,distance:float,zone:String="torso") -> float:
 	return float(w.damage)*range_factor(w,distance)*float(w.get("zone_multipliers",{}).get(zone,1.))
 static func sustained_rpm(w:Dictionary) -> float:
 	return 180./(float(w.interval)*2.+float(w.get("burst_pause",.3))) if w.get("fire_mode","")=="burst" else 60./float(w.interval)
+static func firing_dps(w:Dictionary) -> float:
+	return float(w.damage)*int(w.pellets)*sustained_rpm(w)/60. if w.kind=="gun" else 0.
+static func magazine_seconds(w:Dictionary) -> float:
+	var gaps=maxi(0,int(w.mag)-1)
+	if w.get("fire_mode","")=="burst":return floor(gaps/3.)*(float(w.interval)*2.+float(w.burst_pause))+(gaps%3)*float(w.interval)
+	return gaps*float(w.interval)
+static func sustained_dps(w:Dictionary) -> float:
+	if w.kind!="gun":return 0.
+	return float(w.damage)*int(w.pellets)*int(w.mag)/(magazine_seconds(w)+maxf(float(w.reload),float(w.interval)))
 static func pellet_sample(index:int,count:int,rotation:float) -> Vector2:
 	# Stratified disc: prevents a random cluster of shotgun pellets acting like a slug.
 	return Vector2((index+.5)/maxi(1,count),fposmod(rotation+index*.61803398875,1.))

@@ -22,7 +22,7 @@ func run():
 	var defaults=Rules.default_options();expect(defaults.map==13 and defaults.max_players==8,"default room is an eight-player map")
 	for index in range(19):
 		var opts=Rules.default_options();opts.map=index;opts.max_players=32;opts.bots=31;Rules.sanitize_room(opts)
-		expect(opts.max_players<=Rules.MAP_PLAYERS[index] and opts.bots<opts.max_players,"server enforces map capacity "+str(index))
+		expect(opts.max_players<=Rules.MAP_PLAYERS[opts.map] and opts.bots<opts.max_players,"server selects a map that supports the requested capacity "+str(index))
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)
 		if w.kind!="gun":continue
@@ -58,7 +58,7 @@ func run():
 		audit.append({"map":index,"indoor":a.indoors,"night":a.get_meta("night"),"blockers":a.get_meta("sight_blockers"),"removed_faces":a.architecture.get_meta("coplanar_faces_removed",0),"rays":distances.size(),"over_50m":long_lines,"median":distances[distances.size()/2] if not distances.is_empty() else 0})
 		print("MAP_AUDIT ",JSON.stringify(audit.back()));a.free();await process_frame
 	DirAccess.make_dir_recursive_absolute("res://../../validation");FileAccess.open("res://../../validation/v102-map-audit.json",FileAccess.WRITE).store_string(JSON.stringify(audit,"  "))
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.options.map=13;g.build_world();g.phase="lobby";g.add_player(1,"TEST","test_v102_local");g.phase="combat";g.clock=100.
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.options.map_random=false;g.options.map=13;g.build_world();g.phase="lobby";g.add_player(1,"TEST","test_v102_local");g.phase="combat";g.clock=100.
 	var p=g.players[1];var actor=g.actors[1];actor.position=Vector3(0,.05,g.arena.bounds.y-7);actor.reset_view(0);p.protect=0.;p.role=0;p.gadget=1;p.slot=2;p.gadget_count=1
 	expect(GrenadeLogic.begin(g,1),"grenade cooking begins")
 	g.process_trigger(1);expect(p.cooking>0 and g.grenades[0].held,"G cooking is not released by an idle mouse")

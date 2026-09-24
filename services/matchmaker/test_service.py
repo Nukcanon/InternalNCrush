@@ -34,7 +34,7 @@ class LobbyTest(unittest.TestCase):
         self.assertEqual(self.client.get("/v1/rooms", headers=self.owner).status_code, 200)
 
     def test_capacity_and_strict_types(self):
-        for options in [{"capacity": 32, "map": 13}, {"mode": -1}, {"map": 99}, {"capacity": True}, {"map": "13"}, {"admin": True}]:
+        for options in [{"capacity": 32, "map": 13}, {"mode": -1}, {"map": 99}, {"capacity": True}, {"map": "13"}, {"admin": True}, {"capacity": 7}, {"mode": 4, "map": 13}, {"mode": 4, "map": 25, "capacity": 14}, {"mode": 0, "map": 19}]:
             self.assertEqual(self.client.post("/v1/rooms", headers=self.owner, json=options).status_code, 422)
         room = self.create()
         self.assertEqual(room.options.capacity, 8)
@@ -100,6 +100,19 @@ class LobbyTest(unittest.TestCase):
         self.assertEqual(self.client.delete(url, headers=self.session("GUEST")).status_code, 403)
         self.assertEqual(self.client.delete(url, headers=self.owner).status_code, 200)
         self.assertNotIn(room.id, self.state.rooms)
+
+    def test_rotation_options_and_heartbeat_map_validation(self):
+        room = self.create(mode=4, map=19, capacity=6, map_random=True,
+                           map_rotation=True, rounds=0, prep_seconds=60)
+        self.assertEqual(room.options.prep_seconds, 60)
+        self.assertEqual(room.options.rounds, 0)
+        url = f"/internal/rooms/{room.id}/heartbeat"
+        headers = {"Authorization": "Bearer " + room.key}
+        response = self.client.post(url, headers=headers, json={"players": [], "phase": "combat", "map": 20})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(room.options.map, 20)
+        for invalid in [13, 25, 31]:
+            self.assertEqual(self.client.post(url, headers=headers, json={"players": [], "phase": "combat", "map": invalid}).status_code, 422)
 
 
 if __name__ == "__main__":

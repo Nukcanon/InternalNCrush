@@ -7,11 +7,16 @@ var grenade_nodes={}
 var status_nodes={}
 var ragdolls=[]
 var active_lights=0
+var blood:BloodFX
 static var cloud_shader:Shader
 const M=preload("res://scripts/mesh_factory.gd")
 func clear():
 	for child in get_children():child.queue_free()
 	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();active_lights=0
+	blood=null
+func blood_hit(point:Vector3,direction:Vector3,amount:float):
+	if not is_instance_valid(blood):blood=BloodFX.new();add_child(blood)
+	blood.emit_hit(point,direction,amount)
 func group(pos:Vector3) -> Node3D:
 	while transients.size()>=96:
 		var old=transients.pop_front()
@@ -193,30 +198,13 @@ func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:f
 	var t=light.create_tween();t.tween_property(light,"light_energy",0.,seconds);t.tween_callback(light.queue_free)
 func muzzle_light(pos:Vector3):temporary_light(pos,Color("ffc77b"),1.3,3.8,.075)
 func explosion(pos:Vector3,fire:bool=true):
-	var node=group(pos);node.set_meta("explosion",true)
-	temporary_light(pos+Vector3.UP*.3,Color("ffb05c"),5.,11.,.38)
-	var tween=node.create_tween().set_parallel(true)
-	var shock=ring(node,.65,Color(1,.82,.5,.75));shock.position.y=.06
-	tween.tween_property(shock,"scale",Vector3(8.,1.,8.),.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT);tween.tween_property(shock.material_override,"albedo_color:a",0.,.55)
-	if fire:
-		for i in range(7):
-			var core=M.sphere(node,Vector3(sin(i*2.4)*.45,.25+float(i%3)*.22,cos(i*2.4)*.45),Vector3.ONE*(.35+float(i%3)*.15),Color.WHITE)
-			core.material_override=cloud(Color(1.,.40+float(i%2)*.18,.08,.80),true);core.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			tween.tween_property(core,"scale",Vector3.ONE*(1.9+float(i%3)*.5),.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			tween.tween_property(core.material_override,"shader_parameter/opacity",0.,.40).set_delay(.08)
-	for i in range(12):
-		var direction=Vector3(sin(i*2.4),.35+float(i%4)*.3,cos(i*2.4)).normalized()
-		var smoke=M.sphere(node,direction*.25,Vector3.ONE*.45,Color.WHITE);smoke.material_override=cloud(Color(.36,.38,.40,.66));smoke.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		tween.tween_property(smoke,"position",direction*2.6+Vector3.UP*.8,1.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(smoke,"scale",Vector3.ONE*(2.1+float(i%3)*.3),1.6);tween.tween_property(smoke.material_override,"shader_parameter/opacity",0.,1.35).set_delay(.25)
-	for i in range(20):
-		var velocity=Vector3(randf_range(-4.,4.),randf_range(2.,6.),randf_range(-4.,4.))
-		var shard=M.box(node,Vector3.ZERO,Vector3(.055,.04,.14) if i%3 else Vector3(.12,.07,.14),Color("ffbb64") if i%3 else Color("52616b"));shard.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		if i%3:shard.material_override=glow(Color("ffd88d"))
-		tween.tween_method(func(t):
-			if is_instance_valid(shard):shard.position=velocity*t+Vector3.DOWN*5.*t*t;shard.rotation=Vector3(t*8.,t*4.,t*5.),0.,1.,.85)
-		tween.tween_property(shard,"scale",Vector3.ZERO,.35).set_delay(.55)
-	finish(node,1.9)
+	transients=transients.filter(func(n):return is_instance_valid(n))
+	while transients.size()>=96:
+		var old=transients.pop_front()
+		if is_instance_valid(old):old.queue_free()
+	var node=BurstVisual.new();add_child(node);node.position=pos;node.set_meta("explosion",true);node.build(fire)
+	temporary_light(pos+Vector3.UP*.3,Color("ffc78a"),6.,10.,.20)
+	transients.append(node)
 func skill_burst(role:int,pos:Vector3,color:Color):
 	var node=group(pos);var radius=[2.5,12.,2.2,2.,5.,2.4][role]
 	for i in range(3):
@@ -225,11 +213,11 @@ func skill_burst(role:int,pos:Vector3,color:Color):
 	finish(node,1.05)
 func healing_link(game:Node,from:Vector3,to:Vector3,owner:int,target:int,repairing:bool=false):
 	if not healing.has(owner):
-		var node=Node3D.new();add_child(node);var mesh=MeshInstance3D.new();mesh.mesh=ImmediateMesh.new();mesh.material_override=glow(Color("8affce") if not repairing else Color("ffc978"));mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.add_child(mesh)
-		var halo=ring(node,.22,Color(.3,1.,.7,.7));healing[owner]={"node":node,"mesh":mesh,"halo":halo}
-	var link=healing[owner];link.merge({"game":game,"from":from,"to":to,"target":target,"until":Time.get_ticks_msec()+240,"repair":repairing},true)
-func update_healing(_dt:float):
-	var seconds=Time.get_ticks_msec()/1000.
+		var stream=HealingStream.new();add_child(stream);healing[owner]={"node":stream}
+	var link=healing[owner];link.merge({"game":game,"from":from,"to":to,"target":target,"until":Time.get_ticks_msec()+350,"repair":repairing},true)
+	# Populate the mesh on the event frame, including first shader compilation.
+	link.node.draw_link(from,to,1./60.,repairing)
+func update_healing(dt:float):
 	for owner in healing.keys():
 		var link=healing[owner]
 		if Time.get_ticks_msec()>int(link.until) or not is_instance_valid(link.game):link.node.queue_free();healing.erase(owner);continue
@@ -237,22 +225,7 @@ func update_healing(_dt:float):
 		if game.actors.has(owner):from=game.actors[owner].visual_muzzle()
 		if game.actors.has(link.target):
 			var target=game.actors[link.target];to=target.position+Vector3.UP*(.90 if target.input_state.crouch else 1.15)*target.body_height/1.8
-		if from.distance_squared_to(to)<.001:continue
-		link.node.position=Vector3.ZERO
-		var forward=(to-from).normalized();var right=forward.cross(Vector3.UP).normalized()
-		if right.length_squared()<.01:right=Vector3.RIGHT
-		var up=right.cross(forward).normalized();var mesh:ImmediateMesh=link.mesh.mesh;mesh.clear_surfaces();mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
-		for strand in range(2):
-			for i in range(18):
-				var points=[]
-				for step in [i,i+1]:
-					var t=step/18.;var wave=t*TAU*2.-seconds*9.+strand*PI;var amplitude=sin(t*PI)*(.085 if not link.repair else .035)
-					var center=from.lerp(to,t)+right*sin(wave)*amplitude+up*cos(wave)*amplitude
-					for side in range(5):points.append(center+(right*cos(side*TAU/5.)+up*sin(side*TAU/5.))*(.025 if strand else .045))
-				for side in range(5):
-					var next=(side+1)%5
-					for index in [side,next,side+5,next,next+5,side+5]:mesh.surface_add_vertex(points[index])
-		mesh.surface_end();link.halo.position=to;link.halo.scale=Vector3.ONE*(1.+sin(seconds*10.)*.22);link.halo.rotation=Vector3(PI/2,seconds,0)
+		if from.distance_squared_to(to)>.001:link.node.draw_link(from,to,dt,link.repair)
 func sync_grenades(items:Array,now:float):
 	var live={}
 	for item in items:
@@ -281,8 +254,8 @@ func sync_status(game:Node,now:float):
 			if status!="shield":node.scale=Vector3.ONE*(1.+sin(now*5.)*.035)
 	for key in status_nodes.keys():
 		if not live.has(key):status_nodes[key].queue_free();status_nodes.erase(key)
-func ragdoll(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,facing:float,crouched:bool,velocity:Vector3):
+func ragdoll(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,facing:float,crouched:bool,velocity:Vector3,point:Vector3=Vector3.INF):
 	while ragdolls.size()>=6:
 		var old=ragdolls.pop_front()
 		if is_instance_valid(old):old.queue_free()
-	var node=PhysicsRagdoll.new();add_child(node);node.build(source,pos,push,role,team,facing,crouched,velocity);ragdolls.append(node)
+	var node=PhysicsRagdoll.new();add_child(node);node.build(source,pos,push,role,team,facing,crouched,velocity,point);ragdolls.append(node)

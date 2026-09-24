@@ -8,7 +8,7 @@ func expect(ok:bool,message:String):
 	else:failures+=1;printerr("FAIL ",message)
 func run():
 	Catalog.load_all()
-	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"V07","v07_test_identity")
+	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"V07","v07_test_identity")
 	var a=g.actors[1];a.position=Vector3(0,.1,18);a.reset_view(0);a.velocity=Vector3.ZERO
 	await physics_frame;await physics_frame
 	a.input_state.z=-1;a.simulate(.016,0.,true)
@@ -40,7 +40,7 @@ func run():
 	expect(c.lower_lag.x<0 and c.lower_lag.length()<.13,"direction changes produce bounded opposing lower-body inertia")
 	for index in [7,9,16,17]:
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
-		expect(arena.playable_polygon.size()==8,"map %d has a nonrectangular perimeter"%index)
+		expect(arena.playable_polygon.size()>4,"map %d has a nonrectangular perimeter"%index)
 		expect(arena.walk_surfaces.size()>=6,"map %d has traversable terraces and ramps"%index)
 		var terrace=arena.sites[1]
 		expect(arena.walk_height(terrace)>1.5,"map %d navigation recognizes terrace elevation"%index)

@@ -46,7 +46,7 @@ func _process(dt:float):
 	var now=Time.get_unix_time_from_system()
 	for nonce in used.keys():
 		if float(used[nonce])<now:used.erase(nonce)
-	var body=JSON.stringify({"players":roster,"phase":game.phase})
+	var body=JSON.stringify({"players":roster,"phase":game.phase,"map":game.options.map})
 	var error=http.request(str(config.api)+"/internal/rooms/"+str(config.room_id)+"/heartbeat",PackedStringArray(["Content-Type: application/json","Authorization: Bearer "+str(config.key)]),HTTPClient.METHOD_POST,body)
 	if error==OK:await http.request_completed
 	busy=false

@@ -4,6 +4,11 @@ const M=preload("res://scripts/mesh_factory.gd")
 const H=preload("res://scripts/human_model.gd")
 const KINDS=["barrel","crate","cone","canister","tire"]
 static func allowed(arena:Node,pos:Vector3,placed:Array) -> bool:
+	if arena.has_meta("route_spec"):
+		var routes=arena.get_meta("route_spec");var point=Vector2(pos.x,pos.z)
+		# Preserve every authored approach, not merely one surviving route to a site.
+		for link in routes.links:
+			if point.distance_to(Geometry2D.get_closest_point_to_segment(point,routes.points[link[0]],routes.points[link[1]]))<2.:return false
 	if arena.vertical_map:
 		for surface in arena.walk_surfaces:
 			if (surface.low!=surface.high or surface.low<2.) and surface.rect.grow(1.3).has_point(Vector2(pos.x,pos.z)):return false

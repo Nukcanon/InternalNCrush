@@ -8,7 +8,7 @@ func _initialize():call_deferred("run")
 func run():
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--scene-map="):which=int(arg.trim_prefix("--scene-map="))
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.options.map=which;g.options.mode=3;g.options.target=10000;g.options.bot_difficulty=1;g.server=true;g.phase="lobby";g.build_world()
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.options.map_random=false;g.options.map=which;g.options.mode=3;g.options.target=10000;g.options.bot_difficulty=1;g.server=true;g.phase="lobby";g.build_world()
 	for i in range(1,13):
 		g.add_player(-i,"BOT %02d"%i,"movie_bot_"+str(i));var p=g.players[-i];p.team=i%2;p.role=(i/2)%6;p.primary=Catalog.first(p.role);p.secondary=Rules.SECONDARIES[p.role];g.equip_ammo(p)
 		var a=g.actors[-i];a.position=Vector3(18+(i%3)*4,.1,26+floor(i/3.)*2 if p.team==0 else -6-floor(i/3.)*2);a.reset_view(0 if p.team==0 else PI);p.protect=1.5;p.alive=true

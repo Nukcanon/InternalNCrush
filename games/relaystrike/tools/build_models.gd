@@ -3,7 +3,7 @@ func _initialize():call_deferred("run")
 func run():
 	Catalog.load_all();DirAccess.make_dir_recursive_absolute("res://assets/models")
 	var art_source="--with-art-source" in OS.get_cmdline_user_args()
-	var manifest={"license":"Original Internal N Crush assets; see LICENSE.txt","style":"1.0.1 sculpted faces, narrower anatomy, two female operators","operators":[],"weapons":[],"animations":["idle","walk","run","crouch","crouch_walk","jump","fall","fire","reload","hit","land","death","fall_back","fall_front","fall_left","fall_right","fall_fold"]}
+	var manifest={"license":"Original Internal N Crush assets; see LICENSE.txt","style":"1.0.3 continuous anatomical surfaces, GPU skinning and joint physics","operators":[],"weapons":[],"animations":["idle","walk","run","crouch","crouch_walk","jump","fall","fire","reload","hit","land","death","fall_back","fall_front","fall_left","fall_right","fall_fold"]}
 	for role in range(6):
 		for team in range(2):
 			var node=CharacterVisual.make_rig(role,team);root.add_child(node);MeshFactory.own_recursive(node,node)

@@ -6,7 +6,7 @@ func run():
 	g=load("res://scripts/game.gd").new();root.add_child(g);g.ui.clear_panel()
 	var results=[]
 	for count in [8,32]:
-		g.options.map=13 if count==8 else 0;g.options.max_players=count;g.options.bots=count-1
+		g.options.map_random=false;g.options.map=13 if count==8 else 0;g.options.max_players=count;g.options.bots=count-1
 		g.host_game();g.start_match();g.actors[1].position=g.arena.spawn_points[0][0];g.actors[1].reset_view(PI)
 		await create_timer(5.).timeout
 		var samples=[];var end=Time.get_ticks_msec()+12000;var previous=Time.get_ticks_usec()

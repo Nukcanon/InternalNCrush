@@ -8,8 +8,8 @@ func expect(ok:bool,message:String):
 	else:failures+=1;printerr("FAIL ",message)
 func run():
 	Catalog.load_all()
-	expect(Rules.MAPS.size()==19,"nineteen distinct named maps registered")
-	for capacity in [6,8,16,32]:expect(Rules.maps_for_size(capacity).size()=={6:6,8:6,16:4,32:3}[capacity],"map count for "+str(capacity)+" players")
+	expect(Rules.MAPS.size()==32,"31 competitive maps and one practice arena registered")
+	for capacity in [6,8,16,32]:expect(Rules.maps_for_size(capacity,0).size()=={6:6,8:6,16:4,32:3}[capacity],"map count for "+str(capacity)+" players")
 	for index in range(6,Rules.MAPS.size()):
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		var clear=true;var connected=true
@@ -32,7 +32,7 @@ func run():
 	for i in range(20):indicator.register_hit(Vector3(cos(i),0,sin(i)),10,0)
 	expect(indicator.hits.size()<=DamageIndicator.MAX_HITS,"direction indicator history is bounded")
 	indicator.clear_hits();indicator.register_hit(Vector3.RIGHT,10,-10.);indicator._process(0);expect(indicator.hits.is_empty(),"damage arcs expire after their lifetime");indicator.queue_free()
-	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"motion","v06_host");g.local_id=1;var a=g.actors[1];a.set_local(true);a.visual(.016,g.players[1],g.clock)
+	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"motion","v06_host");g.local_id=1;var a=g.actors[1];a.set_local(true);a.visual(.016,g.players[1],g.clock)
 	var before=g.combat_fx.casings.size();expect(a.show_shot(100.),"new shot adds recoil");expect(not a.show_shot(100.),"snapshot and event do not duplicate shot effects")
 	expect(a.recoil>0 and g.combat_fx.casings.size()==before+1,"local shot emits a casing and a visible kick")
 	for i in range(80):g.combat_fx.eject_case(Vector3.UP,Vector3.RIGHT,Vector3.UP,0,i)

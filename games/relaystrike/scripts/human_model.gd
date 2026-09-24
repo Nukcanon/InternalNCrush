@@ -9,7 +9,14 @@ static func joint(parent:Node,label:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=label;n.position=pos;parent.add_child(n);return n
 # Elliptical cross sections make anatomical volumes and fabric, with continuous normals.
 # Each ring is (height, half-width, half-depth, depth-offset).
-static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=16) -> MeshInstance3D:
+static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=20,sculpt:bool=false) -> MeshInstance3D:
+	var smooth=[]
+	for j in range(rings.size()-1):
+		var a:Vector4=rings[maxi(0,j-1)];var b:Vector4=rings[j];var c:Vector4=rings[j+1];var d:Vector4=rings[mini(rings.size()-1,j+2)]
+		for step in range(3):
+			var t=step/3.;var point=(b*2.+(c-a)*t+(a*2.-b*5.+c*4.-d)*t*t+(-a+b*3.-c*3.+d)*t*t*t)*.5
+			point.y=maxf(.001,point.y);point.z=maxf(.001,point.z);smooth.append(point)
+	smooth.append(rings[-1]);rings=smooth
 	var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES);st.set_smooth_group(0)
 	for j in range(rings.size()-1):
 		for i in range(sides):
@@ -19,8 +26,18 @@ static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=16) -
 			var q=Vector3(cos(b)*r.y,r.x,sin(b)*r.z+r.w)
 			var u=Vector3(cos(a)*s.y,s.x,sin(a)*s.z+s.w)
 			var v=Vector3(cos(b)*s.y,s.x,sin(b)*s.z+s.w)
-			for point in [p,q,u,q,v,u]:st.add_vertex(point)
-	st.generate_normals();return M.instance(parent,st.commit(),pos,color)
+			for point in [p,q,u,q,v,u]:st.add_vertex(sculpt_face(point) if sculpt else point)
+	st.generate_normals();st.index();return M.instance(parent,st.commit(),pos,color)
+static func sculpt_face(point:Vector3) -> Vector3:
+	if point.z>=0:return point
+	var x=point.x;var y=point.y;var front=smoothstep(.015,.065,-point.z)
+	var eye=exp(-pow((absf(x)-.043)/.024,2)-pow((y-.037)/.018,2))
+	var brow=exp(-pow((absf(x)-.038)/.035,2)-pow((y-.064)/.015,2))
+	var cheek=exp(-pow((absf(x)-.057)/.027,2)-pow((y+.010)/.025,2))
+	var bridge=exp(-pow(x/.012,2)-pow((y-.025)/.035,2))
+	var tip=exp(-pow(x/.019,2)-pow((y+.008)/.016,2))
+	point.z+=front*(eye*.009-brow*.006-cheek*.006-bridge*.013-tip*.017)
+	return point
 static func oval(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
 	var mesh=SphereMesh.new();mesh.radius=.5;mesh.height=1.;mesh.radial_segments=20;mesh.rings=12
 	var n=M.instance(parent,mesh,pos,color);n.scale=size;return n
@@ -40,24 +57,22 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 	var jaw=.052 if female else .063+which*.001
 	var eye_color=[Color("5d725f"),Color("796046"),Color("4c382b"),Color("6c858a"),Color("89734f"),Color("483b34")][which]
 	# Sculpted face volumes: narrower jaw, cheek plane, brow ridge and chin.
-	loft(parent,Vector3.ZERO,[Vector4(-.106,.028,.041,-.018),Vector4(-.086,jaw,.067,-.012),Vector4(-.045,.089 if female else .098,.086,0),Vector4(.010,.104 if female else .110,.101,.004),Vector4(.060,.105,.104,.007),Vector4(.11,.092,.095,.014),Vector4(.142,.052,.06,.018),Vector4(.151,.002,.002,.018)],skin,32)
+	loft(parent,Vector3.ZERO,[Vector4(-.106,.028,.041,-.018),Vector4(-.086,jaw,.067,-.012),Vector4(-.045,.080 if female else .089,.082,0),Vector4(.010,.096 if female else .102,.098,.004),Vector4(.060,.099,.102,.007),Vector4(.11,.086,.091,.014),Vector4(.142,.052,.06,.018),Vector4(.151,.002,.002,.018)],skin,40,true)
 	for side in [-1,1]:
 		oval(parent,Vector3(side*.108,.002,.007),Vector3(.032,.060,.035),skin)
 		oval(parent,Vector3(side*.116,.004,-.008),Vector3(.012,.032,.016),skin.darkened(.19))
 		# Sclera stays seated behind the lids; iris, pupil and catchlight are separate.
-		oval(parent,Vector3(side*.043,.040,-.096),Vector3(.039,.016,.014),Color("dfdbcf"))
-		oval(parent,Vector3(side*.043,.040,-.105),Vector3(.014,.014,.004),eye_color)
-		oval(parent,Vector3(side*.043,.040,-.1075),Vector3(.006,.008,.002),Color("172124"))
-		oval(parent,Vector3(side*.041,.043,-.109),Vector3(.0025,.0025,.001),Color("f4f1df"))
-		cord(parent,Vector3(side*.024,.041,-.102),Vector3(side*.036,.049,-.102),.003,skin.darkened(.25))
-		cord(parent,Vector3(side*.036,.049,-.102),Vector3(side*.062,.044,-.095),.0032,skin.darkened(.28))
-		cord(parent,Vector3(side*.024,.038,-.102),Vector3(side*.060,.034,-.096),.0022,skin.lightened(.04))
-		cord(parent,Vector3(side*.022,.063,-.093),Vector3(side*.047,.068,-.096),.003 if female else .004,hair)
-		cord(parent,Vector3(side*.047,.068,-.096),Vector3(side*.065,.061,-.086),.0032,hair)
-		oval(parent,Vector3(side*.012,-.012,-.118),Vector3(.016,.013,.018),skin.darkened(.035))
-		oval(parent,Vector3(side*.011,-.017,-.124),Vector3(.008,.004,.003),skin.darkened(.36))
+		oval(parent,Vector3(side*.040,.040,-.082),Vector3(.034,.014,.017),Color("d7d5ca"))
+		oval(parent,Vector3(side*.040,.040,-.091),Vector3(.012,.012,.003),eye_color)
+		oval(parent,Vector3(side*.040,.040,-.093),Vector3(.005,.007,.0015),Color("172124"))
+		oval(parent,Vector3(side*.038,.043,-.094),Vector3(.002,.002,.001),Color("f4f1df"))
+		cord(parent,Vector3(side*.024,.041,-.090),Vector3(side*.035,.047,-.090),.002,skin.darkened(.22))
+		cord(parent,Vector3(side*.035,.047,-.090),Vector3(side*.057,.043,-.080),.0022,skin.darkened(.25))
+		cord(parent,Vector3(side*.024,.037,-.090),Vector3(side*.055,.034,-.081),.0018,skin.lightened(.03))
+		cord(parent,Vector3(side*.022,.061,-.094),Vector3(side*.042,.066,-.094),.0025 if female else .003,hair)
+		cord(parent,Vector3(side*.042,.066,-.094),Vector3(side*.060,.060,-.083),.0025,hair)
+		oval(parent,Vector3(side*.009,-.017,-.108),Vector3(.006,.003,.002),skin.darkened(.32))
 	# A tapered bridge and rounded tip avoid a peg-shaped nose.
-	loft(parent,Vector3(0,0,-.083),[Vector4(-.018,.008,.026,-.019),Vector4(-.007,.014 if female else .017,.029,-.023),Vector4(.017,.011,.021,-.01),Vector4(.064,.007,.009,0)],skin.lightened(.025),20)
 	oval(parent,Vector3(0,-.043,-.090),Vector3(.038,.010,.010),skin.darkened(.18))
 	cord(parent,Vector3(-.023,-.045,-.089),Vector3(0,-.047,-.096),.0025,skin.darkened(.38))
 	cord(parent,Vector3(0,-.047,-.096),Vector3(.023,-.045,-.089),.0025,skin.darkened(.38))
@@ -99,22 +114,22 @@ static func build(which:int,team:int) -> Node3D:
 	var dark=Color("383d39")
 	var hips=joint(root,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
 	loft(hips,Vector3.ZERO,[Vector4(-.15,.10,.10,0),Vector4(-.09,.168,.127,.01),Vector4(.02,.172,.13,0),Vector4(.105,.158,.115,0)],trousers)
-	loft(chest,Vector3.ZERO,[Vector4(-.22,.16,.107,0),Vector4(-.12,.181,.12,.01),Vector4(.02,.194,.132,0),Vector4(.14,.204,.128,0),Vector4(.20,.183,.103,0),Vector4(.245,.075,.065,0)],shirt,20)
-	loft(chest,Vector3(0,0,-.010),[Vector4(-.17,.172,.124,0),Vector4(-.1,.190,.138,0),Vector4(.06,.198,.145,0),Vector4(.15,.177,.128,0)],vest,20)
+	loft(chest,Vector3.ZERO,[Vector4(-.23,.145,.101,0),Vector4(-.13,.156,.108,.009),Vector4(.01,.181,.125,0),Vector4(.115,.192,.126,0),Vector4(.19,.169,.097,0),Vector4(.245,.062,.055,0)],shirt,24)
+	loft(chest,Vector3(0,0,-.008),[Vector4(-.16,.159,.117,0),Vector4(-.08,.177,.132,0),Vector4(.055,.185,.137,0),Vector4(.14,.157,.118,0)],vest,24)
 	for side in [-1,1]:
-		cord(chest,Vector3(side*.15,-.12,-.119),Vector3(side*.148,.192,-.076),.023,vest.lightened(.12))
-		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.218,.135,0))
-		oval(arm,Vector3(-side*.026,-.014,0),Vector3(.135,.16,.15),shirt)
-		loft(arm,Vector3.ZERO,[Vector4(-.285,.049,.051,0),Vector4(-.20,.065,.064,0),Vector4(-.12,.069,.070,0),Vector4(-.045,.075,.075,0),Vector4(.016,.052,.058,0)],shirt)
+		M.box(chest,Vector3(side*.14,.055,-.126),Vector3(.041,.28,.018),vest.lightened(.10),Vector3(-.12,0,side*-.10),.4)
+		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.207,.13,0))
+		oval(arm,Vector3(-side*.028,-.025,0),Vector3(.119,.15,.131),shirt)
+		loft(arm,Vector3.ZERO,[Vector4(-.285,.046,.048,0),Vector4(-.20,.058,.058,0),Vector4(-.12,.061,.062,0),Vector4(-.045,.065,.068,0),Vector4(.016,.05,.056,0)],shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.19,.069,.069,0),Vector4(-.155,.075,.074,0)],team_color)
-		for y in [-.21,-.24]:loft(arm,Vector3.ZERO,[Vector4(y-.01,.061,.061,0),Vector4(y,.068,.067,0),Vector4(y+.01,.061,.061,0)],shirt.darkened(.05))
+		for y in [-.21,-.24]:loft(arm,Vector3.ZERO,[Vector4(y-.008,.056,.057,0),Vector4(y,.061,.061,0),Vector4(y+.008,.056,.057,0)],shirt.darkened(.04))
 		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0))
 		loft(elbow,Vector3.ZERO,[Vector4(-.275,.031,.034,0),Vector4(-.22,.04,.043,0),Vector4(-.10,.059,.056,0),Vector4(-.02,.053,.052,0),Vector4(.02,.043,.044,0)],skin)
 		loft(elbow,Vector3.ZERO,[Vector4(-.065,.058,.057,0),Vector4(-.020,.058,.057,0),Vector4(.008,.052,.051,0)],shirt)
 		var palm=joint(elbow,"Hand",Vector3(0,-.275,0));hand(palm,skin,dark,side)
 		var leg=joint(hips,"LeftLeg" if side<0 else "RightLeg",Vector3(side*.099,-.025,0))
 		loft(leg,Vector3.ZERO,[Vector4(-.43,.064,.069,0),Vector4(-.34,.068,.074,0),Vector4(-.17,.088,.093,.009),Vector4(-.03,.105,.102,0),Vector4(.02,.087,.096,0)],trousers)
-		oval(leg,Vector3(side*.078,-.19,.012),Vector3(.065,.15,.12),trousers.lightened(.12))
+		oval(leg,Vector3(side*.065,-.19,.022),Vector3(.047,.13,.10),trousers.lightened(.06))
 		var knee=joint(leg,"Knee",Vector3(0,-.415,0))
 		loft(knee,Vector3.ZERO,[Vector4(-.407,.044,.049,.015),Vector4(-.31,.05,.06,.020),Vector4(-.17,.067,.074,.01),Vector4(-.05,.065,.065,0),Vector4(.023,.059,.062,0)],trousers)
 		oval(knee,Vector3(0,-.025,-.059),Vector3(.108,.126,.040),vest)
@@ -126,7 +141,7 @@ static func build(which:int,team:int) -> Node3D:
 	loft(hips,Vector3.ZERO,[Vector4(.066,.175,.137,0),Vector4(.103,.165,.124,0)],dark)
 	M.box(hips,Vector3(0,.083,-.13),Vector3(.047,.03,.018),Color("9b9d89"),Vector3.ZERO,.6)
 	for x in [-.12,0,.12]:
-		oval(chest,Vector3(x,-.112,-.143),Vector3(.101,.15,.066),vest.darkened(.13))
+		M.box(chest,Vector3(x,-.112,-.141),Vector3(.09,.14,.038),vest.darkened(.10),Vector3.ZERO,.32)
 		cord(chest,Vector3(x-.035,-.045,-.15),Vector3(x+.035,-.045,-.15),.006,vest.lightened(.25))
 	loft(chest,Vector3(0,.256,0),[Vector4(-.025,.059,.056,0),Vector4(.07,.055,.054,0)],skin)
 	var head=joint(chest,"Head",Vector3(0,.36,0));face(head,which,skin,hair)
@@ -147,4 +162,5 @@ static func build(which:int,team:int) -> Node3D:
 		oval(chest,Vector3(.16,.06,.133),Vector3(.09,.16,.085),dark)
 		cord(chest,Vector3(.16,.13,.14),Vector3(.16,.29,.14),.004,dark)
 	joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
+	AnatomySurface.replace(root,shirt,trousers)
 	return root

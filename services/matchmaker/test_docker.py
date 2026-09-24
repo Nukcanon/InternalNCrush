@@ -12,7 +12,7 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "validation/docker-v102"
 OUT.mkdir(parents=True, exist_ok=True)
-COMPOSE = ["docker", "compose", "-p", "inc-ci", "-f", "services/matchmaker/compose.yaml"]
+COMPOSE = ["docker", "compose", "-p", "inc-ci", "-f", "nas/compose.yaml"]
 env = dict(os.environ, DOMAIN="localhost", ACME_EMAIL="ci@example.com")
 clients = []
 logs = []

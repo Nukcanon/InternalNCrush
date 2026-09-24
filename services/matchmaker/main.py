@@ -18,8 +18,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = "1.0.2"
-MAP_CAPACITY = [32, 32, 16, 16, 16, 32, 16, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 8]
+VERSION = "1.0.3"
+MAP_CAPACITY = [32, 32, 16, 16, 16, 32, 16, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 8] + [8] * 6 + [12] * 6
 
 
 class StrictModel(BaseModel):
@@ -34,13 +34,21 @@ class SessionRequest(StrictModel):
 class RoomRequest(StrictModel):
     name: str = Field(default="공개 경기", min_length=1, max_length=40)
     mode: int = Field(default=0, ge=0, le=4)
-    map: int = Field(default=13, ge=0, le=18)
+    map: int = Field(default=13, ge=0, le=30)
     capacity: int = Field(default=8, ge=2, le=32)
+    map_random: bool = True
+    map_rotation: bool = False
+    rounds: int = Field(default=0, ge=0, le=100)
+    prep_seconds: int = Field(default=45, ge=30, le=60)
 
     @model_validator(mode="after")
     def compatible_map(self):
         if self.capacity > MAP_CAPACITY[self.map]:
             raise ValueError("capacity exceeds this map's limit")
+        if self.capacity % 2:
+            raise ValueError("capacity must be even")
+        if (self.mode == 4) != (self.map >= 19) or (self.mode == 4 and self.capacity > 12):
+            raise ValueError("defusal requires an 8/12-player defusal map")
         return self
 
 
@@ -51,6 +59,7 @@ class MatchRequest(StrictModel):
 class Heartbeat(StrictModel):
     players: list[str] = Field(max_length=32)
     phase: str = Field(max_length=20)
+    map: int | None = Field(default=None, ge=0, le=30)
 
 
 @dataclass
@@ -125,7 +134,10 @@ class Allocator:
             config = {"room_id": room.id, "key": room.key, "owner": room.owner,
                       "port": self.port_base + slot, "api": os.getenv("INTERNAL_API_URL", "http://127.0.0.1:8080"),
                       "automatic": automatic, "options": {"room": options.name, "map": options.map,
-                      "max_players": options.capacity, "mode": options.mode}}
+                      "max_players": options.capacity, "mode": options.mode,
+                      "map_random": options.map_random, "map_rotation": options.map_rotation,
+                      "map_size": MAP_CAPACITY[options.map], "rounds": options.rounds,
+                      "prep_seconds": options.prep_seconds}}
             env = os.environ.copy()
             env["INC_ROOM_CONFIG"] = json.dumps(config)
             command = [os.getenv("GODOT", "godot"), "--headless", "--path", str(ROOT / "games/relaystrike"),
@@ -281,7 +293,7 @@ def create_app(allocator=None):
                          and (len(r.occupants()) < r.options.capacity or s.uid in r.occupants())]
             # Join the most populated compatible room before allocating another process.
             available.sort(key=lambda r: (r.phase == "starting", -len(r.occupants()), r.created))
-            room = available[0] if available else state.create(s, RoomRequest(mode=data.mode or 0), automatic=True)
+            room = available[0] if available else state.create(s, RoomRequest(mode=data.mode or 0, map=19 if data.mode == 4 else 13), automatic=True)
             if room.phase == "starting":
                 room.reservations[s.uid] = time.time() + 90
                 return {"pending": True, "room": room.public()}
@@ -295,6 +307,10 @@ def create_app(allocator=None):
                 raise HTTPException(403, "invalid server credential")
             if len(data.players) > room.options.capacity or any(len(uid) != 32 for uid in data.players):
                 raise HTTPException(422, "invalid player roster")
+            if data.map is not None:
+                if MAP_CAPACITY[data.map] != MAP_CAPACITY[room.options.map] or ((data.map >= 19) != (room.options.mode == 4)):
+                    raise HTTPException(422, "invalid map rotation")
+                room.options.map = data.map
             room.players = list(set(data.players));room.phase = data.phase;room.heartbeat = time.time()
             for uid in room.players:
                 room.reservations.pop(uid, None)

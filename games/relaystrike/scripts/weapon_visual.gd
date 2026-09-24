@@ -20,6 +20,9 @@ var light=Color("9baeb6")
 var accent=Color("62bcb3")
 func block(parent:Node,pos:Vector3,size:Vector3,color:Color,tilt=0.) -> MeshInstance3D:return M.box(parent,pos,size,color,Vector3(tilt,0,0),.48)
 func tube(parent:Node,pos:Vector3,radius:float,depth:float,color:Color) -> MeshInstance3D:return M.cylinder(parent,pos,radius,depth,color,Vector3(PI/2,0,0))
+func shell(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
+	var rings=[Vector4(-size.z*.5,size.x*.33,size.y*.34,0),Vector4(-size.z*.42,size.x*.49,size.y*.48,0),Vector4(size.z*.30,size.x*.50,size.y*.50,0),Vector4(size.z*.5,size.x*.37,size.y*.39,0)]
+	var mesh=HumanModel.loft(parent,pos,rings,color,20);mesh.rotation.x=PI/2;return mesh
 func piece(name:String,pos=Vector3.ZERO) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;add_child(n);return n
 func rail(z:float,count:int):
@@ -30,10 +33,10 @@ func stock(style:String):
 		for x in [-.035,.035]:block(self,Vector3(x,-.005,.078),Vector3(.014,.025,.2),light)
 		block(self,Vector3(0,-.03,.172),Vector3(.085,.14,.03),metal)
 	elif style=="solid":
-		block(self,Vector3(0,-.038,.082),Vector3(.085,.125,.22),edge,-.12)
+		var shoulder=shell(self,Vector3(0,-.038,.082),Vector3(.085,.125,.22),edge);shoulder.rotate_x(-.12)
 		block(self,Vector3(0,-.048,.182),Vector3(.095,.17,.032),metal)
 	elif style=="wood":
-		block(self,Vector3(0,-.045,.065),Vector3(.083,.12,.23),Color("94714e"),-.2)
+		var shoulder=shell(self,Vector3(0,-.045,.065),Vector3(.083,.12,.23),Color("94714e"));shoulder.rotate_x(-.2)
 		block(self,Vector3(0,-.068,.18),Vector3(.09,.15,.036),metal)
 	else:
 		block(self,Vector3(0,.003,.07),Vector3(.046,.045,.2),metal)
@@ -92,7 +95,7 @@ func build(w:Dictionary,hands=true):
 		sight(false)
 	elif w.kind in ["heal","repair"]:
 		length=.43 if w.kind=="heal" else .29
-		block(self,Vector3(0,0,-.12),Vector3(.15,.17,.34),Color("d1dad2"))
+		shell(self,Vector3(0,0,-.12),Vector3(.15,.17,.34),Color("d1dad2"))
 		block(self,Vector3(0,-.13,.005),Vector3(.08,.17,.11),metal,-.12)
 		for x in [-.086,.086]:tube(self,Vector3(x,.006,-.15),.056,.23,accent)
 		block(self,Vector3(0,.096,-.15),Vector3(.085,.025,.14),Color("223a44"));block(self,Vector3(0,.111,-.15),Vector3(.062,.006,.09),accent)
@@ -106,13 +109,13 @@ func build(w:Dictionary,hands=true):
 		length={"VECTOR-24":.66,"RAPID-9":.59,"ATLAS":.76,"TRIAD":.68,"SCOUT":.88,"MONOLITH":1.06,"ECHO":.79,"LARK":.7,"KESTREL":.84,"ANCHOR":.78,"BASTION":.9,"PULSE":.83,"TIDAL":.68,"FOLD":.44,"SWIFT":.43,"FLUX":.42,"LINE":.53,"HIVE":.55,"PIPER":.59}.get(model,.65)
 		var bullpup=model in ["RAPID-9","KESTREL","FLUX"]
 		var receiver_width=.14 if role==2 else .115 if model in ["TIDAL","HIVE"] else .095
-		block(self,Vector3(0,0,-.20),Vector3(receiver_width,.14,.39),metal)
+		shell(self,Vector3(0,0,-.20),Vector3(receiver_width,.14,.39),metal)
 		block(self,Vector3(0,-.037,-.33),Vector3(receiver_width*.83,.1,.21),edge)
 		block(self,Vector3(0,-.14,.014 if not bullpup else -.16),Vector3(.064,.17,.09),metal,-.2)
 		block(self,Vector3(0,-.104,-.065 if not bullpup else -.24),Vector3(.075,.018,.085),edge)
 		stock("wood" if model in ["ATLAS","PULSE"] else "wire" if model in ["SWIFT","LINE","SCOUT"] else "solid" if bullpup or role==2 else "adjustable")
 		var handguard=Vector3(receiver_width*.9,.11,length*.3)
-		block(barrel_group,Vector3(0,.006,-length*.60),handguard,Color("ab855d") if model=="PULSE" else edge)
+		shell(barrel_group,Vector3(0,.006,-length*.60),handguard,Color("ab855d") if model=="PULSE" else edge)
 		tube(barrel_group,Vector3(0,.025,-length*.78),.025 if role!=3 else .033,length*.34,metal)
 		tube(barrel_group,Vector3(0,.025,-length*.955),.035 if role!=3 else .041,.06,edge)
 		for i in range(4):

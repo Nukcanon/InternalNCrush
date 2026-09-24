@@ -129,7 +129,7 @@
 			"team": 1
 		}
 	],
-	"style": "1.0.1 sculpted faces, narrower anatomy, two female operators",
+	"style": "1.0.3 continuous anatomical surfaces, GPU skinning and joint physics",
 	"weapons": [
 		{
 			"id": "a1",

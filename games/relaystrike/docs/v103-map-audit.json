@@ -1,0 +1,622 @@
+[
+  {
+    "capacity": 32,
+    "map": 0,
+    "median_m": 43.5,
+    "name": "TIDAL YARD · 항구",
+    "over_50m": 193,
+    "rays": 464,
+    "rectangle": true,
+    "removed_coplanar_faces": 110,
+    "spawn_to_sites_m": [
+      [
+        68.6,
+        169.8
+      ],
+      [
+        109.9,
+        135.5
+      ]
+    ]
+  },
+  {
+    "capacity": 32,
+    "map": 1,
+    "median_m": 39.6,
+    "name": "DRY DOCK · 물류 기지",
+    "over_50m": 204,
+    "rays": 600,
+    "rectangle": true,
+    "removed_coplanar_faces": 120,
+    "spawn_to_sites_m": [
+      [
+        92.8,
+        186.8
+      ],
+      [
+        146.8,
+        180.8
+      ]
+    ]
+  },
+  {
+    "capacity": 16,
+    "map": 2,
+    "median_m": 22.3,
+    "name": "FOUNDRY · 주조 공장",
+    "over_50m": 82,
+    "rays": 544,
+    "rectangle": true,
+    "removed_coplanar_faces": 106,
+    "spawn_to_sites_m": [
+      [
+        48.8,
+        112.8
+      ],
+      [
+        58.8,
+        106.8
+      ]
+    ]
+  },
+  {
+    "capacity": 16,
+    "map": 3,
+    "median_m": 19.8,
+    "name": "RESEARCH · 연구동",
+    "over_50m": 64,
+    "rays": 552,
+    "rectangle": false,
+    "removed_coplanar_faces": 100,
+    "spawn_to_sites_m": [
+      [
+        48.8,
+        110.8
+      ],
+      [
+        62.8,
+        104.8
+      ]
+    ]
+  },
+  {
+    "capacity": 16,
+    "map": 4,
+    "median_m": 39.9,
+    "name": "MESA RELAY · 사막 관측소",
+    "over_50m": 223,
+    "rays": 584,
+    "rectangle": true,
+    "removed_coplanar_faces": 120,
+    "spawn_to_sites_m": [
+      [
+        75.5,
+        169.6
+      ],
+      [
+        113.3,
+        142.4
+      ]
+    ]
+  },
+  {
+    "capacity": 32,
+    "map": 5,
+    "median_m": 34.8,
+    "name": "CANAL DISTRICT · 운하 지구",
+    "over_50m": 181,
+    "rays": 584,
+    "rectangle": false,
+    "removed_coplanar_faces": 116,
+    "spawn_to_sites_m": [
+      [
+        86.8,
+        196.8
+      ],
+      [
+        144.8,
+        190.8
+      ]
+    ]
+  },
+  {
+    "capacity": 16,
+    "map": 6,
+    "median_m": 21.8,
+    "name": "TRANSIT HALL · 환승 터미널",
+    "over_50m": 72,
+    "rays": 536,
+    "rectangle": false,
+    "removed_coplanar_faces": 96,
+    "spawn_to_sites_m": [
+      [
+        46.8,
+        98.8
+      ],
+      [
+        60.8,
+        92.8
+      ]
+    ]
+  },
+  {
+    "capacity": 6,
+    "map": 7,
+    "median_m": 12.7,
+    "name": "COURTYARD · 안뜰",
+    "over_50m": 0,
+    "rays": 328,
+    "rectangle": false,
+    "removed_coplanar_faces": 62,
+    "spawn_to_sites_m": [
+      [
+        26.9,
+        54.9
+      ],
+      [
+        32.9,
+        48.9
+      ]
+    ]
+  },
+  {
+    "capacity": 6,
+    "map": 8,
+    "median_m": 11.5,
+    "name": "WORKSHOP · 정비소",
+    "over_50m": 0,
+    "rays": 440,
+    "rectangle": true,
+    "removed_coplanar_faces": 68,
+    "spawn_to_sites_m": [
+      [
+        24.9,
+        56.9
+      ],
+      [
+        30.9,
+        46.9
+      ]
+    ]
+  },
+  {
+    "capacity": 6,
+    "map": 9,
+    "median_m": 12.7,
+    "name": "SWITCHBACK · 굽은 골목",
+    "over_50m": 0,
+    "rays": 368,
+    "rectangle": false,
+    "removed_coplanar_faces": 65,
+    "spawn_to_sites_m": [
+      [
+        22.9,
+        58.9
+      ],
+      [
+        76.9,
+        48.9
+      ]
+    ]
+  },
+  {
+    "capacity": 6,
+    "map": 10,
+    "median_m": 12.7,
+    "name": "ORCHARD · 과수원",
+    "over_50m": 2,
+    "rays": 544,
+    "rectangle": true,
+    "removed_coplanar_faces": 36,
+    "spawn_to_sites_m": [
+      [
+        34.5,
+        53.8
+      ],
+      [
+        30.5,
+        41.3
+      ]
+    ]
+  },
+  {
+    "capacity": 6,
+    "map": 11,
+    "median_m": 11.0,
+    "name": "POWER ROOM · 전력실",
+    "over_50m": 0,
+    "rays": 400,
+    "rectangle": false,
+    "removed_coplanar_faces": 66,
+    "spawn_to_sites_m": [
+      [
+        24.9,
+        52.9
+      ],
+      [
+        30.9,
+        46.9
+      ]
+    ]
+  },
+  {
+    "capacity": 6,
+    "map": 12,
+    "median_m": 12.1,
+    "name": "FOUNTAIN · 분수 광장",
+    "over_50m": 0,
+    "rays": 368,
+    "rectangle": false,
+    "removed_coplanar_faces": 64,
+    "spawn_to_sites_m": [
+      [
+        24.9,
+        52.9
+      ],
+      [
+        30.9,
+        46.9
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 13,
+    "median_m": 14.0,
+    "name": "CARGO ROW · 적재 구역",
+    "over_50m": 18,
+    "rays": 472,
+    "rectangle": true,
+    "removed_coplanar_faces": 48,
+    "spawn_to_sites_m": [
+      [
+        39.0,
+        71.5
+      ],
+      [
+        52.6,
+        59.5
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 14,
+    "median_m": 14.2,
+    "name": "TWIN LAB · 쌍둥이 실험실",
+    "over_50m": 28,
+    "rays": 520,
+    "rectangle": true,
+    "removed_coplanar_faces": 90,
+    "spawn_to_sites_m": [
+      [
+        32.8,
+        78.8
+      ],
+      [
+        46.8,
+        72.8
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 15,
+    "median_m": 12.9,
+    "name": "FOUNDRY EAST · 동부 공장",
+    "over_50m": 10,
+    "rays": 464,
+    "rectangle": false,
+    "removed_coplanar_faces": 88,
+    "spawn_to_sites_m": [
+      [
+        38.8,
+        74.8
+      ],
+      [
+        92.8,
+        68.8
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 16,
+    "median_m": 14.3,
+    "name": "ROOFTOP · 옥상",
+    "over_50m": 16,
+    "rays": 496,
+    "rectangle": false,
+    "removed_coplanar_faces": 86,
+    "spawn_to_sites_m": [
+      [
+        36.8,
+        76.8
+      ],
+      [
+        94.8,
+        70.8
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 17,
+    "median_m": 16.1,
+    "name": "MARKET LOOP · 순환 시장",
+    "over_50m": 15,
+    "rays": 472,
+    "rectangle": false,
+    "removed_coplanar_faces": 85,
+    "spawn_to_sites_m": [
+      [
+        32.8,
+        78.8
+      ],
+      [
+        50.8,
+        72.8
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 18,
+    "median_m": 13.3,
+    "name": "QUARRY PASS · 채석 통로",
+    "over_50m": 14,
+    "rays": 496,
+    "rectangle": false,
+    "removed_coplanar_faces": 84,
+    "spawn_to_sites_m": [
+      [
+        40.8,
+        76.8
+      ],
+      [
+        62.8,
+        70.8
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 19,
+    "median_m": 6.6,
+    "name": "KASBAH · 성채 시장",
+    "over_50m": 0,
+    "rays": 296,
+    "rectangle": false,
+    "removed_coplanar_faces": 9,
+    "spawn_to_sites_m": [
+      [
+        64.0,
+        70.0
+      ],
+      [
+        28.0,
+        26.0
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 20,
+    "median_m": 7.4,
+    "name": "REACTOR · 이중 원자로",
+    "over_50m": 0,
+    "rays": 280,
+    "rectangle": false,
+    "removed_coplanar_faces": 9,
+    "spawn_to_sites_m": [
+      [
+        56.0,
+        58.8
+      ],
+      [
+        38.0,
+        72.8
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 21,
+    "median_m": 6.8,
+    "name": "VIADUCT · 고가 수로",
+    "over_50m": 0,
+    "rays": 280,
+    "rectangle": false,
+    "removed_coplanar_faces": 9,
+    "spawn_to_sites_m": [
+      [
+        56.0,
+        72.0
+      ],
+      [
+        40.0,
+        28.0
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 22,
+    "median_m": 6.8,
+    "name": "ARCHIVE · 기록 보관소",
+    "over_50m": 0,
+    "rays": 272,
+    "rectangle": false,
+    "removed_coplanar_faces": 9,
+    "spawn_to_sites_m": [
+      [
+        92.0,
+        72.0
+      ],
+      [
+        22.0,
+        22.0
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 23,
+    "median_m": 6.2,
+    "name": "SHIPBREAK · 해체 부두",
+    "over_50m": 1,
+    "rays": 272,
+    "rectangle": false,
+    "removed_coplanar_faces": 9,
+    "spawn_to_sites_m": [
+      [
+        58.0,
+        76.0
+      ],
+      [
+        22.0,
+        44.0
+      ]
+    ]
+  },
+  {
+    "capacity": 8,
+    "map": 24,
+    "median_m": 6.7,
+    "name": "MONASTERY · 언덕 수도원",
+    "over_50m": 0,
+    "rays": 304,
+    "rectangle": false,
+    "removed_coplanar_faces": 9,
+    "spawn_to_sites_m": [
+      [
+        66.0,
+        62.0
+      ],
+      [
+        24.0,
+        36.0
+      ]
+    ]
+  },
+  {
+    "capacity": 12,
+    "map": 25,
+    "median_m": 7.1,
+    "name": "FOUNDRY CORE · 용광로",
+    "over_50m": 3,
+    "rays": 280,
+    "rectangle": true,
+    "removed_coplanar_faces": 10,
+    "spawn_to_sites_m": [
+      [
+        74.0,
+        78.0
+      ],
+      [
+        38.0,
+        42.0
+      ]
+    ]
+  },
+  {
+    "capacity": 12,
+    "map": 26,
+    "median_m": 6.4,
+    "name": "GREENHOUSE · 유리 온실",
+    "over_50m": 2,
+    "rays": 280,
+    "rectangle": true,
+    "removed_coplanar_faces": 10,
+    "spawn_to_sites_m": [
+      [
+        82.0,
+        68.0
+      ],
+      [
+        48.0,
+        30.0
+      ]
+    ]
+  },
+  {
+    "capacity": 12,
+    "map": 27,
+    "median_m": 7.4,
+    "name": "METRO VAULT · 지하 금고",
+    "over_50m": 0,
+    "rays": 264,
+    "rectangle": false,
+    "removed_coplanar_faces": 10,
+    "spawn_to_sites_m": [
+      [
+        82.0,
+        100.8
+      ],
+      [
+        38.0,
+        72.8
+      ]
+    ]
+  },
+  {
+    "capacity": 12,
+    "map": 28,
+    "median_m": 6.5,
+    "name": "COASTGUARD · 해안 통제소",
+    "over_50m": 0,
+    "rays": 296,
+    "rectangle": false,
+    "removed_coplanar_faces": 10,
+    "spawn_to_sites_m": [
+      [
+        78.0,
+        72.0
+      ],
+      [
+        22.0,
+        56.0
+      ]
+    ]
+  },
+  {
+    "capacity": 12,
+    "map": 29,
+    "median_m": 6.6,
+    "name": "DATACENTER · 데이터 센터",
+    "over_50m": 0,
+    "rays": 272,
+    "rectangle": false,
+    "removed_coplanar_faces": 10,
+    "spawn_to_sites_m": [
+      [
+        74.0,
+        80.0
+      ],
+      [
+        30.0,
+        36.0
+      ]
+    ]
+  },
+  {
+    "capacity": 12,
+    "map": 30,
+    "median_m": 6.7,
+    "name": "CITADEL · 산성",
+    "over_50m": 0,
+    "rays": 256,
+    "rectangle": false,
+    "removed_coplanar_faces": 10,
+    "spawn_to_sites_m": [
+      [
+        62.0,
+        84.0
+      ],
+      [
+        46.0,
+        40.0
+      ]
+    ]
+  }
+]

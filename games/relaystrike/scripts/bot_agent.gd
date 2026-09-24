@@ -34,7 +34,14 @@ func tick(dt:float):
 	if target!=0 and not game.players.has(target):target=0;visible_target=false
 	a.input_state.fire=false;a.input_state.alt=false;a.input_state.use=false;a.input_state.jump=false;a.input_state.crouch=false;a.input_state.sprint=false;a.input_state.ads=false;a.input_state.x=0.;a.input_state.z=0.
 	if not p.alive:path.clear();target=0;visible_target=false;next_decision=0.;return
-	if game.phase=="buy":shop();return
+	if game.phase=="buy":
+		shop()
+		if int(p.team)!=MatchFlow.attackers(game):
+			var site=game.arena.sites[abs(id)%2];navigate(site,dt)
+			var next=path[mini(waypoint,path.size()-1)] if not path.is_empty() else site
+			look(next+Vector3.UP*1.4,dt,false)
+			var move=Basis(Vector3.UP,previous_yaw)*Vector3(a.input_state.x,0,a.input_state.z);move=Basis(Vector3.UP,float(a.input_state.yaw)).inverse()*move;a.input_state.x=move.x;a.input_state.z=move.z
+		return
 	if game.phase!="combat":return
 	if p.flash>now:
 		if p.role==5:game.use_skill(id)
@@ -77,6 +84,8 @@ func tick(dt:float):
 	if int(p.mag.get(wid,0))==0 or (not visible_target and int(p.mag.get(wid,0))<int(game.current_weapon(p).mag)*.5):game.begin_reload(id)
 	if p.reload>0 and visible_target and p.hp<45:action="retreat"
 	objective_interaction()
+	var door=InteractiveDoor.target(game,id)
+	if door and not door.opened:a.input_state.use=true
 	if now>=next_utility:utilities();next_utility=now+[1.8,1.1,.65][difficulty]
 func perceive():
 	var p=game.players[id];var a=game.actors[id];var now=game.clock;var selected=0;var best=1e8
@@ -122,7 +131,7 @@ func choose_action():
 	if p.hp<28 and visible_target and difficulty>0:
 		var away=(a.position-last_known).normalized();action="retreat";set_goal(a.position+away*12);return
 	if int(game.options.mode)==4:
-		var attackers=(game.round_no-1)/3%2
+		var attackers=MatchFlow.attackers(game)
 		if game.bomb.planted:
 			action="defuse" if p.team!=attackers else "guard_bomb";set_goal(game.bomb.position+Vector3((abs(id)%3-1)*7,0,7) if p.team==attackers else game.bomb.position)
 		else:
@@ -203,7 +212,7 @@ func objective_interaction():
 		if a.position.distance_to(drop.pos)<2.4:a.input_state.use=true
 	if int(game.options.mode)!=4:return
 	if game.bomb.actor!=0 and game.bomb.actor!=id:return
-	var attackers=(game.round_no-1)/3%2
+	var attackers=MatchFlow.attackers(game)
 	if not game.bomb.planted and p.team==attackers:
 		for site in game.arena.sites:
 			if a.position.distance_to(site)<4.5:a.input_state.x=0.;a.input_state.z=0.;a.input_state.use=true;a.input_state.fire=false;stats.interactions+=1

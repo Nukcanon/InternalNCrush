@@ -16,11 +16,11 @@ func run():
 	print("WINDOWS_MENU_LIVE bots=",live.match_game.players.size()," clock=",live.match_game.clock," render=",RenderingServer.get_video_adapter_name())
 	g.ui.settings();await capture("settings")
 	g.ui.menu();await create_timer(1.).timeout
-	g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"PLAYER","windows_smoke_local")
+	g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"PLAYER","windows_smoke_local")
 	for i in range(1,7):g.add_player(-i,"BOT %d"%i,"smoke_bot_"+str(i));g.players[-i].role=i-1;g.players[-i].team=i%2
 	g.start_match();g.set_physics_process(false);g.clock=100.;g.ui.stats.visible=false
 	for index in [7,9,16,17]:
-		g.options.map=index;g.build_world();await physics_frame;await physics_frame
+		g.options.map_random=false;g.options.map=index;g.build_world();await physics_frame;await physics_frame
 		var a=g.actors[1];a.position=Vector3(0,.1,g.arena.bounds.y*.50);a.reset_view(0);a.set_local(true)
 		for i in range(1,7):
 			var other=g.actors[-i];other.position=Vector3((i-3.5)*2.,.1,a.position.z-7.-abs(i-3.5));other.reset_view(PI);g.players[-i].protect=0.;other.visual(.1,g.players[-i],100.)

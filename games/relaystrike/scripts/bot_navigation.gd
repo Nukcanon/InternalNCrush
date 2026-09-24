@@ -21,6 +21,13 @@ func build(world:Node):
 		for y in range(90):
 			var id=Vector2i(x,y)
 			var world_point=point(id)
+			if arena.vertical_map:
+				# Layer geometry already includes capsule clearance. Do not expand it
+				# again by rounding the obstacle rectangle out to whole grid cells.
+				var blocked=not arena.navigation_clear(Vector3(world_point.x,0.,world_point.z))
+				grid.set_point_solid(id,blocked)
+				if blocked:static_solid[id]=true
+				else:static_solid.erase(id)
 			if absf(world_point.x)>arena.bounds.x-2 or absf(world_point.z)>arena.bounds.y-2 or (not arena.playable_polygon.is_empty() and not Geometry2D.is_point_in_polygon(Vector2(world_point.x,world_point.z),arena.playable_polygon)):grid.set_point_solid(id);static_solid[id]=true
 			if not grid.is_point_solid(id):grid.set_point_weight_scale(id,1.3 if arena.wading(point(id)) else 1.)
 	if arena.vertical_map:build_layers()
@@ -46,6 +53,9 @@ func build_layers():
 					if connects_surface(from,to):layers.connect_points(id,next)
 func connects_surface(from:Vector3,to:Vector3) -> bool:
 	if absf(from.y-to.y)>1.1:return false
+	# Authored stairs slope along Z. Their sides are vertical slab edges, not
+	# traversable steps; approach a flight through its landing instead.
+	if absf(from.x-to.x)>.1 and absf(from.y-to.y)>.08:return false
 	var previous=from.y
 	for step in range(1,5):
 		var point=from.lerp(to,step/4.);var height=INF;var best=INF

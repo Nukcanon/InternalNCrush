@@ -25,7 +25,8 @@ static func build(a:Node,which:int):
 	# A roof over the middle creates a real underground route, with open stair portals.
 	deck(a,Vector3(0,.15,0),Vector2(10,half_tunnel*1.15),wall)
 	a.text3d("SERVICE / -1",Vector3(0,1.9,-hole.end.y-.4),Color("c8eadf"),27)
-	var cx=b.x*.48;var depth=minf(20.,b.y*.55);var width=clampf(b.x*.30,10.,22.);var dz=minf(4.,b.y*.10)
+	var cx=b.x*MapIdentity.WINGS[which];var depth=minf(20.,snappedf(b.y*MapIdentity.DEPTHS[which],4.));var width=clampf(b.x*.30,10.,22.);var dz=minf(4.,b.y*.10)
+	a.set_meta("main_wings",[Vector3(-cx,upper,-dz),Vector3(cx,upper,dz)]);a.set_meta("wing_depth",depth)
 	for side in [-1,1]:
 		var center=Vector3(side*cx,upper,side*dz)
 		deck(a,center,Vector2(width,depth),wall)
@@ -38,7 +39,7 @@ static func build(a:Node,which:int):
 			for x in [-1,1]:a.box(Vector3(center.x+x*(width*.25+1.65),upper+.5,center.z+edge*(depth*.5-.15)),Vector3(width*.5-3.3,1.,.3),trim)
 			for z in [-1,1]:a.box(Vector3(center.x+edge*(width*.5-.3),upper+1.3,center.z+z*(depth*.5-2.)),Vector3(.6,2.6,.6),wall)
 		# Partial upper roof leaves the firing balcony visible and usable.
-		a.box(center+Vector3(side*width*.28,3.,0),Vector3(width*.46,.35,depth),trim)
+		# Third-floor gallery replaces the old low solid roof.
 		a.cover(center+Vector3(side*width*.25,0,side*2.7),minf(3.,width*.3))
 		a.crate(Vector3(center.x-side*width*.23,0,center.z+side*depth*.22),Vector3(1.8,1.15,2.0))
 		a.text3d("02 / "+("WEST" if side<0 else "EAST"),center+Vector3(0,1.8,-side*depth*.35),Color("e9d69e"),30)
@@ -100,13 +101,14 @@ static func stairs(a:Node,center:Vector3,size:Vector2,low:float,high:float,color
 	var points=PackedVector3Array()
 	for z in [-1,1]:
 		for x in [-1,1]:
-			points.append(center+Vector3(x*size.x*.5,minf(low,high)-.4,z*size.y*.5));points.append(center+Vector3(x*size.x*.5,low if z<0 else high,z*size.y*.5))
+			var top=low if z<0 else high
+			points.append(center+Vector3(x*size.x*.5,top-.35,z*size.y*.5));points.append(center+Vector3(x*size.x*.5,top,z*size.y*.5))
 	var shape=ConvexPolygonShape3D.new();shape.points=points;var collision=CollisionShape3D.new();collision.shape=shape;body.add_child(collision)
 	var count=ceili(absf(high-low)/.175)
 	for i in range(count):
 		var t=(i+.5)/count;var y=lerpf(low,high,t);var z=-size.y*.5+size.y*t
 		a.detail(center+Vector3(0,y-.075,z),Vector3(size.x,.15,size.y/count+.015),color)
 		for x in [-size.x*.45,size.x*.45]:a.detail(center+Vector3(x,y+.003,z),Vector3(.08,.022,size.y/count*.92),Color("d9bd83"))
-	a.walk_surfaces.append({"rect":Rect2(Vector2(center.x-size.x*.5,center.z-size.y*.5),size),"low":low,"high":high})
+	a.walk_surfaces.append({"rect":Rect2(Vector2(center.x-size.x*.5,center.z-size.y*.5),size),"low":low,"high":high,"slab":true})
 	a.set_meta("stair_count",int(a.get_meta("stair_count",0))+1)
 

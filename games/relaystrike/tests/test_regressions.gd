@@ -13,7 +13,7 @@ func arm(wid:String):
 func click(seq:int):
 	g.actors[1].input_state.fire=true;g.actors[1].input_state.trigger_seq=seq;g.process_trigger(1)
 func run():
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false);g.add_player(2,"Observer","test_observer_12345")
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.options.map_random=false;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false);g.add_player(2,"Observer","test_observer_12345")
 	g.players[2].team=g.players[1].team;g.phase="combat";g.remaining=500;g.clock=100
 	var a=g.actors[1];var p=g.players[1];g.actors[2].position=Vector3(45,0,50)
 	for cycle in range(3):

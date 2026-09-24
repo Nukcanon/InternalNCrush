@@ -8,7 +8,7 @@ func expect(ok:bool,message:String):
 	if ok:print("PASS ",message)
 	else:failures+=1;printerr("FAIL ",message)
 func run():
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map=0;g.options.max_players=32;g.build_world()
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=0;g.options.max_players=32;g.build_world()
 	g.add_player(1,"같은 이름","v05_host_token_01");g.add_player(2,"같은 이름","v05_member_token2");g.add_player(3,"같은 이름","v05_member_token3");g.add_player(4,"넷","v05_member_token4")
 	expect(g.players[1].nick!=g.players[2].nick and g.players[2].nick!=g.players[3].nick,"identical nicknames receive unique room numbers")
 	var original=g.players[2].nick;g.disconnected(2);g.add_player(5,"같은 이름","v05_member_token2")

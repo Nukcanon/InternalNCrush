@@ -19,16 +19,29 @@ var walk_surfaces=[]
 var floor_holes=[]
 var navigation_goals=[]
 var navigation_blocks=[]
+var navigation_block_cells={}
+var navigation_block_count=-1
 var vertical_map=false
 var props_authoritative=false
 var props={}
+var doors={}
+func add_door(pos:Vector3,yaw:float=0.):
+	var door=InteractiveDoor.new();add_child(door);var id=doors.size()+1;door.build(self,id,pos,yaw);doors[id]=door
+func door_states() -> Array:
+	var states=[]
+	for door in doors.values():states.append({"id":door.door_id,"open":door.opened,"progress":door.progress})
+	return states
+func receive_doors(states:Array):
+	for state in states:
+		if doors.has(int(state.id)):doors[int(state.id)].opened=state.open;doors[int(state.id)].progress=state.progress;doors[int(state.id)].apply_pose()
 var architecture:Node3D
 var chunk_count=0
-static var world_font:Font
+var world_font:Font
 func mat(color:Color,emission:bool=false) -> StandardMaterial3D:
 	var key=str(color)+str(emission)
 	if mats.has(key):return mats[key]
 	var m=StandardMaterial3D.new();m.albedo_color=color;m.roughness=.86
+	m.set_meta("surface_kind",SurfaceFinish.material_kind(color))
 	if color.a<1:m.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;m.cull_mode=BaseMaterial3D.CULL_DISABLED
 	if emission:m.emission_enabled=true;m.emission=color;m.emission_energy_multiplier=.3
 	mats[key]=m;return m
@@ -112,6 +125,11 @@ func tree(pos:Vector3):
 		HumanModel.cord(trunk,Vector3(0,2.2+i*.12,0),end,.07,Color("87745a"))
 		HumanModel.oval(trunk,end+Vector3.UP*.6,Vector3(2.6,2.1,2.5),Color("779261") if i%2==0 else Color("94a678"))
 func build(which:int):
+	if DefusalLayout.enabled(which) or which==PracticeLayout.INDEX:
+		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
+		if which==PracticeLayout.INDEX:PracticeLayout.build(self)
+		else:DefusalLayout.build(self,which)
+		WorldDressing.build(self);building=false;SurfaceCleanup.clean(architecture);batch_architecture();apply_surface_detail();ArenaLighting.build(self);return
 	map_index=which;vertical_map=VerticalLayout.enabled(which);indoors=which in [2,3,6,8,11,14,15];has_water=which in [0,5];bounds=MapLayouts.extent(which);building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 	if not vertical_map:box(Vector3(0,-.5,0),Vector3(bounds.x*2,1,bounds.y*2),Color("b9b5a5") if has_water else Color("c5b69a"))
 	build_perimeter(which)
@@ -171,6 +189,7 @@ func build(which:int):
 		supplies.append({"pos":pos,"node":n,"ready":0.})
 	if which<6 and not vertical_map:MapLayouts.finish_detail(self,which)
 	CombatLayout.build(self)
+	MapIdentity.renew(self)
 	WorldDressing.build(self)
 	building=false;SurfaceCleanup.clean(architecture);batch_architecture();apply_surface_detail()
 	ArenaLighting.build(self)
@@ -250,7 +269,7 @@ func solid_rotated(pos:Vector3,size:Vector3,color:Color,yaw:float) -> Node3D:
 func build_perimeter(which:int):
 	var x=bounds.x;var z=bounds.y
 	# Chamfered corners and recessed flanks replace the rectangular enclosing wall.
-	playable_polygon=PackedVector2Array([Vector2(-x*.72,-z),Vector2(x*.70,-z),Vector2(x,-z*.64),Vector2(x,z*.58),Vector2(x*.74,z),Vector2(-x*.72,z),Vector2(-x,z*.63),Vector2(-x,-z*.60)])
+	playable_polygon=MapIdentity.perimeter(which,bounds)
 	for i in range(playable_polygon.size()):
 		var start=playable_polygon[i];var end=playable_polygon[(i+1)%playable_polygon.size()]
 		var center=(start+end)*.5;var delta=end-start;var yaw=-atan2(delta.y,delta.x)
@@ -303,6 +322,7 @@ func receive_props(states:Array):
 	for state in states:
 		if state is Array and state.size()==3 and props.has(int(state[0])):props[int(state[0])].receive(state[1],state[2])
 func reset_props():
+	for door in doors.values():door.reset()
 	for prop in props.values():prop.reset_home()
 
 func navigation_heights(pos:Vector3) -> Array:
@@ -316,12 +336,25 @@ func navigation_heights(pos:Vector3) -> Array:
 			if not height in result:result.append(height)
 	return result
 func navigation_clear(pos:Vector3) -> bool:
+	if has_meta("route_spec") and pos.y<6.8:
+		var point=Vector2(pos.x,pos.z);var spec=get_meta("route_spec")
+		for offset in [Vector2.ZERO,Vector2(.5,0),Vector2(-.5,0),Vector2(0,.5),Vector2(0,-.5)]:
+			if not DefusalLayout.inside(point+offset,spec):return false
 	for surface in walk_surfaces:
 		if surface.low==surface.high or not surface.rect.has_point(Vector2(pos.x,pos.z)):continue
 		var top=lerpf(surface.low,surface.high,(pos.z-surface.rect.position.y)/surface.rect.size.y)
-		if pos.y+.15<top and pos.y+1.85>minf(surface.low,surface.high)-.4:return false
+		var bottom=top-.35 if surface.get("slab",false) else minf(surface.low,surface.high)-.4
+		if pos.y+.15<top and pos.y+1.85>bottom:return false
 	if absf(pos.x)>bounds.x-2 or absf(pos.z)>bounds.y-2:return false
 	if not Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),playable_polygon):return false
-	for block in navigation_blocks:
+	if navigation_block_count!=navigation_blocks.size():
+		navigation_block_count=navigation_blocks.size();navigation_block_cells.clear()
+		for block in navigation_blocks:
+			for x in range(floori((block.position.x-.5)/8.),floori((block.end.x+.5)/8.)+1):
+				for z in range(floori((block.position.z-.5)/8.),floori((block.end.z+.5)/8.)+1):
+					var key=Vector2i(x,z)
+					if not navigation_block_cells.has(key):navigation_block_cells[key]=[]
+					navigation_block_cells[key].append(block)
+	for block in navigation_block_cells.get(Vector2i(floori(pos.x/8.),floori(pos.z/8.)),[]):
 		if pos.x>block.position.x-.5 and pos.x<block.end.x+.5 and pos.z>block.position.z-.5 and pos.z<block.end.z+.5 and pos.y+.15<block.end.y and pos.y+1.85>block.position.y:return false
 	return true

@@ -10,7 +10,8 @@ func _ready():mouse_filter=Control.MOUSE_FILTER_IGNORE
 func _process(_dt):queue_redraw()
 func keycap(text:String,pos:Vector2,width:float=26.):
 	draw_style_box(key_style(),Rect2(pos,Vector2(width,25)))
-	draw_string(get_theme_default_font(),pos+Vector2(1,18),text,HORIZONTAL_ALIGNMENT_CENTER,width-2,13,WHITE)
+	var font=get_theme_default_font();var baseline=(25.+font.get_ascent(13)-font.get_descent(13))*.5
+	draw_string(font,pos+Vector2(1,baseline),text,HORIZONTAL_ALIGNMENT_CENTER,width-2,13,WHITE)
 func icon(role:int,center:Vector2,radius:float,color:Color):
 	match role:
 		0:
@@ -32,7 +33,7 @@ func icon(role:int,center:Vector2,radius:float,color:Color):
 func _draw():
 	if not is_instance_valid(game) or not game.players.has(game.local_id):return
 	var p=game.players[game.local_id];var font=get_theme_default_font()
-	var center=Vector2(914,608);var remaining=maxf(0.,float(p.skill_ready)-game.clock);var duration=[18.,30.,30.,30.,25.,20.][int(p.role)];var enabled=game.options.skills and game.options.classes
+	var center=Vector2(914,608);var remaining=maxf(0.,float(p.skill_ready)-game.clock);var duration=AbilityBalance.COOLDOWNS[int(p.role)];var enabled=game.options.skills and game.options.classes
 	draw_circle(center,38.,Color(.08,.11,.15,.78));draw_arc(center,36.,0,TAU,64,Color("6c7a87"),2.,true)
 	var ready=remaining<=0. and enabled;var color=GOLD if ready else Color("8697a4")
 	draw_arc(center,36.,-PI/2,-PI/2+TAU*(1.-clampf(remaining/duration,0.,1.)),64,color,4.,true)

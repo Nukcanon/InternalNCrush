@@ -12,7 +12,7 @@ func steps(count:int):
 		g.clock+=1./60;g.server_tick(1./60)
 		await physics_frame
 func run():
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false);g.options.skills=false;g.options.classes=false;g.options.mode=3;g.options.target=10000;g.phase="combat";g.remaining=1000
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map_random=false;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false);g.options.skills=false;g.options.classes=false;g.options.mode=3;g.options.target=10000;g.phase="combat";g.remaining=1000
 	g.add_player(-1,"NAV","nav");var p=g.players[-1];p.team=0;p.role=0;p.primary="a1";g.spawn(-1);g.actors[-1].position=Vector3(35,0,77)
 	var brain=g.bot_agents[-1];var route=g.bot_navigation.route(Vector3(35,0,77),Vector3(-44,0,-23));expect(route.size()>20,"path crosses map around warehouse obstacles")
 	var clear=true

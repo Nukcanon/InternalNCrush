@@ -2,7 +2,7 @@ extends RefCounted
 class_name AimModel
 static func spread(w:Dictionary,speed:float,ads:bool,crouch:bool,sprint:bool,grounded:bool,bloom:float,mounted=false,vertical_speed=0.,aim_fraction:float=-1.) -> float:
 	if w.kind!="gun":return .1
-	var movement=clampf(speed/7.4,0,1.5)
+	var movement=maxf(0.,speed)/7.4
 	var aiming=clampf(aim_fraction,0.,1.) if aim_fraction>=0 else (1. if ads else 0.)
 	var base=lerpf(float(w.spread),float(w.get("ads_spread",float(w.spread)*.22)),aiming)
 	var penalty=float(w.get("move_spread",1.))*movement
@@ -22,14 +22,18 @@ static func pixel_radius(angle_degrees:float,fov:float,height:float) -> float:re
 static func spray_offset(w:Dictionary,index:int) -> Vector2:
 	if w.kind!="gun" or int(w.pellets)>1:return Vector2.ZERO
 	var scale=float(w.get("pattern_scale",1.5))
-	if w.fire_mode=="semi":return Vector2(sin(index*.8)*.06,minf(index,8)*.42)*scale
-	# Original game pattern: initial vertical stem, then horizontal branches.
-	if index<8:return Vector2(sin(index*.8)*.055,index*.29)*scale
-	var phase=(index-8)%22;var x=0.
-	if phase<6:x=lerpf(0.,1.7,phase/5.)
-	elif phase<16:x=lerpf(1.7,-1.7,(phase-6)/9.)
-	else:x=lerpf(-1.7,0.,(phase-16)/5.)
-	return Vector2(x,2.18+sin(phase*.55)*.11)*scale
+	var time=float(index)*float(w.interval)
+	var build=maxf(.15,float(w.get("spray_build_seconds",1.2)))
+	var progress=time/build
+	var width=float(w.get("spray_width",1.7));var height=float(w.get("spray_height",2.18))
+	var seed=float(w.get("spray_seed",0.));var direction=float(w.get("spray_direction",1.))
+	# A learnable vertical stem followed by each gun's own lateral sweep and tempo.
+	var stem=clampf(progress/.55,0.,1.)
+	var lateral=smoothstep(.22,1.,progress)*sin((progress-.22)*float(w.get("spray_frequency",2.6))+seed)*width
+	var drift=sin(index*.79+seed)*.045*minf(progress,1.)
+	var rise=height*(1.-exp(-progress*2.8))
+	if index==0:return Vector2.ZERO
+	return Vector2((lateral+drift)*direction,rise+sin(progress*5.1)*.045*stem)*scale
 
 static func recover(p:Dictionary,w:Dictionary,dt:float,now:float):
 	var age=maxf(0,now-float(p.get("shot_time",-100.)))

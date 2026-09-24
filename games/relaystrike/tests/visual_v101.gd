@@ -8,7 +8,7 @@ func capture(label:String):
 	root.get_texture().get_image().save_png(output.path_join(label+".png"))
 func run():
 	DirAccess.make_dir_recursive_absolute(output)
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map=16;g.build_world();g.add_player(1,"LOCAL","v101")
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=16;g.build_world();g.add_player(1,"LOCAL","v101")
 	g.ui.gear();g.ui.preview_kind=1;g.ui.refresh_gear_detail();await capture("gear-primary")
 	g.ui.gear_class.select(1);g.ui.refresh_weapons();g.ui.refresh_gear_cards();await capture("gear-recon")
 	g.ui.gear_class.select(3);g.ui.refresh_weapons();g.ui.gear_category=4;g.ui.preview_kind=4;g.ui.refresh_gear_detail();g.ui.refresh_gear_cards();await capture("gear-turret")

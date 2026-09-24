@@ -33,6 +33,11 @@ var acceleration_lean=Vector3.ZERO
 var lean_velocity=Vector3.ZERO
 var lag_velocity=Vector3.ZERO
 var lower_lag=Vector3.ZERO
+var deform:Skeleton3D
+var dynamics:ActivePose
+var enable_physics=true
+var planted=[Vector3.INF,Vector3.INF]
+var contact=[false,false]
 var pose_grounded=true
 var landing_compression=0.
 var arm_right=Vector3(.98,-.08,-.21)
@@ -48,6 +53,7 @@ func build(which:int,side:int):
 		rig=templates[key].instantiate()
 	add_child(rig);hips=rig.get_node("Hips");chest=hips.get_node("Chest");head=chest.get_node("Head");right_arm=chest.get_node("RightArm");left_arm=chest.get_node("LeftArm");right_elbow=right_arm.get_node("Elbow");left_elbow=left_arm.get_node("Elbow");socket=chest.get_node("WeaponSocket");animator=rig.get_node("AnimationPlayer")
 	animator.play("idle")
+	deform=OperatorSkin.install(rig,key)
 func react(direction:float):hit_time=.32;hit_sign=direction
 func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pitch:float,reloading:float,kick:float,gait_phase:float=-1.,turn:float=0.):
 	var speed=Vector2(move.x,move.z).length()
@@ -82,6 +88,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 				var angles=leg_angles(hips.position.y,0,step*.065)
 				leg.rotation=Vector3(angles.x,turn*.055*step,0);knee.rotation.x=angles.y;foot.rotation=Vector3(angles.z,-pelvis_yaw*.35,0)
 	else:
+		contact=[false,false]
 		airborne_time+=dt
 		hips.position=Vector3(0,.89-visual_crouch*.19,0)
 		hips.rotation=Vector3(-.08,0,0)
@@ -98,6 +105,8 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	var cycle=phase*TAU
 	var movement=clampf(speed/7.4,0,1) if grounded else 0.
 	var breath=sin(motion_clock*1.9+motion_seed)
+	chest.scale=Vector3(.96,1.+breath*.003,.95+breath*.003) if role in HumanModel.FEMALE_ROLES else Vector3(1.,1.+breath*.003,1.+breath*.003)
+	if speed<.25:hips.position.x+=sin(motion_clock*.75+motion_seed)*.008;hips.rotation.z+=sin(motion_clock*.75+motion_seed)*.006
 	var aiming=clampf(pitch,-.9,.9)
 	chest.rotation=Vector3(-aiming*.45+visual_crouch*.13-visual_sprint*.20+acceleration_lean.x+breath*.008,-pelvis_yaw*.72+sin(cycle)*movement*.09,-local_velocity.x*.008+acceleration_lean.z+sin(cycle)*movement*.03)
 	head.rotation=Vector3(-aiming*.55-landing_compression*.25,-pelvis_yaw*.28-sin(cycle)*movement*.03,0)
@@ -121,6 +130,19 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	hit_time=maxf(0,hit_time-dt);var hit=sin(hit_time/.32*PI)*.2
 	chest.rotation+=Vector3(hit*.45,0,hit*hit_sign);head.rotation.x-=hit*.4
 	grip_weapon(dt)
+	sync_deform()
+
+func sync_deform():
+	if enable_physics and is_inside_tree():
+		var camera=get_viewport().get_camera_3d()
+		var near=camera!=null and camera.global_position.distance_squared_to(global_position)<625. and is_visible_in_tree()
+		if near and not is_instance_valid(dynamics) and ActivePose.active_count<ActivePose.LIMIT:
+			dynamics=ActivePose.new();add_child(dynamics);dynamics.build(self)
+		if is_instance_valid(dynamics):
+			dynamics.paused=not near
+			if near:dynamics.apply()
+			else:dynamics.queue_free();dynamics=null
+	if is_instance_valid(deform):OperatorSkin.sync(rig,deform)
 
 static func joint(parent:Node,name:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;parent.add_child(n);return n
@@ -209,11 +231,21 @@ func solve_feet(dt:float,move:Vector3,crouched:bool,sprinting:bool,phase:float):
 		var leg=hips.get_node("LeftLeg" if i==0 else "RightLeg")
 		var knee=leg.get_node("Knee");var foot=knee.get_node("Foot")
 		var p=fposmod(cycle+i*.5,1.)
-		var stance=p<.62
-		var travel=lerpf(stride,-stride,p/.62) if stance else lerpf(-stride,stride,smoothstep(.62,1.,p))
-		var lift=0. if stance else sin((p-.62)/.38*PI)*(.16 if sprinting else .10)*movement_blend
+		var duty=.30 if sprinting else .52 if crouched else .38
+		var stance=p<duty
+		var travel=lerpf(stride,-stride,p/duty) if stance else lerpf(-stride,stride,smoothstep(duty,1.,p))
+		var lift=0. if stance else sin((p-duty)/(1.-duty)*PI)*(.18 if sprinting else .12)*movement_blend
 		var foot_z=direction.z*travel-(.09 if crouched else 0.)
 		var foot_x=direction.x*travel
+		if is_inside_tree() and speed>.25:
+			var desired=rig.to_global(Vector3(leg.position.x+foot_x,.1,foot_z))
+			if stance and not contact[i]:planted[i]=desired
+			if stance and planted[i].is_finite() and desired.distance_to(planted[i])<.75:
+				var local=rig.to_local(planted[i]);foot_z=clampf(local.z,-.55,.55);foot_x=clampf(local.x-leg.position.x,-.28,.28)
+			contact[i]=stance
+			var ray=PhysicsRayQueryParameters3D.create(desired+Vector3.UP*.45,desired-Vector3.UP*.65,1|4|8)
+			var ground=get_world_3d().direct_space_state.intersect_ray(ray)
+			if not ground.is_empty():lift+=clampf(rig.to_local(ground.position).y,-.18,.25)
 		var angles=leg_angles(hips.position.y,foot_z,lift)
 		var lateral=atan2(foot_x,maxf(.3,hips.position.y-.1))
 		leg.rotation=Vector3(angles.x,0,lateral)
@@ -251,6 +283,7 @@ func throw_pose(started:float,held:bool,until:float,now:float):
 		var phase=clampf(1.-(until-now)/.45,0.,1.)
 		right_arm.rotation=Vector3(lerpf(2.1,.25,phase),-.15,-.20);right_elbow.rotation.x=lerpf(.9,.15,phase)
 		chest.rotation.y+=sin(phase*PI)*.15
+	sync_deform()
 
 func slide_pose(phase:float):
 	var weight=sin(clampf(phase*4.,0.,1.)*PI*.5)*sin(clampf((1.-phase)*4.,0.,1.)*PI*.5)
@@ -258,3 +291,4 @@ func slide_pose(phase:float):
 	var left=hips.get_node("LeftLeg");var right=hips.get_node("RightLeg")
 	left.rotation.x=lerpf(left.rotation.x,1.18,weight);left.get_node("Knee").rotation.x=lerpf(left.get_node("Knee").rotation.x,-.35,weight)
 	right.rotation.x=lerpf(right.rotation.x,.7,weight);right.get_node("Knee").rotation.x=lerpf(right.get_node("Knee").rotation.x,-1.65,weight)
+	sync_deform()

@@ -20,7 +20,7 @@ func run():
 	g.ui.preview_kind=1;g.ui.refresh_gear_detail();await capture("weapon")
 	g.ui.clear_panel();g.ui.hud.visible=true
 	for index in range(6):
-		g.options.map=index;g.build_world();await physics_frame;await physics_frame
+		g.options.map_random=false;g.options.map=index;g.build_world();await physics_frame;await physics_frame
 		var a=g.actors[1];a.position=Vector3(0,0,72) if index in [2,3] else Vector3(22,0,28);a.reset_view(0);a.camera.current=true
 		for i in range(1,12):
 			var actor=g.actors[-i];actor.position=a.position+Vector3((i%4-1.5)*3,0,-8-floor(i/4.)*6);actor.reset_view(PI);g.players[-i].protect=0.;actor.visual(.016,g.players[-i],100.)

@@ -11,7 +11,7 @@ func run():
 	expect(Rules.loss_reward(1)==1900 and Rules.loss_reward(2)==3000 and Rules.loss_reward(8)==3300,"loss economy")
 	expect(Rules.damage_water(true,true,true)==.5 and Rules.damage_water(false,false,false)==1,"water attenuation applied once")
 	expect(Rules.ammo_pickup(120)==30,"partial ammo refill")
-	var g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false)
+	var g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map_random=false;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false)
 	g.add_player(1,"Test One","test_one_123456789");g.add_player(2,"Test Two","test_two_123456789")
 	g.phase="combat";g.clock=100;g.players[1].protect=0.;g.players[2].protect=0.
 	g.actors[1].position=Vector3(0,0,60);g.actors[2].position=Vector3(0,0,55)
@@ -25,11 +25,11 @@ func run():
 	await physics_frame;await physics_frame
 	g.use_skill(1);expect(g.devices.size()==1,"engineer turret placement")
 	if g.devices.size()>0:
-		var did=g.devices.keys()[0];expect(g.players[1].skill_ready==130,"30-second turret charge")
+		var did=g.devices.keys()[0];expect(g.players[1].skill_ready==135,"35-second turret charge")
 		g.update_world_visuals(.1);await physics_frame;await physics_frame
-		g.clock=131;g.actors[1].aim_pitch=.05
+		g.clock=136;g.actors[1].aim_pitch=.05
 		g.use_skill(1);expect(g.devices.size()==1 and g.devices[did].level==2,"aimed turret upgrade preserves singleton")
-		g.remove_device(did);expect(g.players[1].skill_ready==161,"destruction does not refund charge")
+		g.remove_device(did);expect(g.players[1].skill_ready==171,"destruction does not refund charge")
 	g.players[1].alive=false;g.phase="buy";g.options.mode=4;g.players[1].cash=800;g.players[1].armor=0;g.players[1].primary="pistol";g.players[1].owned_primary=false
 	g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==800 and g.players[1].primary=="pistol","insufficient funds rejected")
 	g.players[1].cash=4000;g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==1000 and g.players[1].primary=="a1","purchase costs deducted")

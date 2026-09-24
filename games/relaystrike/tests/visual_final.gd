@@ -8,7 +8,7 @@ func capture(name:String):
 func run():
 	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.profile.nick="Nukcanon";g.last_server_ip="";g.ui.menu()
 	await create_timer(1.5).timeout;await capture("menu")
-	g.server=true;g.phase="lobby";g.options.map=5;g.build_world();g.add_player(1,"Nukcanon","visual_final_host");g.players[1].team=0
+	g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=5;g.build_world();g.add_player(1,"Nukcanon","visual_final_host");g.players[1].team=0
 	for i in range(1,32):g.add_player(-i,"BOT %02d"%i,"visual_final_bot"+str(i));g.players[-i].team=i%2;g.players[-i].role=i%6
 	g.phase="combat";g.clock=100;g.remaining=568;g.ui.show_hud()
 	var a=g.actors[1];a.position=Vector3(22,0,28);a.reset_view(0);a.camera.current=true

@@ -5,8 +5,8 @@ func _initialize():call_deferred("run")
 func run():
 	Engine.time_scale=4.
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.dedicated=true;g.server=true;g.phase="lobby"
-	for index in [7,14,16,17]:
-		g.options.map=index;g.build_world()
+	for index in [7,14,16,17,20,27,31]:
+		g.options.map_random=false;g.options.map=index;g.build_world()
 		if not g.players.has(-1):g.add_player(-1,"STAIRS","stairs")
 		g.players[-1].role=0;g.players[-1].primary="a1";g.players[-1].protect=0
 		var a=g.actors[-1];var bot=BotAgent.new();bot.setup(g,-1)
@@ -14,6 +14,8 @@ func run():
 		await physics_frame;await physics_frame
 		var goals=[g.arena.sites[0],Vector3(0,-3.2,0)]
 		if index==16:goals.insert(1,g.arena.navigation_goals[0])
+		if index in [20,27]:goals=[g.arena.sites[1]]
+		if index==31:goals=[Vector3(-25,4.2,0),Vector3(25,8.4,0),Vector3(-25,12.6,0)]
 		for goal in goals:
 			bot.path.clear();bot.next_path=0.;bot.goal=goal
 			var started=a.position

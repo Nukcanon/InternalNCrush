@@ -51,7 +51,7 @@ func run():
 		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0,-.5,0),Vector3(0,-5,0),1))
 		expect(not hit.is_empty() and absf(hit.position.y+3.2)<.05,"map %d basement has actual walkable floor"%index)
 		arena.free();await process_frame
-	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map=0;g.build_world();g.add_player(1,"TEST","v101_test")
+	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=0;g.build_world();g.add_player(1,"TEST","v101_test")
 	var actor=g.actors[1];var p=g.players[1]
 	p.hand=-1;actor.reset_view(0);actor.visual(.1,p,g.clock)
 	expect(actor.handedness==-1 and actor.character.scale.x<0 and actor.gun.scale.x<0,"left-handed spawn mirrors first and third person models")

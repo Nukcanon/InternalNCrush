@@ -22,8 +22,8 @@ func run():
 	expect(AimModel.spread(w,0,false,false,false,true,.5)>standing,"sustained firing bloom widens the cone")
 	expect(AimModel.spread(w,0,true,true,false,true,0)<standing,"crouch and ADS improve accuracy")
 	expect(AimModel.spread(w,0,false,false,false,false,0,false,6)>AimModel.spread(w,0,false,false,false,false,0,false,0) and AimModel.spread(w,0,false,false,false,false,0,false,0)>standing,"jump apex is more accurate than ascent but worse than standing")
-	var early=AimModel.spray_offset(w,7);var left=AimModel.spray_offset(w,23);var right=AimModel.spray_offset(w,13)
-	expect(absf(early.x)<.1 and early.y>1.5 and left.x< -1 and right.x>1 and absf(left.y-right.y)<.3,"T spray has vertical stem and both horizontal branches")
+	var early=AimModel.spray_offset(w,1);var left=AimModel.spray_offset(w,23);var right=AimModel.spray_offset(w,13)
+	expect(absf(early.x)<.1 and early.y>0. and left.x< -1 and right.x>1 and left.y>early.y and right.y>early.y,"weapon recoil rises into both lateral directions")
 	var inside=true
 	for i in range(100):
 		var d=AimModel.cone_direction(Vector3.FORWARD,2.,i/99.,i*.37)
@@ -36,7 +36,7 @@ func run():
 		animator.play("walk");animator.seek(.2,true);var start=model.rig.get_node("Hips/LeftLeg").rotation.x;animator.seek(.6,true)
 		expect(absf(start-model.rig.get_node("Hips/LeftLeg").rotation.x)>.2,"operator %d walking moves actual leg joints"%role)
 		model.queue_free()
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false);g.options.classes=true;g.options.skills=true;g.options.mode=0;g.phase="combat";g.clock=100;g.remaining=1000
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map_random=false;g.options.map=0;g.options.max_players=32;g.host_game();g.set_physics_process(false);g.options.classes=true;g.options.skills=true;g.options.mode=0;g.phase="combat";g.clock=100;g.remaining=1000
 	expect(g.players.is_empty(),"dedicated server does not occupy a player slot")
 	g.options.classes=false;g.add_player(-5,"NOCLASS","noclass");expect(g.players[-5].armor==0 and g.current_weapon(g.players[-5]).kind=="gun","classless bots start with an attack weapon and zero armor");g.disconnected(-5);g.options.classes=true
 	g.add_player(-1,"TEST","test");g.add_player(-2,"ALLY","ally");g.spawn(-1);g.spawn(-2)
@@ -54,10 +54,10 @@ func run():
 	p=reset_bot(2,"h1");p.hp=40;b.visible_target=true;b.utilities()
 	expect(p.get("mounted",0)>g.clock and p.shield>g.clock,"heavy bot mounts and shields under pressure")
 	p=reset_bot(3,"e1");p.secondary="repair";b.goal=a.position;b.utilities();await physics_frame
-	expect(g.devices.size()==1 and p.skill_ready==g.clock+30,"engineer bot places one turret with 30-second charge")
+	expect(g.devices.size()==1 and p.skill_ready==g.clock+35,"engineer bot places one turret with 35-second charge")
 	var did=g.devices.keys()[0];g.update_world_visuals(.1);await physics_frame
 	p.skill_ready=0.;b.utilities();expect(g.devices[did].level==2 and g.devices.size()==1,"engineer bot upgrades existing turret")
-	p.skill_ready=g.clock+30;b.visible_target=true;p.gadget_ready=0.;b.utilities();g.update_world_visuals(.1);await physics_frame
+	p.skill_ready=g.clock+35;b.visible_target=true;p.gadget_ready=0.;b.utilities();g.update_world_visuals(.1);await physics_frame
 	expect(g.devices.size()==2,"engineer bot places cover beside turret")
 	a.position+=Vector3(0,0,-.8);await physics_frame
 	g.devices[did].hp=80.;g.devices[did].last_hit=0.;b.visible_target=false;b.choose_action();align(g.devices[did].pos+Vector3.UP*.85);b.support_action();p.switch_until=0.;p.fire_ready=0.;g.fire(-1)

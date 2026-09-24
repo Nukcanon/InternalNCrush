@@ -8,12 +8,12 @@ func capture(label:String):
 func run():
 	g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false)
 	g.ui.host_settings();await capture("maps")
-	g.server=true;g.local_id=1;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"PLAYER","visual_local_v06")
+	g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"PLAYER","visual_local_v06")
 	for i in range(1,7):
 		g.add_player(-i,"BOT %02d"%i,"visual"+str(i));g.players[-i].team=i%2;g.players[-i].role=i-1
 	g.phase="combat";g.clock=100.;g.remaining=600.;g.ui.show_hud();g.ui.clear_panel();g.ui.stats.visible=false
 	for index in [7,8,10,12,13,14,16,17,18,6]:
-		g.options.map=index;g.build_world();await physics_frame;await physics_frame
+		g.options.map_random=false;g.options.map=index;g.build_world();await physics_frame;await physics_frame
 		var a=g.actors[1];a.position=Vector3(0,.1,g.arena.bounds.y*.62);a.reset_view(0);a.set_local(true);g.players[1].protect=0.
 		for i in range(1,7):
 			var other=g.actors[-i];other.position=Vector3((i-3.5)*2.2,.1,a.position.z-9-abs(i-3.5)*.8);other.reset_view(PI);other.net_grounded=true;g.players[-i].protect=0.

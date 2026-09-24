@@ -9,7 +9,7 @@ var label:Label
 func _initialize():call_deferred("run")
 func run():
 	output=ProjectSettings.globalize_path("res://../../validation/motion");DirAccess.make_dir_recursive_absolute(output)
-	g=load("res://scripts/game.gd").new();root.add_child(g);g.ui.clear_panel();g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"MOTION REVIEW","motion_review")
+	g=load("res://scripts/game.gd").new();root.add_child(g);g.ui.clear_panel();g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"MOTION REVIEW","motion_review")
 	actor=g.actors[1];actor.position=Vector3(0,.1,0);actor.set_local(false);g.players[1].protect=0.;g.players[1].role=0;actor.reset_view(0)
 	camera=Camera3D.new();g.add_child(camera);camera.current=true;camera.fov=46.;camera.near=.1
 	var layer=CanvasLayer.new();root.add_child(layer);label=Label.new();label.theme=g.ui.theme;label.position=Vector2(32,28);label.add_theme_font_size_override("font_size",25);layer.add_child(label)

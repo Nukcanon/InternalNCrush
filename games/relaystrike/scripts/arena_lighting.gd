@@ -9,7 +9,7 @@ static func build(a:Node):
 	env.tonemap_mode=Environment.TONE_MAPPER_FILMIC;env.tonemap_exposure=1.15
 	env.fog_enabled=not indoor;env.fog_density=.0009 if night else .00045;env.fog_light_color=Color("596f91") if night else Color("bdc9ce");env.fog_sky_affect=.35
 	world.environment=env;a.add_child(world)
-	var sun=DirectionalLight3D.new();sun.name="Sun";sun.rotation_degrees=Vector3(-38,-32,0) if night else Vector3(-48,-28,0);sun.light_color=Color("90b4ff") if night else Color("ffedce");sun.light_energy=.18 if indoor else .32 if night else 1.1;sun.shadow_enabled=not indoor;sun.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS;sun.directional_shadow_max_distance=90.;sun.shadow_bias=.06;sun.shadow_normal_bias=.9;a.add_child(sun)
+	var sun=DirectionalLight3D.new();sun.name="Sun";sun.rotation_degrees=Vector3(-38,-32,0) if night else Vector3(-48,-28,0);sun.light_color=Color("90b4ff") if night else Color("ffedce");sun.light_energy=.58 if a.get_meta("hybrid",false) else .18 if indoor else .32 if night else 1.1;sun.shadow_enabled=not indoor or bool(a.get_meta("hybrid",false));sun.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS;sun.directional_shadow_max_distance=90.;sun.shadow_bias=.25;sun.shadow_normal_bias=1.5;a.add_child(sun)
 	var points=[]
 	if indoor or night:
 		for x in [-.60,0.,.60]:

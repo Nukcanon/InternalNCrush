@@ -8,7 +8,7 @@ func expect(ok:bool,label:String):
 	else:failures+=1;printerr("FAIL ",label)
 func run():
 	Catalog.load_all()
-	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map=7;g.build_world();g.add_player(1,"V1","height_test")
+	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"V1","height_test")
 	var actor=g.actors[1]
 	for role in range(6):
 		g.players[1].role=role;actor.set_team(0);actor.reset_view(0)

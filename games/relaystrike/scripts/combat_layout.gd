@@ -32,12 +32,24 @@ static func build(a:Node):
 			var point=pos*side
 			var size=Vector3(6.6,3.3,5.2) if a.bounds.x>70 else Vector3(4.4,2.8,2.3)
 			# Closed service island, with a broad route on both sides; no single pixel head peek.
-			a.box(point+Vector3.UP*size.y*.5,size,wall)
+			if pos==pairs[0]:
+				# A readable, usable service room with two exits instead of a solid block.
+				for edge in [-1,1]:
+					a.box(point+Vector3(edge*(size.x*.5-.12),1.4,0),Vector3(.24,2.8,size.z),wall)
+					for xside in [-1,1]:a.box(point+Vector3(xside*(size.x*.25+.61),1.4,edge*size.z*.5),Vector3(size.x*.5-1.22,2.8,.24),wall)
+					a.add_door(point+Vector3(0,0,edge*(size.z*.5+.04)),PI if edge>0 else 0.)
+				a.box(point+Vector3(0,2.93,0),Vector3(size.x,.26,size.z+.3),wall)
+			else:a.box(point+Vector3.UP*size.y*.5,size,wall)
 			a.detail(point+Vector3.UP*(size.y+.07),Vector3(size.x+.3,.14,size.z+.3),trim)
 			for edge in [-1,1]:
 				a.detail(point+Vector3(edge*(size.x*.5+.03),1.8,0),Vector3(.06,1.7,size.z*.65),Color("47636c"))
 				for y in [1.15,1.55,1.95,2.35]:a.detail(point+Vector3(edge*(size.x*.5+.08),y,0),Vector3(.04,.06,size.z*.58),trim)
 			count+=1
+	if a.doors.is_empty() and a.vertical_map:
+		for side in [-1,1]:
+			var point=Vector3(side*a.bounds.x*MapIdentity.WINGS[a.map_index],0,side*minf(4.,a.bounds.y*.10)-float(a.get_meta("wing_depth",20.))*.5-.18)
+			for edge in [-1,1]:a.box(point+Vector3(edge*2.14,1.4,0),Vector3(1.74,2.8,.28),wall)
+			a.add_door(point)
 	# Break the straight elevated firing lane without closing the 4.6m-wide crossing.
 	if a.vertical_map:
 		var style=a.map_index%4;var center_z=2.5 if style==0 else -2.5 if style==1 else 0.
@@ -48,7 +60,7 @@ static func build(a:Node):
 				count+=1
 	if indoor:
 		var height=10.8
-		a.box(Vector3(0,height+.2,0),Vector3(a.bounds.x*2.,.4,a.bounds.y*2.),Color("586a76"))
+		a.box(Vector3(0,height+.2,0),Vector3(a.bounds.x*1.25,.4,a.bounds.y*1.25),Color("586a76"))
 		for side in [-1,1]:
 			a.box(Vector3(side*(a.bounds.x-1.),height*.5,0),Vector3(1.,height,a.bounds.y*2.),wall)
 			a.box(Vector3(0,height*.5,side*(a.bounds.y-1.)),Vector3(a.bounds.x*2.,height,1.),wall)
