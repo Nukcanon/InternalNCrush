@@ -36,6 +36,7 @@ func receive_doors(states:Array):
 		if doors.has(int(state.id)):doors[int(state.id)].opened=state.open;doors[int(state.id)].progress=state.progress;doors[int(state.id)].apply_pose()
 var architecture:Node3D
 var chunk_count=0
+var bake_geometry=false
 var world_font:Font
 func mat(color:Color,emission:bool=false) -> StandardMaterial3D:
 	var key=str(color)+str(emission)
@@ -129,7 +130,7 @@ func build(which:int):
 		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 		if which==PracticeLayout.INDEX:PracticeLayout.build(self)
 		else:DefusalLayout.build(self,which)
-		WorldDressing.build(self);building=false;SurfaceCleanup.clean(architecture);PlanarCleanup.clean(architecture);batch_architecture();apply_surface_detail();ArenaLighting.build(self);return
+		WorldDressing.build(self);finish_architecture();apply_surface_detail();ArenaLighting.build(self);return
 	map_index=which;vertical_map=VerticalLayout.enabled(which);indoors=which in [2,3,6,8,11,14,15];has_water=which in [0,5];bounds=MapLayouts.extent(which);building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 	if not vertical_map:box(Vector3(0,-.5,0),Vector3(bounds.x*2,1,bounds.y*2),Color("b9b5a5") if has_water else Color("c5b69a"))
 	build_perimeter(which)
@@ -191,8 +192,20 @@ func build(which:int):
 	CombatLayout.build(self)
 	MapIdentity.renew(self)
 	WorldDressing.build(self)
-	building=false;SurfaceCleanup.clean(architecture);PlanarCleanup.clean(architecture);batch_architecture();apply_surface_detail()
+	finish_architecture();apply_surface_detail()
 	ArenaLighting.build(self)
+func finish_architecture():
+	building=false
+	var path="res://assets/arenas/geometry/map_%02d.scn"%map_index
+	if not bake_geometry and ResourceLoader.exists(path):
+		# Navigation and dynamic props are generated identically on every peer;
+		# only immutable architecture is replaced by the clipped build-time scene.
+		var packed=load(path) as PackedScene
+		if packed:
+			architecture.free();architecture=packed.instantiate();add_child(architecture)
+			chunk_count=int(architecture.get_meta("chunk_count",0));return
+	SurfaceCleanup.clean(architecture);PlanarCleanup.clean(architecture);batch_architecture()
+	architecture.set_meta("chunk_count",chunk_count)
 func batch_architecture():
 	var meshes=[];gather_meshes(architecture,meshes);var chunks={}
 	for mesh in meshes:

@@ -305,7 +305,7 @@ func teams_menu():
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 	button("돌아가기",func():
 		if game.phase=="lobby":lobby()
-		else:clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED)
+		else:clear_panel();game.capture_pointer())
 	notice_label=label("",14)
 func refresh_teams():
 	if not is_instance_valid(team_columns):return
@@ -424,7 +424,7 @@ func settings():
 	var back=button("메인메뉴" if game.phase=="menu" else "돌아가기",func():
 		if game.phase=="menu":menu()
 		elif game.phase=="lobby":lobby()
-		else:clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED)
+		else:clear_panel();game.capture_pointer())
 	pin_actions(back)
 func sound_slider(title:String,key:String):
 	var row=HBoxContainer.new();stack.add_child(row);var text=label(title,20,row);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -437,7 +437,7 @@ func members_menu():
 	room_list=VBoxContainer.new();stack.add_child(room_list);refresh_members()
 	button("돌아가기",func():
 		if game.phase=="lobby":lobby()
-		else:clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED)
+		else:clear_panel();game.capture_pointer())
 	notice_label=label("",17)
 func refresh_members():
 	if screen!="members" or not is_instance_valid(room_list):return
@@ -505,7 +505,7 @@ func gear():
 		if not weapon_ids.is_empty():game.command("loadout",selected_loadout()),actions)
 	button("돌아가기",func():
 		if game.phase=="lobby":lobby()
-		else:clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED,actions)
+		else:clear_panel();game.capture_pointer(),actions)
 	gear_price=label("",17,actions);gear_price.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	notice_label=label("",14);notice_label.modulate=Color("80cfef")
 	refresh_weapons()
@@ -595,10 +595,10 @@ func refresh_gear_detail():
 	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.selected)
 	gear_submit.text="구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "다음 라운드 구매 예약"
 func toggle_pause():
-	if is_instance_valid(panel):clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED;return
+	if is_instance_valid(panel):clear_panel();game.capture_pointer();return
 	make_panel("일시 메뉴 · 경기는 계속 진행됩니다.",680)
 	if game.phase=="lobby":button("돌아가기",lobby)
-	else:button("돌아가기",func():clear_panel();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED)
+	else:button("돌아가기",func():clear_panel();game.capture_pointer())
 	button("병과 · 무기 · 가젯",gear);button("팀 편성",teams_menu);button("참가자 관리",members_menu);button("환경 설정",settings);button("방 나가기",func():game.request_leave())
 func hud_label(text:String,pos:Vector2,size:int=20) -> Label:
 	var l=Label.new();l.text=text;l.position=pos;l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_shadow_color",Color(0,0,0,.8));l.add_theme_constant_override("shadow_offset_x",1);l.add_theme_constant_override("shadow_offset_y",2);hud.add_child(l);return l
@@ -645,7 +645,7 @@ func show_hud():
 	HudLayout.attach(self)
 	if is_instance_valid(game.touch):
 		root.move_child(game.touch,-1)
-	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+	game.capture_pointer()
 func notice(message:String):
 	if message.is_empty():return
 	if lan_lobby:lan_lobby.notice(message)

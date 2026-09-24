@@ -225,6 +225,8 @@ func start_demo():
 	phase="combat";remaining=3600.
 	for id in players:players[id].protect=0.;players[id].fire_ready=0.
 	set_process_unhandled_input(false)
+func capture_pointer():
+	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE if is_instance_valid(touch) else Input.MOUSE_MODE_CAPTURED
 func setup_input():
 	var binds={"left":KEY_A,"right":KEY_D,"forward":KEY_W,"back":KEY_S,"sprint":KEY_SHIFT,"crouch":KEY_CTRL,"jump":KEY_SPACE,"reload":KEY_R,"use":KEY_E,"skill":KEY_F,"gadget":KEY_G,"gear":KEY_B,"score":KEY_TAB,"primary":KEY_1,"secondary":KEY_2,"medical":KEY_Q,"gadget_mode":KEY_V,"item3":KEY_3,"item4":KEY_4}
 	for k in binds:
@@ -345,6 +347,7 @@ func public_options() -> Dictionary:
 @rpc("authority","call_remote","reliable",0)
 func configure(opts:Dictionary):
 	var saved_password=str(options.get("password",""));options=R.default_options();options.merge(opts,true);options.password=saved_password;connection_busy=false;received_sequence=-1;snapshot_buffers.clear();last_snapshot_ms=Time.get_ticks_msec();build_world();phase="lobby";ui.lobby()
+	last_snapshot_ms=Time.get_ticks_msec()
 func add_player(id:int,nick:String,token:String):
 	var t=0;var counts=[0,0]
 	for p in players.values():counts[p.team]+=1
@@ -383,7 +386,7 @@ func spawn(id:int):
 	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.cooking=0;p.slide_until=0.;p.hp=100.;p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;p.gadget_count=2 if p.role==3 else 3 if p.role==4 else 1;p.smoke=1 if p.role==4 and p.gadget==1 else 2;p.flash_count=2 if p.role==4 and p.gadget==1 else 1;p.last_hit=clock;p.contributors={};p.spectator=false
 	p.hand=-1 if randf()<.12 else 1
 	a.reset_view((0. if p.team==MatchFlow.attackers(self) else PI) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else 0. if options.get("practice",false) and id==1 else 0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
-	if id==local_id:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+	if id==local_id:capture_pointer()
 func choose_spawn(id:int) -> Vector3:
 	if options.get("practice",false):return PracticeSession.spawn_point(id)
 	var p=players[id];var spawn_team=(0 if int(p.team)==MatchFlow.attackers(self) else 1) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else (int(p.team)+control_leg)%2 if int(options.mode)==3 else int(p.team);var pts=arena.spawn_candidates(spawn_team,int(options.mode)==1)
@@ -1279,7 +1282,7 @@ func receive_state(s:Dictionary):
 	for i in range(mini(s.supplies.size(),arena.supplies.size())):arena.supplies[i].ready=s.supplies[i]
 	if old_phase!=phase:
 		if phase=="lobby":ui.lobby()
-		elif phase in ["buy","combat"]:ui.show_hud();Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+		elif phase in ["buy","combat"]:ui.show_hud();capture_pointer()
 func update_world_visuals(dt:float):
 	if arena==null:return
 	for did in devices:

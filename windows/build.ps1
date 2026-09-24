@@ -9,7 +9,9 @@ try {
     & $enginePath --headless --path game --editor --import --quit
     if ($LASTEXITCODE -ne 0) { throw 'Import failed' }
     & $enginePath --headless --path game --script res://tools/build_models.gd
-    if ($LASTEXITCODE -ne 0) { throw 'Model build failed' }
+    if ($LASTEXITCODE -ne 0) { throw "Model build failed" }
+    & $enginePath --headless --path game --script res://tools/build_arenas.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Arena build failed' }
     New-Item -ItemType Directory -Force -Path out/InternalNCrush | Out-Null
     & $enginePath --headless --path game --export-release 'Windows Desktop' "$repoRoot/out/InternalNCrush/InternalNCrush.exe"
     if ($LASTEXITCODE -ne 0) { throw 'Export failed' }

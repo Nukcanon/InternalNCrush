@@ -6,6 +6,7 @@ Godot 4.4.1 Compatibility, WebGL 2, single-thread export. No SharedArrayBuffer/C
 python game/tools/prepare_assets.py
 godot --headless --path game --editor --import --quit
 godot --headless --path game --script res://tools/build_models.gd
+godot --headless --path game --script res://tools/build_arenas.gd
 godot --headless --path game --editor --import --quit
 # Create web/build first.
 godot --headless --path game --export-release Web ../web/build/index.html

@@ -20,6 +20,7 @@ func run():
 	game=load("res://scripts/game.gd").new();root.add_child(game);game.set_physics_process(false)
 	expect(is_instance_valid(game.touch),"touch feature creates dedicated overlay")
 	expect(not game.touch.active(),"touch sticks hidden in menus")
+	game.capture_pointer();expect(Input.mouse_mode==Input.MOUSE_MODE_VISIBLE,"touch never requests desktop pointer lock")
 	await capture("menu")
 	game.ui.confirm_practice();expect(game.ui.navigation_confirm.dialog_text=="연습장으로 이동하시겠습니까?","practice asks before entering")
 	game.ui.navigation_confirm.confirmed.emit();game.set_physics_process(false);game.touch._process(0)
