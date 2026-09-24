@@ -49,8 +49,10 @@ func run():
 	expect(health==60 and q.hp==health and is_equal_approx(p.heal_ready,g.clock+2),"combat medic healing respects two-second cooldown")
 	p=reset_bot(0,"a1");p.hp=60;g.options.skills=true;b.goal=a.position+Vector3(0,0,-30);b.utilities()
 	expect(p.armor==25 and p.dash>g.clock,"assault bot uses protection and movement skill")
-	p=reset_bot(1,"r1");b.visible_target=true;align(g.actors[-2].eye());await physics_frame;b.utilities()
-	expect(q.mark>g.clock and p.gadget_count==2 and p.skill_ready>g.clock,"recon bot uses marker and scan")
+	p=reset_bot(1,"r1");b.visible_target=true;align(g.actors[-2].eye()-Vector3.UP*.25);await physics_frame;b.utilities()
+	a.input_state.ads=true;a.aim_progress=1.
+	for i in range(10):MarkerTracker.tick(g,-1,.1)
+	expect(q.mark==g.clock+6. and p.gadget_count==3 and p.skill_ready>g.clock,"recon bot passively tracks for one second without consuming marker and uses scan")
 	p=reset_bot(2,"h1");p.hp=40;b.visible_target=true;b.utilities()
 	expect(p.get("mounted",0)>g.clock and p.shield>g.clock,"heavy bot mounts and shields under pressure")
 	p=reset_bot(3,"e1");p.secondary="repair";b.goal=a.position;b.utilities();await physics_frame
