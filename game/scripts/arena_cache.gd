@@ -1,6 +1,6 @@
 class_name ArenaCache
 extends RefCounted
-const REVISION=114
+const REVISION=115
 const FIELDS=["water_rect","has_water","spawn_points","ffa_spawns","sites","zones","obstacles","map_index","indoors","bounds","playable_polygon","walk_surfaces","floor_holes","navigation_goals","navigation_blocks","vertical_map","chunk_count"]
 static func restore(arena:Node,index:int) -> bool:
 	var path="res://assets/arenas/complete/map_%02d.scn"%index

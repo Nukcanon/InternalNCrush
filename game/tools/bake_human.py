@@ -43,11 +43,12 @@ def bake(gender):
         ids=groups['joint-'+name];return [sum(vertices[i][k] for i in ids)/len(ids) for k in range(3)]
     head=joint('head');neck=joint('neck');pelvis=joint('pelvis')
     segments={};dest={}
-    shoulder_width=.185 if gender=='female' else .207
+    shoulder_width=.195 if gender=='female' else .207
+    arm_lift=.070 if gender=='female' else 0.
     for side,prefix,arm,leg in [(1,'l',6,12),(-1,'r',3,9)]:
         shoulder=joint(prefix+'-shoulder');elbow=joint(prefix+'-elbow');wrist=joint(prefix+'-hand');finger=joint(prefix+'-finger-3-2')
         hip=joint(prefix+'-upper-leg');knee=joint(prefix+'-knee');ankle=joint(prefix+'-ankle');toe=joint(prefix+'-foot-1')
-        for bone,start,end,target,target_end in [(arm,shoulder,elbow,[side*shoulder_width,1.345,0],[side*shoulder_width,1.065,0]),(arm+1,elbow,wrist,[side*shoulder_width,1.065,0],[side*shoulder_width,.790,0]),(arm+2,wrist,finger,[side*shoulder_width,.790,0],[side*shoulder_width,.685,0]),(leg,hip,knee,[side*.099,.915,0],[side*.099,.5,0]),(leg+1,knee,ankle,[side*.099,.5,0],[side*.099,.085,0])]:
+        for bone,start,end,target,target_end in [(arm,shoulder,elbow,[side*shoulder_width,1.345+arm_lift,0],[side*shoulder_width,1.065+arm_lift,0]),(arm+1,elbow,wrist,[side*shoulder_width,1.065+arm_lift,0],[side*shoulder_width,.790+arm_lift,0]),(arm+2,wrist,finger,[side*shoulder_width,.790+arm_lift,0],[side*shoulder_width,.685+arm_lift,0]),(leg,hip,knee,[side*.099,.915,0],[side*.099,.5,0]),(leg+1,knee,ankle,[side*.099,.5,0],[side*.099,.085,0])]:
             segments[bone]=(start,end,target,target_end);dest[bone]=target
         dest[leg+2]=[side*.099,.085,0];segments[leg+2]=(ankle,toe,dest[leg+2],[side*.099,.02,-.13])
     def torso(v):
@@ -58,6 +59,9 @@ def bake(gender):
         hz=smooth(5.5,6.3,y);zcenter=.1*(1-hz)+head[2]*hz
         width=.095 if gender=='female' else .105
         nx=v[0]*(width*(1-hz)+.1*hz)
+        if gender=='female':
+            # Raise the clavicle and deltoid together with the arm rest pose.
+            ny+=.065*smooth(1.12,1.34,ny)*(1-smooth(1.43,1.51,ny))*smooth(.035,.12,abs(nx))
         # Natural trapezius slope: neck stays high; outer deltoid sits lower.
         ny-=.026*smooth(.06,.20,abs(nx))*smooth(1.22,1.34,ny)*(1-smooth(1.41,1.49,ny))
         return [nx,ny,-(v[2]-zcenter)*.1]

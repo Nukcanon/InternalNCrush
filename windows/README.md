@@ -21,7 +21,7 @@
 Windows 데스크톱에서 Python 3로 실행합니다. 빌드한 소스 커밋의 전체 SHA를 지정하세요.
 
 ```powershell
-python windows/verify_build.py --zip out/InternalNCrush_Windows_v1.1.1.zip --output-dir validation/windows-package --source-commit 전체40자리커밋SHA
+python windows/verify_build.py --zip out/InternalNCrush_Windows_v1.1.2.zip --output-dir validation/windows-package --source-commit 전체40자리커밋SHA
 ```
 
 압축 무결성과 라이선스 파일, 실제 EXE의 연습장·봇 전투, 화면 없는 서버/일반 방장과 그래픽 클라이언트 사이 접속을 검사합니다. 로그·화면 캡처·해시·`verification.json`을 출력합니다. 게임 창이 잠시 열립니다. 기존 사용자 설정을 저장하지 않으며, 테스트가 시작한 프로세스만 종료합니다. 기본 테스트 포트 32888을 사용 중이면 `--port 33888`처럼 바꾸세요. 실제 다중 PC나 WAN 검사를 대신하지는 않습니다.

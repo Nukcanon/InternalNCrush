@@ -64,8 +64,9 @@ func burst(kind:String,pos:Vector3,color:Color):
 	var node=group(pos+Vector3.UP*.15);var explosive=kind=="explosion";var radius=5.5 if explosive else 1.9 if kind=="flash" else 1.15
 	var life=.85 if explosive else .48;var halo=ring(node,.5,color);halo.position.y=.04
 	var tween=node.create_tween().set_parallel(true);tween.tween_property(halo,"scale",Vector3(radius,.6,radius),life).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT);tween.tween_property(halo.material_override,"albedo_color:a",0.,life)
-	for i in range(16 if explosive else 8):
-		var angle=TAU*i/(16 if explosive else 8);var dir=Vector3(cos(angle),randf_range(.3,1.5),sin(angle)).normalized()
+	var count=(8 if explosive else 4) if OS.has_feature("web") else (16 if explosive else 8)
+	for i in range(count):
+		var angle=TAU*i/count;var dir=Vector3(cos(angle),randf_range(.3,1.5),sin(angle)).normalized()
 		var spark=M.sphere(node,Vector3.ZERO,Vector3(.12,.12,.32) if explosive else Vector3(.055,.055,.18),color);spark.material_override=glow(color);spark.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		spark.look_at_from_position(node.global_position,node.global_position+dir)
 		tween.tween_property(spark,"position",dir*radius,life).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT);tween.tween_property(spark,"scale",Vector3.ZERO,life)

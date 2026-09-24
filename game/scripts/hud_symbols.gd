@@ -33,17 +33,18 @@ func icon(role:int,center:Vector2,radius:float,color:Color):
 func _draw():
 	if not is_instance_valid(game) or not game.players.has(game.local_id):return
 	var p=game.players[game.local_id];var font=get_theme_default_font()
-	var center=Vector2(914,608);var remaining=maxf(0.,float(p.skill_ready)-game.clock);var duration=AbilityBalance.COOLDOWNS[int(p.role)];var enabled=game.options.skills and game.options.classes
+	var state=AbilityBalance.skill_state(game,game.local_id)
+	var center=Vector2(914,608);var remaining=state.remaining;var duration=state.duration;var enabled=state.enabled
 	draw_circle(center,38.,Color(.08,.11,.15,float(game.profile.get("hud_opacity",.38))));draw_arc(center,36.,0,TAU,64,Color("6c7a87"),2.,true)
 	var ready=remaining<=0. and enabled;var color=GOLD if ready else Color("8697a4")
 	draw_arc(center,36.,-PI/2,-PI/2+TAU*(1.-clampf(remaining/duration,0.,1.)),64,color,4.,true)
 	icon(int(p.role),center,21.,color)
 	if remaining>0.:
 		draw_circle(center,25.,Color(.04,.07,.10,.80));draw_string(font,center+Vector2(-25,8),str(ceili(remaining)),HORIZONTAL_ALIGNMENT_CENTER,50,24,WHITE)
-	keycap("F",Vector2(901,654));draw_string(font,Vector2(855,694),Rules.SKILLS[p.role] if enabled else "스킬 OFF",HORIZONTAL_ALIGNMENT_CENTER,120,13,WHITE)
+	keycap("F",Vector2(901,654));draw_string(font,Vector2(840,694),state.label,HORIZONTAL_ALIGNMENT_CENTER,150,13,WHITE)
 	for i in range(4):keycap(str(i+1),Vector2(314+i*132,635))
 	var x=309.
-	for hint in [["B","병과/장비"],["E","상호작용"],["TAB","기록"],["ESC","메뉴"]]:
+	for hint in [["B","병과/장비"],["E",BombLogic.use_label(game,game.local_id)],["TAB","기록"],["ESC","메뉴"]]:
 		var width=38. if hint[0].length()>1 else 25.;keycap(hint[0],Vector2(x,689),width);draw_string(font,Vector2(x+width+6,707),hint[1],HORIZONTAL_ALIGNMENT_LEFT,-1,13,WHITE);x+=width+(74. if hint[1].length()>3 else 47.)
 	if p.get("slide_ready",0)>game.clock:draw_string(font,Vector2(309,584),"슬라이딩 %.1f"%(p.slide_ready-game.clock),HORIZONTAL_ALIGNMENT_LEFT,-1,14,WHITE)
 	var details=[]

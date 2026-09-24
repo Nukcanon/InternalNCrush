@@ -1,9 +1,10 @@
 class_name TurretLogic
 extends RefCounted
-const HALF_ARC=PI/6.
+const HALF_ARC=PI*50./180.
 const SCALES=[.5,.65,.82,1.]
 const INTERVALS=[.12,.15,.10,.10]
 const DAMAGE=[2.8,4.5,3.6,3.8]
+const ROCKET_SPEED=30.
 static func range_for(game:Node,level:int) -> float:
 	return clampf(game.arena.bounds.length(),55.,100.)+float(level-1)*2.
 static func origin(d:Dictionary) -> Vector3:return d.pos+Vector3.UP*(1.7*SCALES[clampi(int(d.level)-1,0,3)])
@@ -12,6 +13,16 @@ static func remote_damage(base:float,distance:float) -> float:
 static func in_arc(d:Dictionary,point:Vector3) -> bool:
 	var delta=point-d.pos;delta.y=0
 	return delta.length_squared()<.001 or (Basis(Vector3.UP,d.yaw)*Vector3.FORWARD).dot(delta.normalized())>=cos(HALF_ARC)
+static func visible_point(game:Node,d:Dictionary,id:int,exclude:Array) -> Vector3:
+	var actor=game.actors[id];var from=origin(d)
+	# Horizontal acquisition is independent of floor height. Sample exposed body
+	# points so a stair lip hiding the chest does not hide the whole character.
+	for fraction in [.72,.94,.46]:
+		var point=actor.position+Vector3.UP*(actor.eye().y-actor.position.y)*fraction
+		var flat=Vector2(point.x-from.x,point.z-from.z)
+		if flat.length()>range_for(game,d.level) or not in_arc(d,point):continue
+		if not game.in_smoke_line(from,point) and game.clear_line(from,point,exclude+[actor.get_rid()]):return point
+	return Vector3.INF
 static func upgrade(game:Node,id:int,did:int):
 	var p=game.players[id];var d=game.devices[did]
 	if d.level>=4:game.feedback(id,"","최대 단계 · 기관총 + 미사일");return
@@ -44,13 +55,16 @@ static func tick(game:Node,dt:float):
 				for id in game.players:
 					var p=game.players[id]
 					if not p.alive or id==d.owner or not game.enemies(owner,p):continue
-					var point=game.actors[id].eye()-Vector3.UP*.3
-					var distance=from.distance_to(point)
-					if distance<best and in_arc(d,point) and not game.in_smoke_line(from,point) and game.clear_line(from,point,exclude+[game.actors[id].get_rid()]):best=distance;target=id
+					var point=visible_point(game,d,id,exclude)
+					if point==Vector3.INF:continue
+					var distance=Vector2(point.x-from.x,point.z-from.z).length()
+					if distance<best:best=distance;target=id
 				if target!=int(d.target):d.target=target;d.lock=game.clock+.18
 			target=int(d.target)
 			if not game.players.has(target) or not game.players[target].alive:target=0;d.target=0
-			if target:aim=game.actors[target].eye()-Vector3.UP*.3
+			if target:
+				aim=visible_point(game,d,target,exclude)
+				if aim==Vector3.INF:target=0;d.target=0;continue
 		d.aim=aim
 		var firing=bool(game.actors[d.owner].input_state.fire) and owner.reload<=0 and game.can_attack(owner) if remote else target!=0
 		if not firing or game.clock<d.lock:continue
@@ -61,7 +75,7 @@ static func tick(game:Node,dt:float):
 		if not obstruction.is_empty():continue
 		if game.clock>=d.next_fire:
 			d.next_fire=game.clock+INTERVALS[d.level-1]
-			var hit=game.ray(muzzle,muzzle+direction*(300. if remote else range_for(game,d.level)),exclude)
+			var hit=game.ray(muzzle,muzzle+direction*(300. if remote else muzzle.distance_to(aim)+2.),exclude)
 			var end:Vector3=hit.get("position",aim)
 			var amount=DAMAGE[d.level-1]
 			if remote:amount=remote_damage(amount,muzzle.distance_to(end))
@@ -72,7 +86,7 @@ static func tick(game:Node,dt:float):
 			game.effect.rpc("shot",muzzle,end,0)
 		if d.level==4 and game.clock>=float(d.get("rocket_ready",0)):
 			d.rocket_ready=game.clock+2.
-			game.rockets.append({"pos":muzzle,"velocity":direction*18.,"owner":int(d.owner),"device":did,"until":game.clock+10.,"origin":muzzle})
+			game.rockets.append({"pos":muzzle,"velocity":direction*ROCKET_SPEED,"owner":int(d.owner),"device":did,"until":game.clock+10.,"origin":muzzle})
 	tick_rockets(game,dt)
 static func tick_rockets(game:Node,dt:float):
 	for rocket in game.rockets:

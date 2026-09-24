@@ -14,7 +14,7 @@ static func pose_rig(which:int) -> Node3D:
 	joint(chest,"Head",Vector3(0,.33 if which==1 else .36,0));joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
 	for side in [-1,1]:
 		var prefix="Left" if side<0 else "Right"
-		var arm=joint(chest,prefix+"Arm",Vector3(side*(.185 if which in FEMALE_ROLES else .207),.105,0))
+		var arm=joint(chest,prefix+"Arm",Vector3(side*(.195 if which in FEMALE_ROLES else .207),.175 if which in FEMALE_ROLES else .105,0))
 		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0));joint(elbow,"Hand",Vector3(0,-.275,0))
 		var leg=joint(hips,prefix+"Leg",Vector3(side*.099,-.025,0));var knee=joint(leg,"Knee",Vector3(0,-.415,0));joint(knee,"Foot",Vector3(0,-.415,0))
 	return rig
@@ -123,7 +123,7 @@ static func build(which:int,team:int) -> Node3D:
 
 	for side in [-1,1]:
 		M.box(chest,Vector3(side*.132,.055,-.177),Vector3(.041,.28,.018),vest.lightened(.10),Vector3(-.12,0,side*-.10),.4)
-		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*(.185 if which in FEMALE_ROLES else .207),.105,0))
+		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*(.195 if which in FEMALE_ROLES else .207),.175 if which in FEMALE_ROLES else .105,0))
 		oval(arm,Vector3(-side*.028,-.025,0),Vector3(.119,.15,.131),shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.285,.046,.048,0),Vector4(-.20,.058,.058,0),Vector4(-.12,.061,.062,0),Vector4(-.045,.065,.068,0),Vector4(.016,.05,.056,0)],shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.19,.069,.069,0),Vector4(-.155,.075,.074,0)],team_color)

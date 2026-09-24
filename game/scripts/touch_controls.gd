@@ -4,6 +4,8 @@ extends Control
 ## can happen simultaneously. Desktop never installs this overlay.
 var game:Node
 var fingers={}
+var positions={}
+var input_transform=Transform2D.IDENTITY
 var buttons={}
 var movement=Vector2.ZERO
 var held={}
@@ -32,7 +34,7 @@ func active() -> bool:
 	return enabled and is_instance_valid(game.ui) and not is_instance_valid(game.ui.panel) and game.phase in ["combat","buy","round_end","result"] and game.players.has(game.local_id)
 func reset():
 	if held.get("gadget",false) and game.players.has(game.local_id):game.command("gadget_release",{})
-	fingers.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1
+	fingers.clear();positions.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1
 func _notification(what):
 	# A browser/app switch may omit the last touch-up event. Never retain a
 	# virtual trigger or movement stick when the window loses focus.
@@ -71,12 +73,14 @@ func _input(event):
 	if event is InputEventScreenTouch:
 		var p=inverse*event.position
 		if event.pressed:
+			positions[event.index]=p;input_transform=inverse
 			for action in buttons:
 				if buttons[action].has_point(p):fingers[event.index]=action;press(action,true);get_viewport().set_input_as_handled();return
 			if p.x<380 and p.y>180 and stick_id<0:
 				stick_id=event.index;stick_center=Vector2(clampf(p.x,95,290),clampf(p.y,220,590));stick_point=p;movement=(p-stick_center).limit_length(90)/90.
 			elif look_id<0:look_id=event.index
 		else:
+			positions.erase(event.index)
 			if fingers.has(event.index):
 				var action=fingers[event.index];fingers.erase(event.index)
 				if action not in fingers.values():press(action,false)
@@ -84,10 +88,17 @@ func _input(event):
 			if event.index==look_id:look_id=-1
 		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
+		var point=inverse*event.position
+		# Web multitouch relative vectors may refer to another finger (Godot #94346).
+		# Track each contact independently; rebase after orientation/layout changes.
+		var delta=point-positions.get(event.index,point)
+		positions[event.index]=point
+		if inverse!=input_transform:
+			input_transform=inverse;positions.clear();positions[event.index]=point;delta=Vector2.ZERO
+		if not delta.is_finite() or delta.length()>240.:delta=Vector2.ZERO
 		if event.index==stick_id:
 			stick_point=inverse*event.position;movement=(stick_point-stick_center).limit_length(90)/90.
 		elif event.index==look_id or fingers.get(event.index,"")=="fire":
-			var delta=inverse.basis_xform(event.relative)
 			var actor=game.actors.get(game.local_id)
 			if actor:
 				var sensitivity=float(game.profile.get("touch_sensitivity",.0028))*(.65 if held.get("ads",false) else 1.)
@@ -104,6 +115,7 @@ func _draw():
 	var font=game.ui.theme.default_font
 	var labels={"fire":"발사","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"보조 발사","gear":"병과 / 장비","mode":"설치 모드","menu":"메뉴","score":"기록"}
 	var p=game.players.get(game.local_id,{})
+	labels.use=BombLogic.use_label(game,game.local_id)
 	for action in buttons:
 		var rect:Rect2=buttons[action];var color=Color(.04,.075,.10,.40) if not held.get(action,false) else Color(.18,.48,.54,.75)
 		if action=="fire":draw_circle(rect.get_center(),rect.size.x*.5,color);draw_arc(rect.get_center(),rect.size.x*.5,0,TAU,48,Color(.86,.96,1,.6),2.,true)
@@ -115,9 +127,9 @@ func _draw():
 			font_size=clampi(int((rect.size.x-10)/maxf(1.,font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,26).x)*26),17,26)
 			if int(p.get("slot",0))==index:draw_rect(rect,Color("65dfc1"),false,3.)
 		if action=="skill":
-			var remain=maxf(0.,float(p.get("skill_ready",0))-game.clock)
-			title="%.0f초"%remain if remain>0 else Rules.SKILLS[int(p.get("role",0))];font_size=22
-			var fraction=1.-clampf(remain/AbilityBalance.COOLDOWNS[int(p.get("role",0))],0.,1.)
+			var state=AbilityBalance.skill_state(game,game.local_id);var remain=state.remaining
+			title="%d초"%ceili(remain) if remain>0 else state.label;font_size=22
+			var fraction=1.-clampf(remain/state.duration,0.,1.) if state.enabled else 0.
 			draw_line(rect.position+Vector2(8,rect.size.y-5),rect.position+Vector2(8+(rect.size.x-16)*fraction,rect.size.y-5),Color("6cdfc3"),3.)
 		if action=="gadget":title="가젯 ×"+str(p.get("gadget_count",0));font_size=22
 		if action=="fire" and not p.get("alive",false):title="다음 관전";font_size=22

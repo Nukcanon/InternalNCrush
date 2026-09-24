@@ -16,6 +16,8 @@ var spec={}
 var mag_origin=Vector3.ZERO
 var action_origin=Vector3.ZERO
 var hand_origin=Vector3.ZERO
+var trigger_origin=Vector3.ZERO
+var trigger_origin_set=false
 var length=.7
 var reload_style="rifle"
 var metal=Color("202b33")
@@ -189,6 +191,7 @@ func build(w:Dictionary,hands=true):
 	flash=Node3D.new();flash.name="MuzzleFlash";muzzle.add_child(flash)
 	M.cylinder(flash,Vector3(0,0,-.08),.058,.16,Color("ffeac0"),Vector3(PI/2,0,0),.012,5)
 	flash.visible=false
+	if OS.has_feature("web"):WebMaterials.apply(self)
 func add_surface_details(pistol:bool,role:int):
 	var side=.046 if pistol else .073 if role==2 else .054
 	for sign_x in [-1,1]:
@@ -228,7 +231,7 @@ func add_surface_details(pistol:bool,role:int):
 func update_hands(t:float,recoil:float,shot_age:float):
 	if not is_instance_valid(support_rig):return
 	var release=sin(clampf(t,0.,1.)*PI) if t>=0 else 0.
-	support_rig.pose(release,0.);firing_rig.pose(0.,maxf(0.,1.-shot_age/.12))
+	support_rig.pose(release,0.);firing_rig.pose(sin(clampf((t-.70)/.30,0.,1.)*PI)*.55 if t>=.70 and reload_style=="bolt" else 0.,maxf(0.,1.-shot_age/.12))
 	var support_elbow=Vector3(-.28,-.29,.10).lerp(Vector3(-.24,-.34,.22),release*.5)
 	var firing_elbow=Vector3(.26,-.27,.29)
 	var support_wrist=WeaponHand.align_wrist(support_rig,left_hand.position,support_elbow,Vector3(.8,.65,.08))
@@ -236,6 +239,8 @@ func update_hands(t:float,recoil:float,shot_age:float):
 	WeaponHand.fit_forearm(support_arm,support_elbow,support_wrist)
 	WeaponHand.fit_forearm(firing_arm,firing_elbow,firing_wrist)
 func animate_reload(t:float,recoil:float,shot_age=10.):
+	if not trigger_origin_set:trigger_origin=right_hand.position;trigger_origin_set=true
+	right_hand.position=trigger_origin
 	magazine.position=mag_origin;magazine.rotation=Vector3.ZERO;action_part.position=action_origin;action_part.rotation=Vector3.ZERO;left_hand.position=hand_origin;left_hand.rotation=Vector3.ZERO;barrel_group.rotation=Vector3.ZERO
 	if is_instance_valid(flash):flash.visible=shot_age<.045;flash.rotation.z=shot_age*100
 	if t<0:
@@ -245,7 +250,7 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 		if spec.name in ["SCOUT","MONOLITH"]:action_part.position.z+=maxf(0,sin(clampf((shot_age-.15)/.55,0,1)*PI))*.08
 		update_hands(t,recoil,shot_age)
 		return
-	var u=clampf(t,0,1);var remove=smoothstep(.15,.4,u)*(1.-smoothstep(.52,.76,u));var latch=sin(clampf((u-.78)/.22,0,1)*PI)
+	var u=clampf(t/.70,0,1);var remove=smoothstep(.15,.4,u)*(1.-smoothstep(.52,.76,u));var latch=sin(clampf((u-.78)/.22,0,1)*PI)
 	match reload_style:
 		"shell":
 			var cycle=sin(clampf((u-.13)/.73,0,1)*PI*3);left_hand.position+=Vector3(.04,-.06,.17)*absf(cycle);left_hand.rotation.z=-absf(cycle)*.2
@@ -266,4 +271,15 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 			magazine.position+=Vector3(0,-.22,.04)*remove;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.045,-.055,.015),sin(u*PI));action_part.position.z+=latch*.065
 		_:
 			magazine.position+=Vector3(-.06,-.25,.06)*remove;magazine.rotation.x=-remove*.18;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.04,-.05,0),sin(u*PI));left_hand.position+=Vector3(-.04,.15,0)*latch;action_part.position.z+=latch*.07
+	if t>=.70 and spec.kind=="gun":
+		# Final 30%: reach charging control, pull, release, then return to grip.
+		# Actor handedness mirrors receiver and both arms together.
+		var v=clampf((t-.70)/.30,0.,1.)
+		var reach=smoothstep(0.,.20,v)*(1.-smoothstep(.78,1.,v))
+		var pull=smoothstep(.22,.48,v)*(1.-smoothstep(.52,.74,v))
+		action_part.position=action_origin+Vector3(0,0,.085 if reload_style=="pistol" else .11)*pull
+		action_part.rotation=Vector3(0,0,-.65*sin(v*PI) if reload_style=="bolt" else 0.)
+		var grip=action_part.position+Vector3(.065,.025,-.018)
+		if reload_style=="bolt":right_hand.position=trigger_origin.lerp(grip,reach)
+		else:left_hand.position=hand_origin.lerp(grip,reach)
 	update_hands(t,recoil,shot_age)

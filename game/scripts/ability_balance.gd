@@ -8,6 +8,20 @@ const SLOW_RADIUS=11.
 const SMOKE_DURATION=10.
 const FLASH_RANGE=13.
 const FLASH_MAX=2.2
+static func skill_state(game:Node,id:int) -> Dictionary:
+	var p=game.players.get(id,{})
+	if p.is_empty():return {"remaining":0.,"duration":1.,"enabled":false,"label":"스킬"}
+	var role=int(p.role);var remaining=maxf(0.,float(p.skill_ready)-game.clock)
+	var duration=COOLDOWNS[role];var label=Rules.SKILLS[role]
+	var enabled=game.options.skills and game.options.classes and game.phase=="combat" and game.can_attack(p)
+	if role==3:
+		var did=Deployment.nearby_turret(game,id)
+		if did:
+			var d=game.devices[did];label="포탑 강화";duration=18.
+			remaining=maxf(0.,float(d.get("upgrade_ready",0))-game.clock)
+			if d.level>=4:enabled=false;label="최대 단계"
+		elif p.get("placing","")=="turret":label="설치 위치 선택"
+	return {"remaining":remaining,"duration":duration,"enabled":enabled,"label":label}
 static func turret_hp(level:int) -> float:return 180.+40.*(clampi(level,1,4)-1)
 static func turret_dps(level:int) -> float:return TurretLogic.DAMAGE[clampi(level,1,4)-1]/TurretLogic.INTERVALS[clampi(level,1,4)-1]
 static func turret_range(level:int) -> float:return 55.+2.*(clampi(level,1,4)-1)

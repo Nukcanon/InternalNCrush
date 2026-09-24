@@ -57,7 +57,9 @@ func run():
 	g.fire(1);await create_timer(.7).timeout
 	expect(g.players[1].mag.a1==9 and prop.global_position.distance_to(shot_start)>.08,"real fire path consumes ammo and pushes the hit prop")
 	expect(g.arena.prop_states().size()==g.arena.props.size(),"snapshot includes complete prop set")
-	var nav=g.bot_navigation;nav.refresh({},10.,g.arena.props)
+	# Test navigation at a controlled grounded location: a shot can lift a prop above the ground layer.
+	prop.global_position=Vector3(6,.46,6);prop.linear_velocity=Vector3.ZERO
+	var nav=g.bot_navigation;nav.refresh({},maxf(g.clock,nav.next_refresh)+1.,g.arena.props)
 	expect(nav.dynamic_solid.has(nav.cell(prop.global_position)),"bots avoid current movable prop positions")
 	g.server=false;actor.local=false;actor.target_pos=Vector3(2,.12,2);actor.input_state.crouch=true;actor.headless_pose(g.players[1])
 	expect(actor.global_position==actor.target_pos,"headless remote actors still follow server positions")

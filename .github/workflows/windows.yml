@@ -99,12 +99,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view internal-n-crush-v1.1.1 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.1 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.1" --notes-file game/docs/RELEASE_NOTES.md --latest
-          gh release upload internal-n-crush-v1.1.1 out/InternalNCrush_Windows_v1.1.1.zip out/SHA256SUMS.txt --clobber
+          gh release view internal-n-crush-v1.1.2 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.2 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.2" --notes-file game/docs/RELEASE_NOTES.md --latest
+          gh release upload internal-n-crush-v1.1.2 out/InternalNCrush_Windows_v1.1.2.zip out/SHA256SUMS.txt --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.1.1.zip
+          path: out/InternalNCrush_Windows_v1.1.2.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -13,12 +13,12 @@ func run():
 			var selected=arrays[Mesh.ARRAY_INDEX]
 			for lod in range(importer.get_surface_lod_count(0)):
 				var indices=importer.get_surface_lod_indices(0,lod)
-				if indices.size()>=12000 and indices.size()<selected.size():selected=indices
+				if indices.size()>=6000 and indices.size()<selected.size():selected=indices
 			arrays[Mesh.ARRAY_INDEX]=selected
 			var intermediate=ArrayMesh.new();intermediate.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 			var surface=SurfaceTool.new();surface.create_from(intermediate,0);surface.deindex();surface.index()
 			surface.set_material(old.surface_get_material(0));body.mesh=surface.commit();after+=selected.size()
-			MeshFactory.own_recursive(node,node);var packed=PackedScene.new();packed.pack(node)
+			WebMaterials.apply(node);MeshFactory.own_recursive(node,node);var packed=PackedScene.new();packed.pack(node)
 			if ResourceSaver.save(packed,path,ResourceSaver.FLAG_COMPRESS)!=OK:quit(1);return
 			node.free();await process_frame
 	print("WEB_MODEL_INDICES ",before," -> ",after)
@@ -39,14 +39,14 @@ func run():
 				var selected=arrays[Mesh.ARRAY_INDEX]
 				for lod in range(importer.get_surface_lod_count(0)):
 					var indices=importer.get_surface_lod_indices(0,lod)
-					if indices.size()>=maxi(120,int(original*.45)) and indices.size()<selected.size():selected=indices
+					if indices.size()>=maxi(120,int(original*.25)) and indices.size()<selected.size():selected=indices
 				arrays[Mesh.ARRAY_INDEX]=selected
 				var intermediate=ArrayMesh.new();intermediate.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 				var surface=SurfaceTool.new();surface.create_from(intermediate,0);surface.deindex();surface.index();surface.set_material(visual.mesh.surface_get_material(surface_index));surface.commit(mesh)
 				map_before+=original;map_after+=selected.size()
 			if mesh.get_surface_count()>0:visual.mesh=mesh
 		# Only visual meshes change: collision, navigation and gameplay cover remain intact.
-		MeshFactory.own_recursive(node,node);var packed=PackedScene.new();packed.pack(node)
+		WebMaterials.apply(node);MeshFactory.own_recursive(node,node);var packed=PackedScene.new();packed.pack(node)
 		if ResourceSaver.save(packed,path,ResourceSaver.FLAG_COMPRESS)!=OK:quit(1);return
 		node.free();await process_frame
 	print("WEB_ARENA_INDICES ",map_before," -> ",map_after);quit()

@@ -3,6 +3,7 @@ class_name BotAgent
 var game:Node
 var id=0
 var target=0
+var device_target=0
 var visible_target=false
 var last_known=Vector3.ZERO
 var last_seen=-100.
@@ -33,8 +34,9 @@ func tick(dt:float):
 	var previous_yaw=float(a.input_state.yaw)
 	var combat_move=Vector3.INF
 	if target!=0 and not game.players.has(target):target=0;visible_target=false
+	if device_target!=0 and not game.devices.has(device_target):device_target=0;visible_target=false
 	a.input_state.fire=false;a.input_state.alt=false;a.input_state.use=false;a.input_state.jump=false;a.input_state.crouch=false;a.input_state.sprint=false;a.input_state.ads=false;a.input_state.x=0.;a.input_state.z=0.
-	if not p.alive:path.clear();target=0;visible_target=false;next_decision=0.;return
+	if not p.alive:path.clear();target=0;device_target=0;visible_target=false;next_decision=0.;return
 	if game.phase=="buy":
 		shop()
 		if int(p.team)!=MatchFlow.attackers(game):
@@ -52,16 +54,16 @@ func tick(dt:float):
 	p.bot_action=action
 	if action in ["heal","repair"] and support_action():return
 	var destination=goal
-	if action=="engage" and target!=0 and visible_target:
-		var enemy_pos=game.actors[target].position;var distance=a.position.distance_to(enemy_pos)
+	if action=="engage" and visible_target:
+		var enemy_pos=game.devices[device_target].pos if device_target!=0 else game.actors[target].position;var distance=a.position.distance_to(enemy_pos)
 		var ideal=9. if p.role==3 and p.slot==0 else 34. if p.role==1 else 21.
 		if distance>ideal:destination=last_known
 		else:destination=a.position
 	navigate(destination,dt)
-	if visible_target and target!=0 and game.players.has(target) and game.players[target].alive:
-		var opponent=game.actors[target];var aim_at=opponent.position+Vector3.UP*(.73 if opponent.input_state.crouch else 1.14)
+	if visible_target and (device_target!=0 or (target!=0 and game.players.has(target) and game.players[target].alive)):
+		var aim_at=TurretLogic.origin(game.devices[device_target]) if device_target!=0 else game.actors[target].position+Vector3.UP*(.73 if game.actors[target].input_state.crouch else 1.14)
 		look(aim_at,dt,true)
-		var distance=a.position.distance_to(opponent.position);a.input_state.ads=distance>12;a.input_state.sprint=false
+		var distance=a.position.distance_to(aim_at);a.input_state.ads=distance>12;a.input_state.sprint=false
 		var w=game.current_weapon(p)
 		if w.kind!="gun" or (p.role==3 and distance>40 and p.secondary!="repair"):
 			game.handle_command(id,"slot",{"slot":1});w=game.current_weapon(p)
@@ -107,6 +109,22 @@ func perceive():
 		if distance>12 and a.direction().dot(toward)<-.35:continue
 		if game.in_smoke_line(a.eye(),actor.eye()) or not game.clear_line(a.eye(),actor.eye(),[a.get_rid(),actor.get_rid()]):continue
 		selected=other;best=distance
+	var selected_device=0
+	for did in game.devices:
+		var d=game.devices[did];var owner=game.players.get(d.owner,{})
+		if d.kind!="turret" or owner.is_empty() or not game.enemies(p,owner):continue
+		var at=TurretLogic.origin(d);var distance=a.eye().distance_to(at)
+		if distance>[55.,75.,95.][difficulty] or distance>best:continue
+		if distance>12 and a.direction().dot((at-a.eye()).normalized())<-.35:continue
+		var exclude=[a.get_rid()]
+		if game.device_nodes.has(did):exclude.append(game.device_nodes[did].get_rid())
+		if game.in_smoke_line(a.eye(),at) or not game.clear_line(a.eye(),at,exclude):continue
+		selected_device=did;best=distance
+	if selected_device!=0:
+		if selected_device!=device_target:ready_to_fire=now+[.85,.45,.22][difficulty]
+		device_target=selected_device;target=0;visible_target=true;last_seen=now;last_known=game.devices[device_target].pos
+		return
+	device_target=0
 	visible_target=selected!=0
 	if selected!=0:
 		if selected!=target:ready_to_fire=now+[.85,.45,.22][difficulty]

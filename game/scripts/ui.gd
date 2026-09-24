@@ -50,6 +50,8 @@ var theme:Theme
 var perf_clock=0.0
 var screen=""
 var preview_widget:EquipmentPreview
+var bot_setup=false
+var bot_choice={"role":0,"primary":"a1","secondary":"pistol","armor_max":0,"gadget":0,"team":0,"cash":800}
 var preview_kind=0
 var preview_secondary=false
 var preview_caption:Label
@@ -64,6 +66,7 @@ var team_signature=""
 var scoreboard:MatchScoreboard
 var kill_feed:KillFeed
 var damage_indicator:DamageIndicator
+var bomb_hint:Label
 var interaction_hint:Label
 var lan_lobby:LanLobby
 var navigation_confirm:ConfirmationDialog
@@ -103,8 +106,8 @@ func clear_panel(keep_background=false):
 	screen="";game.stop_room_search();team_signature=""
 	if is_instance_valid(background) and not keep_background:background.queue_free();background=null
 	if panel:panel.queue_free();panel=null
-func make_panel(title:String,width=780):
-	if TouchControls.supported():width=maxi(width,1000)
+func make_panel(title:String,width=780,compact=false):
+	if TouchControls.supported():width=maxi(width,560 if compact else 1000)
 	clear_panel(game.phase=="menu");Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	if is_instance_valid(hud):hud.hide()
 	if is_instance_valid(background):
@@ -232,14 +235,14 @@ func training_menu():
 	button("봇 연습 설정",practice_menu);button("메인메뉴",menu)
 func practice_menu():
 	make_panel("봇 전투");screen="practice"
-	game.options.bots=maxi(3,int(game.options.bots))
+	if int(game.options.bots) not in [3,5,7,15,31]:game.options.bots=7
 	option("난이도",["하 · 반응과 조준을 완화","중 · 목표와 지원 역할 수행","상 · 빠른 반응, 사격·후퇴 판단 강화"],game.options.get("bot_difficulty",1),func(i):game.options.bot_difficulty=i)
 	option("봇 인원",["3명","5명","7명","15명","31명"],maxi(0,[3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[3,5,7,15,31][i])
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):game.options.mode=i;if map_refresh.is_valid():map_refresh.call())
 	map_selector()
 	label("장애물 우회 · 목표 수행 · 회복/수리 · 가젯/스킬 사용\n체력, 탄약, 최근 교전 상황에 따라 행동을 바꿉니다.",16)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
-	button("연습 시작",func():Rules.sanitize_room(game.options);game.host_game();game.start_match(),actions)
+	button("병과 · 무기 선택",func():bot_setup=true;gear(),actions)
 	button("메인메뉴",menu,actions);pin_actions(actions)
 func section_tabs(names:Array) -> Array:
 	var tabs=TabContainer.new();tabs.custom_minimum_size.y=340;tabs.size_flags_horizontal=Control.SIZE_EXPAND_FILL;stack.add_child(tabs)
@@ -422,7 +425,7 @@ func settings():
 	var samples=HBoxContainer.new();stack.add_child(samples);button("총소리 미리 듣기",func():game.play_sound("gun_a1",Vector3.ZERO,false),samples);button("발소리 미리 듣기",func():game.play_sound("step_stone_0",Vector3.ZERO,false),samples)
 	stack=tabs[4]
 	var diagram=ControlsDiagram.new();diagram.custom_minimum_size=Vector2(885,415);stack.add_child(diagram)
-	label("E: 문 열기·닫기  /  E 길게: 설치·해체  /  F: 스킬 · 포탑 강화  /  Q: 의료 카빈 회복\nG: 가젯 · 수류탄은 누른 뒤 놓아 투척  /  V: 가젯 종류  /  F6·F7: 강퇴 투표",18)
+	label("마우스 휠: 무기 전환  /  E: 문 열기·닫기  /  E 길게: 설치·해체  /  F: 스킬 · 포탑 강화  /  Q: 의료 카빈 회복\nG: 가젯 · 수류탄은 누른 뒤 놓아 투척  /  V: 가젯 종류  /  F6·F7: 강퇴 투표",18)
 	stack=outer
 	var back=button("메인메뉴" if game.phase=="menu" else "돌아가기",func():
 		if game.phase=="menu":menu()
@@ -478,8 +481,8 @@ func sensitivity_control(title:String,value:float,low:float,high:float,callback:
 	slider.value_changed.connect(func(v):number.set_value_no_signal(v);callback.call(v))
 	number.value_changed.connect(func(v):slider.set_value_no_signal(v);callback.call(v))
 func gear():
-	if not game.players.has(game.local_id):return
-	var p=game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
+	if not bot_setup and not game.players.has(game.local_id):return
+	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
 	make_panel("오퍼레이터 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
 	# Hidden selectors preserve one canonical loadout state for networking and menus.
 	gear_class=option("병과",Rules.CLASSES,chosen);gear_class.get_parent().hide()
@@ -505,10 +508,14 @@ func gear():
 	stack=outer
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);outer.add_child(actions);pin_actions(actions)
 	gear_submit=button("선택 적용",func():
-		if not weapon_ids.is_empty():game.command("loadout",selected_loadout()),actions)
+		if weapon_ids.is_empty():return
+		if bot_setup:
+			var selection=selected_loadout();bot_choice.merge(selection,true);bot_choice.armor_max=selection.armor*25
+			bot_setup=false;game.start_bot_match(selection)
+		else:game.command("loadout",selected_loadout()),actions)
 	if game.phase=="combat" and int(game.options.mode) in [0,1,3] and not game.options.get("practice",false):
 		button("사망 후 즉시 적용 · −25점",func():
-			var selection=selected_loadout();selection.immediate=true;game.command("loadout",selection),actions)
+			var selection=selected_loadout();selection["immediate"]=true;game.command("loadout",selection),actions)
 	button("돌아가기",exit_gear,actions)
 	gear_price=label("",17,actions);gear_price.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	notice_label=label("",14);notice_label.modulate=Color("80cfef")
@@ -517,6 +524,7 @@ func gear():
 	if wanted in weapon_ids:gear_primary.select(weapon_ids.find(wanted))
 	gear_gadget.select(maxi(0,gear_gadget.get_item_index(int(queued.get("gadget",p.gadget)))));refresh_gear_detail();refresh_gear_cards()
 func exit_gear():
+	if bot_setup:bot_choice.merge(selected_loadout(),true);bot_choice.armor_max=bot_choice.armor*25;bot_setup=false;practice_menu();return
 	if game.phase=="lobby":lobby()
 	else:clear_panel();game.capture_pointer()
 func image_card(parent:Node,key:String,caption:String,selected:bool,callback:Callable,width=199,height=116) -> Button:
@@ -573,7 +581,7 @@ func refresh_weapons():
 	refresh_gear_detail()
 func refresh_gear_detail():
 	if not is_instance_valid(gear_detail) or weapon_ids.is_empty():return
-	var role=gear_class.selected;var p=game.players[game.local_id]
+	var role=gear_class.selected;var p=bot_choice if bot_setup else game.players[game.local_id]
 	var preview_id=("repair" if role==3 and gear_repair.button_pressed else Rules.SECONDARIES[role]) if preview_kind==1 and preview_secondary else weapon_ids[gear_primary.selected]
 	var w=Catalog.get_weapon(preview_id)
 	var mode={"auto":"연발","semi":"단발","burst":"3점사"}.get(w.get("fire_mode","auto"),"")
@@ -603,10 +611,11 @@ func refresh_gear_detail():
 	var cost=game.loadout_cost(p,selected_loadout())
 	gear_price.text="비용 %d / 보유 %d"%[cost,p.cash] if game.options.mode==4 else "장비 선택 무료"
 	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id())
-	gear_submit.text="구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "다음 라운드 구매 예약"
+	gear_submit.text="선택한 장비로 연습 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "다음 라운드 구매 예약"
 func toggle_pause():
 	if is_instance_valid(panel):clear_panel();game.capture_pointer();return
-	make_panel("일시 메뉴 · 경기는 계속 진행됩니다.",680)
+	make_panel("일시 메뉴",480,true)
+	label("경기는 계속 진행됩니다.",17)
 	if game.phase=="lobby":button("돌아가기",lobby)
 	else:button("돌아가기",func():clear_panel();game.capture_pointer())
 	button("병과 · 무기 · 가젯",gear);button("팀 편성",teams_menu);button("참가자 관리",members_menu);button("환경 설정",settings);button("방 나가기",func():game.request_leave())
@@ -638,6 +647,8 @@ func show_hud():
 	ammo.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	var pips=AmmoPips.new();pips.game=game;pips.position=Vector2(1012,621);hud.add_child(pips)
 	interaction_hint=hud_label("",Vector2(440,449),18);interaction_hint.size=Vector2(400,36);interaction_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	bomb_hint=hud_label("",Vector2(790,490),27)
+	bomb_hint.size=Vector2(450,76);bomb_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;bomb_hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;bomb_hint.add_theme_color_override("font_color",Color("ffda8a"));bomb_hint.hide()
 	banner=hud_label("",Vector2(34,96),17)
 	info=hud_label("",Vector2(305,686),16)
 	skill_label=hud_label("",Vector2(313,590),16)
@@ -672,7 +683,12 @@ func refresh():
 	if screen in ["lobby","teams"]:refresh_teams()
 	if not is_instance_valid(hud) or not game.players.has(game.local_id):return
 	var p=game.players[game.local_id];var a=game.actors[game.local_id];var wid=p.primary if p.slot==0 else p.secondary;var w=Catalog.get_weapon(wid)
-	var door=InteractiveDoor.target(game,game.local_id) if p.alive else null
+	var bomb_action=BombLogic.action(game,game.local_id)
+	bomb_hint.visible=not bomb_action.is_empty()
+	bomb_hint.position.y=280 if TouchControls.supported() else 490
+	var use_key="상호작용 버튼" if TouchControls.supported() else "E키"
+	bomb_hint.text=use_key+"를 길게 눌러\n폭탄 "+("설치 · 3초" if bomb_action=="plant" else "해체 · %d초"%(10 if int(p.gadget)==9 else 30))
+	var door=InteractiveDoor.target(game,game.local_id) if p.alive and bomb_action.is_empty() else null
 	interaction_hint.text="[ E ]  문 닫기" if door and door.opened else "[ E ]  문 열기" if door else ""
 	interaction_hint.visible=door!=null
 	if p.role==3:
@@ -715,7 +731,7 @@ func refresh():
 		slots[i].text=labels[i].substr(3);slots[i].modulate=Color("6eebc7") if p.slot==i else Color("b6cbd4")
 		slot_panels[i].self_modulate=Color("75cebb") if p.slot==i else Color.WHITE
 		if i>=2 and not game.options.classes:slots[i].text=str(i+1)+"  사용 안 함"
-	info.text="B 병과/장비   ·   E 상호작용   ·   TAB 기록   ·   ESC 설정"
+	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 설정"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
 	if not p.get("pending_loadout",{}).is_empty():info.text+="   ·   다음 부활 장비 예약됨"
 	if not p.alive:info.text="마우스: 관전 시점   ·   클릭: 관전 대상 변경   ·   B 다음 병과/장비"

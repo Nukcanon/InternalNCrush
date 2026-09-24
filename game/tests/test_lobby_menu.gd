@@ -83,7 +83,7 @@ func run():
 	expect(ui.screen=="menu" and ui.background==background,"LAN back returns to the same main backdrop")
 	if visual:expect(live.match_game.clock>live_clock,"background bots continued simulating throughout menus")
 	ui.practice_menu();await settle()
-	var practice_footer=find_button(ui.panel,"연습 시작").get_parent()
+	var practice_footer=find_button(ui.panel,"병과 · 무기 선택").get_parent()
 	expect(practice_footer.get_parent()==ui.panel_body,"practice start stays outside scroll")
 	var toggle:CheckBox=ui.panel.find_children("*","CheckBox",true,false)[0]
 	var toggle_rect=toggle.get_global_rect();var initial_min=toggle.get_combined_minimum_size()

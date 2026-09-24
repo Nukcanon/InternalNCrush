@@ -12,7 +12,7 @@ func run():
 	var sounds=JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio_manifest.json"))
 	for name in ["bomb_planted","bomb_dropped","bomb_defused","bomb_defuse"]:expect(sounds.has(name) and ResourceLoader.exists(sounds[name].file),"bomb audio ships in build "+name)
 	var d={"pos":Vector3.ZERO,"yaw":0.,"level":1}
-	expect(TurretLogic.in_arc(d,Vector3(0,0,-20)) and not TurretLogic.in_arc(d,Vector3(20,0,-20)),"automatic turret has a 60 degree arc")
+	expect(TurretLogic.in_arc(d,Vector3(0,0,-20)) and not TurretLogic.in_arc(d,Vector3(30,0,-20)),"automatic turret has a 100 degree arc")
 	expect(is_equal_approx(TurretLogic.remote_damage(10.,12.),10.) and is_equal_approx(TurretLogic.remote_damage(10.,48.),1.),"remote bullets sharply fall off between 12 and 48 metres")
 	expect(TurretLogic.remote_damage(10.,30.)>TurretLogic.remote_damage(10.,40.),"remote damage decreases continuously")
 	expect(TurretLogic.SCALES[0]==.5 and TurretLogic.SCALES[3]==1.,"turret grows from half size to full size")

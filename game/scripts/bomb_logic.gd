@@ -1,5 +1,18 @@
-class_name BombLogic
 extends RefCounted
+class_name BombLogic
+static func action(game:Node,id:int) -> String:
+	if int(game.options.mode)!=4 or game.phase!="combat" or not game.players.has(id) or not game.players[id].alive:return ""
+	var p=game.players[id];var pos=game.actors[id].position
+	if game.bomb.get("defused",false) or game.bomb.get("exploded",false):return ""
+	if game.bomb.planted:
+		return "defuse" if p.team!=MatchFlow.attackers(game) and pos.distance_to(game.bomb.position)<5. else ""
+	if int(game.bomb.get("carrier",0))==id and p.team==MatchFlow.attackers(game):
+		for site in game.arena.sites:
+			if pos.distance_to(site)<5.:return "plant"
+	return ""
+static func use_label(game:Node,id:int) -> String:
+	if int(game.options.mode)==4 and int(game.bomb.get("carrier",0))==id:return "폭탄 설치"
+	return "폭탄 해체" if action(game,id)=="defuse" else "상호작용"
 static func assign(game:Node):
 	var candidates=[]
 	for id in game.players:

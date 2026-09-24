@@ -25,7 +25,7 @@ def main():
         with Image.open(p) as source:
             picture = source.convert('RGBA' if 'A' in source.getbands() else 'RGB')
             before = picture.size
-            limit = 192 if 'thumbnails' in p.parts else 512
+            limit = 192 if 'thumbnails' in p.parts else 256
             picture.thumbnail((limit, limit), Image.Resampling.LANCZOS)
             picture.save(p, optimize=True)
             converted.append({'path': str(p.relative_to(STAGE)), 'before': before, 'after': picture.size})

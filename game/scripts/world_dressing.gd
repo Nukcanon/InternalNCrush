@@ -13,6 +13,10 @@ static func allowed(arena:Node,pos:Vector3,placed:Array) -> bool:
 		for surface in arena.walk_surfaces:
 			if (surface.low!=surface.high or surface.low<2.) and surface.rect.grow(1.3).has_point(Vector2(pos.x,pos.z)):return false
 	if absf(pos.x)<4. or absf(pos.z)<4. or arena.wading(pos) or absf(arena.walk_height(pos))>.1 or (arena.vertical_map and not 0. in arena.navigation_heights(pos)):return false
+	# Clearance for the complete 2m-high dressing volume, including under stairs.
+	var volume=AABB(pos-Vector3(1.3,-.05,1.3),Vector3(2.6,2.2,2.6))
+	for block in arena.navigation_blocks:
+		if volume.intersects(block):return false
 	if not arena.point_clear(pos):return false
 	for obstacle in arena.obstacles:
 		if obstacle.grow(1.2).has_point(Vector2(pos.x,pos.z)):return false

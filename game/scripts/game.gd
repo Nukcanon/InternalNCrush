@@ -57,9 +57,11 @@ var server=false
 var dedicated=false
 var local_id=1
 var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":0,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028}
+var bot_start_loadout={}
 var pending_loadout={"role":0,"primary":"a1","secondary":"pistol","armor":0,"team":-1,"gadget":0}
 var snapshot_timer=0.0
 var input_timer=0.0
+var web_hud_timer=0.0
 var discovery:PacketPeerUDP
 var browser:PacketPeerUDP
 var discover_timer=0.0
@@ -114,6 +116,7 @@ func _ready():
 		if int(profile.graphics_quality)!=3:profile.merge({"graphics_quality":0 if TouchControls.supported() else 1,"shadow_quality":0,"decor_quality":0 if TouchControls.supported() else 1,"antialias":0},true)
 		profile.performance_revision=2
 	setup_input();apply_display_settings()
+	if OS.has_feature("web") and not demo_mode:add_child(WebRenderer.new())
 	if OS.has_feature("web"):get_viewport().size_changed.connect(apply_display_settings)
 	GraphicsOptions.apply(self)
 	internet=InternetLobby.new();internet.game=self;add_child(internet)
@@ -258,6 +261,11 @@ func build_world():
 	bot_navigation=BotNavigation.new();bot_navigation.build(arena);bot_agents.clear()
 	if not is_instance_valid(spectator_camera):
 		spectator_camera=Camera3D.new();spectator_camera.near=.1;spectator_camera.far=350;add_child(spectator_camera)
+func start_bot_match(selection:Dictionary):
+	bot_start_loadout=selection.duplicate(true)
+	host_game(OfflineMultiplayerPeer.new())
+	bot_start_loadout.clear()
+	if phase=="lobby":start_match()
 func host_game(transport:MultiplayerPeer=null):
 	if phase!="menu" or connection_busy:return
 	R.sanitize_room(options)
@@ -274,7 +282,9 @@ func host_game(transport:MultiplayerPeer=null):
 	if transport==null and not OS.has_feature("web") and not (is_instance_valid(public_room) and public_room.enabled):
 		discovery=PacketPeerUDP.new();discovery.set_broadcast_enabled(true)
 		if discovery.bind(R.DISCOVERY)!=OK:discovery=null
-	if not dedicated:add_player(1,profile.nick,profile.token)
+	if not dedicated:
+		add_player(1,profile.nick,profile.token)
+		if not bot_start_loadout.is_empty():commit_loadout(1,bot_start_loadout)
 	for i in range(mini(int(options.bots),int(options.max_players)-(0 if dedicated else 1))):add_player(-i-1,"BOT %02d"%(i+1),"bot"+str(i))
 	ui.lobby();broadcast_state(true);print("SERVER_READY port=",port)
 func reset_transport_state():
@@ -399,6 +409,7 @@ func equip_ammo(p:Dictionary):
 func spawn(id:int):
 	players[id].use_prev=false
 	var p=players[id];var a=actors[id]
+	p.skill_ready=0.;p.gadget_ready=0.
 	if not p.get("pending_loadout",{}).is_empty():
 		var requested=p.pending_loadout.duplicate();p.pending_loadout={};commit_loadout(id,requested)
 	var best=choose_spawn(id)
@@ -546,6 +557,8 @@ func _unhandled_input(event):
 			spectator_yaw-=event.relative.x*sensitivity;spectator_pitch=clampf(spectator_pitch-event.relative.y*sensitivity,-1.2,1.2)
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT and players[local_id].alive:
 		trigger_seq+=1;a.input_state.trigger_seq=trigger_seq
+	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and players[local_id].alive:
+		cycle_weapon(-1 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1);get_viewport().set_input_as_handled()
 	for index in range(3,5):
 		if event.is_action_pressed("item"+str(index)):command("slot",{"slot":index-1})
 	if event.is_action_pressed("sprint") and not event.is_echo():
@@ -561,6 +574,9 @@ func _unhandled_input(event):
 	if event.is_action_pressed("gear"):ui.gear()
 	if event.is_action_pressed("gadget_mode"):command("gadget_mode",{})
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT and not players[local_id].alive:cycle_spectator()
+func cycle_weapon(direction:int):
+	var p=players[local_id];var count=4 if options.classes and p.role==4 else 3 if options.classes else 2
+	command("slot",{"slot":posmod(int(p.slot)+direction,count)})
 func command(action:String,data:Dictionary):
 	if server:handle_command(local_id,action,data)
 	else:request_command.rpc_id(1,action,data)
@@ -621,7 +637,9 @@ func _physics_process(dt:float):
 	update_world_visuals(dt)
 	if not demo_mode:
 		update_spectator()
-		if render_actors:ui.refresh()
+		if render_actors:
+			web_hud_timer-=dt
+			if not OS.has_feature("web") or web_hud_timer<=0:ui.refresh();web_hud_timer=1./20.
 @rpc("any_peer","call_remote","unreliable",2)
 func ping_request(sent:int):
 	if server and players.has(multiplayer.get_remote_sender_id()) and rate_limit(multiplayer.get_remote_sender_id(),"ping",.5):
@@ -695,7 +713,7 @@ func team_count(team:int) -> int:
 func handle_command(id:int,action:String,data:Dictionary):
 	if action not in ["start","slot","reload","loadout","kick","vote_kick","vote","team","team_swap","team_policy","slide","skill","gadget","gadget_press","gadget_release","gadget_mode"] or data.size()>16:return
 	for key in data:
-		if not key is String or key.length()>32:return
+		if not (key is String or key is StringName) or str(key).length()>32:return
 		var value=data[key]
 		if not (value is bool or value is int or value is float or value is String):return
 		if value is String and value.length()>80:return
@@ -922,6 +940,9 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 	if p.hp<=0:
 		impact.rpc(actors[target].position,push,true,int(p.team),int(p.role),randi()%5,actors[target].aim_yaw,bool(actors[target].input_state.crouch),target,actors[target].velocity,point)
 		BombLogic.drop(self,target)
+		for did in devices.keys():
+			if devices[did].kind=="turret" and int(devices[did].owner)==target:
+				event_fx.rpc("turret_break",devices[did].pos+Vector3.UP*.6,Vector3.ZERO,target);remove_device(did)
 		p.hp=0;p.alive=false;p.deaths+=1;p.lives-=1;p.respawn=clock+(3. if options.get("practice",false) else 5.2);
 		p.can_respawn=p.lives>0
 		if int(options.mode)==2 and options.shared_lives:
@@ -1113,7 +1134,7 @@ func update_pickups():
 func interact(id:int,dt:float):
 	var p=players[id];var a=actors[id]
 	if int(options.mode)==4 and phase=="combat" and BombLogic.pickup(self,id):return
-	var door=InteractiveDoor.target(self,id)
+	var door=InteractiveDoor.target(self,id) if BombLogic.action(self,id).is_empty() else null
 	if door:
 		if not p.get("use_prev",false):
 			if door.toggle(actors):effect.rpc("door",door.global_position,Vector3.ZERO,id)
@@ -1332,6 +1353,7 @@ func update_world_visuals(dt:float):
 				var pod=MeshFactory.box(head,Vector3(0,.38,.08),Vector3(.66,.22,.50),Color("4e6069"));pod.name="MissilePod"
 				for side in [-1,1]:MeshFactory.cylinder(head,Vector3(side*.21,.38,-.20),.075,.08,Color("191f25"),Vector3(PI/2,0,0),-1.,12)
 
+		DeploymentSilhouette.apply(node,d,local_id)
 	for did in device_nodes.keys():
 		if not devices.has(did):device_nodes[did].queue_free();device_nodes.erase(did)
 	for s in arena.supplies:

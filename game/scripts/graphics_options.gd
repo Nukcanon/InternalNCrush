@@ -10,6 +10,7 @@ static func apply(game:Node):
 	detail=clampi(int(game.profile.get("decor_quality",1)),0,2)
 	shadows=clampi(int(game.profile.get("shadow_quality",0)),0,2)
 	antialias=clampi(int(game.profile.get("antialias",0)),0,3)
+	if OS.has_feature("web"):shadows=0;antialias=0;detail=0
 	blood_enabled=bool(game.profile.get("blood_effects",false))
 	if not blood_enabled and is_instance_valid(game.combat_fx) and is_instance_valid(game.combat_fx.blood):
 		game.combat_fx.blood.queue_free();game.combat_fx.blood=null
@@ -29,6 +30,12 @@ static func build(ui:Node):
 	ui.label("렌더러: "+RenderingServer.get_video_adapter_name()+" · "+RenderingServer.get_video_adapter_api_version(),14)
 	var profile=ui.game.profile
 	ui.check("유혈 효과 · 기본 꺼짐",bool(profile.get("blood_effects",false)),func(on):profile.blood_effects=on;apply(ui.game);ui.game.save_profile())
+	if OS.has_feature("web"):
+		ui.label("바로 플레이는 경량 그래픽을 사용합니다. 실시간 광원·그림자·안티앨리어싱은 끄고, 3D 해상도는 성능에 맞춰 자동 조절합니다. 메뉴와 HUD 글자는 선명도를 유지합니다.",17)
+		ui.option("최대 프레임",["제한 없음","30 FPS","60 FPS"],maxi(0,[0,30,60].find(int(profile.frame_limit))),func(i):profile.frame_limit=[0,30,60][i])
+		ui.label("연막·폭발·회복·스킬 표시는 유지됩니다.",17)
+		ui.button("그래픽 설정 적용",func():apply(ui.game);ui.game.save_profile();ui.notice("그래픽 설정을 적용했습니다."))
+		return
 	var controls=[]
 	var preset=ui.option("품질 프리셋",["낮음 · 저사양","중간 · 균형","높음 · 세부 표현","사용자 설정"],int(profile.get("graphics_quality",1)),func(i):
 		if i==3:return
@@ -44,6 +51,7 @@ static func build(ui:Node):
 	ui.label("멀리 있는 가장자리가 거칠면 모니터 원본 해상도와 MSAA 4× 또는 8×를 사용하세요. 표면 텍스처에는 밉맵과 비등방성 필터가 적용됩니다.",17)
 
 static func apply_world(root:Node):
+	if OS.has_feature("web"):WebMaterials.apply(root)
 	var materials={}
 	for mesh in root.find_children("*","MeshInstance3D",true,false):
 		if mesh.material_override is ShaderMaterial:materials[mesh.material_override]=true
@@ -61,6 +69,7 @@ static func apply_world(root:Node):
 			light.directional_shadow_max_distance=55. if shadows==1 else 80.
 			light.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	for world in root.find_children("*","WorldEnvironment",true,false):
+		if OS.has_feature("web") and world.environment:world.environment.fog_enabled=false;world.environment.tonemap_mode=Environment.TONE_MAPPER_LINEAR
 		if world.environment:world.environment.ambient_light_energy=maxf(world.environment.ambient_light_energy,.55 if detail<2 else .38)
 
 static func physical_pose_limit() -> int:return 2 if detail==2 and not OS.has_feature("web") else 0
