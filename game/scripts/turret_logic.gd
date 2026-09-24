@@ -32,6 +32,8 @@ static func upgrade(game:Node,id:int,did:int):
 	p.placing=""
 static func tick(game:Node,dt:float):
 	for did in game.devices.keys():
+		# A shot can kill another turret's owner and remove that device mid-tick.
+		if not game.devices.has(did):continue
 		var d=game.devices[did]
 		if game.clock>d.expires:game.remove_device(did);continue
 		if d.kind!="turret" or game.clock<d.disabled or game.phase!="combat":continue
