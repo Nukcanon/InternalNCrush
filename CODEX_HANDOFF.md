@@ -1,48 +1,49 @@
-# 1.1.0 작업 중 — 안정 공개판은 아래 1.0.4
+# Internal N Crush — 1.1.0 인계
 
-현재 구현·검증 진행 상황은 [game/docs/WORK_1_1.md](game/docs/WORK_1_1.md)를 먼저 읽는다. 신규 서버는 services/directory 및 services/cloudflare-directory, 웹 내보내기는 web/. 공개 Cloudflare URL은 아직 없고 계정 답변 대기 중이다. 새 릴리스/Pages 검증 후 아래 확정 기록을 갱신해야 한다.
+2026-09-24. **실제 게시 버전·소스 커밋·CI·ZIP 해시는 PUBLICATION_STATUS.json을 기준으로 판단한다.** 이 문서의 구현 설명만으로 배포 완료를 추정하지 않는다. 이전 검증/반영표는 game/docs/*_V104.md에 보존했다.
 
-# Internal N Crush — 1.0.4 인계
+1.1.0 Windows/Web/NAS 파일 게시 및 공개 파일 해시 검증 완료. 기능 3,051/3,051, 터치 20/20. 공용 로비는 계정 인증 대기이며, 실제 휴대폰과 간헐 접속 끊김의 장시간 추적은 남아 있다.
 
-2026-09-24. 공개 상태/커밋/CI/ZIP 해시는 PUBLICATION_STATUS.json이 기준이다. 이전 확정 자료는 game/docs/*V103*에 보존했다.
+## 작업 위치
 
-## 위치
+- 게임 저장소: D:/python_workplace/InternalNCrush/InternalNCrush → Nukcanon/InternalNCrush main
+- 사이트 저장소: D:/python_workplace/InternalNCrush/site-repository → Nukcanon/nukcanon main
+- game/: 공통 코드·아트·물리·테스트. windows/: Windows 빌드/검사. web/: GitHub Pages용 내보내기. nas/: Linux/NAS 설정 CMD·Compose.
+- services/directory/: 방 목록/입장/신호용 Python 서비스. services/cloudflare-directory/: 같은 계약의 무료 Workers 구성. services/matchmaker/: 기존 전용 프로세스 방식 참고 자료, 새 배포에서 사용하지 않음.
+- Godot: D:/python_workplace/InternalNCrush/.tools/godot/Godot_v4.4.1-stable_win64_console.exe. gh: .tools/gh/bin/gh.exe. 서버 Python: .tools/server-venv/Scripts/python.exe. 계정·토큰은 출력하지 않는다.
 
-- 게임 Git: D:/python_workplace/InternalNCrush/InternalNCrush → Nukcanon/InternalNCrush main
-- 사이트 Git: D:/python_workplace/InternalNCrush/site-repository → Nukcanon/nukcanon main
-- 공통 소스 game/ (games/relaystrike/에서 이동), Windows 진입점 windows/, Docker Linux/NAS nas/, 서비스 services/matchmaker/.
-- Godot D:/python_workplace/InternalNCrush/.tools/godot/Godot_v4.4.1-stable_win64_console.exe; gh .tools/gh/bin/gh.exe; API 가상환경 .tools/server-venv/Scripts/python.exe. 인증 정보는 출력하지 않는다.
+## 이번 구현과 제한
 
-## 이번 구현
+UI는 원본 픽셀 해상도이며 3D만 선택 해상도로 낮춘다. MSDF 글꼴, 작은 반투명 메뉴, 공통 고정 버튼, 연습장 이동 확인을 적용했다. 유혈 효과는 기본 꺼짐이며 켜고 끌 수 있다. 기본 걷기/달리기 3.2/6.2m/s에 무기 배율을 적용한다.
 
-AuthoredHuman + bake_human.py: CC0 MakeHuman 기반 인체, 남녀 형태/15본 웨이트, 의복 표면·얼굴·피부/직물 셰이더. 기존 키/여성2/왼손12% 유지. OperatorSkin은 빌드 시 굽고 ImporterMesh로 거리 LOD를 만든다. 원본 데이터·커밋·해시·CC0는 game/assets/human/. 애니메이션은 기존 IK/관성/관절 스프링을 연결했다. 1인칭 WeaponHand는 원본 연속 관절 손가락/손목/팔이며 역방향 꺾임을 제한한다.
+MakeHuman CC0 UV 피부 4종과 자체 생성 미세 표면(피부/직물/가죽/머리카락), 붉은 피부색 완화, 기울어진 어깨/여성 어깨 너비/모자 피팅, 연속 손·팔과 손목 축, 탄창별 재장전, 총기 끝면 폐쇄를 적용했다. 출처·저작자·해시·CC0와 생성 프롬프트는 assets/human 및 assets/textures의 manifest/provenance에 있다. 외부 MakeHuman 프로그램 코드는 포함하지 않는다.
 
-LanLobby/GraphicsOptions/HudLayout/HudPreview/AmmoPips/StartupNetworkAccess 분리. 큰 LAN 목록/IP 암호 모달, 고정 버튼 최대3/행, 이동 확인, 봇 배경 보존. 메인 플레이/연습 직접 버튼. 전체 화면의 선택 렌더 해상도, MSAA 최대8×/그림자/장식/FPS, HUD80%/농도38%와 미리보기, 탄환·예비 탄창 아이콘, 글꼴/팀색/정렬, B 병과/장비, 장비창 HUD 숨김. 시작 시 5초 임시 ENet 수신; Windows 정책/경로에 따른 허용 저장이며 강제 방화벽 규칙은 없다.
+AnatomicalHit는 관절을 따라가는 구체/캡슐로 머리/몸통/팔다리를 판정하고 장식품·빈 공간을 제외한다. 권한 서버의 가벼운 관절/총 소켓은 표시 모델의 양손/재장전 소켓과 검사한다. 수신 전용 headless 피어는 이 계산을 중복하지 않는다. 시체는 월드 충돌만 허용해 자기·총·장구류에 의한 떨림을 줄이고 안정 후 정지한다.
 
-저격5종 피해/간격 너프, 25개 무게/안정성/휴대성별 빠른 점사 회복, 봇 정지/횡이동·난이도 반동 제어. PhysicsRagdoll은 피격 부위에 힘, 평지 약1–3m 감쇠, 중력/충돌/관절 유지. KillReplay는 마지막 탄환 추적·피해자 전방 정지·0.5초 비행·공격자 닉네임. 포탑 구동부/총열/탄약함/지지대와 설치 엄폐물 구분.
+SurfaceCleanup+PlanarCleanup은 축 정렬 및 회전 공면을 정리한다. **build_arenas.gd로 32개 지형을 미리 구워야 한다.** 저장 전후 충돌 형태/위치/축/레이어를 비교하며, 런타임은 결정적으로 생성한 이동/목표/동적 물체 정보와 구운 정적 지형을 결합한다. 누락된 캐시는 런타임 정리로 돌아가지만 큰 맵 로딩이 길어질 수 있다. 지형/재질 소스 변경 시 모든 캐시를 다시 굽는다. Compatibility 고정 광원 11 + 일시 광원 5가 오브젝트당 16 제한에 들어가도록 했으며 그림자 단계 전환도 보완했다. 모든 GPU의 깜빡임을 완전히 보증하는 것은 아니다.
 
-기존 32맵(31경쟁+4층연습), 규모별사각외곽2, 설치해체8인6개/12인6개, 무작위순환/무한/정원검증, 힐/폭발/혈흔/문/슬라이딩/서버권한·WSS 등은 유지했다. 상세 반영표 game/docs/REQUEST_STATUS.md, 수치 BALANCE_NOTES.md, 검증 TEST_REPORT.md, 출처 ART_SOURCES.md.
+웹은 WebGL2·단일 스레드, 약 140MB 최초 파일. 스마트기기만 가상 스틱·드래그 조준·발사·재장전·스킬·가젯·장비 타일을 사용하고 기본 품질을 낮춘다. PC에는 이 버튼을 표시하지 않는다. 앱/창 포커스를 잃거나 일시 중단되면 가상 입력을 초기화해 이동/발사가 붙는 현상을 막는다. 브라우저 포인터 고정은 클릭 콜백에서 요청하며, 고정을 제한하는 내장 브라우저에는 키보드/클릭 발사/드래그 조준 대체 동작이 있다.
 
-## 재현과 주의
+## 접속 구조
 
-prepare_assets.py → Godot editor import → tools/build_models.gd → import. GPU에서 tools/build_thumbnails.gd 후 import(52개). 모델 .scn은 Git 제외, CI 재생성. 인체 변경은 tools/bake_human.py와 assets/human/manifest.json 해시를 함께 갱신. .tools/tune_v104.py는 이전 HEAD:games/relaystrike를 기준으로 한 일회성 보조 도구로 이름 이동 커밋 후 재실행하지 않는다.
+Windows 기본 LAN은 UDP 27888/27889이며 평문이다. 웹은 UDP 검색을 할 수 없으므로 **웹 호환 로비**로 Windows와 같은 WebRTC 방에 참가한다. 웹 LAN 목록은 같은 외부 주소 그룹이며 공유 NAT에서는 다른 사용자도 같은 그룹일 수 있다.
 
-GODOT 지정 후 game/tests/run_functional.py, 네트워크 run_network_*.py 직렬. 로컬 사용자 1.0.3 EXE가 27888을 사용 중일 수 있으니 **사용자 프로세스를 종료하지 말고** 테스트 INC_TEST_PORT=29888 등으로 분리한다. 테스트 소유 프로세스만 확인 후 종료. Native tests: test_lobby_menu, windows_display, visual_human_v104, visual_hands_v104, visual_release_v104, benchmark_v104. Docker 실제 확인은 GitHub Actions Linux에서 수행한다.
+NAS/Linux/Worker는 방 목록·매칭·입장 승인·WebRTC 연결 신호만 처리한다. 전투 계산은 방장 Windows/브라우저가 담당한다. 방장 퇴장 시 방은 종료되며 자동 이전은 없다. 방 이름/모드/인원/최대 핑 검색과 이름/핑/인원 정렬을 지원한다. 목록 핑은 추정, HUD는 실제 연결 왕복이다.
 
-과거 문서/음원 출처 URL, 구형 프로필 마이그레이션과 LAN wire token의 RelayStrike는 호환/출처 기록이다. 활성 소스 경로는 game/로 통일했다. 공개 사이트는 기존 URL과 플레이 가이드/멀티플레이 접속 두 섹션을 유지한다.
+HTTPS/WSS 검증·단기 일회용 입장·크기/빈도 제한·호스트↔참가자 라우팅과 WebRTC 암호화를 적용했다. 입력 권한 검증이 변조된 방장/에임봇/메모리 분석을 모두 차단하지는 않는다. 일부 NAT에는 별도 TURN이 필요하며 이를 자동 구매/설정하지 않았다.
 
-## Windows EXE 접속 검사에서 추가 수정
+Cloudflare 계정 로그인이 없어 공용 서버는 미배포이고 game/assets/lobby_defaults.json의 url은 비어 있다. 인증 후 services/cloudflare-directory/README.md대로 배포하고 실제 /health·HTTP/WS 검사에 통과한 주소만 기본값으로 넣는다. GitHub Pages는 실시간 방 목록 서버를 실행할 수 없다.
 
-초기 후보 b489444는 Windows 그래픽 클라이언트에서 메뉴 종료 후 `Node not found ... SubViewport` RPC 오류가 나서 게시하지 않았다. menu_demo.gd 종료 시 공유 MultiplayerAPI를 배경 경로에 재등록하던 것을 `set_multiplayer(null, multiplayer_path)`로 바꿨다. 수정 소스는 2bcb5d9이며, 화면 없는 서버/일반 방장과 그래픽 클라이언트 조합 모두 로컬 소스 실행에서 통과했다. headless CI에도 실제 메뉴 생성/제거를 두 번 실행하는 4개 회귀 검사를 추가했다.
+NAS 공개 ZIP은 .env 없이 .env.example만 포함한다. 사용자가 01_설정.cmd로 만든 업로드 ZIP은 운영자 설정을 포함할 수 있으므로 관리자용이다. 예시 SchoolAssignmentServer ZIP은 읽기만 했고 실행하거나 그 프로그램을 복제하지 않았다.
 
-Windows 릴리스 headless 로그는 종료까지 버퍼에 남으므로 SERVER_READY 파일 문구만 기다리면 준비 검사에서 잘못 시간 초과가 날 수 있다. windows/verify_build.py는 테스트 프로세스 소유 UDP 소켓으로 준비를 확인하고, ZIP의 EXE 자체로 연습장·봇 전투·두 종류 방장 접속을 검사한다. 이 도구는 이전 후보 ZIP의 RPC 오류를 실패로 잡는 오류 재현 검사도 통과했다. 이전 후보 증거는 validation/release-v104-pre-rpc-fix-b489444/, 최종 ZIP/로그/검증 결과는 validation/release-v104/에 보존한다.
+## 재현 및 검증
 
-## 남은 품질/운영 과제
+준비: Python game/tools/prepare_assets.py → Godot headless editor import → tools/build_models.gd → tools/build_arenas.gd → editor import → Windows/Web export. windows/build.ps1와 GitHub Actions가 이 순서를 수행한다. Web 산출물은 web/package_web.py로 파일 크기/단일 스레드/라이선스/해시를 검증한다.
 
-실제 사람 경쟁전/다중 PC·NAS ARM64·저사양·장시간 32인, 프레임 급증·간헐적 종료 GL texture 경고, 새 Windows의 최초 방화벽 팝업 실측. CC0 인체 교체는 구현했으나 모션캡처/수작업 AAA 완성을 주장하지 않는다. LAN ENet은 평문, 인터넷은 검증된 WSS. 클라이언트에 모든 상대 위치가 전달되어 벽핵/에임봇 방지를 완성한 상태가 아니다. 계정/MMR/영구 제재/시야 정보 제한/행동 탐지/분산 운영과 운영자 도메인/서버가 필요하다.
+GODOT 환경 변수 지정 후 game/tests/run_functional.py, run_network_capacity.py, run_network_probe.py, run_network_lifecycle.py, run_network_props.py, run_network_rotation.py, run_network_rtc.py. test_touch.gd에는 --touch-test --no-save-profile --no-update-check를 준다. 실제 EXE는 windows/verify_build.py로 ZIP에서 꺼내 검사한다. windows/verify_webrtc.py는 해당 EXE/PCK를 명시해 WebRTC 접속을 검사하며 최종 CI 배포본 양쪽 연결을 확인했다. Docker/Worker는 .github/workflows/matchmaker.yml이 실제 Linux 컨테이너·공식 Worker 런타임을 검사한다.
 
-## 확정 게시 결과
+사용자가 실행 중인 기존 게임이나 해당 포트는 종료하지 않는다. 검사는 INC_TEST_PORT=32888 등 별도 포트와 자신이 시작한 프로세스만 사용한다. Python 출력은 PYTHONUTF8=1. 새 빌드 검증 후 릴리스 게시→사이트 Pages→공개 파일 해시/브라우저 실행 순서로 확인하고 이 문서와 PUBLICATION_STATUS를 저장소 및 바깥 작업 폴더에 함께 갱신한다.
 
-1.0.4 소스 `2bcb5d98f3f127e92320e2c0bb7456b387d1d6c9`; Windows CI 35954374716, Docker CI 35954374710 성공. 기능 2,381/2,381, API 10/10, 실제 UI 50/50, 두 모니터 여섯 표시 방식 확인. 실제 배포 EXE의 연습장·봇전투·EXE 간 접속과 익명 다운로드 해시 확인.
+## 남은 검증
 
-ZIP 65,050,596바이트 / 13파일 / SHA-256 `841589a1e92345a6f6f97f3e6cd89d518607d7ba4b9b62beefa1f8de0332a14a`. 사이트 커밋 `af194c1c72251f4490fb026048dea406ecfe8a6b`, Pages 35955684842 성공. 자세한 결과와 성능 표본은 game/docs/TEST_REPORT.md 및 PUBLICATION_STATUS.json. 마지막 턱/옷깃 경계 수정, 썸네일 재생성, Python 네트워크 포트 사전 검사에도 INC_TEST_PORT 적용 완료. 검증 파일은 validation/release-v104/.
+실제 휴대폰·태블릿(iOS/Safari 포함), 서로 다른 PC/외부 WAN, NAS ARM64, 저사양·장시간 32인 경기와 사람 경쟁전 승률은 미확인이다. Compatibility 종료 때의 소수 GL texture 경고와 간헐 프레임 급증이 남아 있다. 짧은 RTX 4080 SUPER 표본은 모바일 성능 보증이 아니다. AAA 수준 아트 평가, 모션캡처, 상용 안티치트·MMR·계정·지속 제재·DDoS 운영 완료로 보고하지 않는다.

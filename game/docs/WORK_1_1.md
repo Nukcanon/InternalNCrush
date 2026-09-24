@@ -1,11 +1,21 @@
-# 1.1.0 candidate — in progress
+# 1.1.0 작업 기록
 
-Stable publication remains 1.0.4 until artifact and public-site verification finishes.
+정확한 게시 상태는 루트 PUBLICATION_STATUS.json이 기준이다. 이전 공개판 1.0.4 기록은 *_V104 문서에 보존한다.
 
-Implemented: native-resolution menu text, compact common actions, practice confirmation, blood default off, movement 3.2/6.2 m/s before equipment modifiers, ragdoll collision separation/settling, CC0 UV skin textures and generated microdetail atlas, sloping/narrower shoulders and fitted headgear, wrist/arm and magazine-specific reload adjustments, closed weapon loft ends, per-bone anatomical hit tests, rotated coplanar face cleanup, shadow cascade blending, mobile multitouch HUD, single-thread Web export, host-authoritative WebRTC, searchable room directory, NAS Docker wizard and Cloudflare free-tier directory.
+구현: 원본 해상도 UI/MSDF 글자, 축소 공통 버튼, 연습장 확인, 유혈 기본 꺼짐, 이동 3.2/6.2m/s와 장비 배율, 래그돌 월드 충돌/안정화, CC0 UV 피부 4종과 생성 미세 질감, 경사진 어깨/모자/손목/팔/탄창별 재장전/총기 후면, 관절별 피격 볼륨, 회전 공면 겹침 제거 및 고정+일시 광원 수 제한, 터치 전용 가상 스틱/드래그/발사/장비, WebRTC 호스트/참가, 방 검색/정렬, 경량 NAS/Docker 설정 CMD, Cloudflare 무료 배포 소스.
 
-Current local evidence: 338 anatomical/material/weapon/directory regression checks; 17 touch checks including concurrent movement/fire/aim and reload/ADS/crouch; 2 displays × 3 output modes; 14/14 bot vertical traversal (including 4-level practice); Python service/setup 10 tests; Worker policy and live HTTP/WS contracts; two native processes via Python and Worker; browser client + Windows native host combat with 3 ms local game ping. These are local tests, not WAN or physical mobile evidence.
+검증 중 발견해 고친 문제:
 
-Fixes discovered during validation: continuous surface entry for stair-side navigation; test fixture Godot root name matches production Game RPC path; physical time scale in traversal test; Compatibility sRGB microdetail atlas conversion; no transient RPC to closed RTC channels; menu-demo multiplayer API cleanup retained.
+- 계단 옆면에서 층이 다른 경로점으로 바로 접근하던 봇 경로. 0.25m 간격으로 실제 연결된 표면 진입을 확인한다.
+- 서버용 손/총 소켓과 렌더링 소켓 불일치. 27종 × 양손 × 재장전 시점 비교 324개를 포함한 V11 검사 663개.
+- 큰 맵의 공면 정리가 접속 시간을 초과함. build_arenas.gd로 32개 지형을 미리 정리하고 충돌 형태/위치/축/레이어를 저장 전후 비교한다. 로컬 맵0 로딩 20.7초→0.4초.
+- 화면 없는 수신 클라이언트까지 모든 인체 관절을 중복 계산함. 본별 판정은 권한 서버가 계산하고 수신 피어는 이동 캡슐/카메라만 갱신. 로컬과 Linux CI 32명 모두 최신 전체 상태를 확인했다.
+- 정지 중 충돌 보정을 발걸음으로 계산하던 문제. 이동 의도가 있을 때만 지상 보행 주기를 진행한다. 좌우 손잡이 관성 검사는 월드 좌표로 비교하고 양손과 세 방향을 고정 검증한다.
+- WebRTC RPC 루트 경로와 아직 열리지 않은 채널로의 전송; GUI↔headless 변경 직후 빈 무기 소켓; 메뉴 데모 종료의 multiplayer 경로 보존.
+- 브라우저는 입력 콜백에서만 포인터 고정 요청. 터치는 요청하지 않는다. 내장 브라우저의 고정 거부 시 키보드/발사/드래그 조준으로 계속 동작한다.
 
-Pending: final functional/CI, production Docker TLS, actual release ZIP, public Pages byte/launch checks, account-based Cloudflare deployment. No public lobby URL is claimed. Known preexisting Compatibility shutdown-only texture leaks remain in two menu-demo textures. Browser automation has a Chromium pointer-lock UnknownError on entering combat, while the game itself renders/receives snapshots; check real browser behavior separately.
+터치 입력 20개(동시 이동/조준/발사, 개별 손가락 해제, 재장전, ADS/앉기 토글, 무기 선택, 메뉴 진입 시 입력 해제)가 통과했다. Windows 호스트→브라우저 참가 3ms, 브라우저 호스트→Windows 참가 17ms 로컬 게임 연결을 확인했다. Linux Docker HTTPS/WSS 및 Worker 실제 HTTP/WS 계약 검사가 통과했다.
+
+미완료 범위: Cloudflare 계정 인증과 실제 공용 주소 배포, 실제 휴대폰/태블릿/외부 WAN/ARM NAS/장시간 경기/사람 경쟁 승률. 종료 시 Compatibility 텍스처 경고와 간헐 프레임 급증은 남아 있다. 자동 검사는 AAA 아트 품질이나 상용 안티치트 완료를 뜻하지 않는다. 최종 ZIP 실행·공개 사이트 검증 결과는 TEST_REPORT.md와 PUBLICATION_STATUS.json에서 확인한다.
+
+최종 1.1.0 게시 완료. CI 기능 3,051/3,051 및 터치 20/20, 실제 CI Windows ZIP 네 모드 실행, 공개 Windows/NAS ZIP과 웹 전체 파일 해시, Pages 실행을 확인했다. 상세 커밋과 실행 번호는 PUBLICATION_STATUS.json에 기록했다.

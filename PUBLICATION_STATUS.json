@@ -1,34 +1,64 @@
 {
-  "version": "1.0.4",
+  "version": "1.1.0",
+  "published_version": "1.1.0",
+  "previous_live_version": "1.0.4",
   "publication_state": "published_and_verified",
-  "published_version": "1.0.4",
-  "previous_live_version": "1.0.3",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": "2bcb5d98f3f127e92320e2c0bb7456b387d1d6c9",
+  "source_commit": "2b1127a37729ba284fa5a9de8c975c3f12193332",
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.4",
+  "web_play_url": "https://nukcanon.github.io/nukcanon/play/",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.1.0",
+  "verified_at_utc": "2026-09-24T08:25:30Z",
+  "build_result": "success",
+  "build_run": 35971973455,
+  "build_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35971973455",
+  "docker_result": "success",
+  "docker_run": 35971973484,
+  "docker_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35971973484",
+  "site_commit": "632ed752c64b64a342a89e0b54ad71d391eed308",
+  "pages_verified": true,
+  "pages_result": "success",
+  "pages_run": 35974592078,
+  "pages_run_url": "https://github.com/Nukcanon/nukcanon/actions/runs/35974592078",
+  "release_asset": {
+    "name": "InternalNCrush_Windows_v1.1.0.zip",
+    "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.0/InternalNCrush_Windows_v1.1.0.zip",
+    "bytes": 117952741,
+    "sha256": "d27e613cdcb6450292e2e780dd1544ec3182ef5080b6df0ffe10b2c2cf529355",
+    "files": 21,
+    "anonymous_download_hash_verified": true
+  },
+  "nas_asset": {
+    "name": "InternalNCrush_NAS_Linux_v1.1.0.zip",
+    "bytes": 15368,
+    "sha256": "186e9ac78f5267c971054518294ff41394f6cfeaa76ae501c085de7b994ff972",
+    "files": 14,
+    "linux_shells_lf": 3,
+    "operator_env_included": false,
+    "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.0/InternalNCrush_NAS_Linux_v1.1.0.zip",
+    "anonymous_download_hash_verified": true
+  },
+  "web_build": {
+    "bytes": 140669780,
+    "files": 18,
+    "threads": false,
+    "manifest": "https://nukcanon.github.io/nukcanon/play/build.json",
+    "all_published_hashes_verified": true
+  },
   "checks": {
-    "local_functional_before_lod": "2374/2374",
-    "api_unit_tests": "10/10",
-    "native_windows_ui": "50/50",
-    "monitor_modes": "2 monitors x 3 modes, all rendering 960x540",
-    "human_anatomy": "CC0 continuous mesh, male/female, normalized weights, no stretched edges",
-    "first_person_hands": "4 weapons x both hands and reload reviewed",
-    "killcam": "projectile follow, victim clearance, 0.5s physical flight, killer nickname",
-    "windows_firewall": "ephemeral startup socket tested; fresh-OS prompt not observed",
-    "functional": "2381/2381",
-    "network_capacity": "32 simultaneous independent clients, fresh snapshots",
-    "network_lifecycle": "8 peers, reconnect + server restart, stagger 0.15s and 1.5s",
-    "network_props_and_doors": "existing and late-joining clients; local alternate-port test passed",
-    "rotation_existing_and_late_clients": true,
-    "docker_tls": "actual Linux Compose HTTPS API + two certificate-verified WSS clients",
-    "tls_negative_cases": [
-      "unknown CA rejected",
-      "wrong hostname rejected",
-      "internal API returns 404"
-    ],
-    "native_windows_published_payload": true,
+    "functional": "3051/3051",
+    "touch_input": "20/20 (headless and native graphics); focus-loss regression fails before fix",
+    "small_touch_viewport": "844x390 menu/HUD/pause and earlier 18 input checks",
+    "network_capacity": "32 independent clients with fresh full-state barrier; also passed on two local CPU cores",
+    "capacity_repeated_dwell": "3/3 runs, 30s hold after all 32 joined, durations 110.0/109.1/107.9s",
+    "network_lifecycle": "8 peers, reconnect/server restart, startup stagger 0.15s and 1.5s",
+    "network_props_doors_rotation": "existing and late peers passed",
+    "webrtc": "real directory host/client; Windows host to browser and browser host to Windows locally",
+    "directory_nas_unit": "10/10",
+    "worker_policy": "2/2 plus real HTTP/WebSocket contract",
+    "docker_tls": "Linux Compose, certificate-verified HTTPS/WSS; unknown CA and wrong hostname rejected; private API blocked",
+    "packaged_windows_webrtc": true,
     "windows_exe_loopback_connection": true,
     "windows_modes": [
       {
@@ -64,66 +94,41 @@
         "known_shutdown_texture_warning": false
       }
     ],
-    "site": "Canonical HTML/JSON match; all three PNGs byte-identical; browser download link/version and responsive character gallery inspected",
-    "menu_rpc_root_regression": "4 repeated lifecycle assertions plus native graphical clients with headless and window hosts"
+    "monitor_modes": "2 monitors x 3 modes, original-pixel UI with lower-resolution 3D",
+    "site": "HTML/version/images and all Web manifest files byte-verified; desktop browser launches published practice",
+    "public_files_verified": 25
   },
-  "remaining": [
-    "Human competitive win-rate playtests",
-    "Actual multi-PC LAN/WAN, NAS ARM64, low-end and long 32-player sessions",
-    "Intermittent Compatibility shutdown GL texture warnings and frame spikes",
-    "First Windows firewall prompt in a clean installation",
-    "Public domain/server, accounts, MMR, durable bans, visibility filtering, behavioral detection and DDoS operations"
-  ],
-  "verified_at_utc": "2026-09-24T04:36:31.454139+00:00",
-  "build_result": "success",
-  "build_run": 35954374716,
-  "build_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35954374716",
-  "docker_result": "success",
-  "docker_run": 35954374710,
-  "docker_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35954374710",
-  "site_commit": "af194c1c72251f4490fb026048dea406ecfe8a6b",
-  "pages_verified": true,
-  "pages_result": "success",
-  "pages_run": 35955684842,
-  "pages_run_url": "https://github.com/Nukcanon/nukcanon/actions/runs/35955684842",
-  "release_asset": {
-    "name": "InternalNCrush_Windows_v1.0.4.zip",
-    "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.0.4/InternalNCrush_Windows_v1.0.4.zip",
-    "bytes": 65050596,
-    "sha256": "841589a1e92345a6f6f97f3e6cd89d518607d7ba4b9b62beefa1f8de0332a14a",
-    "files": 13,
-    "anonymous_download_hash_verified": true,
-    "verification_transport": "anonymous HTTP byte ranges, validated Content-Range and length, assembled full ZIP"
-  },
+  "public_lobby_url": null,
+  "cloudflare_deployment": "not deployed; account authentication required",
   "benchmark": [
     {
-      "frames": 3873,
+      "frames": 3740,
       "map": 13,
-      "max_ms": 51.336,
-      "mean_ms": 3.09927136586625,
-      "p95_ms": 5.88,
+      "max_ms": 141.85,
+      "mean_ms": 3.2094114973262,
+      "p95_ms": 5.908,
       "players": 8,
       "renderer": "NVIDIA GeForce RTX 4080 SUPER",
       "resolution": "(1280, 720)"
     },
     {
-      "frames": 1032,
+      "frames": 1323,
       "map": 0,
-      "max_ms": 227.707,
-      "mean_ms": 11.6351686046512,
-      "p95_ms": 18.102,
+      "max_ms": 111.319,
+      "mean_ms": 9.10061602418745,
+      "p95_ms": 13.896,
       "players": 32,
       "renderer": "NVIDIA GeForce RTX 4080 SUPER",
       "resolution": "(1280, 720)"
     }
   ],
-  "benchmark_source_commit": "f3d5a5c03396960a3c7b29959c3f8381ea720f59",
-  "working_candidate": {
-    "version": "1.1.0",
-    "state": "implemented_validation_in_progress",
-    "notes": "game/docs/WORK_1_1.md",
-    "public_lobby_url": null,
-    "cloudflare_deployment": "awaiting account access",
-    "physical_mobile_validation": false
-  }
+  "benchmark_source_commit": "3cfcc15b10a11a67ffaddc078a727152294eb48b",
+  "remaining": [
+    "Physical phones/tablets including iOS Safari, low-end, multi-PC external LAN/WAN and ARM NAS tests",
+    "Intermittent peer loss in one earlier Linux CI run: cause unconfirmed; subsequent capacity tests passed and per-peer diagnostics are now preserved",
+    "Long 32-player sessions and human competitive win-rate playtests",
+    "Compatibility shutdown GL texture warnings and intermittent frame spikes",
+    "First Windows firewall prompt in a clean installation",
+    "Public lobby deployment/account; operator TURN where NAT requires it; host migration, accounts/MMR and commercial anti-cheat are not implemented"
+  ]
 }
