@@ -13,3 +13,5 @@ web/build/
 nas/*.zip
 nas/.env.backup-*
 services/cloudflare-directory/.dev.vars*
+
+web/staging/

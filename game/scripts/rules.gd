@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.1.0"
+const VERSION = "1.1.1"
 const MAPS = ["TIDAL YARD · 항구", "DRY DOCK · 물류 기지", "FOUNDRY · 주조 공장", "RESEARCH · 연구동", "MESA RELAY · 사막 관측소", "CANAL DISTRICT · 운하 지구", "TRANSIT HALL · 환승 터미널", "COURTYARD · 안뜰", "WORKSHOP · 정비소", "SWITCHBACK · 굽은 골목", "ORCHARD · 과수원", "POWER ROOM · 전력실", "FOUNTAIN · 분수 광장", "CARGO ROW · 적재 구역", "TWIN LAB · 쌍둥이 실험실", "FOUNDRY EAST · 동부 공장", "ROOFTOP · 옥상", "MARKET LOOP · 순환 시장", "QUARRY PASS · 채석 통로", "KASBAH · 성채 시장", "REACTOR · 이중 원자로", "VIADUCT · 고가 수로", "ARCHIVE · 기록 보관소", "SHIPBREAK · 해체 부두", "MONASTERY · 언덕 수도원", "FOUNDRY CORE · 용광로", "GREENHOUSE · 유리 온실", "METRO VAULT · 지하 금고", "COASTGUARD · 해안 통제소", "DATACENTER · 데이터 센터", "CITADEL · 산성", "FIELD ACADEMY · 훈련 기지"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16]
 static func maps_for_size(count:int,mode:int=-1) -> Array:
@@ -21,9 +21,9 @@ static var DISCOVERY:int = PORT+1
 const CLASSES = ["돌격", "정찰", "중화기", "공병", "통제", "메딕"]
 const MODES = ["팀 데스매치", "개인전", "제한 부활 팀전", "거점 점령", "설치 / 해체"]
 const GADGETS = ["보호판", "표식기", "거치대", "엄폐물", "연막탄", "응급 키트"]
-const SKILLS = ["기동", "감지 파동", "방호", "포탑", "둔화 구역", "상태 정화"]
-const GADGET_HELP = ["보호판 또는 파편 수류탄 선택 · 수류탄은 G 누르고 준비, 놓아 투척, 3초 지연", "표식기: 조준한 상대를 4초 표시", "거치대: 앉아서 사용, 15초 동안 정지 사격 정확도 증가", "엄폐물: 조준 방향에 설치, 내구도별 선택", "연막탄 / 4 섬광탄: 선택 후 클릭하여 사용", "응급 키트: 가까운 아군 또는 자신을 25 회복"]
-const SKILL_HELP = ["기동: 짧은 고속 이동", "감지 파동: 22m 내 상대 2초 표시 · 재사용 32초", "방호: 4초 동안 전방 피해 감소", "포탑: 35초 충전, 조준 후 다시 F로 업그레이드", "둔화 구역: 7초 동안 상대 이동 방해 · 벽 너머에는 미적용", "상태 정화: 자신 또는 아군의 방해 효과 제거 · 3초 면역"]
+const SKILLS = ["기동", "감지 파동", "방호", "포탑", "둔화 구역", "무적 보호"]
+const GADGET_HELP = ["보호판 또는 파편 수류탄 선택 · 수류탄은 G 누르고 준비, 놓아 투척, 3초 지연", "표식기: 조준한 상대를 6초 표시 · 대상에게 경고", "거치대: 앉아서 사용, 15초 동안 정지 사격 정확도 증가", "엄폐물: 조준 방향에 설치, 내구도별 선택", "연막탄 / 4 섬광탄: 선택 후 클릭하여 사용", "응급 키트: 가까운 아군 또는 자신을 25 회복"]
+const SKILL_HELP = ["기동: 5초 고속 이동 + 3초 빠른 회복 이동 · 재사용 24초", "감지 파동: 최소 35m / 맵 대각선 1/4 · 4초 표시 · 재사용 40초", "방호: 이동하며 6초 동안 전방 피해 85% 감소", "포탑: F 위치 선택, 클릭 설치 · 가까이 F 업그레이드 · 자동 전방 60도", "둔화 구역: 반경 11m / 8초 / 이동 속도 65% 감소 · 벽 너머 제외", "무적 보호: F 후 30m 내 아군 클릭 / F 두 번 자신 · 4초 무적 · 재사용 45초"]
 const SECONDARIES = ["pistol", "heavy_pistol", "auto_pistol", "eng_pistol", "burst_pistol", "med_pistol"]
 static func medic_cap(count:int) -> int:
 	return 0 if count <= 0 else 1 + maxi(0, count - 4) / 3
@@ -33,8 +33,10 @@ static func damage_water(hit_submerged:bool, shooter_wading:bool, target_outside
 	return 0.5 if hit_submerged or (shooter_wading and target_outside) else 1.0
 static func ammo_pickup(capacity:int) -> int:
 	return maxi(1, int(ceil(capacity * 0.25)))
+static func score(p:Dictionary) -> int:
+	return int(p.get("kills",0)*100 + p.get("assists",0)*50 + p.get("objective",0)*35 + p.get("healed",0)*.3 + p.get("builds",0)*20 - p.get("deaths",0)*25)
 static func rating(p:Dictionary) -> float:
-	return (p.get("kills",0)*100.0 + p.get("assists",0)*50.0 + p.get("objective",0)*35.0 + p.get("healed",0)*0.3 - p.get("deaths",0)*25.0) / maxf(1.0,p.get("played",60.0)/60.0)
+	return float(score(p)) / maxf(1.0,p.get("played",60.0)/60.0)
 static func default_options() -> Dictionary:
 	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":0,"lives":3,"shared_lives":false,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":0,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":45}
 static func balanced_ids(ps:Dictionary) -> Dictionary:

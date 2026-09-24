@@ -11,7 +11,7 @@ static func joint(parent:Node,label:String,pos:Vector3) -> Node3D:
 static func pose_rig(which:int) -> Node3D:
 	var rig=Node3D.new();rig.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,WIDTHS[which])
 	var hips=joint(rig,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
-	joint(chest,"Head",Vector3(0,.36,0));joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
+	joint(chest,"Head",Vector3(0,.33 if which==1 else .36,0));joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
 	for side in [-1,1]:
 		var prefix="Left" if side<0 else "Right"
 		var arm=joint(chest,prefix+"Arm",Vector3(side*(.185 if which in FEMALE_ROLES else .207),.105,0))
@@ -149,12 +149,13 @@ static func build(which:int,team:int) -> Node3D:
 		M.box(chest,Vector3(x,-.112,-.194),Vector3(.09,.14,.038),vest.darkened(.10),Vector3.ZERO,.32)
 		cord(chest,Vector3(x-.035,-.045,-.211),Vector3(x+.035,-.045,-.211),.006,vest.lightened(.25))
 	loft(chest,Vector3(0,.256,0),[Vector4(-.025,.059,.056,0),Vector4(.07,.055,.054,0)],skin)
-	var head=joint(chest,"Head",Vector3(0,.36,0));face(head,which,skin,hair)
+	var head=joint(chest,"Head",Vector3(0,.33 if which==1 else .36,0));face(head,which,skin,hair)
 	if which in FEMALE_ROLES:
 		pass # Authored female anatomy shares the animation skeleton.
 	# Role-specific soft gear: radio, scout scarf, padded vest, tool roll, satchel, medical bag.
 	if which==1:
-		loft(chest,Vector3(0,.23,0),[Vector4(-.035,.11,.085,0),Vector4(.01,.075,.073,0)],Color("899274"))
+		# A fitted collar replaces the broad floating scarf below the scout's neck.
+		loft(chest,Vector3(0,.225,0),[Vector4(-.012,.070,.061,0),Vector4(.012,.065,.058,0)],Color("71806a"))
 	if which==2:oval(chest,Vector3(0,-.015,.16),Vector3(.34,.40,.19),Color("6a715e"))
 	if which==3:
 		oval(hips,Vector3(.213,-.105,.028),Vector3(.10,.19,.19),Color("987851"))

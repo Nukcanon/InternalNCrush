@@ -70,14 +70,15 @@ static func equipment_material() -> ShaderMaterial:
 	if equipment:return equipment
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
+uniform bool rich_detail=false;
 uniform float finish_roughness=-1.0;
 uniform float finish_metallic=-1.0;
 varying vec3 p;
 void vertex(){p=VERTEX;}
 void fragment(){
  float footprint=length(fwidth(p));
- float grain=sin(p.x*155.0)*sin(p.y*137.0)*sin(p.z*163.0);
- float weave=sin(p.x*410.0)*sin(p.y*405.0);
+ float grain=rich_detail?sin(p.x*155.0)*sin(p.y*137.0)*sin(p.z*163.0):0.;
+ float weave=rich_detail?sin(p.x*410.0)*sin(p.y*405.0):0.;
  float cloth=step(.75,UV2.x)*(1.0-clamp(UV2.y,0.,1.));
  float detail=mix(grain*.022,weave*.025,cloth)*clamp(1.0-footprint*140.0,0.0,1.0);
  ALBEDO=COLOR.rgb*(1.0+detail);
@@ -99,6 +100,7 @@ static func world_material() -> ShaderMaterial:
 	if architecture:return architecture
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
+uniform bool rich_detail=false;
 uniform sampler2D material_atlas:source_color,filter_linear_mipmap_anisotropic;
 varying vec3 p;varying vec3 n;
 void vertex(){p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;n=normalize(MODEL_NORMAL_MATRIX*NORMAL);}
@@ -111,7 +113,8 @@ void fragment(){
  vec2 tiles=floor_face?uv*.25:vec2(uv.x*1.3+mod(floor(uv.y*2.8),2.0)*.5,uv.y*2.8);
  vec2 f=fract(tiles);vec2 aa=max(fwidth(tiles)*1.3,vec2(.006));
  float seam=min(smoothstep(vec2(.018),vec2(.018)+aa,min(f,1.0-f)).x,smoothstep(vec2(.018),vec2(.018)+aa,min(f,1.0-f)).y);
- float large=noise(p*.65);float fine=(noise(p*22.)-.5)*clamp(1.-length(fwidth(p))*12.,0.,1.);
+ float large=.5;float fine=0.;
+ if(rich_detail){large=noise(p*.65);fine=(noise(p*22.)-.5)*clamp(1.-length(fwidth(p))*12.,0.,1.);}
  float kind=max(0.,-UV2.y-1.);float metal=max(0.,UV2.y);float rough=UV2.x;
  float mortar=mix(floor_face?.94:.87,1.,seam);
  float patina=.92+large*.14+fine*.06;

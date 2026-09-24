@@ -146,6 +146,7 @@ func choose_action():
 		else:
 			var site=abs(id)%2 if p.team!=attackers else int(game.bot_attack_site)
 			action="plant" if p.team==attackers else "defend_site";set_goal(game.arena.sites[site]+Vector3(0,0,8 if p.team!=attackers else 0))
+		if not game.bomb.planted and p.team==attackers and game.bomb.get("dropped",false):action="recover_bomb";set_goal(game.bomb.position)
 		if visible_target and a.position.distance_to(goal)>7:action="engage"
 		return
 	if int(game.options.mode)==3:
@@ -181,12 +182,15 @@ func navigate(destination:Vector3,dt:float):
 	var toward=path[waypoint]-a.position;toward.y=0
 	if toward.length()<.22:return
 	var desired=toward.normalized()
-	var hit=game.ray(a.position+Vector3.UP*.65,a.position+Vector3.UP*.65+desired*1.25,[a.get_rid()],1|4)
+	# Navigation follows movement permissions; firing rays always block both spawn gates.
+	var query=PhysicsRayQueryParameters3D.create(a.position+Vector3.UP*.65,a.position+Vector3.UP*.65+desired*1.25,a.collision_mask);query.exclude=[a.get_rid()]
+	var hit=a.get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		var found=false
 		for angle in [.65,-.65,1.2,-1.2]:
 			var candidate=Basis(Vector3.UP,angle)*desired
-			if game.ray(a.position+Vector3.UP*.65,a.position+Vector3.UP*.65+candidate*1.4,[a.get_rid()],1|4).is_empty():desired=candidate;found=true;break
+			query.to=a.position+Vector3.UP*.65+candidate*1.4
+			if a.get_world_3d().direct_space_state.intersect_ray(query).is_empty():desired=candidate;found=true;break
 		if not found:next_path=0.;return
 	var local_dir=Basis(Vector3.UP,float(a.input_state.yaw)).inverse()*desired
 	a.input_state.x=local_dir.x;a.input_state.z=local_dir.z
@@ -219,8 +223,8 @@ func support_action() -> bool:
 			a.input_state.fire=p.primary=="m1";a.input_state.alt=p.primary=="m2";stats.heals+=1
 		return true
 	if action=="repair" and game.devices.has(repair_target):
-		var d=game.devices[repair_target];navigate(d.pos,.016);look(d.pos+Vector3.UP*.85,.1,false)
-		if a.position.distance_to(d.pos)<3:
+		var d=game.devices[repair_target];navigate(d.pos,.016);look(TurretLogic.origin(d) if d.kind=="turret" else d.pos+Vector3.UP*.6,.1,false)
+		if a.position.distance_to(d.pos)<3.5:
 			a.input_state.x=0.;a.input_state.z=0.;game.handle_command(id,"slot",{"slot":1});a.input_state.fire=true;stats.repairs+=1
 		return true
 	return false
@@ -231,6 +235,7 @@ func objective_interaction():
 	if int(game.options.mode)!=4:return
 	if game.bomb.actor!=0 and game.bomb.actor!=id:return
 	var attackers=MatchFlow.attackers(game)
+	if p.team==attackers and game.bomb.get("dropped",false) and a.position.distance_to(game.bomb.position)<2.2:a.input_state.use=true;return
 	if not game.bomb.planted and p.team==attackers:
 		for site in game.arena.sites:
 			if a.position.distance_to(site)<4.5:a.input_state.x=0.;a.input_state.z=0.;a.input_state.use=true;a.input_state.fire=false;stats.interactions+=1
@@ -255,15 +260,15 @@ func utilities():
 				for did in game.devices:
 					if game.devices[did].owner==id and game.devices[did].kind=="turret":existing=did
 				if existing and game.devices[existing].level<4 and a.position.distance_to(game.devices[existing].pos)<5:
-					instant_look(game.devices[existing].pos+Vector3.UP*1.65);game.use_skill(id)
+					instant_look(TurretLogic.origin(game.devices[existing]));game.use_skill(id)
 				elif existing==0:
 					for angle in [0.,PI/2,-PI/2,PI]:
-						a.aim_yaw=float(a.input_state.yaw)+angle
-						if game.valid_placement(game.placement(id),a.aim_yaw):game.use_skill(id);break
+						a.aim_yaw=float(a.input_state.yaw)+angle;a.aim_pitch=0.
+						if Deployment.candidate(game,id,"turret").valid:game.use_skill(id);break
 				if p.gadget_count>0 and visible_target:
 					for angle in [PI/2,-PI/2,PI,0.]:
-						a.aim_yaw=float(a.input_state.yaw)+angle
-						if game.valid_placement(game.placement(id),a.aim_yaw):game.use_gadget(id);break
+						a.aim_yaw=float(a.input_state.yaw)+angle;a.aim_pitch=0.
+						if Deployment.candidate(game,id,"cover").valid:game.use_gadget(id);break
 		4:
 			if visible_target and a.position.distance_to(last_known)>17:
 				p.gadget=1 if p.flash_count>0 and p.hp>45 else 0;var end=a.eye()+a.direction()*18;var friend_close=false

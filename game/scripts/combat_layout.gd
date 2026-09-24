@@ -45,11 +45,6 @@ static func build(a:Node):
 				a.detail(point+Vector3(edge*(size.x*.5+.03),1.8,0),Vector3(.06,1.7,size.z*.65),Color("47636c"))
 				for y in [1.15,1.55,1.95,2.35]:a.detail(point+Vector3(edge*(size.x*.5+.08),y,0),Vector3(.04,.06,size.z*.58),trim)
 			count+=1
-	if a.doors.is_empty() and a.vertical_map:
-		for side in [-1,1]:
-			var point=Vector3(side*a.bounds.x*MapIdentity.WINGS[a.map_index],0,side*minf(4.,a.bounds.y*.10)-float(a.get_meta("wing_depth",20.))*.5-.18)
-			for edge in [-1,1]:a.box(point+Vector3(edge*2.14,1.4,0),Vector3(1.74,2.8,.28),wall)
-			a.add_door(point)
 	# Break the straight elevated firing lane without closing the 4.6m-wide crossing.
 	if a.vertical_map:
 		var style=a.map_index%4;var center_z=2.5 if style==0 else -2.5 if style==1 else 0.

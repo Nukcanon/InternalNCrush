@@ -118,7 +118,20 @@ body {
 			<div id="status-notice"></div>
 		</div>
 
-		<script src="$GODOT_URL"></script>
+		<script>
+// A preference request, not a bypass: the browser/OS still chooses the adapter.
+const gameCanvas=document.getElementById('canvas');
+const canvasContext=gameCanvas.getContext.bind(gameCanvas);
+gameCanvas.getContext=function(type,attributes){
+  const context=canvasContext(type, type.startsWith('webgl') ? {...attributes,powerPreference:'high-performance',antialias:false} : attributes);
+  if(context && type.startsWith('webgl')) {
+    const info=context.getExtension('WEBGL_debug_renderer_info');
+    console.info('GPU_RENDERER', info ? context.getParameter(info.UNMASKED_RENDERER_WEBGL) : context.getParameter(context.RENDERER));
+  }
+  return context;
+};
+</script>
+<script src="$GODOT_URL"></script>
 		<script>
 const GODOT_CONFIG = $GODOT_CONFIG;
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;

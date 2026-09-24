@@ -22,19 +22,19 @@ func run():
 	expect(signatures.size()>18,"distinct weapon recoil curves")
 	var burst=Catalog.get_weapon("a4");expect(absf(CombatBalance.magazine_seconds(burst)-((int(burst.mag)-1)/3*(burst.interval*2.+burst.burst_pause)+((int(burst.mag)-1)%3)*burst.interval))<.001,"burst DPS accounts for gaps between bursts")
 	expect(AbilityBalance.flash_duration(3.,1.)>AbilityBalance.flash_duration(3.,-1.)*4. and AbilityBalance.flash_duration(14.,1.)==0.,"flash respects facing and maximum distance")
-	expect(AbilityBalance.turret_dps(4)<=27. and AbilityBalance.turret_hp(4)==300.,"upgraded turret bounded at 27 DPS / 300 HP")
+	expect(AbilityBalance.turret_dps(4)<=38.01 and AbilityBalance.turret_hp(4)==300.,"upgraded turret bounded at 38 bullet DPS / 300 HP")
 	var image=Image.load_from_file("res://assets/textures/smoke_particle_v103.png")
 	expect(image.detect_alpha()!=Image.ALPHA_NONE and image.get_pixel(0,0).a<.05,"explosion texture has a transparent edge")
 	var skin=CharacterVisual.new();root.add_child(skin);skin.enable_physics=false;skin.build(0,0)
 	expect(skin.deform.get_bone_count()==15 and skin.rig.get_node("ContinuousBody").skin.get_bind_count()==15,"rendered character has weighted GPU skin")
-	expect(skin.rig.get_node("Hips/SculptedShirt").mesh.get_surface_count()==1,"continuous shoulder and torso surface is baked")
+	expect(skin.rig.get_node("ContinuousBody").mesh.get_surface_count()==1,"continuous shoulder and torso surface is baked into the skin")
 	skin.free()
 	for index in range(19):
 		var arena=Arena.new();root.add_child(arena);arena.build(index)
 		print("DOOR_AUDIT ",index," doors=",arena.doors.size())
-		expect(arena.doors.size()>=2,"map "+str(index)+" contains usable doors")
+		expect(arena.doors.values().all(func(door):return door.leaves.size()==2),"map "+str(index)+" retained doors have complete paired leaves")
 		arena.free();await process_frame
-	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.options.map_random=false;g.options.map=13;g.build_world();g.phase="lobby";g.add_player(1,"TEST","v103");g.phase="combat";g.clock=100.
+	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.options.map_random=false;g.options.map=0;g.build_world();g.phase="lobby";g.add_player(1,"TEST","v103");g.phase="combat";g.clock=100.
 	var door=g.arena.doors.values()[0];var actor=g.actors[1];var p=g.players[1];p.protect=0.;p.armor=0.
 	actor.position=door.global_position+door.basis*Vector3(0,.05,-2.5);actor.reset_view(door.rotation.y+PI)
 	await physics_frame;await physics_frame

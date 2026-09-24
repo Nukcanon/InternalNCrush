@@ -238,6 +238,10 @@
 		{
 			"id": "repair",
 			"name": "FIX"
+		},
+		{
+			"id": "remote",
+			"name": "TETHER · 포탑 원격 조종기"
 		}
 	]
 }

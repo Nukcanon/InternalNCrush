@@ -88,6 +88,15 @@ write('magazine',mix(.3,(sample('ui_drop_003',.85,.3),.5,0),(metal,.27,.045)),ga
 write('bolt',mix(.3,(metal,.8,0),(sample('impactPlate_light_1',1.6,.17),.4,.055)),gain=-7)
 write('heal',mix(.30,(sample('ui_glass_003',.95,.3),.23,0),(glass,.09,.09)),gain=-13)
 write('deploy',mix(.65,(sample('impactMetal_heavy_000',.85,.6),.53,0),(metal,.22,.10)),gain=-5)
+write('bomb_beep',[math.sin(i/rate*2*math.pi*1500)*math.sin(math.pi*i/(rate*.09))**.5 for i in range(int(rate*.09))],gain=-12)
+write('bomb_defuse',mix(.34,(metal,.45,0),(sample('impactPlate_light_1',1.7,.14),.23,.09),(metal,.25,.21)),gain=-9)
+for name in ['bomb_planted','bomb_dropped','bomb_defused']:
+ with wave.open(str(root/'tools/announcer'/(name+'.wav')),'rb') as voice:
+  assert voice.getframerate()==rate and voice.getnchannels()==1 and voice.getsampwidth()==2
+  pcm=array.array('h',voice.readframes(voice.getnframes()))
+  if sys.byteorder!='little':pcm.byteswap()
+  write(name,[v/32768 for v in pcm],category='announcer',gain=0,license='Windows SAPI generated speech; see SOUND_CREDITS.md')
+write('bomb_explosion',mix(3.6,(sample('bang_03',.62,3.2),.7,0),(sample('cannon_01',.42,3.4),.8,.035),(lowpass(sample('cannon_01',.29,3.1),180),.7,.18)),gain=0)
 write('explosion',mix(1.9,(sample('bang_03',.87,1.9),.74,0),(sample('cannon_01',.73,1.8),.55,.024)),gain=-1)
 write('flash',mix(.7,(highpass(sample('shot_01',1.3,.6),650),.55,0),(glass,.3,.025)),gain=-5)
 write('skill',mix(.64,(sample('ui_glass_003',.77,.6),.47,0),(sample('ui_open_002',.75,.5),.30,.06)),gain=-7)

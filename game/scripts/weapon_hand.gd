@@ -87,4 +87,4 @@ static func align_wrist(rig:Node3D,palm:Vector3,elbow:Vector3,palm_normal:Vector
 
 static func fit_forearm(arm:Node3D,elbow:Vector3,wrist:Vector3):
 	var direction=wrist-elbow
-	arm.position=elbow;arm.quaternion=Quaternion(Vector3.UP,direction.normalized());arm.scale=Vector3(1,direction.length()/.32,1)
+	arm.position=elbow;arm.quaternion=Quaternion(Vector3.UP,direction.normalized());arm.scale=Vector3(1.85,direction.length()/.32,1.85)

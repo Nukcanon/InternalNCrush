@@ -44,8 +44,10 @@ func apply():
 		target.basis=target.basis.orthonormalized()
 		if target.basis.determinant()<0:target.basis.x=-target.basis.x
 		targets[i]=target
+	# Feet are solved against the ground: physical sway must not perturb leg IK.
 	# Capture all unmodified targets first, then apply parent-to-child deviations.
 	for i in range(bodies.size()):
+		if "Leg" in str(PhysicsRagdoll.PARTS[i][0]):continue
 		var bone:Node3D=character.rig.get_node(PhysicsRagdoll.PARTS[i][0]);var target:Transform3D=targets[i]
 		var q=(target.basis.get_rotation_quaternion().inverse()*bodies[i].global_basis.orthonormalized().get_rotation_quaternion()).normalized()
 		if q.w<0.:q=-q

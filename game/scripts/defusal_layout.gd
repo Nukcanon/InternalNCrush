@@ -77,10 +77,7 @@ static func build(a:Node,index:int):
 	a.navigation_goals.append_array(a.sites)
 	if a.indoors:a.box(Vector3(0,10.5,0),Vector3(a.bounds.x*2,.4,a.bounds.y*2),Color("586a76"))
 	a.set_meta("staging_z",s.points[0].y-7.);a.set_meta("staging_center",s.points[0]);a.set_meta("sight_blockers",s.points.size())
-	# Doors on readable auxiliary doorways; these never seal either main attack route.
-	for side in [-1,1]:
-		var point=Vector3(s.points[0].x+side*6.,0,s.points[0].y-6.)
-		a.add_door(point)
+	# Staging uses the translucent preparation gate; no freestanding doors.
 	a.text3d("ATTACK STAGING",Vector3(s.points[0].x,3.4,s.points[0].y+5.),Color("79dbc4"),34)
 static func shell(a:Node,index:int,color:Color):
 	if geometry.is_empty():geometry=JSON.parse_string(FileAccess.get_file_as_string("res://assets/arenas/defusal_geometry.json"))

@@ -29,7 +29,6 @@ static func build(a:Node):
 		a.detail(Vector3(0,.016,z),Vector3(28,.018,.08),Color("d8bd7c"));a.text3d(str(distance)+" m",Vector3(-14.,.7,z),Color("f2dcaa"),25)
 	for side in [-1,1]:
 		a.box(Vector3(side*17.,1.65,9),Vector3(.4,3.3,18),concrete)
-		a.add_door(Vector3(side*25.,0,18.))
 		for z in [-12.,8.]:a.container_box(Vector3(side*37.,0,z),Color("608e90"),5.)
 	for i in range(8):
 		var spawn=Vector3((i%4-1.5)*1.4,.15,35.+(i/4)*1.6);a.spawn_points[0].append(spawn);a.spawn_points[1].append(Vector3(spawn.x,.15,-35));a.ffa_spawns.append(spawn)

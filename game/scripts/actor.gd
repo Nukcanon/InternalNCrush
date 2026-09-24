@@ -57,10 +57,13 @@ var hit_side=0.0
 var old_visual_pos=Vector3.ZERO
 var gait=0.
 var net_gait=0.
+var net_gait_target=0.
 var motion_seed=0.
 var previous_yaw=0.
 var turn_sway=0.
 var shot_serial=0
+var fall_peak=0.
+var falling=false
 func _ready():
 	motion_seed=fposmod(float(pid)*2.39996,TAU)
 	collision_layer=2;collision_mask=1|4|8
@@ -76,7 +79,8 @@ func build_gun(wid:String):
 	if is_instance_valid(view_weapon):view_weapon.queue_free()
 	if is_instance_valid(world_weapon):world_weapon.queue_free()
 	var w=Catalog.get_weapon(wid)
-	view_weapon=Weapon.new();gun.add_child(view_weapon);view_weapon.build(w);view_weapon.scale=Vector3.ONE*.85
+	if local:
+		view_weapon=Weapon.new();gun.add_child(view_weapon);view_weapon.build(w);view_weapon.scale=Vector3.ONE*.85
 	world_weapon=Weapon.new();(character.socket if is_instance_valid(character) else render_root).add_child(world_weapon);world_weapon.build(w,false);world_weapon.scale=Vector3.ONE*.85
 func set_local(on:bool):
 	local=on;camera.current=on;render_root.visible=not on;tag.visible=not on;gun.visible=on
@@ -106,7 +110,8 @@ func reset_view(yaw:float):
 	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,eye_height(false),0))
 	input_state.yaw=yaw;input_state.pitch=0.;input_state.crouch=false;input_state.sprint=false;input_state.fire=false;input_state.ads=false;input_state.x=0.;input_state.z=0.;input_state.jump=false
 	aim_yaw=yaw;aim_pitch=0.;rotation=Vector3(0,yaw,0);last_sprint=false;sprint_release=0.;old_visual_pos=global_position;spread_angle=.4;visual_spread=.4;seen_shot=-100.;recoil=0.;land_kick=0.
-	gait=0.;net_gait=0.;turn_sway=0.;previous_yaw=yaw;aim_progress=0.;ads_blend=0.
+	fall_peak=global_position.y;falling=false
+	gait=0.;net_gait=0.;net_gait_target=0.;turn_sway=0.;previous_yaw=yaw;aim_progress=0.;ads_blend=0.
 	handedness=int(game.players.get(pid,{}).get("hand",1))
 	if local:
 		camera.current=true
@@ -148,9 +153,10 @@ func simulate(dt:float,now:float,can_move:bool):
 		var weapon=game.current_weapon(p)
 		if input_state.ads and p.slot<2:speed=minf(speed,float(weapon.get("ads_speed",4.4))*.5)
 		elif p.slot<2:speed*=float(weapon.get("move_speed_scale",1.))
-		if p.get("slow",0)>now:speed*=.6
+		if p.get("slow",0)>now:speed*=.35
 		if p.get("shield",0)>now:speed*=.6
-		if p.get("dash",0)>now:speed*=2
+		if p.get("dash",0)>now:speed*=2.1
+		elif p.get("dash_recovery",0)>now:speed*=1.65
 		if Catalog.get_weapon(p.primary).role==2:speed*=.9
 	var wish=Vector3(float(input_state.x),0,float(input_state.z)).limit_length(1)
 	wish=Basis(Vector3.UP,aim_yaw)*wish
@@ -173,7 +179,21 @@ func simulate(dt:float,now:float,can_move:bool):
 	# walking step, especially while movement is disabled during round setup.
 	if is_on_floor() and can_move and Vector2(velocity.x,velocity.z).length_squared()>.0025:
 		gait+=Vector2(global_position.x-before.x,global_position.z-before.z).length()/(2.*Rules.step_length(sprint,crouch))
-	if not was_grounded and is_on_floor():land_kick=.055
+	if not is_on_floor():
+		if not falling:fall_peak=before.y;falling=true
+		fall_peak=maxf(fall_peak,global_position.y)
+	if not was_grounded and is_on_floor():
+		land_kick=clampf((fall_peak-global_position.y)*.008,.035,.14)
+		if game.server and game.phase=="combat" and falling and not game.arena.wading(global_position):
+			var amount=maxf(0.,(fall_peak-global_position.y-9.)*(40./3.6))
+			if amount>0.:game.damage(pid,amount,pid,false,"fall")
+		falling=false
+	if game.server and can_move:
+		for i in range(get_slide_collision_count()):
+			var collision=get_slide_collision(i);var body=collision.get_collider()
+			if body is InteractiveProp and body.mass<=15.:
+				var push=-collision.get_normal();push.y=0.
+				body.push_by_character(push,target_velocity.length(),dt);velocity.x*=.82;velocity.z*=.82
 	update_spread(dt,now)
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
 	global_position.x=clampf(global_position.x,-bound.x+2,bound.x-2);global_position.z=clampf(global_position.z,-bound.y+2,bound.y-2)
@@ -226,7 +246,10 @@ func visual(dt:float,p:Dictionary,now:float):
 	var sprint=last_sprint if local or game.server else net_sprint
 	var progress=clampf((now-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0,1) if p.reload>now else -1.
 	move_blend=lerpf(move_blend,minf(1,speed/Rules.WALK_SPEED),1.-exp(-dt*9))
-	if not local and not game.server and grounded:net_gait+=dt*speed/(2.*Rules.step_length(sprint,bool(input_state.crouch)))
+	if not local and not game.server and grounded:
+		var advance=dt*speed/(2.*Rules.step_length(sprint,bool(input_state.crouch)))
+		net_gait+=advance;net_gait_target+=advance
+		net_gait+=wrapf(net_gait_target-net_gait,-.5,.5)*(1.-exp(-dt*3.))
 	var phase=gait if local or game.server else net_gait
 	bob=phase*TAU
 	var yaw_delta=wrapf(aim_yaw-previous_yaw,-PI,PI);previous_yaw=aim_yaw;turn_sway=lerpf(turn_sway,clampf(yaw_delta/maxf(dt,.001),-4,4),1.-exp(-dt*10))

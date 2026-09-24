@@ -12,6 +12,15 @@ var next_refresh=0.
 var arena:Node
 func build(world:Node):
 	arena=world;grid.region=Rect2i(0,0,100,90);grid.cell_size=Vector2(2,2);grid.offset=Vector2(-99,-89);grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.default_compute_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.default_estimate_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.update()
+	if arena.has_meta("navigation_cache"):
+		var cache=arena.get_meta("navigation_cache");static_solid=cache.solid.duplicate();layer_cells=cache.cells.duplicate(true);layer_ground=cache.ground.duplicate()
+		for cell_id in static_solid:grid.set_point_solid(cell_id)
+		for cell_id in cache.weights:grid.set_point_weight_scale(cell_id,cache.weights[cell_id])
+		for point in cache.points:layers.add_point(point[0],point[1]);layers.set_point_disabled(point[0],point[3])
+		for point in cache.points:
+			for other in point[2]:
+				if not layers.are_points_connected(point[0],other):layers.connect_points(point[0],other)
+		return
 	for rect in arena.obstacles:
 		var lo=cell(Vector3(rect.position.x,0,rect.position.y));var hi=cell(Vector3(rect.end.x,0,rect.end.y))
 		for x in range(lo.x,hi.x+1):

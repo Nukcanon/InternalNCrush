@@ -126,6 +126,7 @@ func tree(pos:Vector3):
 		HumanModel.cord(trunk,Vector3(0,2.2+i*.12,0),end,.07,Color("87745a"))
 		HumanModel.oval(trunk,end+Vector3.UP*.6,Vector3(2.6,2.1,2.5),Color("779261") if i%2==0 else Color("94a678"))
 func build(which:int):
+	if not bake_geometry and ArenaCache.restore(self,which):return
 	if DefusalLayout.enabled(which) or which==PracticeLayout.INDEX:
 		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 		if which==PracticeLayout.INDEX:PracticeLayout.build(self)
@@ -174,8 +175,6 @@ func build(which:int):
 	else:MapLayouts.build_sized(self,which)
 	for i in range(zones.size()):
 		var pos=zones[i]
-		for x in [-6,6]:detail(pos+Vector3(x,.12,0),Vector3(.16,.018,12),Color("e3bf68"))
-		for z in [-6,6]:detail(pos+Vector3(0,.12,z),Vector3(11.7,.018,.16),Color("e3bf68"))
 		text3d(["A","C","B"][i],pos+Vector3(0,3.4,0),Color("f5e0a1"),65)
 		if i!=1:
 			box(pos+Vector3(-5,.45,-5),Vector3(1.2,.9,1.2),Color("486773"));detail(pos+Vector3(-5,.92,-5),Vector3(.9,.035,.8),Color("78b0b2"))
@@ -227,6 +226,8 @@ func point_clear(pos:Vector3) -> bool:
 		if rect.grow(.2).has_point(Vector2(pos.x,pos.z)):return false
 	return true
 func spawn_candidates(team:int,roaming:bool) -> Array:
+	# Defusal spawn slots belong to the authored side, not generic north/south bands.
+	if DefusalLayout.enabled(map_index) and not roaming:return spawn_points[team].duplicate()
 	var out=[]
 	for pos in (ffa_spawns if roaming else spawn_points[team]):
 		if point_clear(pos):out.append(pos)

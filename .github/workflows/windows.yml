@@ -77,8 +77,12 @@ jobs:
       - name: Export single-thread Web build
         run: |
           set -euo pipefail
+          pip install Pillow
+          python3 web/prepare_lightweight.py
           mkdir -p web/build
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --export-release Web ../web/build/index.html
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/index.html"
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         with:
@@ -89,12 +93,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view internal-n-crush-v1.1.0 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.0 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.0" --notes-file game/docs/RELEASE_NOTES.md --latest
-          gh release upload internal-n-crush-v1.1.0 out/InternalNCrush_Windows_v1.1.0.zip out/SHA256SUMS.txt --clobber
+          gh release view internal-n-crush-v1.1.1 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.1 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.1" --notes-file game/docs/RELEASE_NOTES.md --latest
+          gh release upload internal-n-crush-v1.1.1 out/InternalNCrush_Windows_v1.1.1.zip out/SHA256SUMS.txt --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.1.0.zip
+          path: out/InternalNCrush_Windows_v1.1.1.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:

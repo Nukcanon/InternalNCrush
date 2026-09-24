@@ -4,6 +4,7 @@ static var texture:Texture2D
 static var debris_count=0
 var puffs:Array=[]
 var age=0.
+var blast_scale=1.
 func build(fire:bool):
 	if texture==null:texture=load("res://assets/textures/smoke_particle_v103.png")
 	var rng=RandomNumberGenerator.new();rng.randomize()
@@ -30,8 +31,8 @@ func _process(dt:float):
 		var t=(age-puff.delay)/puff.life;puff.node.visible=t>=0. and t<1.
 		if not puff.node.visible:continue
 		var expansion=1.-pow(1.-t,3.)
-		puff.node.position=puff.velocity*expansion*(1.1 if puff.flame else 2.2)+Vector3.UP*(.25 if puff.dust else .35+t*.7)
-		puff.node.scale=Vector3.ONE*(.35+expansion*puff.size)
+		puff.node.position=blast_scale*puff.velocity*expansion*(1.1 if puff.flame else 2.2)+Vector3.UP*(.25 if puff.dust else .35+t*.7)
+		puff.node.scale=Vector3.ONE*(.35+expansion*puff.size)*blast_scale
 		puff.material.albedo_color.a=puff.alpha*(1.-smoothstep(.12 if puff.flame else .35,1.,t))*smoothstep(0.,.07,t)
 		if puff.flame:puff.material.emission_energy_multiplier=1.6*(1.-t)
 	if age>3.:queue_free()

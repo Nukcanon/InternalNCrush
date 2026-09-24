@@ -23,13 +23,13 @@ func run():
 	g.spawn(2);expect(g.players[2].alive and g.actors[2].collision_layer==2,"respawn restores collision")
 	g.players[1].role=3;g.players[1].skill_ready=0;g.actors[1].position=Vector3(25,0,65);g.actors[1].aim_yaw=0.;g.actors[1].aim_pitch=0
 	await physics_frame;await physics_frame
-	g.use_skill(1);expect(g.devices.size()==1,"engineer turret placement")
+	g.use_skill(1);expect(g.devices.is_empty(),"engineer previews before confirming");Deployment.confirm(g,1);expect(g.devices.size()==1,"engineer turret placement")
 	if g.devices.size()>0:
 		var did=g.devices.keys()[0];expect(g.players[1].skill_ready==135,"35-second turret charge")
 		g.update_world_visuals(.1);await physics_frame;await physics_frame
 		g.clock=136;g.actors[1].aim_pitch=.05
 		g.use_skill(1);expect(g.devices.size()==1 and g.devices[did].level==2,"aimed turret upgrade preserves singleton")
-		g.remove_device(did);expect(g.players[1].skill_ready==171,"destruction does not refund charge")
+		g.remove_device(did);expect(g.players[1].skill_ready==135,"destruction does not refund charge")
 	g.players[1].alive=false;g.phase="buy";g.options.mode=4;g.players[1].cash=800;g.players[1].armor=0;g.players[1].primary="pistol";g.players[1].owned_primary=false
 	g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==800 and g.players[1].primary=="pistol","insufficient funds rejected")
 	g.players[1].cash=4000;g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==1000 and g.players[1].primary=="a1","purchase costs deducted")
@@ -52,12 +52,12 @@ func run():
 	g.damage(2,150,1);expect(g.tickets[1]==0 and g.players[2].can_respawn,"shared respawn ticket reserved once")
 	g.spawn(2);g.players[2].protect=0;g.damage(2,150,1);expect(not g.players[2].can_respawn and g.tickets[1]==0,"exhausted shared tickets prevent respawn")
 	g.options.mode=4;g.phase="combat";g.round_no=1;g.players[1].team=0;g.players[1].alive=true;g.actors[1].position=g.arena.sites[0];g.actors[1].input_state.use=true
-	g.bomb={"planted":false,"site":-1,"time":0.,"actor":0,"progress":0.,"position":Vector3.ZERO}
+	g.bomb={"carrier":1,"planted":false,"site":-1,"time":0.,"actor":0,"progress":0.,"position":Vector3.ZERO}
 	for i in range(31):g.clock+=.1;g.interact(1,.1)
 	expect(g.bomb.planted and g.bomb.site==0,"three-second objective placement")
 	g.players[2].alive=true;g.actors[2].position=g.arena.sites[0];g.actors[2].input_state.use=true;g.scores=[0,0];g.phase="combat"
-	for i in range(51):g.clock+=.1;g.interact(2,.1)
-	expect(g.phase=="round_end" and g.scores[1]==1,"five-second objective disarm awards defenders")
+	for i in range(301):g.clock+=.1;g.interact(2,.1)
+	expect(g.phase=="round_end" and g.scores[1]==1,"thirty-second objective disarm awards defenders")
 	g.options.mode=3;g.phase="combat";g.remaining=300;g.players[1].alive=true;g.players[2].alive=false;g.zone_capture=[0.,0.,0.];g.zone_owner=[-1,-1,-1];g.actors[1].position=g.arena.zones[0]
 	for i in range(51):g.check_objectives(.1)
 	expect(g.zone_owner[0]==0,"uncontested zone capture")

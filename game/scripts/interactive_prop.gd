@@ -32,7 +32,12 @@ func configure(id:int,type:String,authority:bool):
 			for y in [-.20,.20]:
 				for z in [-.306,.306]:M.box(self,Vector3(0,y,z),Vector3(.68,.06,.025),Color("81684c"))
 		"cone":
-			mass=.8;radius=.4;var shape=CylinderShape3D.new();shape.radius=.23;shape.height=.57;collider.shape=shape
+			mass=.8;radius=.25;var shape=ConvexPolygonShape3D.new();var points=PackedVector3Array()
+			for y in [-.245,.275]:
+				for i in range(20):
+					var a=i*TAU/20.;var r=.18 if y<0 else .036;points.append(Vector3(cos(a)*r,y,sin(a)*r))
+			shape.points=points;collider.shape=shape
+			add_box_shape(Vector3(0,-.265,0),Vector3(.46,.044,.46))
 			M.box(self,Vector3(0,-.265,0),Vector3(.47,.045,.47),Color("484c47"),Vector3.ZERO,.45)
 			M.cylinder(self,Vector3(0,.015,0),.18,.52,Color("d99554"),Vector3.ZERO,.036,20)
 			M.cylinder(self,Vector3(0,.015,0),.121,.10,Color("e1d9bb"),Vector3.ZERO,.094,20)
@@ -44,11 +49,18 @@ func configure(id:int,type:String,authority:bool):
 			for x in [-.065,.065]:M.box(self,Vector3(x,.26,0),Vector3(.032,.09,.057),Color("646c47"))
 			M.box(self,Vector3(0,.30,0),Vector3(.16,.028,.057),Color("646c47"))
 		"tire":
-			mass=3.;radius=.45;var shape=CylinderShape3D.new();shape.radius=.34;shape.height=.23;collider.shape=shape;collider.rotation.x=PI/2
+			mass=3.;radius=.34;collider.queue_free()
+			for i in range(16):
+				var a=i*TAU/16.;add_box_shape(Vector3(sin(a)*.245,cos(a)*.245,0),Vector3(.100,.180,.17),Vector3(0,0,-a))
 			var mesh=TorusMesh.new();mesh.inner_radius=.15;mesh.outer_radius=.34;mesh.rings=20;mesh.ring_segments=12
 			M.instance(self,mesh,Vector3.ZERO,Color("414845"),Vector3(PI/2,0,0))
 			for i in range(16):
 				var angle=i*TAU/16.;M.box(self,Vector3(sin(angle)*.323,cos(angle)*.323,0),Vector3(.052,.024,.16),Color("333b3b"),Vector3(0,0,-angle),.45)
+		"table":
+			mass=12.;radius=.95;collider.queue_free();WorldDressing.furniture(self,6,false)
+			for mesh in get_children():
+				if mesh is MeshInstance3D:
+					var c=CollisionShape3D.new();c.shape=mesh.mesh.create_convex_shape(true,false);c.transform=mesh.transform;add_child(c)
 	M.merge_children(self)
 func _ready():
 	home=global_transform;target=home
@@ -74,3 +86,10 @@ func receive(pos:Vector3,rot:Quaternion):
 	target=Transform3D(Basis(rot.normalized()),pos)
 	if not received or global_position.distance_to(pos)>4.:global_transform=target
 	received=true
+
+func add_box_shape(pos:Vector3,size:Vector3,rot:Vector3=Vector3.ZERO):
+	var c=CollisionShape3D.new();var shape=BoxShape3D.new();shape.size=size;c.shape=shape;c.position=pos;c.rotation=rot;add_child(c)
+func push_by_character(direction:Vector3,speed:float,dt:float):
+	if not authoritative or direction.length_squared()<.01:return
+	sleeping=false
+	apply_central_impulse(direction.normalized()*clampf(speed,1.,5.)*minf(mass,8.)*dt*5.)

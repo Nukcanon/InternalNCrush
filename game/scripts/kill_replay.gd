@@ -4,7 +4,7 @@ const RUNUP_SECONDS=1.75
 const BULLET_SECONDS=.55
 const FIRST_PERSON_SECONDS=RUNUP_SECONDS+BULLET_SECONDS
 const DEATH_SECONDS=.5
-const PORTRAIT_SECONDS=1.0
+const PORTRAIT_SECONDS=2.0
 const TOTAL_SECONDS=FIRST_PERSON_SECONDS+DEATH_SECONDS+PORTRAIT_SECONDS
 const MAX_FRAMES=90
 var game:Node
@@ -47,9 +47,14 @@ static func bullet_camera_point(start:Vector3,end:Vector3,progress:float) -> Vec
 	if direction.length_squared()<.1:direction=Vector3.FORWARD
 	var distance=start.distance_to(end)
 	# Reserve more than a full shoulder width between the lens and the victim.
-	var travel=minf(distance*clampf(progress,0.,1.)-.9,distance-1.35)
+	var stop=distance-1.35
+	var travel=clampf(distance*clampf(progress,0.,1.)-.9,minf(-.9,stop),stop)
 	return start+direction*travel+Vector3.UP*.14
 func follow_bullet(progress:float):
+	# Point-blank shots need space behind the muzzle; hide only the firing turret.
+	if event.weapon in ["turret","turret_missile"]:
+		for id in ghost_devices:
+			if game.devices.has(id) and game.devices[id].owner==event.attacker and game.devices[id].kind=="turret":ghost_devices[id].hide()
 	var start:Vector3=event.origin;var end:Vector3=event.hit_point
 	var desired=bullet_camera_point(start,end,progress)
 	var hit=game.ray(start,desired,[],1|4|8)
@@ -88,7 +93,7 @@ func warm_one():
 		if signatures.get(id,"")!=signature:
 			if models.has(id):models[id].queue_free()
 			var node=Node3D.new();stage.add_child(node);models[id]=node;signatures[id]=signature
-			var body=CharacterVisual.new();body.name="Body";node.add_child(body);body.build(role,int(p.team))
+			var body=CharacterVisual.new();body.enable_physics=false;body.name="Body";node.add_child(body);body.build(role,int(p.team))
 			var weapon=WeaponVisual.new();body.socket.add_child(weapon);weapon.build(Catalog.get_weapon(wid),false);weapon.scale=Vector3.ONE*.8
 			return
 		if not first_person_guns.has(wid):
@@ -143,7 +148,9 @@ func _process(dt):
 			var node=ghost_props[int(state[0])];node.position=state[1];node.quaternion=state[2];node.show()
 	for id in ghost_devices:
 		var node=ghost_devices[id];node.visible=left.get("devices",{}).has(id)
-		if node.visible:node.position=left.devices[id].pos;node.rotation.y=left.devices[id].yaw
+		if node.visible:
+			node.position=left.devices[id].pos;node.rotation.y=left.devices[id].yaw
+			node.scale=Vector3.ONE*(TurretLogic.SCALES[int(left.devices[id].level)-1] if left.devices[id].kind=="turret" else 1.)
 	for id in models:
 		if not left.actors.has(id):models[id].hide();continue
 		var a=left.actors[id];var b=right.actors.get(id,a);var node=models[id]
@@ -165,10 +172,11 @@ func _process(dt):
 		if int(shot.owner)==killer:kick=1.
 	kick=move_toward(kick,0,dt*5.5)
 	if elapsed<FIRST_PERSON_SECONDS+DEATH_SECONDS:
-		attacker.hide();camera.fov=82.;gun.visible=event.weapon!="turret"
+		attacker.hide();camera.fov=82.;gun.visible=event.weapon not in ["turret","turret_missile"]
 		camera.position=attacker.position+Vector3.UP*(1.30 if state.crouch else 1.62)*HumanModel.HEIGHTS[int(state.role)]/1.8
 		camera.rotation=Vector3(lerpf(state.pitch,right.actors.get(killer,state).pitch,blend),attacker.rotation.y,0)
-		if event.weapon=="turret":camera.position=event.origin+Vector3.UP*.1
+		if event.weapon in ["turret","turret_missile"]:
+			camera.position=event.origin+(event.hit_point-event.origin).normalized()*.25+Vector3.UP*.10;camera.look_at(event.hit_point);gun.hide()
 		gun.scale.x=float(state.get("hand",1));gun.rotation=Vector3(kick*.24,0,0);gun.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46+kick*.11);gun.animate_reload(-1.,kick,0. if kick>.75 else 10.)
 		if elapsed>=RUNUP_SECONDS:
 			camera.look_at(event.hit_point);camera.fov=70.

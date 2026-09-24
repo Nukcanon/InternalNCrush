@@ -10,6 +10,7 @@ func physics_signature(node:Node3D) -> String:
 	entries.sort();return "\n".join(entries).sha256_text()
 func run():
 	DirAccess.make_dir_recursive_absolute("res://assets/arenas/geometry")
+	DirAccess.make_dir_recursive_absolute("res://assets/arenas/complete")
 	for index in range(Rules.MAPS.size()):
 		var started=Time.get_ticks_msec();var arena=Arena.new();arena.bake_geometry=true;root.add_child(arena);arena.build(index)
 		MeshFactory.own_recursive(arena.architecture,arena.architecture)
@@ -19,6 +20,7 @@ func run():
 		var restored=load("res://assets/arenas/geometry/map_%02d.scn"%index).instantiate();root.add_child(restored)
 		if physics_signature(arena.architecture)!=physics_signature(restored):printerr("ARENA_PHYSICS_MISMATCH ",index);quit(1);return
 		restored.free()
+		if ArenaCache.save(arena,"res://assets/arenas/complete/map_%02d.scn"%index)!=OK:quit(2);return
 		print("ARENA_BAKED ",index," ms=",Time.get_ticks_msec()-started)
 		arena.free();await process_frame
 	print("ARENAS_BUILT ",Rules.MAPS.size());quit()

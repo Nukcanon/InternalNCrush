@@ -1,3 +1,11 @@
+# Internal N Crush — 1.1.1 작업 인계
+
+1.1.1은 로컬 구현·검증 중이며 공개 버전은 아직 1.1.0이다. 최신 변경과 확인한 범위는 game/docs/WORK_1_1_1.md, 실제 배포 상태는 PUBLICATION_STATUS.json을 확인한다.
+
+새 웹 빌드는 web/prepare_lightweight.py → staging import → tools/lightweight_models.gd → Web export 순서로 만든다. Windows 원본을 경량화하지 않는다. 전체 지형/경로 캐시는 ArenaCache REVISION114이며 충돌 변경 시 다시 굽는다. 기능검사에 test_v111, test_abilities_v111, test_spawn_exits가 추가되었다.
+
+아래는 이전 공개 버전의 검증 이력이다.
+
 # Internal N Crush — 1.1.0 인계
 
 2026-09-24. **실제 게시 버전·소스 커밋·CI·ZIP 해시는 PUBLICATION_STATUS.json을 기준으로 판단한다.** 이 문서의 구현 설명만으로 배포 완료를 추정하지 않는다. 이전 검증/반영표는 game/docs/*_V104.md에 보존했다.

@@ -4,6 +4,7 @@ var field_nodes={}
 var transients=[]
 var healing={}
 var grenade_nodes={}
+var rocket_nodes=[]
 var status_nodes={}
 var ragdolls=[]
 var active_lights=0
@@ -12,8 +13,8 @@ static var cloud_shader:Shader
 const M=preload("res://scripts/mesh_factory.gd")
 func clear():
 	for child in get_children():child.queue_free()
-	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();active_lights=0
-	blood=null
+	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();rocket_nodes.clear();active_lights=0
+	blood=null;bomb_visual=null;bomb_beep_at=0.
 func blood_hit(point:Vector3,direction:Vector3,amount:float):
 	if not GraphicsOptions.blood_enabled:return
 	if not is_instance_valid(blood):blood=BloodFX.new();add_child(blood)
@@ -85,10 +86,10 @@ func sync_fields(fields:Array,now:float):
 					var mesh=M.sphere(node,offset,Vector3.ONE*(8. if i==0 else 4.3),Color.WHITE)
 					mesh.material_override=cloud(Color(.54,.61,.63,.99 if i==0 else .78));mesh.set_meta("density",.99 if i==0 else .78);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			else:
-				var color=Color(.2,.68,1,.8) if field.team==0 else Color(1,.54,.18,.8);ring(node,5.,color).position.y=.06;ring(node,4.7,Color(color,.32)).position.y=.065
-				var disc=M.cylinder(node,Vector3(0,.025,0),4.9,.02,Color(color,.10),Vector3.ZERO,-1.,48);disc.material_override=glow(Color(color,.10))
+				var color=Color(.2,.68,1,.8) if field.team==0 else Color(1,.54,.18,.8);ring(node,AbilityBalance.SLOW_RADIUS,color).position.y=.06;ring(node,AbilityBalance.SLOW_RADIUS-.3,Color(color,.32)).position.y=.065
+				var disc=M.cylinder(node,Vector3(0,.025,0),AbilityBalance.SLOW_RADIUS-.1,.02,Color(color,.10),Vector3.ZERO,-1.,48);disc.material_override=glow(Color(color,.10))
 				for i in range(12):
-					var a=TAU*i/12.;M.sphere(node,Vector3(cos(a)*4.7,.15,sin(a)*4.7),Vector3(.14,.3,.14),Color(color,1.))
+					var a=TAU*i/12.;M.sphere(node,Vector3(cos(a)*(AbilityBalance.SLOW_RADIUS-.3),.15,sin(a)*(AbilityBalance.SLOW_RADIUS-.3)),Vector3(.14,.3,.14),Color(color,1.))
 		var node=field_nodes[key]
 		if field.kind=="smoke":
 			var fade=clampf(float(field.until)-now,0.,1.)*clampf((now-float(field.get("starts",now-1.)))/.35,0.,1.)
@@ -229,17 +230,17 @@ func scuff(pos:Vector3):
 func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:float):
 	# Eleven fixed map lights + five transient lights fit the per-surface budget.
 	# A muzzle flash must never evict a permanent light from a merged wall/floor.
-	if active_lights>=5:return
+	if GraphicsOptions.detail<2 or OS.has_feature("web") or active_lights>=3:return
 	var light=OmniLight3D.new();add_child(light);light.position=pos;light.light_color=color;light.light_energy=energy;light.omni_range=radius;light.omni_attenuation=1.5;light.shadow_enabled=false;active_lights+=1
 	light.tree_exited.connect(func():active_lights=maxi(0,active_lights-1))
 	var t=light.create_tween();t.tween_property(light,"light_energy",0.,seconds);t.tween_callback(light.queue_free)
 func muzzle_light(pos:Vector3):temporary_light(pos,Color("ffc77b"),1.3,3.8,.075)
-func explosion(pos:Vector3,fire:bool=true):
+func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.):
 	transients=transients.filter(func(n):return is_instance_valid(n))
 	while transients.size()>=96:
 		var old=transients.pop_front()
 		if is_instance_valid(old):old.queue_free()
-	var node=BurstVisual.new();add_child(node);node.position=pos;node.set_meta("explosion",true);node.build(fire)
+	var node=BurstVisual.new();add_child(node);node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.build(fire)
 	temporary_light(pos+Vector3.UP*.3,Color("ffc78a"),6.,10.,.20)
 	transients.append(node)
 func skill_burst(role:int,pos:Vector3,color:Color):
@@ -277,7 +278,7 @@ func sync_status(game:Node,now:float):
 	for id in game.players:
 		var p=game.players[id]
 		if not p.alive or not game.actors.has(id):continue
-		for status in ["shield","cleanse","mark","mounted"]:
+		for status in ["shield","cleanse","mark","mounted","invulnerable"]:
 			if float(p.get(status,0))<=now:continue
 			var key=str(id)+status;live[key]=true
 			if not status_nodes.has(key):
@@ -297,3 +298,40 @@ func ragdoll(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,f
 		if is_instance_valid(old):old.queue_free()
 	var node=PhysicsRagdoll.new();add_child(node);node.build(source,pos,push,role,team,facing,crouched,velocity,point);ragdolls.append(node)
 	return node
+
+func sync_rockets(rockets:Array):
+	while rocket_nodes.size()>rockets.size():
+		var old=rocket_nodes.pop_back()
+		if is_instance_valid(old):old.queue_free()
+	for i in range(rockets.size()):
+		if i>=rocket_nodes.size() or not is_instance_valid(rocket_nodes[i]):
+			var n=Node3D.new();add_child(n)
+			M.cylinder(n,Vector3.ZERO,.065,.45,Color("d5cdb6"),Vector3(PI/2,0,0),.025,8)
+			var flame=M.sphere(n,Vector3(0,0,.25),Vector3(.13,.13,.24),Color("ffb143"));flame.material_override=glow(Color("ffb143"))
+			if i>=rocket_nodes.size():rocket_nodes.append(n)
+			else:rocket_nodes[i]=n
+		var n=rocket_nodes[i];n.position=rockets[i].pos;n.look_at(n.position+rockets[i].velocity)
+
+var bomb_visual:Node3D
+var bomb_beep_at=0.
+var bomb_defuse_at=0.
+func sync_bomb(game:Node):
+	var present=int(game.options.mode)==4 and not game.bomb.get("exploded",false) and (game.bomb.planted or game.bomb.get("dropped",false) or int(game.bomb.get("carrier",0))!=0)
+	if not present:
+		if is_instance_valid(bomb_visual):bomb_visual.hide()
+		return
+	if not is_instance_valid(bomb_visual):
+		bomb_visual=Node3D.new();add_child(bomb_visual);BombLogic.model(bomb_visual)
+	var carrier=int(game.bomb.get("carrier",0))
+	bomb_visual.visible=carrier!=game.local_id or carrier==0
+	bomb_visual.rotation=Vector3.ZERO
+	if carrier and game.actors.has(carrier):
+		var actor=game.actors[carrier];bomb_visual.position=actor.position+Vector3.UP*.9+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,.33);bomb_visual.rotation.y=actor.aim_yaw
+	else:bomb_visual.position=game.bomb.position
+	var interval=BombLogic.beep_interval(game.bomb.time,float(game.bomb.get("total_time",120.))) if game.bomb.planted else .6
+	var lamp=bomb_visual.get_node("Beacon");lamp.visible=fmod(game.clock,interval)<interval*.4
+	if game.bomb.planted and game.phase=="combat" and game.clock>=bomb_beep_at:
+		bomb_beep_at=game.clock+interval;game.play_sound("bomb_beep",game.bomb.position,true)
+	var worker=int(game.bomb.get("actor",0))
+	if game.bomb.planted and game.phase=="combat" and worker!=0 and game.players.has(worker) and int(game.players[worker].team)!=MatchFlow.attackers(game) and game.clock>=bomb_defuse_at:
+		bomb_defuse_at=game.clock+.38;game.play_sound("bomb_defuse",game.bomb.position,true)

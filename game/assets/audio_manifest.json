@@ -383,6 +383,54 @@
     "license": "CC0-1.0",
     "duration": 0.65
   },
+  "bomb_beep": {
+    "file": "res://assets/audio/bomb_beep.wav",
+    "category": "combat",
+    "gain_db": -12,
+    "sha256": "ba5c9befc984b030773f1e0bd5ee71a1f24ebc6847a4f65a3c5d5e66ea8ef7ae",
+    "license": "CC0-1.0",
+    "duration": 0.09
+  },
+  "bomb_defuse": {
+    "file": "res://assets/audio/bomb_defuse.wav",
+    "category": "combat",
+    "gain_db": -9,
+    "sha256": "da1ae47b631ea43bc09ec9b8d764fafe3a1b187a12d098869c5005c56a781709",
+    "license": "CC0-1.0",
+    "duration": 0.34
+  },
+  "bomb_planted": {
+    "file": "res://assets/audio/bomb_planted.wav",
+    "category": "announcer",
+    "gain_db": 0,
+    "sha256": "be91c613b12ea7fbab7a271b72bf919670802fd4e59210af9a86f28cf2f30b4e",
+    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
+    "duration": 2.189
+  },
+  "bomb_dropped": {
+    "file": "res://assets/audio/bomb_dropped.wav",
+    "category": "announcer",
+    "gain_db": 0,
+    "sha256": "04cbf7b10decf4fbbebc0365190c10074adcc36679c4ff950e4a5f04dda662ec",
+    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
+    "duration": 1.764
+  },
+  "bomb_defused": {
+    "file": "res://assets/audio/bomb_defused.wav",
+    "category": "announcer",
+    "gain_db": 0,
+    "sha256": "11ad8640922410e3676c426e7768825a70cd00154faca71b05cf0403e26c3dc6",
+    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
+    "duration": 2.389
+  },
+  "bomb_explosion": {
+    "file": "res://assets/audio/bomb_explosion.wav",
+    "category": "combat",
+    "gain_db": 0,
+    "sha256": "317ec4219d62a5b438e13371b6a668ddf7de5f067c54c36f83d036bb88172973",
+    "license": "CC0-1.0",
+    "duration": 3.6
+  },
   "explosion": {
     "file": "res://assets/audio/explosion.wav",
     "category": "combat",

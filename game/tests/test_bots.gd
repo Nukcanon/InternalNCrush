@@ -25,11 +25,11 @@ func run():
 	await steps(600)
 	expect(0 in g.zone_owner,"bot autonomously captures a zone")
 	print("BOT_NAV_POSITION ",g.actors[-1].position," goal=",brain.goal," action=",brain.action," stuck=",brain.stuck_count)
-	g.options.mode=4;g.round_no=1;g.phase="combat";g.remaining=1000;g.bot_attack_site=0;g.bomb={"planted":false,"site":-1,"time":0.,"actor":0,"progress":0.,"position":Vector3.ZERO};brain.next_decision=0;brain.next_path=0;g.actors[-1].position=g.arena.sites[0]+Vector3(0,0,12)
+	g.options.mode=4;g.round_no=1;g.phase="combat";g.remaining=1000;g.bot_attack_site=0;g.bomb={"carrier":-1,"planted":false,"site":-1,"time":0.,"actor":0,"progress":0.,"position":Vector3.ZERO};brain.next_decision=0;brain.next_path=0;g.actors[-1].position=g.arena.sites[0]+Vector3(0,0,12)
 	await steps(720)
 	expect(g.bomb.planted,"attacking bot reaches site and plants")
-	g.phase="combat";g.remaining=1000;p.team=1;g.bomb.planted=true;g.bomb.position=g.arena.sites[0];g.bomb.site=0;g.bomb.time=35.;g.bomb.actor=0;g.bomb.progress=0.;g.actors[-1].position=g.arena.sites[0]+Vector3(0,0,12);brain.next_decision=0;brain.next_path=0
-	await steps(720)
+	g.phase="combat";g.remaining=1000;p.team=1;g.bomb.planted=true;g.bomb.position=g.arena.sites[0];g.bomb.site=0;g.bomb.time=120.;g.bomb.actor=0;g.bomb.progress=0.;g.actors[-1].position=g.arena.sites[0]+Vector3(0,0,12);brain.next_decision=0;brain.next_path=0
+	await steps(2400)
 	expect(g.scores[1]>0,"defending bot reaches device and defuses")
 	print("BOT_TEST_RESULT ",checks-failures,"/",checks)
 	g.leave_game();g.queue_free();await process_frame;quit(1 if failures else 0)

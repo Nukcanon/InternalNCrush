@@ -46,11 +46,19 @@ static func build(arena:Node):
 			var type=fixed_count%12;fixed_count+=1
 			var node=Node3D.new();arena.architecture.add_child(node);node.position=pos;node.rotation.y=rng.randf_range(-PI,PI)
 			furniture(node,type,arena.indoors)
-			# A conservative collision footprint and matching nav envelope keep dense props traversable.
-			var body=StaticBody3D.new();node.add_child(body);body.collision_layer=1;body.collision_mask=0
-			var collision=CollisionShape3D.new();var shape=BoxShape3D.new();shape.size=Vector3(1.45,.95,1.35) if type in [0,1,4,6] else Vector3(1.2,1.55,1.1);collision.shape=shape;collision.position.y=shape.size.y*.5;body.add_child(collision)
-			arena.obstacles.append(Rect2(Vector2(pos.x-1.25,pos.z-1.25),Vector2(2.5,2.5)))
-			if arena.vertical_map:arena.navigation_blocks.append(AABB(pos-Vector3(.9,0,.9),Vector3(1.8,shape.size.y,1.8)))
+			if type==6:
+				node.queue_free()
+				var body=InteractiveProp.new();body.position=pos;body.rotation.y=node.rotation.y;body.configure(moving_count,"table",arena.props_authoritative)
+				arena.add_child(body);arena.props[moving_count]=body;moving_count+=1
+			else:
+				var body=StaticBody3D.new();node.add_child(body);body.collision_layer=1;body.collision_mask=0
+				var faces=PackedVector3Array()
+				for mesh in node.get_children():
+					if mesh is MeshInstance3D:
+						for point in mesh.mesh.get_faces():faces.append(mesh.transform*point)
+				var collision=CollisionShape3D.new();var shape=ConcavePolygonShape3D.new();shape.set_faces(faces);collision.shape=shape;body.add_child(collision)
+				arena.obstacles.append(Rect2(Vector2(pos.x-1.25,pos.z-1.25),Vector2(2.5,2.5)))
+				if arena.vertical_map:arena.navigation_blocks.append(AABB(pos-Vector3(.9,0,.9),Vector3(1.8,1.6,1.8)))
 	arena.set_meta("dressing_count",fixed_count);arena.set_meta("interactive_count",moving_count)
 static func preserve_routes(nav:BotNavigation,arena:Node,pos:Vector3) -> bool:
 	var lo=nav.cell(pos-Vector3(1.25,0,1.25));var hi=nav.cell(pos+Vector3(1.25,0,1.25));var changed=[]

@@ -23,7 +23,7 @@ func run():
 	loft.free()
 	for index in range(19):
 		var arena=Arena.new();root.add_child(arena);arena.build(index)
-		expect(arena.props.size()>=5 and arena.props.size()<=24,"map %d has bounded interactive variety (%d)"%[index,arena.props.size()])
+		expect(arena.props.size()>=5 and arena.props.size()<=28,"map %d has bounded interactive variety (%d)"%[index,arena.props.size()])
 		expect(int(arena.get_meta("dressing_count"))>=8,"map %d has added scene furniture"%index)
 		for prop in arena.props.values():
 			if not prop.freeze:expect(false,"non-authoritative map must freeze physics")

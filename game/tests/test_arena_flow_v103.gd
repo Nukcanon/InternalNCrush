@@ -36,9 +36,9 @@ func run():
 	expect(g.phase=="buy" and g.remaining==45.,"45-second preparation starts")
 	var boundary=float(g.arena.get_meta("staging_z"));g.actors[1].position.z=boundary-8.;g.actors[2].position.z=boundary+2.
 	MatchFlow.preparation(g,1);MatchFlow.preparation(g,2)
-	expect(g.actors[1].position.z>=boundary and g.actors[2].position.z<boundary-4.,"preparation keeps opposing teams in disjoint areas")
+	expect(g.actors[1].position.z>=boundary and not MatchFlow.spawn_rect(g,0).has_point(Vector2(g.actors[2].position.x,g.actors[2].position.z)),"preparation keeps opposing teams in disjoint areas")
 	g.players[1].protect=0.;var hp=g.players[1].hp;g.damage(1,500,2);expect(g.players[1].hp==hp,"preparation blocks all incoming damage")
-	g.phase="combat";MatchFlow.update_gate(g);expect(g.arena.get_node_or_null("PreparationGate")==null,"round start removes solid staging gate")
+	g.phase="combat";MatchFlow.update_gate(g);expect(g.arena.get_node_or_null("PreparationGate")!=null and g.actors[1].collision_mask&16==0,"round start unlocks friendly passage and retains spawn protection")
 	var first=g.options.map;g.begin_round();expect(g.options.map==first and MatchFlow.attackers(g)==1,"second leg swaps attacking team on the same map")
 	g.begin_round();expect(g.options.map!=first and Rules.MAP_PLAYERS[g.options.map]==8,"third leg rotates only after both sides played")
 	g.leave_game();g.free();await process_frame

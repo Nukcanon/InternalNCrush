@@ -30,7 +30,7 @@ func build_pose(w:Dictionary):
 	elif w.name in ["RAPID-9","KESTREL","FLUX"]:reload_style="bullpup"
 	elif w.name in ["SCOUT","MONOLITH"]:reload_style="bolt"
 	var pistol=int(w.slot)==1 and w.kind=="gun"
-	length=(.4 if w.name=="CHIME" else .32 if w.name=="SPARK" else .3) if pistol else .43 if w.kind=="heal" else .29 if w.kind=="repair" else LENGTHS.get(w.name,.65)
+	length=(.4 if w.name=="CHIME" else .32 if w.name=="SPARK" else .3) if pistol else .43 if w.kind=="heal" else .29 if w.kind=="repair" else .30 if w.kind=="remote" else LENGTHS.get(w.name,.65)
 	barrel_group=piece("Barrel");magazine=piece("Magazine",Vector3(0,-.09,-.18));action_part=piece("Action",Vector3(0,.027,-.17))
 	if pistol:magazine.position=Vector3(0,-.19,.046)
 	elif w.kind=="repair":magazine.position=Vector3(0,-.13,-.15)
@@ -116,6 +116,15 @@ func build(w:Dictionary,hands=true):
 		elif model=="TRIO":block(self,Vector3(0,.079,-.12),Vector3(.064,.028,.11),accent)
 		elif model=="FEATHER":metal=Color("7b9994");block(self,Vector3(0,.048,-.1),Vector3(.083,.04,.22),metal)
 		sight(false)
+	elif w.kind=="remote":
+		length=.30
+		block(self,Vector3(0,-.10,.01),Vector3(.075,.18,.10),metal,-.12)
+		block(self,Vector3(0,.0,-.12),Vector3(.18,.09,.30),edge)
+		block(self,Vector3(0,.058,-.10),Vector3(.13,.025,.16),accent,-.15)
+		M.cylinder(self,Vector3(.10,.13,-.22),.009,.23,metal)
+		M.sphere(self,Vector3(.10,.25,-.22),Vector3.ONE*.025,accent)
+		M.cylinder(self,Vector3(0,.105,.0),.018,.08,metal)
+		M.sphere(self,Vector3(0,.15,0),Vector3(.05,.025,.05),Color("d59048"))
 	elif w.kind in ["heal","repair"]:
 		length=.43 if w.kind=="heal" else .29
 		shell(self,Vector3(0,0,-.12),Vector3(.15,.17,.34),Color("d1dad2"))

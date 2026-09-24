@@ -40,6 +40,11 @@ var planted=[Vector3.INF,Vector3.INF]
 var contact=[false,false]
 var pose_grounded=true
 var landing_compression=0.
+var foot_floor=[0.,0.]
+var foot_targets=[Vector3.ZERO,Vector3.ZERO]
+var feet_initialized=false
+var previous_crouched=false
+var last_air_speed=0.
 var arm_right=Vector3(.98,-.08,-.21)
 var arm_left=Vector3(1.15,.32,.27)
 func build(which:int,side:int):
@@ -64,6 +69,9 @@ func build_pose_only(which:int,side:int):
 	weapon.build_pose(Catalog.get_weapon(Catalog.first(role)))
 func react(direction:float):hit_time=.32;hit_sign=direction
 func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pitch:float,reloading:float,kick:float,gait_phase:float=-1.,turn:float=0.):
+	# Evaluate clips before IK, never again later in the render frame.
+	animator.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	animator.advance(dt)
 	var speed=Vector2(move.x,move.z).length()
 	var next="idle"
 	if not grounded:next="jump" if move.y>0 else "fall"
@@ -84,7 +92,9 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	pelvis_yaw=clampf(pelvis_yaw-turn*dt,-.55,.55)
 	pelvis_yaw=move_toward(pelvis_yaw,0,dt*(5. if speed>.25 else .85))
 	turn_phase+=absf(turn)*dt*.8
-	if grounded and not pose_grounded:landing_compression=.16
+	if grounded and not pose_grounded:landing_compression=clampf(absf(last_air_speed)*.014,.08,.24)
+	if not grounded:last_air_speed=move.y
+	if crouch!=previous_crouched:contact=[false,false];planted=[Vector3.INF,Vector3.INF];previous_crouched=crouch
 	pose_grounded=grounded;landing_compression=move_toward(landing_compression,0,dt*.7)
 	var phase=maxf(0,gait_phase)
 	if grounded:
@@ -98,9 +108,9 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	else:
 		contact=[false,false]
 		airborne_time+=dt
-		hips.position=Vector3(0,.89-visual_crouch*.19,0)
+		hips.position=Vector3(0,.89-visual_crouch*.19,.035)
 		hips.rotation=Vector3(-.08,0,0)
-		var tuck=clampf(move.y/6.,0,1)
+		var tuck=clampf(move.y/6.,0,1);tuck=maxf(tuck,clampf(-move.y/22.,0.,.4))
 		for i in range(2):
 			var leg=hips.get_node("LeftLeg" if i==0 else "RightLeg");var knee=leg.get_node("Knee");var foot=knee.get_node("Foot")
 			leg.rotation=Vector3(.18+tuck*.55+(i*2.-1.)*minf(speed/20.,.18),0,(i*2.-1.)*.055)
@@ -116,7 +126,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	chest.scale=Vector3(.96,1.+breath*.003,.95+breath*.003) if role in HumanModel.FEMALE_ROLES else Vector3(1.,1.+breath*.003,1.+breath*.003)
 	if speed<.25:hips.position.x+=sin(motion_clock*.75+motion_seed)*.008;hips.rotation.z+=sin(motion_clock*.75+motion_seed)*.006
 	var aiming=clampf(pitch,-.9,.9)
-	chest.rotation=Vector3(-aiming*.45+visual_crouch*.13-visual_sprint*.20+acceleration_lean.x+breath*.008,-pelvis_yaw*.72+sin(cycle)*movement*.09,-local_velocity.x*.008+acceleration_lean.z+sin(cycle)*movement*.03)
+	chest.rotation=Vector3(-aiming*.45+-visual_crouch*.32-visual_sprint*.20-landing_compression*.85-(.12 if not grounded else 0.)+acceleration_lean.x+breath*.008,-pelvis_yaw*.72+sin(cycle)*movement*.09,-local_velocity.x*.008+acceleration_lean.z+sin(cycle)*movement*.03)
 	head.rotation=Vector3(-aiming*.55-landing_compression*.25,-pelvis_yaw*.28-sin(cycle)*movement*.03,0)
 	var right_target=Vector3(.98+aiming*.55,-.08,-.21)
 	var left_target=Vector3(1.15+aiming*.55,.32,.27)
@@ -141,15 +151,16 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	sync_deform()
 
 func sync_deform():
-	if enable_physics and is_inside_tree():
+	if enable_physics and is_inside_tree() and GraphicsOptions.physical_pose_limit()>0:
 		var camera=get_viewport().get_camera_3d()
 		var near=camera!=null and camera.global_position.distance_squared_to(global_position)<625. and is_visible_in_tree()
-		if near and not is_instance_valid(dynamics) and ActivePose.active_count<ActivePose.LIMIT:
+		if near and not is_instance_valid(dynamics) and ActivePose.active_count<GraphicsOptions.physical_pose_limit():
 			dynamics=ActivePose.new();add_child(dynamics);dynamics.build(self)
 		if is_instance_valid(dynamics):
 			dynamics.paused=not near
 			if near:dynamics.apply()
 			else:dynamics.queue_free();dynamics=null
+	elif is_instance_valid(dynamics):dynamics.queue_free();dynamics=null
 	if is_instance_valid(deform):OperatorSkin.sync(rig,deform)
 
 static func joint(parent:Node,name:String,pos:Vector3) -> Node3D:
@@ -231,34 +242,42 @@ func solve_feet(dt:float,move:Vector3,crouched:bool,sprinting:bool,phase:float):
 	var local_motion=global_basis.inverse()*horizontal
 	var direction=local_motion.normalized() if speed>.05 else Vector3.FORWARD
 	var stride=(.53 if sprinting else .40 if not crouched else .22)*movement_blend
-	var hip_height=lerpf(.91,.62,visual_crouch)-landing_compression
+	var hip_height=lerpf(.91,.57,visual_crouch)-landing_compression
 	var cycle=fposmod(maxf(0,phase),1.)
-	hips.position=Vector3(sin(cycle*TAU)*.018*movement_blend,hip_height+cos(cycle*TAU*2)*.013*movement_blend,0)
+	hips.position=Vector3(sin(cycle*TAU)*.018*movement_blend,hip_height+cos(cycle*TAU*2)*.009*movement_blend,.075*visual_crouch)
 	hips.rotation=Vector3(-.07 if sprinting else .035 if crouched else 0,clampf(-direction.x*.12,-.12,.12)*movement_blend,sin(cycle*TAU)*.018*movement_blend)
 	for i in range(2):
 		var leg=hips.get_node("LeftLeg" if i==0 else "RightLeg")
 		var knee=leg.get_node("Knee");var foot=knee.get_node("Foot")
 		var p=fposmod(cycle+i*.5,1.)
-		var duty=.30 if sprinting else .52 if crouched else .38
+		var duty=.58 if sprinting else .72 if crouched else .64
 		var stance=p<duty
 		var travel=lerpf(stride,-stride,p/duty) if stance else lerpf(-stride,stride,smoothstep(duty,1.,p))
-		var lift=0. if stance else sin((p-duty)/(1.-duty)*PI)*(.18 if sprinting else .12)*movement_blend
-		var foot_z=direction.z*travel-(.09 if crouched else 0.)
+		var lift=0. if stance else sin((p-duty)/(1.-duty)*PI)*(.16 if sprinting else .055 if crouched else .09)*movement_blend
+		var foot_z=direction.z*travel-(.035 if crouched else 0.)
 		var foot_x=direction.x*travel
 		if is_inside_tree() and speed>.25:
 			var desired=rig.to_global(Vector3(leg.position.x+foot_x,.1,foot_z))
 			if stance and not contact[i]:planted[i]=desired
-			if stance and planted[i].is_finite() and desired.distance_to(planted[i])<.75:
+			if stance and planted[i].is_finite() and desired.distance_to(planted[i])<1.2:
 				var local=rig.to_local(planted[i]);foot_z=clampf(local.z,-.55,.55);foot_x=clampf(local.x-leg.position.x,-.28,.28)
 			contact[i]=stance
 			var ray=PhysicsRayQueryParameters3D.create(desired+Vector3.UP*.45,desired-Vector3.UP*.65,1|4|8)
 			var ground=get_world_3d().direct_space_state.intersect_ray(ray)
-			if not ground.is_empty():lift+=clampf(rig.to_local(ground.position).y,-.18,.25)
-		var angles=leg_angles(hips.position.y,foot_z,lift)
+			var height=clampf(rig.to_local(ground.position).y,-.18,.25) if not ground.is_empty() else 0.
+			foot_floor[i]=lerpf(foot_floor[i],height,1.-exp(-dt*14.))
+			lift+=foot_floor[i]
+		var target=Vector3(foot_x,lift,foot_z)
+		if not feet_initialized:foot_targets[i]=target
+		foot_targets[i]=foot_targets[i].lerp(target,1.-exp(-dt*22.))
+		foot_x=foot_targets[i].x;lift=foot_targets[i].y;foot_z=foot_targets[i].z
+		var angles=leg_angles(hips.position.y,foot_z-hips.position.z,lift)
 		var lateral=atan2(foot_x,maxf(.3,hips.position.y-.1))
 		leg.rotation=Vector3(angles.x,0,lateral)
 		knee.rotation=Vector3(angles.y,0,0)
-		foot.rotation=Vector3(angles.z+(.11*sin(p/.62*PI) if stance else -.1*sin((p-.62)/.38*PI)),0,-lateral)
+		foot.rotation=Vector3(angles.z+(.04*sin(p/duty*PI) if stance else -.05*sin((p-duty)/(1.-duty)*PI)),0,-lateral)
+
+	feet_initialized=true
 
 func grip_weapon(dt:float):
 	var weapon:Node3D

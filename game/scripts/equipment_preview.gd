@@ -5,6 +5,8 @@ var model:Node3D
 var camera:Camera3D
 var viewport:SubViewport
 var dragging=false
+var frame_width=1.3
+var frame_height=1.3
 func _ready():
 	stretch=true;size_flags_horizontal=Control.SIZE_EXPAND_FILL;size_flags_vertical=Control.SIZE_EXPAND_FILL;custom_minimum_size=Vector2(330,270)
 	viewport=SubViewport.new();viewport.size=Vector2i(440,330);viewport.transparent_bg=true;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_WHEN_VISIBLE;viewport.msaa_3d=Viewport.MSAA_2X;add_child(viewport)
@@ -13,6 +15,9 @@ func _ready():
 	var world=WorldEnvironment.new();var env=Environment.new();env.background_mode=Environment.BG_COLOR;env.background_color=Color("263b46");env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color.WHITE;env.ambient_light_energy=.95;world.environment=env;stage.add_child(world)
 	var key=DirectionalLight3D.new();key.rotation_degrees=Vector3(-35,150,0);key.light_energy=1.3;stage.add_child(key)
 	camera=Camera3D.new();stage.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.current=true
+	resized.connect(fit_frame)
+func fit_frame():
+	if is_instance_valid(camera):camera.size=maxf(frame_height,frame_width/maxf(.3,size.x/maxf(1.,size.y)))
 func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 	if not is_instance_valid(stage):return
 	if is_instance_valid(model):stage.remove_child(model);model.queue_free()
@@ -20,7 +25,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 	if kind==0:
 		var c=CharacterVisual.new();c.enable_physics=false;model.add_child(c);c.build(role,team);c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.)
 		var gun=WeaponVisual.new();c.socket.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.scale=Vector3.ONE*.8
-		model.rotation.y=-.35;camera.position=Vector3(0,1.4,-4);camera.look_at(Vector3(0,1.3,0));camera.size=1.3
+		model.rotation.y=-.35;camera.position=Vector3(0,1.4,-4);camera.look_at(Vector3(0,1.3,0));camera.size=1.15
 	elif kind==1:
 		var gun=WeaponVisual.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.rotation.y=PI/2;camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0));camera.size=.63
 		var meshes=gun.find_children("*","MeshInstance3D",true,false);var bounds=AABB();var first=true
@@ -37,10 +42,14 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 		else:gadget_model(model,role,gadget);camera.position=Vector3(1,.9,-3);camera.look_at(Vector3(0,.2,0));camera.size=1.3
 	else:
 		gadget_model(model,role,gadget);camera.position=Vector3(1,.9,-3);camera.look_at(Vector3(0,.2,0));camera.size=1.3
+	frame_height=camera.size;frame_width=camera.size*1.35;fit_frame()
 func _gui_input(event):
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:dragging=event.pressed
 	if event is InputEventMouseMotion and dragging and model:model.rotation.y+=event.relative.x*.013
 static func gadget_model(parent:Node3D,role:int,variant:int):
+	if variant==9:
+		MeshFactory.box(parent,Vector3.ZERO,Vector3(.45,.22,.32),Color("d2b869"))
+		MeshFactory.box(parent,Vector3(0,.13,0),Vector3(.18,.04,.12),Color("425869"));return
 	var m=MeshFactory;var dark=Color("304955");var light=Color("c2d4d8");var accent=CharacterVisual.ROLE_ACCENTS[role]
 	match role:
 		0:

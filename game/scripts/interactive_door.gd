@@ -12,18 +12,16 @@ func build(owner_arena:Node,id:int,pos:Vector3,yaw:float):
 	var metal=Color("354954");var paint=Color("3faaa4")
 	for side in [-1,1]:
 		MeshFactory.box(self,Vector3(side*1.28,1.40,0),Vector3(.18,2.8,.36),metal)
-		var leaf=AnimatableBody3D.new();leaf.collision_layer=1;leaf.collision_mask=0;leaf.set_meta("door_id",id);leaf.set_meta("door",self);add_child(leaf);leaf.position=Vector3(side*WIDTH*.25,1.32,0)
-		MeshFactory.box(leaf,Vector3.ZERO,Vector3(WIDTH*.5,2.64,.16),paint)
+		var leaf=AnimatableBody3D.new();leaf.collision_layer=1;leaf.collision_mask=0;leaf.set_meta("door_id",id);leaf.set_meta("door",self);add_child(leaf);leaf.position=Vector3(side*WIDTH*.25,1.4,0)
+		MeshFactory.box(leaf,Vector3.ZERO,Vector3(WIDTH*.5,2.8,.16),paint)
 		MeshFactory.box(leaf,Vector3(0,.41,-.10),Vector3(.72,.72,.035),Color("233c49"))
 		MeshFactory.box(leaf,Vector3(0,.41,.10),Vector3(.72,.72,.035),Color("233c49"))
 		for face in [-1,1]:
 			MeshFactory.box(leaf,Vector3(-side*.35,-.18,face*.105),Vector3(.07,.34,.05),Color("e5cf88"))
 			for y in [-.84,-.70,-.56]:MeshFactory.box(leaf,Vector3(side*.2,y,face*.10),Vector3(.58,.035,.022),metal)
-		MeshFactory.merge_children(leaf);var shape=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(WIDTH*.5,2.64,.19);shape.shape=box;leaf.add_child(shape);leaves.append(leaf)
+		MeshFactory.merge_children(leaf);var shape=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(WIDTH*.5,2.8,.19);shape.shape=box;leaf.add_child(shape);leaves.append(leaf)
 	MeshFactory.box(self,Vector3(0,2.78,0),Vector3(2.74,.22,.40),metal)
 	indicator=MeshFactory.box(self,Vector3(0,2.8,-.23),Vector3(.66,.07,.035),Color("76edc8"));indicator.material_override=MeshFactory.material(Color("76edc8"))
-	for face in [-1,1]:
-		var label=Label3D.new();label.text="ACCESS  ↔";label.font_size=32;label.pixel_size=.004;label.position=Vector3(0,3.02,face*.21);label.rotation.y=PI if face>0 else 0.;label.modulate=Color("83e8d0");add_child(label)
 func obstructed(actors:Dictionary) -> bool:
 	for actor in actors.values():
 		if not is_instance_valid(actor) or actor.collision_layer==0:continue

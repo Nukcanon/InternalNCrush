@@ -1,8 +1,8 @@
 {
-  "version": "1.1.0",
+  "version": "1.1.1",
   "published_version": "1.1.0",
   "previous_live_version": "1.0.4",
-  "publication_state": "published_and_verified",
+  "publication_state": "local_validation_in_progress",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
   "source_commit": "2b1127a37729ba284fa5a9de8c975c3f12193332",
@@ -130,5 +130,7 @@
     "Compatibility shutdown GL texture warnings and intermittent frame spikes",
     "First Windows firewall prompt in a clean installation",
     "Public lobby deployment/account; operator TURN where NAT requires it; host migration, accounts/MMR and commercial anti-cheat are not implemented"
-  ]
+  ],
+  "pending_version": "1.1.1",
+  "pending_work_notes": "game/docs/WORK_1_1_1.md"
 }

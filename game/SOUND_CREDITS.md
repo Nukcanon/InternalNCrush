@@ -9,3 +9,7 @@ Build sources, including `tools/audio_source.zip` (mono 44.1 kHz PCM) and the ed
 Non-Q009-derived mixed audio is offered under CC0 1.0. The per-file license is also recorded in `assets/audio_manifest.json`. The authors do not endorse this game. No DRM or additional restrictions are applied to these assets.
 
 0.7.0: `hurt` and `armor_hurt` use deterministic low-mid synthesis plus the credited CC0 impact/cloth sources. `kill_sting` is original deterministic synthesis (CC0-1.0). See tools/build_audio.py for reproducible recipes.
+
+## Bomb announcements (1.1.1)
+
+Three short English announcements were synthesized locally using Windows SAPI / Microsoft Zira Desktop. The generated WAV recordings are stored in `tools/announcer` for reproducible builds; no voice engine or voice model is redistributed. They are not recordings from another game. Defusing uses the existing credited CC0 metal/tool samples.

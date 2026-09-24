@@ -31,6 +31,9 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 	voice.pitch_scale=1.+sin(serial*1.31)*(.025 if key.begins_with("gun_") else .065)
 	if world:
 		voice.position=where;voice.max_distance=48. if key.begins_with("step_") else 160.;voice.unit_size=5. if key.begins_with("step_") else 12.
+	if world and key=="bomb_beep":voice.max_distance=28.;voice.unit_size=7.;voice.pitch_scale=1.
+	if key in ["bomb_planted","bomb_dropped","bomb_defused"]:voice.pitch_scale=1.
+	if world and key=="bomb_defuse":voice.max_distance=16.;voice.unit_size=3.;voice.pitch_scale=1.
 	voice.play()
 
 func category_gain(category:String) -> float:

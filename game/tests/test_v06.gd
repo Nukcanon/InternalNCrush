@@ -36,7 +36,7 @@ func run():
 	var before=g.combat_fx.casings.size();expect(a.show_shot(100.),"new shot adds recoil");expect(not a.show_shot(100.),"snapshot and event do not duplicate shot effects")
 	expect(a.recoil>0 and g.combat_fx.casings.size()==before+1,"local shot emits a casing and a visible kick")
 	for i in range(80):g.combat_fx.eject_case(Vector3.UP,Vector3.RIGHT,Vector3.UP,0,i)
-	expect(g.combat_fx.casings.size()==CombatFX.MAX_CASINGS,"case pool remains bounded")
+	expect(g.combat_fx.casings.size()==[18,40,CombatFX.MAX_CASINGS][GraphicsOptions.detail],"case pool remains bounded")
 	g.combat_fx._process(CombatFX.CASING_LIFETIME+.1);expect(g.combat_fx.casings.is_empty(),"casings disappear after their lifetime")
 	var old_position=a.position;var old_gait=a.gait
 	a.input_state.z=0.;a.simulate(.016,g.clock,false);expect(a.gait==old_gait,"standing still does not advance foot cycle")

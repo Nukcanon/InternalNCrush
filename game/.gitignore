@@ -11,3 +11,5 @@ assets/models/*.import
 
 addons/webrtc_native/lib/
 assets/arenas/geometry/
+
+assets/arenas/complete/

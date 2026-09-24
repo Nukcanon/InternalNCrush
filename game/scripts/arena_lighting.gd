@@ -25,3 +25,5 @@ static func build(a:Node):
 		var mat=StandardMaterial3D.new();mat.albedo_color=color;mat.emission_enabled=true;mat.emission=color;mat.emission_energy_multiplier=1.6;lens.material_override=mat;lens.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if not indoor and point.y>0:MeshFactory.cylinder(a,point+Vector3(.6,-point.y*.5,0),.06,point.y,Color("415361"))
 	a.set_meta("practical_lights",points.size())
+
+	GraphicsOptions.apply_world(a)

@@ -1,6 +1,6 @@
 # Linux / NAS · 방 목록 서버
 
-1.1.0 구성은 방 목록·빠른 매치 배정·입장 승인·WebRTC 접속 신호만 처리합니다. **실제 경기는 방장 PC 또는 브라우저가 계산**하며 NAS에 Godot나 게임 에셋을 설치하지 않습니다. 기존 1.0.x 전용 방 프로세스 구성은 `services/matchmaker/`에 참고용으로 남아 있습니다.
+1.1.1 구성은 방 목록·빠른 매치 배정·입장 승인·WebRTC 접속 신호만 처리합니다. **실제 경기는 방장 PC 또는 브라우저가 계산**하며 NAS에 Godot나 게임 에셋을 설치하지 않습니다. 기존 1.0.x 전용 방 프로세스 구성은 `services/matchmaker/`에 참고용으로 남아 있습니다.
 
 ## 쉬운 설정
 
@@ -17,7 +17,7 @@ sh 03_status.sh
 curl https://실제도메인/health
 ```
 
-`role: directory-only`, `version: 1.1.0`을 확인하고 게임 인터넷 로비에 동일한 HTTPS 주소를 입력하세요. `python setup.py --check`도 인증서 검증을 포함해 접속을 확인합니다. 설정 마법사 없이 `.env.example`을 복사해 직접 설정할 수도 있습니다.
+`role: directory-only`, `version: 1.1.1`을 확인하고 게임 인터넷 로비에 동일한 HTTPS 주소를 입력하세요. `python setup.py --check`도 인증서 검증을 포함해 접속을 확인합니다. 설정 마법사 없이 `.env.example`을 복사해 직접 설정할 수도 있습니다.
 
 ## 운영과 연결
 
@@ -44,7 +44,7 @@ HTTPS/WSS 인증서·호스트 이름 검증, 짧은 입장 승인, 메시지 �
 ```sh
 pip install -r services/directory/requirements.txt httpx==0.28.1
 python -m unittest services.directory.test_directory nas.test_setup -v
-python services/directory/check_live.py https://실제도메인 --version 1.1.0
+python services/directory/check_live.py https://실제도메인 --version 1.1.1
 python services/directory/test_docker.py
 ```
 
