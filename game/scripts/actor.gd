@@ -187,9 +187,10 @@ func headless_pose(p:Dictionary):
 	set_team(int(p.team))
 	ensure_hit_pose();character.scale.x=float(p.get("hand",1))
 	var w=game.current_weapon(p);var progress=clampf((game.clock-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0.,1.) if p.reload>game.clock else -1.
-	var weapon=character.socket.get_child(0)
-	if weapon.spec.name!=w.name:
-		character.socket.remove_child(weapon);weapon.free();weapon=Weapon.new();character.socket.add_child(weapon);weapon.scale=Vector3.ONE*.85;weapon.build_pose(w)
+	var weapon=character.socket.get_child(0) if character.socket.get_child_count()>0 else null
+	if not is_instance_valid(weapon) or weapon.spec.name!=w.name:
+		if is_instance_valid(weapon):character.socket.remove_child(weapon);weapon.free()
+		weapon=Weapon.new();character.socket.add_child(weapon);weapon.scale=Vector3.ONE*.85;weapon.build_pose(w)
 	weapon.animate_reload(progress,0.,game.clock-float(p.get("shot_time",-100.)))
 	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
 	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/.72,0.,1.))

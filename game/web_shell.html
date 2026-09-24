@@ -123,6 +123,19 @@ body {
 const GODOT_CONFIG = $GODOT_CONFIG;
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
+// Embedded browsers can deny pointer lock even during a trusted click. Keep
+// keyboard/fire and drag aiming available without suppressing browser security.
+const canvasElement=document.getElementById('canvas');
+const requestLock=canvasElement.requestPointerLock?.bind(canvasElement);
+if(requestLock)canvasElement.requestPointerLock=function(...args){
+	const denied=()=>{
+		let hint=document.getElementById('pointer-hint');
+		if(!hint){hint=document.createElement('div');hint.id='pointer-hint';hint.style.cssText='position:fixed;top:65px;left:50%;transform:translateX(-50%);padding:8px 14px;background:#12202acc;color:white;font:14px sans-serif;z-index:6;pointer-events:none;text-align:center';document.body.appendChild(hint);}
+		hint.textContent='이 브라우저는 마우스 고정을 제한합니다. 드래그로 조준·클릭으로 발사하세요. Chrome/Edge의 일반 창을 권장합니다.';
+		setTimeout(()=>hint.remove(),8000);
+	};
+	try{const pending=requestLock(...args);if(pending?.catch)return pending.catch(denied);return pending;}catch(error){denied();}
+};
 
 (function () {
 	const statusOverlay = document.getElementById('status');

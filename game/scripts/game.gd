@@ -82,6 +82,7 @@ var expected_parts=0
 var snapshot_buffers={}
 var session_started=0
 var last_snapshot_ms=0
+var web_pointer_active=false
 var last_server_ip=""
 var connection_busy=false
 var connection_deadline=0
@@ -225,8 +226,19 @@ func start_demo():
 	phase="combat";remaining=3600.
 	for id in players:players[id].protect=0.;players[id].fire_ready=0.
 	set_process_unhandled_input(false)
-func capture_pointer():
-	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE if is_instance_valid(touch) else Input.MOUSE_MODE_CAPTURED
+func capture_pointer(from_input_event:bool=false):
+	if is_instance_valid(touch):Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;return
+	# Browser capture must originate in an active input callback, not an RPC,
+	# respawn timer or scene-load completion callback.
+	if OS.has_feature("web") and not from_input_event:
+		web_pointer_active=false
+		Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
+		if is_instance_valid(ui):ui.notice("화면을 클릭하면 조준이 시작됩니다.")
+		return
+	web_pointer_active=OS.has_feature("web")
+	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+func pointer_input_active() -> bool:
+	return not is_instance_valid(ui.panel) and (Input.mouse_mode==Input.MOUSE_MODE_CAPTURED or (OS.has_feature("web") and web_pointer_active))
 func setup_input():
 	var binds={"left":KEY_A,"right":KEY_D,"forward":KEY_W,"back":KEY_S,"sprint":KEY_SHIFT,"crouch":KEY_CTRL,"jump":KEY_SPACE,"reload":KEY_R,"use":KEY_E,"skill":KEY_F,"gadget":KEY_G,"gear":KEY_B,"score":KEY_TAB,"primary":KEY_1,"secondary":KEY_2,"medical":KEY_Q,"gadget_mode":KEY_V,"item3":KEY_3,"item4":KEY_4}
 	for k in binds:
@@ -504,6 +516,9 @@ func network_discovery():
 				d.ping=maxi(0,Time.get_ticks_msec()-room_search_sent);rooms[ip]=d;ui.update_rooms()
 func _unhandled_input(event):
 	if is_instance_valid(touch) and (event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag):return
+	if OS.has_feature("web") and not is_instance_valid(touch) and not is_instance_valid(ui.panel) and phase in ["buy","combat","round_end"] and not web_pointer_active and Input.mouse_mode!=Input.MOUSE_MODE_CAPTURED:
+		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
+			capture_pointer(true);get_viewport().set_input_as_handled();return
 	if is_instance_valid(kill_replay) and kill_replay.active:
 		if event is InputEventKey and event.pressed and event.keycode in [KEY_SPACE,KEY_ESCAPE]:kill_replay.finish()
 		get_viewport().set_input_as_handled();return
@@ -511,9 +526,10 @@ func _unhandled_input(event):
 		command("vote",{"yes":event.keycode==KEY_F6});get_viewport().set_input_as_handled();return
 	if event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE:
 		if phase!="menu":ui.toggle_pause();get_viewport().set_input_as_handled()
-	if not actors.has(local_id) or Input.mouse_mode!=Input.MOUSE_MODE_CAPTURED:return
+	if not actors.has(local_id) or not pointer_input_active():return
 	var a=actors[local_id]
 	if event is InputEventMouseMotion:
+		if Input.mouse_mode!=Input.MOUSE_MODE_CAPTURED and not (event.button_mask&(MOUSE_BUTTON_MASK_LEFT|MOUSE_BUTTON_MASK_RIGHT)):return
 		var sensitivity=float(profile.sensitivity)*(float(profile.ads_sensitivity) if a.input_state.ads and players[local_id].alive else 1.)
 		if players[local_id].alive:
 			a.input_state.yaw-=event.relative.x*sensitivity;a.input_state.pitch=clampf(a.input_state.pitch-event.relative.y*sensitivity,-1.45,1.45)
@@ -558,7 +574,7 @@ func send_input(data:Dictionary):
 	players[id].input_time=clock;peer_activity[id]=Time.get_ticks_msec()
 func collect_input():
 	if not actors.has(local_id):return
-	var a=actors[local_id];var on=(touch.active() if is_instance_valid(touch) else Input.mouse_mode==Input.MOUSE_MODE_CAPTURED) and players[local_id].alive and not (is_instance_valid(kill_replay) and kill_replay.active)
+	var a=actors[local_id];var on=(touch.active() if is_instance_valid(touch) else pointer_input_active()) and players[local_id].alive and not (is_instance_valid(kill_replay) and kill_replay.active)
 	a.input_state.x=Input.get_axis("left","right") if on else 0.;a.input_state.z=Input.get_axis("forward","back") if on else 0.
 	for k in ["sprint","crouch","jump","use"]:a.input_state[k]=on and Input.is_action_pressed(k)
 	a.input_state.ads=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT);a.input_state.fire=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT);a.input_state.alt=on and Input.is_action_pressed("medical")
