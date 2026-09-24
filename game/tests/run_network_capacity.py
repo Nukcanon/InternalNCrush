@@ -44,5 +44,9 @@ with tempfile.TemporaryDirectory(prefix='inc-capacity-') as directory:
             try:p.wait(timeout=5)
             except subprocess.TimeoutExpired:p.kill();p.wait(timeout=5)
         for output in files:output.close()
+        evidence=project.parent/'validation/functional-v11'
+        evidence.mkdir(parents=True,exist_ok=True)
         for path in sorted(control.glob('*.log')):
-            print(path.name,'\n'.join(line for line in path.read_text(encoding='utf-8',errors='replace').splitlines() if any(key in line for key in ['CAPACITY_','ERROR','Error'])))
+            text=path.read_text(encoding='utf-8',errors='replace')
+            (evidence/('network_capacity_'+path.name)).write_text(text,encoding='utf-8')
+            print(path.name,'\n'.join(line for line in text.splitlines() if any(key in line for key in ['CAPACITY_','ERROR','Error'])))

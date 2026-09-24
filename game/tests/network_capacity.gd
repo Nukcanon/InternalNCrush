@@ -25,6 +25,9 @@ func drive():
 		next_report=now+15000;print("CAPACITY_PROGRESS ",label," phase=",g.phase," peers=",g.players.size()," busy=",g.connection_busy," seq=",g.received_sequence)
 	if label!="server" and not ready and g.phase=="lobby" and g.received_sequence>=0:
 		ready=true;FileAccess.open(control.path_join("client"+label+".ready"),FileAccess.WRITE).store_string("joined")
+	if label!="server" and ready and g.phase=="menu" and not g.connection_busy:
+		var reason=g.ui.notice_label.text if is_instance_valid(g.ui.notice_label) else "no notice"
+		printerr("CAPACITY_DISCONNECTED ",label," reason=",reason);finish(false);return
 	if Time.get_ticks_msec()-started>180000:finish(false);return
 	if FileAccess.file_exists(control.path_join("release")):finish(true);return
 	if label=="server":
