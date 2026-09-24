@@ -1,5 +1,6 @@
 class_name SniperScope
 extends RefCounted
+const SCREEN_RADIUS=.49
 static func supported(w:Dictionary) -> bool:return w.get("category","")=="저격소총"
 static func steps(w:Dictionary) -> Array:return w.get("scope_steps",[4,8])
 static func magnification(profile:Dictionary,w:Dictionary) -> float:

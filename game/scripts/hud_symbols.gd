@@ -48,6 +48,7 @@ func _draw():
 		var width=38. if hint[0].length()>1 else 25.;keycap(hint[0],Vector2(x,689),width);draw_string(font,Vector2(x+width+6,707),hint[1],HORIZONTAL_ALIGNMENT_LEFT,-1,13,WHITE);x+=width+(74. if hint[1].length()>3 else 47.)
 	if p.get("slide_ready",0)>game.clock:draw_string(font,Vector2(309,584),"슬라이딩 %.1f"%(p.slide_ready-game.clock),HORIZONTAL_ALIGNMENT_LEFT,-1,14,WHITE)
 	var details=[]
+	if MarkerTracker.equipped(p) and float(p.get("marker_progress",0))>0.:details.append("표식 추적 %d%%"%int(p.marker_progress*100.))
 	if SniperScope.active(game):details.append("저격 %d×"%SniperScope.magnification(game.profile,game.current_weapon(p)))
 	if p.primary=="m2":details.append("Q  회복탄 %d"%p.heal_mag)
 	if p.get("mounted",0)>game.clock:details.append("거치 %.0f초"%(p.mounted-game.clock))

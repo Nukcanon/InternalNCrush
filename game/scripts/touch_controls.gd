@@ -137,7 +137,7 @@ func _draw():
 			title="%d초"%ceili(remain) if remain>0 else state.label;font_size=22
 			var fraction=1.-clampf(remain/state.duration,0.,1.) if state.enabled else 0.
 			draw_line(rect.position+Vector2(8,rect.size.y-5),rect.position+Vector2(8+(rect.size.x-16)*fraction,rect.size.y-5),Color("6cdfc3"),3.)
-		if action=="gadget":title="가젯 ×"+str(p.get("gadget_count",0));font_size=22
+		if action=="gadget":title="표식기 · 자동" if not p.is_empty() and MarkerTracker.equipped(p) else "가젯 ×"+str(p.get("gadget_count",0));font_size=22
 		if action=="fire" and not p.get("alive",false):title="다음 관전";font_size=22
 		if action=="fire" and is_instance_valid(game.kill_replay) and game.kill_replay.active:title="건너뛰기";font_size=22
 		draw_string(font,rect.position+Vector2(5,rect.size.y*.5+9),title,HORIZONTAL_ALIGNMENT_CENTER,rect.size.x-10,font_size,Color("eefaff"))

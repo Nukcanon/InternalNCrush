@@ -268,7 +268,7 @@ func utilities():
 			if p.armor<25 and (visible_target or p.hp<70):game.use_gadget(id)
 			if not visible_target and a.position.distance_to(goal)>20:game.use_skill(id)
 		1:
-			if visible_target:game.use_gadget(id);game.use_skill(id)
+			if visible_target:game.use_skill(id)
 		2:
 			if visible_target:a.input_state.crouch=true;game.use_gadget(id)
 			if visible_target and p.hp<45:game.use_skill(id)

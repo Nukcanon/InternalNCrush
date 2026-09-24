@@ -137,6 +137,27 @@ func run():
 	expect(not TargetReveal.visible_to(game,-1,1),"cleanse removes reveal immediately")
 	game.options.mode=1;TargetReveal.mark(game,-1,1,4.)
 	expect(TargetReveal.visible_to(game,-1,1) and not TargetReveal.visible_to(game,-1,-2),"free-for-all reveal belongs only to its source")
+	game.options.mode=0;game.players[1].role=1;game.players[1].primary="r1";game.players[1].slot=0;game.players[1].gadget=0;game.players[1].protect=0.;game.players[1].reload=0.;game.players[1].flash=0.
+	game.actors[1].position=Vector3(0,60,0);game.actors[1].reset_view(0.);game.actors[1].input_state.ads=true;game.actors[1].aim_progress=1.;game.actors[1].input_state.scope_zoom=4.
+	for pid in game.players:
+		if pid!=1:game.players[pid].alive=false;game.players[pid].mark=0.;game.players[pid].reveal_to={}
+	game.players[-1].alive=true;game.players[-1].team=1;game.players[-1].cleanse=0.;game.actors[-1].position=Vector3(.1,60.25,-30)
+	game.players[-3].alive=true;game.players[-3].team=1;game.players[-3].cleanse=0.;game.actors[-3].position=Vector3(2,60.25,-30)
+	await physics_frame
+	expect(MarkerTracker.select_target(game,1)==-1,"passive marker selects closest enemy to scope center")
+	for i in range(9):MarkerTracker.tick(game,1,.1)
+	expect(game.players[-1].mark==0.,"less than one second never marks")
+	MarkerTracker.tick(game,1,.1)
+	expect(game.players[-1].mark==game.clock+6. and game.players[-3].mark==0.,"one-second scope dwell marks exactly one enemy for six seconds")
+	MarkerTracker.tick(game,1,.1);game.actors[1].input_state.ads=false;MarkerTracker.tick(game,1,.1)
+	expect(game.players[1].marker_progress==0.,"leaving scope clears partial lock")
+	game.players[1].gadget=9
+	expect(not MarkerTracker.equipped(game.players[1]),"defuse kit replaces passive marker")
+	var packet={"x":0.,"z":0.,"yaw":0.,"pitch":0.,"scope_zoom":16.}
+	expect(InputGuard.normalize(packet).scope_zoom==16.,"validated scope magnification reaches host")
+	packet.scope_zoom=2.
+	expect(InputGuard.normalize(packet).is_empty(),"invalid zoom cannot widen marker cone")
+	expect(SniperScope.SCREEN_RADIUS==.49,"sniper and marksman scope diameter covers 98 percent of screen height")
 	game.leave_game();game.free();await process_frame
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)

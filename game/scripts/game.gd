@@ -409,7 +409,7 @@ func equip_ammo(p:Dictionary):
 func spawn(id:int):
 	players[id].use_prev=false
 	var p=players[id];var a=actors[id]
-	p.skill_ready=0.;p.gadget_ready=0.
+	p.skill_ready=0.;p.gadget_ready=0.;p.marker_progress=0.;p.marker_target=0;p.marker_scan=0.
 	if not p.get("pending_loadout",{}).is_empty():
 		var requested=p.pending_loadout.duplicate();p.pending_loadout={};commit_loadout(id,requested)
 	var best=choose_spawn(id)
@@ -607,6 +607,8 @@ func collect_input():
 	for k in ["sprint","crouch","jump","use"]:a.input_state[k]=on and Input.is_action_pressed(k)
 	a.input_state.ads=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT);a.input_state.fire=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT);a.input_state.alt=on and Input.is_action_pressed("medical")
 	if is_instance_valid(touch):touch.apply_input(a,on)
+	var w=current_weapon(players[local_id])
+	a.input_state.scope_zoom=SniperScope.magnification(profile,w) if SniperScope.supported(w) else 4.
 	if server:players[local_id].input_time=clock
 	else:send_input.rpc_id(1,a.input_state)
 func _physics_process(dt:float):
@@ -673,6 +675,7 @@ func server_tick(dt:float):
 			step_sound.rpc(a.position,id,surface,p.step_variant,-7. if a.input_state.crouch else 2. if a.last_sprint else 0.)
 		if phase!="combat":continue
 		p.played+=dt
+		MarkerTracker.tick(self,id,dt)
 		var held_weapon=current_weapon(p)
 		if p.reload>0 and clock>=p.reload:
 			var wid=p.reload_weapon;var w=C.get_weapon(wid);var need=int(w.mag)-int(p.mag.get(wid,0));var got=need if options.infinite else mini(need,int(p.reserve.get(wid,0)))
@@ -1063,6 +1066,7 @@ func use_skill(id:int):
 func use_gadget(id:int):
 	if int(players[id].gadget)==9:feedback(id,"","해체 키트 · 장치 앞에서 E를 10초 유지");return
 	var p=players[id];var a=actors[id]
+	if MarkerTracker.equipped(p):feedback(id,"","표식기 자동 추적 · 무기 조준경으로 적을 1초간 추적하세요.");return
 	if not options.classes or not can_attack(p) or phase!="combat" or p.gadget_count<=0 or clock<p.gadget_ready:return
 	if GrenadeLogic.equipped(p):
 		if GrenadeLogic.begin(self,id):GrenadeLogic.release(self,id)
