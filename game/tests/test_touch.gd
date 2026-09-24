@@ -55,6 +55,10 @@ func run():
 	game.ui.refresh();await capture("hud")
 	touch(3,Vector2(570,670),true);touch(3,Vector2(570,670),false)
 	expect(game.players[1].slot==1,"touch weapon tile switches secondary")
+	for notification in [Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT,Node.NOTIFICATION_APPLICATION_FOCUS_OUT]:
+		touch(4,Vector2(1165,465),true);touch(0,Vector2(165,500),true);drag(0,Vector2(165,410),Vector2(0,-90))
+		game.touch.notification(notification);game.collect_input()
+		expect(not a.input_state.fire and a.input_state.z==0 and game.touch.fingers.is_empty(),"focus loss releases held movement and fire (%d)"%notification)
 	touch(4,Vector2(1165,465),true);touch(5,Vector2(1180,45),true);game.touch._process(0);game.collect_input()
 	expect(is_instance_valid(game.ui.panel) and not a.input_state.fire and game.touch.fingers.is_empty(),"opening pause clears held touch fire")
 	await capture("pause")

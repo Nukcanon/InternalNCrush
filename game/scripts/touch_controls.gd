@@ -33,6 +33,10 @@ func active() -> bool:
 func reset():
 	if held.get("gadget",false) and game.players.has(game.local_id):game.command("gadget_release",{})
 	fingers.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1
+func _notification(what):
+	# A browser/app switch may omit the last touch-up event. Never retain a
+	# virtual trigger or movement stick when the window loses focus.
+	if enabled and is_instance_valid(game) and what in [NOTIFICATION_WM_WINDOW_FOCUS_OUT,NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_APPLICATION_PAUSED]:reset()
 func _process(_dt):
 	visible=active()
 	if not visible and was_active:reset()
