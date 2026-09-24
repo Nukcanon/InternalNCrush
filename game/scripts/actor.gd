@@ -120,7 +120,11 @@ func eye_height(crouched:bool) -> float:return (1.30 if crouched else 1.62)*body
 func head_threshold() -> float:return (1.14 if input_state.crouch else 1.46)*body_height/1.8
 func eye() -> Vector3:return global_position+Vector3.UP*eye_height(bool(input_state.crouch))
 func direction() -> Vector3:return Basis(Vector3.UP,aim_yaw)*Basis(Vector3.RIGHT,aim_pitch)*Vector3.FORWARD
-func desired_muzzle() -> Vector3:return eye()+Basis(Vector3.UP,aim_yaw)*Vector3(.2*handedness,-.23,0)+direction()*.55
+func desired_muzzle() -> Vector3:
+	# Use the authoritative ADS transition, not the cosmetic view-model transform.
+	var blend=clampf(aim_progress,0.,1.)
+	var offset=Vector3(lerpf(.20,.025,blend)*handedness,lerpf(-.46,-.045,blend)*body_height/1.8,0.)
+	return eye()+Basis(Vector3.UP,aim_yaw)*offset+direction()*lerpf(.55,.48,blend)
 func muzzle_world() -> Vector3:
 	var desired=desired_muzzle()
 	var hit=game.ray(eye(),desired,[get_rid()],1|4|8)

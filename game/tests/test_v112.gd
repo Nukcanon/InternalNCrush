@@ -113,6 +113,17 @@ func run():
 	expect(is_equal_approx(SniperScope.sensitivity(game),.3) and is_equal_approx(SniperScope.sensitivity(game,true),.1),"independent mouse and touch sniper sensitivities scale with zoom")
 	game.players[1].primary="r3"
 	expect(not SniperScope.active(game) and SniperScope.fov(game.profile,Catalog.get_weapon("r3"))==25.,"designated marksman zoom unchanged")
+	var shooter=game.actors[1];shooter.position=Vector3(0,60,0);shooter.reset_view(0.);shooter.aim_progress=0.
+	var hip=shooter.desired_muzzle();shooter.aim_progress=1.;var sight=shooter.desired_muzzle()
+	expect(sight.y-hip.y>.35 and absf(sight.y-shooter.eye().y)<.06,"ADS muzzle rises to eye level and hip muzzle stays below chest")
+	var barrier=StaticBody3D.new();barrier.collision_layer=1;game.add_child(barrier)
+	var collision=CollisionShape3D.new();var shape=BoxShape3D.new();shape.size=Vector3(2,1.4,.18);collision.shape=shape;barrier.add_child(collision);barrier.position=Vector3(0,60.7,-.45)
+	await physics_frame;await physics_frame
+	expect(game.ray(shooter.eye(),sight,[shooter.get_rid()],1).is_empty() and not game.ray(shooter.eye(),hip,[shooter.get_rid()],1).is_empty(),"ADS clears chest-high cover while hip barrel is blocked")
+	shape.size.y=2.;barrier.position.y=61.
+	await physics_frame;await physics_frame
+	expect(not game.ray(shooter.eye(),sight,[shooter.get_rid()],1).is_empty(),"ADS cannot fire through full-height wall")
+	barrier.free()
 	game.leave_game();game.free();await process_frame
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)
