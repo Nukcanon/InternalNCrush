@@ -26,4 +26,6 @@ func update_camera(dt):
 	camera.position=desired if dt==0 else camera.position.lerp(desired,1.-exp(-dt*2.))
 	camera.look_at(target)
 func _exit_tree():
-	if not multiplayer_path.is_empty():get_tree().set_multiplayer(get_tree().get_multiplayer(),multiplayer_path)
+	# Remove only this override. Registering the shared API here rewrites its
+	# RPC root to a disappearing viewport and breaks subsequent online matches.
+	if not multiplayer_path.is_empty():get_tree().set_multiplayer(null,multiplayer_path)

@@ -22,6 +22,14 @@ func capture(name:String):
 func run():
 	visual=DisplayServer.get_name()!="headless"
 	DirAccess.make_dir_recursive_absolute("res://../validation/v104-ui")
+	var shared_api=get_multiplayer();var shared_root=shared_api.root_path
+	# Exercise the real graphical menu lifecycle even on the headless CI runner.
+	for cycle in range(2):
+		var demo=load("res://scripts/menu_demo.gd").new();root.add_child(demo)
+		var demo_path=demo.multiplayer_path
+		expect(get_multiplayer(demo_path)!=shared_api,"menu simulation has its own offline multiplayer API")
+		demo.free();await settle()
+		expect(shared_api.root_path==shared_root and get_multiplayer(demo_path)==shared_api,"closing menu removes override without changing live RPC root")
 	g=load("res://scripts/game.gd").new();root.add_child(g)
 	var ui=g.ui
 	await capture("main")
