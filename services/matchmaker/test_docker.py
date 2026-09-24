@@ -34,8 +34,8 @@ def client_command(image, name, script, extra):
     if "INC_TEST_CA" in extra:
         # Godot reads its default CA bundle during engine startup, before SceneTree._initialize.
         # Mount this only into disposable test clients, never the server image or release.
-        mounts += ["-v", f"{OUT / 'override.cfg'}:/app/games/relaystrike/override.cfg:ro"]
-    return ["docker", "run", "--rm", "--name", name, "--network", "host", "--cap-drop", "ALL", "--security-opt", "no-new-privileges"] + mounts + [arg for key, value in extra.items() for arg in ["-e", f"{key}={value}"]] + ["--entrypoint", "godot", image, "--headless", "--path", "/app/games/relaystrike", "--script", "res://tests/" + script + ".gd", "--", "--no-save-profile", "--no-update-check"]
+        mounts += ["-v", f"{OUT / 'override.cfg'}:/app/game/override.cfg:ro"]
+    return ["docker", "run", "--rm", "--name", name, "--network", "host", "--cap-drop", "ALL", "--security-opt", "no-new-privileges"] + mounts + [arg for key, value in extra.items() for arg in ["-e", f"{key}={value}"]] + ["--entrypoint", "godot", image, "--headless", "--path", "/app/game", "--script", "res://tests/" + script + ".gd", "--", "--no-save-profile", "--no-update-check"]
 
 try:
     compose("config", "--quiet")

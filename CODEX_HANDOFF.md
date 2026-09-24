@@ -1,44 +1,32 @@
-# Internal N Crush — 1.0.3 인계
+# Internal N Crush — 1.0.4 인계
 
-2026-09-24. 공개 상태/커밋/CI/다운로드 해시는 PUBLICATION_STATUS.json이 기준이다. 1.0.2 자료는 games/relaystrike/docs/*V102*에 보존했다.
+2026-09-24. 공개 상태/커밋/CI/ZIP 해시는 PUBLICATION_STATUS.json이 기준이다. 이전 확정 자료는 game/docs/*V103*에 보존했다.
 
-## 위치와 도구
+## 위치
 
-- 게임 Git: D:/python_workplace/InternalNCrush/InternalNCrush → https://github.com/Nukcanon/InternalNCrush
-- 사이트 Git: D:/python_workplace/InternalNCrush/site-repository → https://nukcanon.github.io/nukcanon/internal-n-crush.html
-- Godot: D:/python_workplace/InternalNCrush/.tools/godot/Godot_v4.4.1-stable_win64_console.exe
-- gh: D:/python_workplace/InternalNCrush/.tools/gh/bin/gh.exe, Nukcanon 인증. 자격 증명은 출력하지 않는다.
-- 서버 가상환경: D:/python_workplace/InternalNCrush/.tools/server-venv/Scripts/python.exe
+- 게임 Git: D:/python_workplace/InternalNCrush/InternalNCrush → Nukcanon/InternalNCrush main
+- 사이트 Git: D:/python_workplace/InternalNCrush/site-repository → Nukcanon/nukcanon main
+- 공통 소스 game/ (games/relaystrike/에서 이동), Windows 진입점 windows/, Docker Linux/NAS nas/, 서비스 services/matchmaker/.
+- Godot D:/python_workplace/InternalNCrush/.tools/godot/Godot_v4.4.1-stable_win64_console.exe; gh .tools/gh/bin/gh.exe; API 가상환경 .tools/server-venv/Scripts/python.exe. 인증 정보는 출력하지 않는다.
 
-## 구현
+## 이번 구현
 
-요청별 사실/한계는 [REQUEST_STATUS](games/relaystrike/docs/REQUEST_STATUS.md), 수치는 [BALANCE_NOTES](games/relaystrike/docs/BALANCE_NOTES.md), 검사는 [TEST_REPORT](games/relaystrike/docs/TEST_REPORT.md), 아트 생성 출처/프롬프트는 [ART_SOURCES](games/relaystrike/docs/ART_SOURCES.md).
+AuthoredHuman + bake_human.py: CC0 MakeHuman 기반 인체, 남녀 형태/15본 웨이트, 의복 표면·얼굴·피부/직물 셰이더. 기존 키/여성2/왼손12% 유지. OperatorSkin은 빌드 시 굽고 ImporterMesh로 거리 LOD를 만든다. 원본 데이터·커밋·해시·CC0는 game/assets/human/. 애니메이션은 기존 IK/관성/관절 스프링을 연결했다. 1인칭 WeaponHand는 원본 연속 관절 손가락/손목/팔이며 역방향 꺾임을 제한한다.
 
-32개 지도(기존 19, 설치·해체 12, 연습 1). 6/8/12/16/32인 규모마다 사각 외곽 두 개 정확히 유지. MapIdentity.RECTANGLES=[0,1,2,4,8,10,13,14,25,26], 연습 31은 집계 제외. 기존 0/4/10/13 평면 중심 유지. 새 전용 맵은 node/link 기반 별도 설계, 연속 폴리곤 벽/지붕, 두 공격 경로와 회전. WorldDressing은 그 진입로 중앙 2m를 비운다.
+LanLobby/GraphicsOptions/HudLayout/HudPreview/AmmoPips/StartupNetworkAccess 분리. 큰 LAN 목록/IP 암호 모달, 고정 버튼 최대3/행, 이동 확인, 봇 배경 보존. 메인 플레이/연습 직접 버튼. 전체 화면의 선택 렌더 해상도, MSAA 최대8×/그림자/장식/FPS, HUD80%/농도38%와 미리보기, 탄환·예비 탄창 아이콘, 글꼴/팀색/정렬, B 병과/장비, 장비창 HUD 숨김. 시작 시 5초 임시 ENet 수신; Windows 정책/경로에 따른 허용 저장이며 강제 방화벽 규칙은 없다.
 
-연습 31은 네 높이(0/4.2/8.4/12.6), 9개 비공격 표적, 리스폰/회복 대상/보급/B 즉시 변경. PracticeSession과 MatchFlow를 별도 코드로 분리. 방 기본은 8명/8인 무작위/무한, 짝수 인원 독립, 선택 인원 이상 지도, 같은 규모 순환. 설치·해체 최대 12명, 30/45/60초 준비, 공격 대기구역 제한과 피해 차단, 공수 한 번씩 후 순환. 점령은 기존 중립 거점의 시작 진영 교대다.
+저격5종 피해/간격 너프, 25개 무게/안정성/휴대성별 빠른 점사 회복, 봇 정지/횡이동·난이도 반동 제어. PhysicsRagdoll은 피격 부위에 힘, 평지 약1–3m 감쇠, 중력/충돌/관절 유지. KillReplay는 마지막 탄환 추적·피해자 전방 정지·0.5초 비행·공격자 닉네임. 포탑 구동부/총열/탄약함/지지대와 설치 엄폐물 구분.
 
-연속 SDF 의복/인체 표면, 15본 GPU 변형, 얼굴/체형/곡면 총몸, 발 접지/관성/살아 있는 관절 보조(가까운 최대 8명). 사망 11몸체 래그돌/피격 지점 충격/중력. 혈흔, 생성 연기 스프라이트의 폭발·물리 파편, 총구→몸 리본과 회복 파동, E 문 서버 상태/끼임 방지. 살아 있는 물리는 시각 보조이고 서버 이동을 밀어내지 않는다.
+기존 32맵(31경쟁+4층연습), 규모별사각외곽2, 설치해체8인6개/12인6개, 무작위순환/무한/정원검증, 힐/폭발/혈흔/문/슬라이딩/서버권한·WSS 등은 유지했다. 상세 반영표 game/docs/REQUEST_STATUS.md, 수치 BALANCE_NOTES.md, 검증 TEST_REPORT.md, 출처 ART_SOURCES.md.
 
-25개 총기의 개별 스프레이 폭/패턴 시간/회복, 속도 비례 퍼짐, DPS/재장전 포함 지속 DPS 그래프, 능력 지속·사거리·쿨타임 조정. 기존 거리 감쇠/머리·몸통·다리 높이 판정/총구 차폐/왼손 12%/여성2명/킬캠/모니터 설정 유지. UI 정렬과 투명 선택 카드. 축 정렬 동일 평면 제거와 그림자 자기 겹침 보정·밉맵 적용.
+## 재현과 주의
 
-## 재현
+prepare_assets.py → Godot editor import → tools/build_models.gd → import. GPU에서 tools/build_thumbnails.gd 후 import(52개). 모델 .scn은 Git 제외, CI 재생성. 인체 변경은 tools/bake_human.py와 assets/human/manifest.json 해시를 함께 갱신. .tools/tune_v104.py는 이전 HEAD:games/relaystrike를 기준으로 한 일회성 보조 도구로 이름 이동 커밋 후 재실행하지 않는다.
 
-GODOT 환경 변수 설정 후 tests/run_functional.py, run_network_probe.py, run_network_capacity.py, run_network_lifecycle.py, run_network_props.py, run_network_rotation.py를 직렬 실행한다. 테스트 Godot는 Windows 자식 프로세스도 만들므로 실패 정리 시 검증된 해당 프로세스 트리만 종료한다. API: python -m unittest services.matchmaker.test_service -v. Docker: python services/matchmaker/test_docker.py (실제 Docker 환경 필요).
+GODOT 지정 후 game/tests/run_functional.py, 네트워크 run_network_*.py 직렬. 로컬 사용자 1.0.3 EXE가 27888을 사용 중일 수 있으니 **사용자 프로세스를 종료하지 말고** 테스트 INC_TEST_PORT=29888 등으로 분리한다. 테스트 소유 프로세스만 확인 후 종료. Native tests: test_lobby_menu, windows_display, visual_human_v104, visual_hands_v104, visual_release_v104, benchmark_v104. Docker 실제 확인은 GitHub Actions Linux에서 수행한다.
 
-models는 prepare_assets.py → Godot editor import → tools/build_models.gd → import로 빌드. thumbnails는 GPU에서 tools/build_thumbnails.gd 후 import. 새 전용 맵 편집 시 Godot tools/export_layout_specs.gd → Python tools/bake_defusal_geometry.py (개발 전용 shapely==2.1.2)로 JSON을 갱신. 런타임에는 Shapely/Blender 불필요. PNG 생성 원본은 assets/textures/에 그대로 저장. .tools/upgrade_v103_data.py는 곱셈식 일회용이므로 다시 실행하면 안 된다.
-
-플랫폼 진입점 windows/README.md와 windows/build.ps1, nas/README.md와 compose.yaml/Caddyfile/.env.example. 공통 구현은 games/relaystrike와 services/matchmaker. NAS 운영자 도메인/서버는 제공되지 않았다. 공개 GitHub/Pages를 게임 서버로 오해하지 않는다.
+과거 문서/음원 출처 URL, 구형 프로필 마이그레이션과 LAN wire token의 RelayStrike는 호환/출처 기록이다. 활성 소스 경로는 game/로 통일했다. 공개 사이트는 기존 URL과 플레이 가이드/멀티플레이 접속 두 섹션을 유지한다.
 
 ## 남은 품질/운영 과제
 
-사람 경쟁전 테스트, 외부 다중 PC/NAS ARM64·저사양/장시간 32인, 일부 프레임 급증, 간헐적 종료 GL texture 349524 bytes 경고. 수작업 AAA 모델/모션캡처/완전 안티치트라고 말하지 않는다. WSS는 암호화되고 LAN ENet은 평문이며 모든 상대 위치가 스냅샷에 있으므로 벽핵·에임봇까지 해결한 것이 아니다. 계정/MMR/영구 제재/정보 제한/행동 탐지/분산 운영은 별도 과제다.
-
-## 공개 배포 최종 확인
-
-- 소스 `003b8b9b8728bed3a29f9ebde572cc788ba2ddab`. [Windows 빌드 35944422965](https://github.com/Nukcanon/InternalNCrush/actions/runs/35944422965) 성공: 기능 1,503/1,503, 32명 최신 스냅샷 완료 장벽, 독립 클라이언트, 재접속/서버 재시작, 물체·문/늦은 참가, 맵 순환, 1.5초 지연 참가 라이프사이클.
-- [Docker 빌드 35944423059](https://github.com/Nukcanon/InternalNCrush/actions/runs/35944423059) 성공: API 10/10, 실제 Linux Compose HTTPS→인증서 검증 WSS 클라이언트 2개, 알 수 없는 CA/잘못된 호스트 거부, 내부 API 404.
-- [1.0.3 릴리스](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.3), ZIP 9개 파일·57,734,396 bytes. SHA-256 `bf55528267d7ac1db628a7a5ebc5ad60b7229bc8ea6396c14f97ad5dce1b7cf8`. CI 파일과 익명 공개 다운로드 해시 일치.
-- CI ZIP을 풀어 실제 Windows EXE 연습장(10 actors)·봇 경기(8 actors) 정상 종료 확인. 동일 배포 PCK의 설치·해체 전장 12개 생성 확인. 테스트 실행은 사용자 설정 저장/업데이트 체크를 비활성화했다. 종료 GL texture 경고는 여전히 관찰되었다.
-- 사이트 `b4a329045b9f13fab42f97d435d3d4edad8033db`, [Pages 35945880227](https://github.com/Nukcanon/nukcanon/actions/runs/35945880227) 성공. 공개 HTML/버전 JSON의 줄바꿈 정규화 비교와 3개 이미지 바이트 검증 및 브라우저 표시 확인. 기존 주소와 두 안내 섹션 유지.
-- 연습장 추가 12초 표본: RTX 4080 SUPER, 1280×720, VSync OFF, 평균 1.996ms / P95 4.042ms / 최대 5.492ms. 짧은 고정 시점 표본이며 실제 저사양/장시간 보장이 아니다.
+실제 사람 경쟁전/다중 PC·NAS ARM64·저사양·장시간 32인, 프레임 급증·간헐적 종료 GL texture 경고, 새 Windows의 최초 방화벽 팝업 실측. CC0 인체 교체는 구현했으나 모션캡처/수작업 AAA 완성을 주장하지 않는다. LAN ENet은 평문, 인터넷은 검증된 WSS. 클라이언트에 모든 상대 위치가 전달되어 벽핵/에임봇 방지를 완성한 상태가 아니다. 계정/MMR/영구 제재/시야 정보 제한/행동 탐지/분산 운영과 운영자 도메인/서버가 필요하다.

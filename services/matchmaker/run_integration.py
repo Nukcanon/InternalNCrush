@@ -54,7 +54,7 @@ try:
         ticket = api(f"/v1/rooms/{room['id']}/join", {}, token)
         client_env = env.copy();client_env["INC_TEST_JOIN"] = json.dumps(ticket)
         log = (out / f"client-{i}.log").open("w", encoding="utf-8");logs.append(log)
-        process = subprocess.Popen([engine, "--headless", "--path", str(ROOT / "games/relaystrike"), "--script", "res://tests/network_public.gd", "--", "--no-save-profile", "--no-update-check"], env=client_env, stdout=log, stderr=log, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        process = subprocess.Popen([engine, "--headless", "--path", str(ROOT / "game"), "--script", "res://tests/network_public.gd", "--", "--no-save-profile", "--no-update-check"], env=client_env, stdout=log, stderr=log, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         processes.append(process)
     for process in processes[1:]:
         if process.wait(timeout=45) != 0:

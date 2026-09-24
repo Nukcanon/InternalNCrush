@@ -1,0 +1,152 @@
+{
+  "a1": {
+    "pattern_recovery": 36.69,
+    "recovery_delay": 0.112,
+    "three_shot_reset_seconds": 0.26,
+    "twelve_shot_reset_seconds": 0.575
+  },
+  "a2": {
+    "pattern_recovery": 35.24,
+    "recovery_delay": 0.127,
+    "three_shot_reset_seconds": 0.345,
+    "twelve_shot_reset_seconds": 0.765000000000001
+  },
+  "a3": {
+    "pattern_recovery": 34.69,
+    "recovery_delay": 0.118,
+    "three_shot_reset_seconds": 0.34,
+    "twelve_shot_reset_seconds": 0.685000000000001
+  },
+  "a4": {
+    "pattern_recovery": 37.28,
+    "recovery_delay": 0.11,
+    "three_shot_reset_seconds": 0.23,
+    "twelve_shot_reset_seconds": 0.51
+  },
+  "auto_pistol": {
+    "pattern_recovery": 31.36,
+    "recovery_delay": 0.143,
+    "three_shot_reset_seconds": 0.35,
+    "twelve_shot_reset_seconds": 0.745000000000001
+  },
+  "burst_pistol": {
+    "pattern_recovery": 32.26,
+    "recovery_delay": 0.139,
+    "three_shot_reset_seconds": 0.345,
+    "twelve_shot_reset_seconds": 0.695000000000001
+  },
+  "c1": {
+    "pattern_recovery": 34.2,
+    "recovery_delay": 0.131,
+    "three_shot_reset_seconds": 0.35,
+    "twelve_shot_reset_seconds": 0.770000000000001
+  },
+  "c2": {
+    "pattern_recovery": 32.08,
+    "recovery_delay": 0.14,
+    "three_shot_reset_seconds": 0.365,
+    "twelve_shot_reset_seconds": 0.785000000000001
+  },
+  "c3": {
+    "pattern_recovery": 34.61,
+    "recovery_delay": 0.13,
+    "three_shot_reset_seconds": 0.355,
+    "twelve_shot_reset_seconds": 0.795000000000001
+  },
+  "c4": {
+    "pattern_recovery": 31.94,
+    "recovery_delay": 0.141,
+    "three_shot_reset_seconds": 0.39,
+    "twelve_shot_reset_seconds": 0.850000000000001
+  },
+  "e1": {
+    "pattern_recovery": 37.5,
+    "recovery_delay": 0.109,
+    "three_shot_reset_seconds": 0.29,
+    "twelve_shot_reset_seconds": 0.51
+  },
+  "e2": {
+    "pattern_recovery": 35.11,
+    "recovery_delay": 0.117,
+    "three_shot_reset_seconds": 0.325,
+    "twelve_shot_reset_seconds": 0.545
+  },
+  "e3": {
+    "pattern_recovery": 37.61,
+    "recovery_delay": 0.109,
+    "three_shot_reset_seconds": 0.295,
+    "twelve_shot_reset_seconds": 0.505
+  },
+  "eng_pistol": {
+    "pattern_recovery": 34.16,
+    "recovery_delay": 0.131,
+    "three_shot_reset_seconds": 0.325,
+    "twelve_shot_reset_seconds": 0.57
+  },
+  "h1": {
+    "pattern_recovery": 32.51,
+    "recovery_delay": 0.126,
+    "three_shot_reset_seconds": 0.315,
+    "twelve_shot_reset_seconds": 0.700000000000001
+  },
+  "h2": {
+    "pattern_recovery": 30.11,
+    "recovery_delay": 0.149,
+    "three_shot_reset_seconds": 0.39,
+    "twelve_shot_reset_seconds": 0.860000000000001
+  },
+  "heavy_pistol": {
+    "pattern_recovery": 31.22,
+    "recovery_delay": 0.144,
+    "three_shot_reset_seconds": 0.36,
+    "twelve_shot_reset_seconds": 0.615
+  },
+  "m2": {
+    "pattern_recovery": 36.63,
+    "recovery_delay": 0.112,
+    "three_shot_reset_seconds": 0.27,
+    "twelve_shot_reset_seconds": 0.595
+  },
+  "med_pistol": {
+    "pattern_recovery": 34.94,
+    "recovery_delay": 0.129,
+    "three_shot_reset_seconds": 0.315,
+    "twelve_shot_reset_seconds": 0.555
+  },
+  "pistol": {
+    "pattern_recovery": 33.68,
+    "recovery_delay": 0.133,
+    "three_shot_reset_seconds": 0.33,
+    "twelve_shot_reset_seconds": 0.575
+  },
+  "r1": {
+    "pattern_recovery": 31.65,
+    "recovery_delay": 0.142,
+    "three_shot_reset_seconds": 0.41,
+    "twelve_shot_reset_seconds": 0.61
+  },
+  "r2": {
+    "pattern_recovery": 27.7,
+    "recovery_delay": 0.162,
+    "three_shot_reset_seconds": 0.5,
+    "twelve_shot_reset_seconds": 0.690000000000001
+  },
+  "r3": {
+    "pattern_recovery": 32.33,
+    "recovery_delay": 0.139,
+    "three_shot_reset_seconds": 0.415,
+    "twelve_shot_reset_seconds": 0.595
+  },
+  "r4": {
+    "pattern_recovery": 34.86,
+    "recovery_delay": 0.129,
+    "three_shot_reset_seconds": 0.37,
+    "twelve_shot_reset_seconds": 0.555
+  },
+  "r5": {
+    "pattern_recovery": 33.26,
+    "recovery_delay": 0.135,
+    "three_shot_reset_seconds": 0.4,
+    "twelve_shot_reset_seconds": 0.58
+  }
+}

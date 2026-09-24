@@ -6,9 +6,9 @@ COPY services/matchmaker/requirements.txt /app/services/matchmaker/requirements.
 RUN pip install --no-cache-dir -r services/matchmaker/requirements.txt
 COPY services/matchmaker/fetch_godot.py /tmp/fetch_godot.py
 RUN python /tmp/fetch_godot.py "$TARGETARCH"
-COPY games/relaystrike /app/games/relaystrike
+COPY game /app/game
 COPY services/matchmaker /app/services/matchmaker
-RUN python games/relaystrike/tools/prepare_assets.py && godot --headless --path games/relaystrike --editor --import --quit && godot --headless --path games/relaystrike --script res://tools/build_models.gd && godot --headless --path games/relaystrike --editor --import --quit
+RUN python game/tools/prepare_assets.py && godot --headless --path game --editor --import --quit && godot --headless --path game --script res://tools/build_models.gd && godot --headless --path game --editor --import --quit
 RUN useradd --create-home --uid 10001 arena && chown -R arena:arena /app
 USER arena
 ENV GODOT=godot PYTHONUNBUFFERED=1 MAX_ROOMS=4

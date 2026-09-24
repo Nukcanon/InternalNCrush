@@ -1,0 +1,1257 @@
+{
+  "assumptions": "Accuracy excludes target movement and cover. Compensated columns assume the player cancels the deterministic recoil. Burst pauses are 0.38s after each 3 rounds. TTK assumes all pellets hit, 100 HP and no armor.",
+  "target": "0.46m wide x 0.72m torso rectangle, center aim, full ADS, first 24 rounds; 384 fixed-seed samples/round",
+  "version": "1.0.4",
+  "weapons": [
+    {
+      "dps": 200.0,
+      "id": "a1",
+      "name": "VECTOR-24",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 48.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 0.936,
+          "ideal_ttk": 0.48,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 24.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 48.0,
+          "hold_compensated": 0.566,
+          "hold_uncompensated": 0.315,
+          "ideal_ttk": 0.48,
+          "meters": 15.0,
+          "strafe_compensated": 0.444,
+          "torso_damage": 24.0
+        },
+        {
+          "burst_compensated": 0.958,
+          "head_damage": 46.88,
+          "hold_compensated": 0.262,
+          "hold_uncompensated": 0.143,
+          "ideal_ttk": 0.48,
+          "meters": 30.0,
+          "strafe_compensated": 0.162,
+          "torso_damage": 23.44
+        },
+        {
+          "burst_compensated": 0.621,
+          "head_damage": 30.03,
+          "hold_compensated": 0.114,
+          "hold_uncompensated": 0.067,
+          "ideal_ttk": 0.72,
+          "meters": 60.0,
+          "strafe_compensated": 0.043,
+          "torso_damage": 15.01
+        }
+      ],
+      "recovery_delay": 0.112,
+      "spray_build_seconds": 1.32,
+      "sustained_dps": 125.7
+    },
+    {
+      "dps": 211.1,
+      "id": "a2",
+      "name": "RAPID-9",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 36.1,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 0.756,
+          "ideal_ttk": 0.45,
+          "meters": 5.0,
+          "strafe_compensated": 0.973,
+          "torso_damage": 19.0
+        },
+        {
+          "burst_compensated": 0.997,
+          "head_damage": 36.1,
+          "hold_compensated": 0.386,
+          "hold_uncompensated": 0.203,
+          "ideal_ttk": 0.45,
+          "meters": 15.0,
+          "strafe_compensated": 0.315,
+          "torso_damage": 19.0
+        },
+        {
+          "burst_compensated": 0.756,
+          "head_damage": 30.68,
+          "hold_compensated": 0.163,
+          "hold_uncompensated": 0.085,
+          "ideal_ttk": 0.54,
+          "meters": 30.0,
+          "strafe_compensated": 0.111,
+          "torso_damage": 16.15
+        },
+        {
+          "burst_compensated": 0.378,
+          "head_damage": 12.63,
+          "hold_compensated": 0.064,
+          "hold_uncompensated": 0.041,
+          "ideal_ttk": 1.35,
+          "meters": 60.0,
+          "strafe_compensated": 0.03,
+          "torso_damage": 6.65
+        }
+      ],
+      "recovery_delay": 0.127,
+      "spray_build_seconds": 0.98,
+      "sustained_dps": 124.3
+    },
+    {
+      "dps": 165.9,
+      "id": "a3",
+      "name": "ATLAS",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 62.9,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.41,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 34.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 62.9,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.41,
+          "meters": 15.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 34.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 62.9,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.41,
+          "meters": 30.0,
+          "strafe_compensated": 0.703,
+          "torso_damage": 34.0
+        },
+        {
+          "burst_compensated": 0.941,
+          "head_damage": 52.86,
+          "hold_compensated": 0.941,
+          "hold_uncompensated": 0.941,
+          "ideal_ttk": 0.615,
+          "meters": 60.0,
+          "strafe_compensated": 0.181,
+          "torso_damage": 28.57
+        }
+      ],
+      "recovery_delay": 0.118,
+      "spray_build_seconds": 1.4,
+      "sustained_dps": 100.8
+    },
+    {
+      "dps": 152.6,
+      "id": "a4",
+      "name": "TRIAD",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 58.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.57,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 58.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.57,
+          "meters": 15.0,
+          "strafe_compensated": 0.993,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 0.978,
+          "head_damage": 58.0,
+          "hold_compensated": 0.978,
+          "hold_uncompensated": 0.848,
+          "ideal_ttk": 0.57,
+          "meters": 30.0,
+          "strafe_compensated": 0.637,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 0.694,
+          "head_damage": 44.54,
+          "hold_compensated": 0.694,
+          "hold_uncompensated": 0.501,
+          "ideal_ttk": 0.685,
+          "meters": 60.0,
+          "strafe_compensated": 0.176,
+          "torso_damage": 22.27
+        }
+      ],
+      "recovery_delay": 0.11,
+      "spray_build_seconds": 1.55,
+      "sustained_dps": 107.4
+    },
+    {
+      "dps": 47.5,
+      "id": "r1",
+      "name": "SCOUT",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 152.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.6,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 76.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 152.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.6,
+          "meters": 15.0,
+          "strafe_compensated": 0.396,
+          "torso_damage": 76.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 152.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.6,
+          "meters": 30.0,
+          "strafe_compensated": 0.098,
+          "torso_damage": 76.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 152.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.6,
+          "meters": 60.0,
+          "strafe_compensated": 0.029,
+          "torso_damage": 76.0
+        }
+      ],
+      "recovery_delay": 0.142,
+      "spray_build_seconds": 1.25,
+      "sustained_dps": 41.5
+    },
+    {
+      "dps": 41.7,
+      "id": "r2",
+      "name": "MONOLITH",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 181.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 2.35,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 98.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 181.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 2.35,
+          "meters": 15.0,
+          "strafe_compensated": 0.247,
+          "torso_damage": 98.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 181.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 2.35,
+          "meters": 30.0,
+          "strafe_compensated": 0.063,
+          "torso_damage": 98.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 181.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 2.35,
+          "meters": 60.0,
+          "strafe_compensated": 0.018,
+          "torso_damage": 98.0
+        }
+      ],
+      "recovery_delay": 0.162,
+      "spray_build_seconds": 1.7,
+      "sustained_dps": 36.1
+    },
+    {
+      "dps": 54.1,
+      "id": "r3",
+      "name": "ECHO",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 94.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.7,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 46.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 94.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.7,
+          "meters": 15.0,
+          "strafe_compensated": 0.321,
+          "torso_damage": 46.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 94.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.7,
+          "meters": 30.0,
+          "strafe_compensated": 0.081,
+          "torso_damage": 46.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 94.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.7,
+          "meters": 60.0,
+          "strafe_compensated": 0.024,
+          "torso_damage": 46.0
+        }
+      ],
+      "recovery_delay": 0.139,
+      "spray_build_seconds": 1.25,
+      "sustained_dps": 41.3
+    },
+    {
+      "dps": 66.7,
+      "id": "r4",
+      "name": "LARK",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 62.4,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.44,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 32.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 62.4,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.44,
+          "meters": 15.0,
+          "strafe_compensated": 0.413,
+          "torso_damage": 32.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 62.4,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.44,
+          "meters": 30.0,
+          "strafe_compensated": 0.1,
+          "torso_damage": 32.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 57.05,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.44,
+          "meters": 60.0,
+          "strafe_compensated": 0.025,
+          "torso_damage": 29.26
+        }
+      ],
+      "recovery_delay": 0.129,
+      "spray_build_seconds": 1.15,
+      "sustained_dps": 51.9
+    },
+    {
+      "dps": 56.4,
+      "id": "r5",
+      "name": "KESTREL",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 90.2,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.56,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 44.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 90.2,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.56,
+          "meters": 15.0,
+          "strafe_compensated": 0.365,
+          "torso_damage": 44.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 90.2,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.56,
+          "meters": 30.0,
+          "strafe_compensated": 0.09,
+          "torso_damage": 44.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 90.2,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.56,
+          "meters": 60.0,
+          "strafe_compensated": 0.024,
+          "torso_damage": 44.0
+        }
+      ],
+      "recovery_delay": 0.135,
+      "spray_build_seconds": 1.3,
+      "sustained_dps": 44.8
+    },
+    {
+      "dps": 185.7,
+      "id": "h1",
+      "name": "ANCHOR",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 45.5,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 0.843,
+          "ideal_ttk": 0.42,
+          "meters": 5.0,
+          "strafe_compensated": 0.961,
+          "torso_damage": 26.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 45.5,
+          "hold_compensated": 0.479,
+          "hold_uncompensated": 0.284,
+          "ideal_ttk": 0.42,
+          "meters": 15.0,
+          "strafe_compensated": 0.292,
+          "torso_damage": 26.0
+        },
+        {
+          "burst_compensated": 0.843,
+          "head_damage": 45.5,
+          "hold_compensated": 0.208,
+          "hold_uncompensated": 0.127,
+          "ideal_ttk": 0.42,
+          "meters": 30.0,
+          "strafe_compensated": 0.078,
+          "torso_damage": 26.0
+        },
+        {
+          "burst_compensated": 0.376,
+          "head_damage": 40.04,
+          "hold_compensated": 0.073,
+          "hold_uncompensated": 0.051,
+          "ideal_ttk": 0.56,
+          "meters": 60.0,
+          "strafe_compensated": 0.02,
+          "torso_damage": 22.88
+        }
+      ],
+      "recovery_delay": 0.126,
+      "spray_build_seconds": 1.7,
+      "sustained_dps": 127.2
+    },
+    {
+      "dps": 170.6,
+      "id": "h2",
+      "name": "BASTION",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 49.3,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 0.993,
+          "ideal_ttk": 0.51,
+          "meters": 5.0,
+          "strafe_compensated": 0.921,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 49.3,
+          "hold_compensated": 0.443,
+          "hold_uncompensated": 0.401,
+          "ideal_ttk": 0.51,
+          "meters": 15.0,
+          "strafe_compensated": 0.24,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 0.754,
+          "head_damage": 49.3,
+          "hold_compensated": 0.183,
+          "hold_uncompensated": 0.181,
+          "ideal_ttk": 0.51,
+          "meters": 30.0,
+          "strafe_compensated": 0.061,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 0.248,
+          "head_damage": 45.6,
+          "hold_compensated": 0.054,
+          "hold_uncompensated": 0.051,
+          "ideal_ttk": 0.51,
+          "meters": 60.0,
+          "strafe_compensated": 0.016,
+          "torso_damage": 26.83
+        }
+      ],
+      "recovery_delay": 0.149,
+      "spray_build_seconds": 1.85,
+      "sustained_dps": 126.6
+    },
+    {
+      "dps": 133.3,
+      "id": "e1",
+      "name": "PULSE",
+      "range": [
+        {
+          "burst_compensated": 0.78,
+          "head_damage": 17.5,
+          "hold_compensated": 0.78,
+          "hold_uncompensated": 0.78,
+          "ideal_ttk": 0.0,
+          "meters": 5.0,
+          "strafe_compensated": 0.647,
+          "torso_damage": 14.0
+        },
+        {
+          "burst_compensated": 0.088,
+          "head_damage": 9.08,
+          "hold_compensated": 0.088,
+          "hold_uncompensated": 0.088,
+          "ideal_ttk": 1.05,
+          "meters": 15.0,
+          "strafe_compensated": 0.071,
+          "torso_damage": 7.27
+        },
+        {
+          "burst_compensated": 0.026,
+          "head_damage": 1.23,
+          "hold_compensated": 0.026,
+          "hold_uncompensated": 0.026,
+          "ideal_ttk": 10.5,
+          "meters": 30.0,
+          "strafe_compensated": 0.02,
+          "torso_damage": 0.98
+        },
+        {
+          "burst_compensated": 0.006,
+          "head_damage": 0.0,
+          "hold_compensated": 0.006,
+          "hold_uncompensated": 0.006,
+          "ideal_ttk": -1.0,
+          "meters": 60.0,
+          "strafe_compensated": 0.005,
+          "torso_damage": 0.0
+        }
+      ],
+      "recovery_delay": 0.109,
+      "spray_build_seconds": 1.05,
+      "sustained_dps": 95.9
+    },
+    {
+      "dps": 170.7,
+      "id": "e2",
+      "name": "TIDAL",
+      "range": [
+        {
+          "burst_compensated": 0.662,
+          "head_damage": 13.2,
+          "hold_compensated": 0.662,
+          "hold_uncompensated": 0.662,
+          "ideal_ttk": 0.58,
+          "meters": 5.0,
+          "strafe_compensated": 0.492,
+          "torso_damage": 11.0
+        },
+        {
+          "burst_compensated": 0.076,
+          "head_damage": 5.22,
+          "hold_compensated": 0.076,
+          "hold_uncompensated": 0.076,
+          "ideal_ttk": 1.16,
+          "meters": 15.0,
+          "strafe_compensated": 0.058,
+          "torso_damage": 4.35
+        },
+        {
+          "burst_compensated": 0.022,
+          "head_damage": 0.79,
+          "hold_compensated": 0.022,
+          "hold_uncompensated": 0.022,
+          "ideal_ttk": 9.28,
+          "meters": 30.0,
+          "strafe_compensated": 0.016,
+          "torso_damage": 0.66
+        },
+        {
+          "burst_compensated": 0.005,
+          "head_damage": 0.0,
+          "hold_compensated": 0.005,
+          "hold_uncompensated": 0.005,
+          "ideal_ttk": -1.0,
+          "meters": 60.0,
+          "strafe_compensated": 0.003,
+          "torso_damage": 0.0
+        }
+      ],
+      "recovery_delay": 0.117,
+      "spray_build_seconds": 0.95,
+      "sustained_dps": 101.5
+    },
+    {
+      "dps": 355.6,
+      "id": "e3",
+      "name": "FOLD",
+      "range": [
+        {
+          "burst_compensated": 0.484,
+          "head_damage": 19.2,
+          "hold_compensated": 0.484,
+          "hold_uncompensated": 0.484,
+          "ideal_ttk": 0.0,
+          "meters": 5.0,
+          "strafe_compensated": 0.418,
+          "torso_damage": 16.0
+        },
+        {
+          "burst_compensated": 0.06,
+          "head_damage": 4.13,
+          "hold_compensated": 0.06,
+          "hold_uncompensated": 0.06,
+          "ideal_ttk": 0.9,
+          "meters": 15.0,
+          "strafe_compensated": 0.049,
+          "torso_damage": 3.44
+        },
+        {
+          "burst_compensated": 0.016,
+          "head_damage": 0.96,
+          "hold_compensated": 0.016,
+          "hold_uncompensated": 0.016,
+          "ideal_ttk": 5.4,
+          "meters": 30.0,
+          "strafe_compensated": 0.013,
+          "torso_damage": 0.8
+        },
+        {
+          "burst_compensated": 0.004,
+          "head_damage": 0.0,
+          "hold_compensated": 0.004,
+          "hold_uncompensated": 0.004,
+          "ideal_ttk": -1.0,
+          "meters": 60.0,
+          "strafe_compensated": 0.003,
+          "torso_damage": 0.0
+        }
+      ],
+      "recovery_delay": 0.109,
+      "spray_build_seconds": 0.75,
+      "sustained_dps": 116.4
+    },
+    {
+      "dps": 222.2,
+      "id": "c1",
+      "name": "SWIFT",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 35.0,
+          "hold_compensated": 0.951,
+          "hold_uncompensated": 0.633,
+          "ideal_ttk": 0.36,
+          "meters": 5.0,
+          "strafe_compensated": 0.916,
+          "torso_damage": 20.0
+        },
+        {
+          "burst_compensated": 0.962,
+          "head_damage": 33.42,
+          "hold_compensated": 0.304,
+          "hold_uncompensated": 0.17,
+          "ideal_ttk": 0.45,
+          "meters": 15.0,
+          "strafe_compensated": 0.266,
+          "torso_damage": 19.1
+        },
+        {
+          "burst_compensated": 0.642,
+          "head_damage": 21.61,
+          "hold_compensated": 0.128,
+          "hold_uncompensated": 0.076,
+          "ideal_ttk": 0.72,
+          "meters": 30.0,
+          "strafe_compensated": 0.094,
+          "torso_damage": 12.35
+        },
+        {
+          "burst_compensated": 0.236,
+          "head_damage": 9.8,
+          "hold_compensated": 0.041,
+          "hold_uncompensated": 0.03,
+          "ideal_ttk": 1.53,
+          "meters": 60.0,
+          "strafe_compensated": 0.025,
+          "torso_damage": 5.6
+        }
+      ],
+      "recovery_delay": 0.131,
+      "spray_build_seconds": 0.95,
+      "sustained_dps": 126.3
+    },
+    {
+      "dps": 242.9,
+      "id": "c2",
+      "name": "FLUX",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 28.9,
+          "hold_compensated": 0.858,
+          "hold_uncompensated": 0.532,
+          "ideal_ttk": 0.35,
+          "meters": 5.0,
+          "strafe_compensated": 0.829,
+          "torso_damage": 17.0
+        },
+        {
+          "burst_compensated": 0.893,
+          "head_damage": 24.93,
+          "hold_compensated": 0.237,
+          "hold_uncompensated": 0.148,
+          "ideal_ttk": 0.42,
+          "meters": 15.0,
+          "strafe_compensated": 0.209,
+          "torso_damage": 14.66
+        },
+        {
+          "burst_compensated": 0.484,
+          "head_damage": 13.0,
+          "hold_compensated": 0.092,
+          "hold_uncompensated": 0.066,
+          "ideal_ttk": 0.91,
+          "meters": 30.0,
+          "strafe_compensated": 0.068,
+          "torso_damage": 7.65
+        },
+        {
+          "burst_compensated": 0.144,
+          "head_damage": 6.65,
+          "hold_compensated": 0.028,
+          "hold_uncompensated": 0.023,
+          "ideal_ttk": 1.75,
+          "meters": 60.0,
+          "strafe_compensated": 0.018,
+          "torso_damage": 3.91
+        }
+      ],
+      "recovery_delay": 0.14,
+      "spray_build_seconds": 0.8,
+      "sustained_dps": 130.5
+    },
+    {
+      "dps": 191.7,
+      "id": "c3",
+      "name": "LINE",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 41.4,
+          "hold_compensated": 0.992,
+          "hold_uncompensated": 0.663,
+          "ideal_ttk": 0.48,
+          "meters": 5.0,
+          "strafe_compensated": 0.957,
+          "torso_damage": 23.0
+        },
+        {
+          "burst_compensated": 0.991,
+          "head_damage": 41.4,
+          "hold_compensated": 0.359,
+          "hold_uncompensated": 0.148,
+          "ideal_ttk": 0.48,
+          "meters": 15.0,
+          "strafe_compensated": 0.299,
+          "torso_damage": 23.0
+        },
+        {
+          "burst_compensated": 0.737,
+          "head_damage": 31.9,
+          "hold_compensated": 0.155,
+          "hold_uncompensated": 0.06,
+          "ideal_ttk": 0.6,
+          "meters": 30.0,
+          "strafe_compensated": 0.105,
+          "torso_damage": 17.72
+        },
+        {
+          "burst_compensated": 0.367,
+          "head_damage": 14.49,
+          "hold_compensated": 0.061,
+          "hold_uncompensated": 0.034,
+          "ideal_ttk": 1.44,
+          "meters": 60.0,
+          "strafe_compensated": 0.028,
+          "torso_damage": 8.05
+        }
+      ],
+      "recovery_delay": 0.13,
+      "spray_build_seconds": 1.15,
+      "sustained_dps": 117.3
+    },
+    {
+      "dps": 190.0,
+      "id": "c4",
+      "name": "HIVE",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 32.3,
+          "hold_compensated": 0.917,
+          "hold_uncompensated": 0.541,
+          "ideal_ttk": 0.5,
+          "meters": 5.0,
+          "strafe_compensated": 0.863,
+          "torso_damage": 19.0
+        },
+        {
+          "burst_compensated": 0.937,
+          "head_damage": 32.3,
+          "hold_compensated": 0.277,
+          "hold_uncompensated": 0.136,
+          "ideal_ttk": 0.5,
+          "meters": 15.0,
+          "strafe_compensated": 0.223,
+          "torso_damage": 19.0
+        },
+        {
+          "burst_compensated": 0.56,
+          "head_damage": 22.02,
+          "hold_compensated": 0.112,
+          "hold_uncompensated": 0.059,
+          "ideal_ttk": 0.7,
+          "meters": 30.0,
+          "strafe_compensated": 0.068,
+          "torso_damage": 12.95
+        },
+        {
+          "burst_compensated": 0.182,
+          "head_damage": 9.69,
+          "hold_compensated": 0.036,
+          "hold_uncompensated": 0.021,
+          "ideal_ttk": 1.7,
+          "meters": 60.0,
+          "strafe_compensated": 0.018,
+          "torso_damage": 5.7
+        }
+      ],
+      "recovery_delay": 0.141,
+      "spray_build_seconds": 0.9,
+      "sustained_dps": 112.6
+    },
+    {
+      "dps": 153.3,
+      "id": "m2",
+      "name": "PIPER",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 43.7,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.6,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 23.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 43.7,
+          "hold_compensated": 0.951,
+          "hold_uncompensated": 0.951,
+          "ideal_ttk": 0.6,
+          "meters": 15.0,
+          "strafe_compensated": 0.837,
+          "torso_damage": 23.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 41.03,
+          "hold_compensated": 0.616,
+          "hold_uncompensated": 0.616,
+          "ideal_ttk": 0.6,
+          "meters": 30.0,
+          "strafe_compensated": 0.356,
+          "torso_damage": 21.59
+        },
+        {
+          "burst_compensated": 0.793,
+          "head_damage": 25.01,
+          "hold_compensated": 0.262,
+          "hold_uncompensated": 0.262,
+          "ideal_ttk": 1.05,
+          "meters": 60.0,
+          "strafe_compensated": 0.091,
+          "torso_damage": 13.16
+        }
+      ],
+      "recovery_delay": 0.112,
+      "spray_build_seconds": 1.4,
+      "sustained_dps": 94.4
+    },
+    {
+      "dps": 92.6,
+      "id": "pistol",
+      "name": "SIDE",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 50.0,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.81,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 25.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 48.87,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.08,
+          "meters": 15.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 24.44
+        },
+        {
+          "burst_compensated": 0.941,
+          "head_damage": 31.94,
+          "hold_compensated": 0.941,
+          "hold_uncompensated": 0.941,
+          "ideal_ttk": 1.62,
+          "meters": 30.0,
+          "strafe_compensated": 0.77,
+          "torso_damage": 15.97
+        },
+        {
+          "burst_compensated": 0.376,
+          "head_damage": 15.0,
+          "hold_compensated": 0.376,
+          "hold_uncompensated": 0.376,
+          "ideal_ttk": 3.51,
+          "meters": 60.0,
+          "strafe_compensated": 0.208,
+          "torso_damage": 7.5
+        }
+      ],
+      "recovery_delay": 0.133,
+      "spray_build_seconds": 0.83,
+      "sustained_dps": 64.9
+    },
+    {
+      "dps": 74.2,
+      "id": "heavy_pistol",
+      "name": "CHIME",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 96.6,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.24,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 46.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 96.6,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.24,
+          "meters": 15.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 46.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 87.75,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.24,
+          "meters": 30.0,
+          "strafe_compensated": 0.779,
+          "torso_damage": 41.78
+        },
+        {
+          "burst_compensated": 0.563,
+          "head_damage": 49.79,
+          "hold_compensated": 0.563,
+          "hold_uncompensated": 0.563,
+          "ideal_ttk": 2.48,
+          "meters": 60.0,
+          "strafe_compensated": 0.205,
+          "torso_damage": 23.71
+        }
+      ],
+      "recovery_delay": 0.144,
+      "spray_build_seconds": 0.885,
+      "sustained_dps": 51.1
+    },
+    {
+      "dps": 157.9,
+      "id": "auto_pistol",
+      "name": "SPARK",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 24.75,
+          "hold_compensated": 0.838,
+          "hold_uncompensated": 0.565,
+          "ideal_ttk": 0.57,
+          "meters": 5.0,
+          "strafe_compensated": 0.81,
+          "torso_damage": 15.0
+        },
+        {
+          "burst_compensated": 0.815,
+          "head_damage": 19.58,
+          "hold_compensated": 0.244,
+          "hold_uncompensated": 0.158,
+          "ideal_ttk": 0.76,
+          "meters": 15.0,
+          "strafe_compensated": 0.217,
+          "torso_damage": 11.87
+        },
+        {
+          "burst_compensated": 0.387,
+          "head_damage": 6.67,
+          "hold_compensated": 0.091,
+          "hold_uncompensated": 0.066,
+          "ideal_ttk": 2.28,
+          "meters": 30.0,
+          "strafe_compensated": 0.066,
+          "torso_damage": 4.04
+        },
+        {
+          "burst_compensated": 0.098,
+          "head_damage": 4.95,
+          "hold_compensated": 0.024,
+          "hold_uncompensated": 0.02,
+          "ideal_ttk": 3.135,
+          "meters": 60.0,
+          "strafe_compensated": 0.017,
+          "torso_damage": 3.0
+        }
+      ],
+      "recovery_delay": 0.143,
+      "spray_build_seconds": 0.94,
+      "sustained_dps": 77.9
+    },
+    {
+      "dps": 85.3,
+      "id": "eng_pistol",
+      "name": "RIVET",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 55.1,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.02,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 55.1,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 1.02,
+          "meters": 15.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 29.0
+        },
+        {
+          "burst_compensated": 0.982,
+          "head_damage": 39.43,
+          "hold_compensated": 0.982,
+          "hold_uncompensated": 0.982,
+          "ideal_ttk": 1.36,
+          "meters": 30.0,
+          "strafe_compensated": 0.785,
+          "torso_damage": 20.75
+        },
+        {
+          "burst_compensated": 0.439,
+          "head_damage": 19.28,
+          "hold_compensated": 0.439,
+          "hold_uncompensated": 0.439,
+          "ideal_ttk": 3.06,
+          "meters": 60.0,
+          "strafe_compensated": 0.217,
+          "torso_damage": 10.15
+        }
+      ],
+      "recovery_delay": 0.131,
+      "spray_build_seconds": 0.995,
+      "sustained_dps": 58.5
+    },
+    {
+      "dps": 94.4,
+      "id": "burst_pistol",
+      "name": "TRIO",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 30.6,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.74,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 17.0
+        },
+        {
+          "burst_compensated": 0.871,
+          "head_damage": 27.95,
+          "hold_compensated": 0.871,
+          "hold_uncompensated": 0.636,
+          "ideal_ttk": 1.08,
+          "meters": 15.0,
+          "strafe_compensated": 0.779,
+          "torso_damage": 15.53
+        },
+        {
+          "burst_compensated": 0.461,
+          "head_damage": 14.71,
+          "hold_compensated": 0.461,
+          "hold_uncompensated": 0.356,
+          "ideal_ttk": 2.16,
+          "meters": 30.0,
+          "strafe_compensated": 0.317,
+          "torso_damage": 8.17
+        },
+        {
+          "burst_compensated": 0.132,
+          "head_damage": 7.65,
+          "hold_compensated": 0.132,
+          "hold_uncompensated": 0.107,
+          "ideal_ttk": 3.98,
+          "meters": 60.0,
+          "strafe_compensated": 0.078,
+          "torso_damage": 4.25
+        }
+      ],
+      "recovery_delay": 0.139,
+      "spray_build_seconds": 0.72,
+      "sustained_dps": 58.5
+    },
+    {
+      "dps": 95.7,
+      "id": "med_pistol",
+      "name": "FEATHER",
+      "range": [
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 41.8,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.92,
+          "meters": 5.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 22.0
+        },
+        {
+          "burst_compensated": 1.0,
+          "head_damage": 39.63,
+          "hold_compensated": 1.0,
+          "hold_uncompensated": 1.0,
+          "ideal_ttk": 0.92,
+          "meters": 15.0,
+          "strafe_compensated": 1.0,
+          "torso_damage": 20.86
+        },
+        {
+          "burst_compensated": 0.972,
+          "head_damage": 23.38,
+          "hold_compensated": 0.972,
+          "hold_uncompensated": 0.972,
+          "ideal_ttk": 1.84,
+          "meters": 30.0,
+          "strafe_compensated": 0.816,
+          "torso_damage": 12.3
+        },
+        {
+          "burst_compensated": 0.422,
+          "head_damage": 12.54,
+          "hold_compensated": 0.422,
+          "hold_uncompensated": 0.422,
+          "ideal_ttk": 3.45,
+          "meters": 60.0,
+          "strafe_compensated": 0.245,
+          "torso_damage": 6.6
+        }
+      ],
+      "recovery_delay": 0.129,
+      "spray_build_seconds": 0.775,
+      "sustained_dps": 67.8
+    }
+  ]
+}

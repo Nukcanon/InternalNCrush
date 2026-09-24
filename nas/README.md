@@ -4,7 +4,7 @@ Docker Compose v2로 HTTPS 로비 API, WSS 게임 게이트웨이, 서버 권한
 
 ## 설치
 
-64비트 Linux x86-64 또는 ARM64, Docker Engine/Compose v2, 공개 DNS 이름이 필요하다. 이미지에는 두 CPU용 Godot 다운로드 경로가 있다. 실제 검증한 CPU와 결과는 [검증 보고서](../games/relaystrike/docs/TEST_REPORT.md)를 확인한다. 32비트 ARM NAS는 지원하지 않는다.
+64비트 Linux x86-64 또는 ARM64, Docker Engine/Compose v2, 공개 DNS 이름이 필요하다. 이미지에는 두 CPU용 Godot 다운로드 경로가 있다. 실제 검증한 CPU와 결과는 [검증 보고서](../game/docs/TEST_REPORT.md)를 확인한다. 32비트 ARM NAS는 지원하지 않는다.
 
 ```sh
 git clone https://github.com/Nukcanon/InternalNCrush.git

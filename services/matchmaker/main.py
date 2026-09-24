@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 MAP_CAPACITY = [32, 32, 16, 16, 16, 32, 16, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 8] + [8] * 6 + [12] * 6
 
 
@@ -140,7 +140,7 @@ class Allocator:
                       "prep_seconds": options.prep_seconds}}
             env = os.environ.copy()
             env["INC_ROOM_CONFIG"] = json.dumps(config)
-            command = [os.getenv("GODOT", "godot"), "--headless", "--path", str(ROOT / "games/relaystrike"),
+            command = [os.getenv("GODOT", "godot"), "--headless", "--path", str(ROOT / "game"),
                        "--", "--server", "--public-room", "--no-save-profile", "--no-update-check"]
             try:
                 room.process = subprocess.Popen(command, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

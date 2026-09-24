@@ -1,7 +1,7 @@
 name: Docker lobby and encrypted gameplay
 on:
   push:
-    paths: ['nas/**', 'services/**', 'games/relaystrike/**', '.github/workflows/matchmaker.yml', '.dockerignore']
+    paths: ['nas/**', 'services/**', 'game/**', '.github/workflows/matchmaker.yml', '.dockerignore']
   workflow_dispatch:
 permissions:
   contents: read

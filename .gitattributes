@@ -1,0 +1,5 @@
+# Preserve checksum-pinned upstream mesh/shape/license data byte-for-byte.
+game/assets/human/source/** -text
+game/assets/human/*.json -text
+game/assets/fonts/*-OFL.txt -text
+*.ttf binary

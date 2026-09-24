@@ -1,0 +1,42 @@
+[
+  {
+    "path": "female.json",
+    "sha256": "b278cbfb7e694185a6e524b7d6c91ef4e9a7fbda4729778fbe703e1b873f34fc"
+  },
+  {
+    "path": "male.json",
+    "sha256": "cecb106a12b4d6879db956774680c5e6db9e6ae0acaaab7bac6e22f4d763e42e"
+  },
+  {
+    "path": "source/base.obj",
+    "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
+  },
+  {
+    "path": "source/caucasian-female-young.target",
+    "sha256": "118379f6e8ba9266247fdb8788a20e1df40a239f97ced0b9905bcbcc74f6e820"
+  },
+  {
+    "path": "source/caucasian-male-young.target",
+    "sha256": "70e228ba7164737dae664454394536fc5935fa48d333c1a97d77e2dc6eacc5f5"
+  },
+  {
+    "path": "source/LICENSE.ASSETS.md",
+    "sha256": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c"
+  },
+  {
+    "path": "source/LICENSE.md",
+    "sha256": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1"
+  },
+  {
+    "path": "source/origin.json",
+    "sha256": "b4c72b476e9c112c10b7d0f9a5fca8be32318a501da0ba433ac4babbe3079f80"
+  },
+  {
+    "path": "source/universal-female-young-averagemuscle-averageweight.target",
+    "sha256": "4ba5396ddabda448ece15650a566fbebfbb10239256ccb201e8f883429e12249"
+  },
+  {
+    "path": "source/universal-male-young-averagemuscle-averageweight.target",
+    "sha256": "4ba5396ddabda448ece15650a566fbebfbb10239256ccb201e8f883429e12249"
+  }
+]
