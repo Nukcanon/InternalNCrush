@@ -1,22 +1,71 @@
 {
   "version": "1.0.4",
-  "publication_state": "validating_before_release",
-  "published_version": "1.0.3",
+  "publication_state": "published_and_verified",
+  "published_version": "1.0.4",
   "previous_live_version": "1.0.3",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": null,
+  "source_commit": "2bcb5d98f3f127e92320e2c0bb7456b387d1d6c9",
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
   "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.4",
   "checks": {
     "local_functional_before_lod": "2374/2374",
     "api_unit_tests": "10/10",
-    "native_windows_ui": "46/46",
+    "native_windows_ui": "50/50",
     "monitor_modes": "2 monitors x 3 modes, all rendering 960x540",
     "human_anatomy": "CC0 continuous mesh, male/female, normalized weights, no stretched edges",
     "first_person_hands": "4 weapons x both hands and reload reviewed",
     "killcam": "projectile follow, victim clearance, 0.5s physical flight, killer nickname",
-    "windows_firewall": "ephemeral startup socket tested; fresh-OS prompt not observed"
+    "windows_firewall": "ephemeral startup socket tested; fresh-OS prompt not observed",
+    "functional": "2381/2381",
+    "network_capacity": "32 simultaneous independent clients, fresh snapshots",
+    "network_lifecycle": "8 peers, reconnect + server restart, stagger 0.15s and 1.5s",
+    "network_props_and_doors": "existing and late-joining clients; local alternate-port test passed",
+    "rotation_existing_and_late_clients": true,
+    "docker_tls": "actual Linux Compose HTTPS API + two certificate-verified WSS clients",
+    "tls_negative_cases": [
+      "unknown CA rejected",
+      "wrong hostname rejected",
+      "internal API returns 404"
+    ],
+    "native_windows_published_payload": true,
+    "windows_exe_loopback_connection": true,
+    "windows_modes": [
+      {
+        "mode": "practice",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=10 phase=combat"
+        ],
+        "known_shutdown_texture_warning": true
+      },
+      {
+        "mode": "training",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=8 phase=combat"
+        ],
+        "known_shutdown_texture_warning": true
+      },
+      {
+        "mode": "network-client-headless-host",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=2 phase=combat"
+        ],
+        "known_shutdown_texture_warning": false
+      },
+      {
+        "mode": "network-client-window-host",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=2 phase=combat"
+        ],
+        "known_shutdown_texture_warning": false
+      }
+    ],
+    "site": "Canonical HTML/JSON match; all three PNGs byte-identical; browser download link/version and responsive character gallery inspected",
+    "menu_rpc_root_regression": "4 repeated lifecycle assertions plus native graphical clients with headless and window hosts"
   },
   "remaining": [
     "Human competitive win-rate playtests",
@@ -24,5 +73,49 @@
     "Intermittent Compatibility shutdown GL texture warnings and frame spikes",
     "First Windows firewall prompt in a clean installation",
     "Public domain/server, accounts, MMR, durable bans, visibility filtering, behavioral detection and DDoS operations"
-  ]
+  ],
+  "verified_at_utc": "2026-09-24T04:36:31.454139+00:00",
+  "build_result": "success",
+  "build_run": 35954374716,
+  "build_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35954374716",
+  "docker_result": "success",
+  "docker_run": 35954374710,
+  "docker_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35954374710",
+  "site_commit": "af194c1c72251f4490fb026048dea406ecfe8a6b",
+  "pages_verified": true,
+  "pages_result": "success",
+  "pages_run": 35955684842,
+  "pages_run_url": "https://github.com/Nukcanon/nukcanon/actions/runs/35955684842",
+  "release_asset": {
+    "name": "InternalNCrush_Windows_v1.0.4.zip",
+    "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.0.4/InternalNCrush_Windows_v1.0.4.zip",
+    "bytes": 65050596,
+    "sha256": "841589a1e92345a6f6f97f3e6cd89d518607d7ba4b9b62beefa1f8de0332a14a",
+    "files": 13,
+    "anonymous_download_hash_verified": true,
+    "verification_transport": "anonymous HTTP byte ranges, validated Content-Range and length, assembled full ZIP"
+  },
+  "benchmark": [
+    {
+      "frames": 3873,
+      "map": 13,
+      "max_ms": 51.336,
+      "mean_ms": 3.09927136586625,
+      "p95_ms": 5.88,
+      "players": 8,
+      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+      "resolution": "(1280, 720)"
+    },
+    {
+      "frames": 1032,
+      "map": 0,
+      "max_ms": 227.707,
+      "mean_ms": 11.6351686046512,
+      "p95_ms": 18.102,
+      "players": 32,
+      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+      "resolution": "(1280, 720)"
+    }
+  ],
+  "benchmark_source_commit": "f3d5a5c03396960a3c7b29959c3f8381ea720f59"
 }

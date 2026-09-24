@@ -27,6 +27,18 @@ GODOT 지정 후 game/tests/run_functional.py, 네트워크 run_network_*.py 직
 
 과거 문서/음원 출처 URL, 구형 프로필 마이그레이션과 LAN wire token의 RelayStrike는 호환/출처 기록이다. 활성 소스 경로는 game/로 통일했다. 공개 사이트는 기존 URL과 플레이 가이드/멀티플레이 접속 두 섹션을 유지한다.
 
+## Windows EXE 접속 검사에서 추가 수정
+
+초기 후보 b489444는 Windows 그래픽 클라이언트에서 메뉴 종료 후 `Node not found ... SubViewport` RPC 오류가 나서 게시하지 않았다. menu_demo.gd 종료 시 공유 MultiplayerAPI를 배경 경로에 재등록하던 것을 `set_multiplayer(null, multiplayer_path)`로 바꿨다. 수정 소스는 2bcb5d9이며, 화면 없는 서버/일반 방장과 그래픽 클라이언트 조합 모두 로컬 소스 실행에서 통과했다. headless CI에도 실제 메뉴 생성/제거를 두 번 실행하는 4개 회귀 검사를 추가했다.
+
+Windows 릴리스 headless 로그는 종료까지 버퍼에 남으므로 SERVER_READY 파일 문구만 기다리면 준비 검사에서 잘못 시간 초과가 날 수 있다. windows/verify_build.py는 테스트 프로세스 소유 UDP 소켓으로 준비를 확인하고, ZIP의 EXE 자체로 연습장·봇 전투·두 종류 방장 접속을 검사한다. 이 도구는 이전 후보 ZIP의 RPC 오류를 실패로 잡는 오류 재현 검사도 통과했다. 이전 후보 증거는 validation/release-v104-pre-rpc-fix-b489444/, 최종 ZIP/로그/검증 결과는 validation/release-v104/에 보존한다.
+
 ## 남은 품질/운영 과제
 
 실제 사람 경쟁전/다중 PC·NAS ARM64·저사양·장시간 32인, 프레임 급증·간헐적 종료 GL texture 경고, 새 Windows의 최초 방화벽 팝업 실측. CC0 인체 교체는 구현했으나 모션캡처/수작업 AAA 완성을 주장하지 않는다. LAN ENet은 평문, 인터넷은 검증된 WSS. 클라이언트에 모든 상대 위치가 전달되어 벽핵/에임봇 방지를 완성한 상태가 아니다. 계정/MMR/영구 제재/시야 정보 제한/행동 탐지/분산 운영과 운영자 도메인/서버가 필요하다.
+
+## 확정 게시 결과
+
+1.0.4 소스 `2bcb5d98f3f127e92320e2c0bb7456b387d1d6c9`; Windows CI 35954374716, Docker CI 35954374710 성공. 기능 2,381/2,381, API 10/10, 실제 UI 50/50, 두 모니터 여섯 표시 방식 확인. 실제 배포 EXE의 연습장·봇전투·EXE 간 접속과 익명 다운로드 해시 확인.
+
+ZIP 65,050,596바이트 / 13파일 / SHA-256 `841589a1e92345a6f6f97f3e6cd89d518607d7ba4b9b62beefa1f8de0332a14a`. 사이트 커밋 `af194c1c72251f4490fb026048dea406ecfe8a6b`, Pages 35955684842 성공. 자세한 결과와 성능 표본은 game/docs/TEST_REPORT.md 및 PUBLICATION_STATUS.json. 마지막 턱/옷깃 경계 수정, 썸네일 재생성, Python 네트워크 포트 사전 검사에도 INC_TEST_PORT 적용 완료. 검증 파일은 validation/release-v104/.
