@@ -31,6 +31,12 @@ jobs:
           unzip -p /tmp/templates.tpz templates/web_nothreads_release.zip > ~/.local/share/godot/export_templates/4.4.1.stable/web_nothreads_release.zip
           unzip -p /tmp/templates.tpz templates/web_nothreads_debug.zip > ~/.local/share/godot/export_templates/4.4.1.stable/web_nothreads_debug.zip
           python3 game/tools/prepare_assets.py
+      - name: Preflight isolated Web asset import
+        run: |
+          set -euo pipefail
+          pip install Pillow
+          python3 web/prepare_lightweight.py
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
       - name: Import and bake original models
         run: |
           set -euo pipefail
