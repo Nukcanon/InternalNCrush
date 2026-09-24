@@ -169,7 +169,10 @@ func simulate(dt:float,now:float,can_move:bool):
 	was_grounded=is_on_floor()
 	var before=global_position
 	move_and_slide()
-	if is_on_floor():gait+=Vector2(global_position.x-before.x,global_position.z-before.z).length()/(2.*Rules.step_length(sprint,crouch))
+	# Collision recovery can nudge a stationary spawn sideways. That is not a
+	# walking step, especially while movement is disabled during round setup.
+	if is_on_floor() and can_move and Vector2(velocity.x,velocity.z).length_squared()>.0025:
+		gait+=Vector2(global_position.x-before.x,global_position.z-before.z).length()/(2.*Rules.step_length(sprint,crouch))
 	if not was_grounded and is_on_floor():land_kick=.055
 	update_spread(dt,now)
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
