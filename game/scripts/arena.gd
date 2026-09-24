@@ -129,7 +129,7 @@ func build(which:int):
 		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 		if which==PracticeLayout.INDEX:PracticeLayout.build(self)
 		else:DefusalLayout.build(self,which)
-		WorldDressing.build(self);building=false;SurfaceCleanup.clean(architecture);batch_architecture();apply_surface_detail();ArenaLighting.build(self);return
+		WorldDressing.build(self);building=false;SurfaceCleanup.clean(architecture);PlanarCleanup.clean(architecture);batch_architecture();apply_surface_detail();ArenaLighting.build(self);return
 	map_index=which;vertical_map=VerticalLayout.enabled(which);indoors=which in [2,3,6,8,11,14,15];has_water=which in [0,5];bounds=MapLayouts.extent(which);building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 	if not vertical_map:box(Vector3(0,-.5,0),Vector3(bounds.x*2,1,bounds.y*2),Color("b9b5a5") if has_water else Color("c5b69a"))
 	build_perimeter(which)

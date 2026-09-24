@@ -94,7 +94,7 @@ body {
 #launch button {background:#6cdfc3;color:#10212c;border:0;border-radius:8px;padding:18px 42px;font-size:20px;font-weight:700;cursor:pointer;}
 #launch h1 {letter-spacing:.1em;font-size:clamp(24px,5vw,44px);}
 #launch p {color:#bdd0d7;line-height:1.6;max-width:550px;}
-#fullscreen {position:fixed;top:env(safe-area-inset-top,0);left:calc(50% - 48px);z-index:5;padding:5px 12px;border:1px solid #78989c77;border-radius:0 0 6px 6px;background:#13293699;color:#d9eeee;font-size:12px;cursor:pointer;}
+#fullscreen {position:fixed;top:max(6px,env(safe-area-inset-top,0));left:max(8px,env(safe-area-inset-left,0));z-index:5;padding:5px 12px;border:1px solid #78989c77;border-radius:0 0 6px 6px;background:#13293699;color:#d9eeee;font-size:12px;cursor:pointer;}
 #portrait {display:none;position:fixed;inset:0;z-index:30;background:#112631;color:white;place-content:center;text-align:center;font:20px system-ui;padding:30px;}
 @media (orientation:portrait) and (pointer:coarse) {#portrait{display:grid}}
 </style>

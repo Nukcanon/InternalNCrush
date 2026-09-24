@@ -1,7 +1,7 @@
 """Lightweight room directory/signaling. No game processes or combat packets.
 
 One ASGI worker owns ephemeral rooms. Restarting the directory removes the room
-list; active WebRTC matches can continue until the host exits. Never log tickets.
+list and may end admissions/matches during graceful shutdown. Never log tickets.
 """
 import asyncio
 import base64

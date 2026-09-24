@@ -40,12 +40,15 @@ func run():
 	var hand_styles={}
 	for id in Catalog.weapons:
 		var weapon=WeaponVisual.new();root.add_child(weapon);weapon.build(Catalog.weapons[id],true);hand_styles[weapon.reload_style]=true
+		var pose=WeaponVisual.new();root.add_child(pose);pose.build_pose(Catalog.weapons[id])
 		for side in [-1.,1.]:
 			weapon.scale.x=side
 			for t in [-1.,.2,.4,.6,.8,1.]:
 				weapon.animate_reload(t,0.,1.)
+				pose.animate_reload(t,0.,1.)
+				expect(pose.left_hand.position.is_equal_approx(weapon.left_hand.position) and pose.right_hand.position.is_equal_approx(weapon.right_hand.position),"headless and visible reload sockets agree "+id)
 				expect(weapon.support_rig.basis.determinant()>.99 and weapon.firing_rig.basis.determinant()>.99,"wrist axes remain orthonormal "+id)
-		weapon.free()
+		weapon.free();pose.free()
 	expect(hand_styles.has_all(["bullpup","drum","bolt","shell","box","pistol"]),"magazine-specific feeding animations")
 	var filter=RoomFilters.defaults();filter.ping=100
 	var rooms=[{"name":"Beta","mode":0,"players":4,"ping":80},{"name":"Alpha","mode":1,"players":2,"ping":30},{"name":"Unknown","mode":0,"players":1,"ping":-1}]

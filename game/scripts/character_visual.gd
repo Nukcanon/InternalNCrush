@@ -61,7 +61,7 @@ func build_pose_only(which:int,side:int):
 	role=which;team=side;enable_physics=false
 	rig=HumanModel.pose_rig(role);add_clips(rig);bind_rig();animator.play("idle")
 	var weapon=WeaponVisual.new();socket.add_child(weapon);weapon.scale=Vector3.ONE*.85
-	weapon.right_hand=weapon.piece("RightHand",Vector3(.044,-.12,.035));weapon.left_hand=weapon.piece("LeftHand",Vector3(-.042,-.073,-.38))
+	weapon.build_pose(Catalog.get_weapon(Catalog.first(role)))
 func react(direction:float):hit_time=.32;hit_sign=direction
 func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pitch:float,reloading:float,kick:float,gait_phase:float=-1.,turn:float=0.):
 	var speed=Vector2(move.x,move.z).length()

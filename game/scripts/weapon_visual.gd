@@ -22,6 +22,22 @@ var metal=Color("202b33")
 var edge=Color("586773")
 var light=Color("9baeb6")
 var accent=Color("62bcb3")
+const LENGTHS={"VECTOR-24":.66,"RAPID-9":.59,"ATLAS":.76,"TRIAD":.68,"SCOUT":.88,"MONOLITH":1.06,"ECHO":.79,"LARK":.7,"KESTREL":.84,"ANCHOR":.78,"BASTION":.9,"PULSE":.83,"TIDAL":.68,"FOLD":.44,"SWIFT":.43,"FLUX":.42,"LINE":.53,"HIVE":.55,"PIPER":.59}
+func build_pose(w:Dictionary):
+	# Identical sockets/reload nodes without GPU geometry, for dedicated hit poses.
+	spec=w;name=w.name;reload_style=str(w.reload_style)
+	if w.name in ["HIVE","TIDAL"]:reload_style="drum"
+	elif w.name in ["RAPID-9","KESTREL","FLUX"]:reload_style="bullpup"
+	elif w.name in ["SCOUT","MONOLITH"]:reload_style="bolt"
+	var pistol=int(w.slot)==1 and w.kind=="gun"
+	length=(.4 if w.name=="CHIME" else .32 if w.name=="SPARK" else .3) if pistol else .43 if w.kind=="heal" else .29 if w.kind=="repair" else LENGTHS.get(w.name,.65)
+	barrel_group=piece("Barrel");magazine=piece("Magazine",Vector3(0,-.09,-.18));action_part=piece("Action",Vector3(0,.027,-.17))
+	if pistol:magazine.position=Vector3(0,-.19,.046)
+	elif w.kind=="repair":magazine.position=Vector3(0,-.13,-.15)
+	elif w.kind!="heal":magazine.position=Vector3(0,-.087,.05 if w.name in ["RAPID-9","KESTREL","FLUX"] else -.17)
+	mag_origin=magazine.position;action_origin=action_part.position
+	left_hand=piece("LeftHand",Vector3(-.042,-.073,-length*.59 if not pistol else .030));hand_origin=left_hand.position
+	right_hand=piece("RightHand",Vector3(.044,-.120,-.15 if w.name in ["RAPID-9","KESTREL","FLUX"] else .035))
 func block(parent:Node,pos:Vector3,size:Vector3,color:Color,tilt=0.) -> MeshInstance3D:return M.box(parent,pos,size,color,Vector3(tilt,0,0),.48)
 func tube(parent:Node,pos:Vector3,radius:float,depth:float,color:Color) -> MeshInstance3D:return M.cylinder(parent,pos,radius,depth,color,Vector3(PI/2,0,0))
 func shell(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
@@ -113,7 +129,7 @@ func build(w:Dictionary,hands=true):
 			for x in [-.06,.06]:block(barrel_group,Vector3(x,0,-.32),Vector3(.025,.04,.16),light)
 			magazine.position=Vector3(0,-.13,-.15);block(magazine,Vector3.ZERO,Vector3(.12,.095,.18),accent)
 	else:
-		length={"VECTOR-24":.66,"RAPID-9":.59,"ATLAS":.76,"TRIAD":.68,"SCOUT":.88,"MONOLITH":1.06,"ECHO":.79,"LARK":.7,"KESTREL":.84,"ANCHOR":.78,"BASTION":.9,"PULSE":.83,"TIDAL":.68,"FOLD":.44,"SWIFT":.43,"FLUX":.42,"LINE":.53,"HIVE":.55,"PIPER":.59}.get(model,.65)
+		length=LENGTHS.get(model,.65)
 		var bullpup=model in ["RAPID-9","KESTREL","FLUX"]
 		var receiver_width=.14 if role==2 else .115 if model in ["TIDAL","HIVE"] else .095
 		shell(self,Vector3(0,0,-.20),Vector3(receiver_width,.14,.39),metal)
@@ -212,8 +228,7 @@ func update_hands(t:float,recoil:float,shot_age:float):
 	WeaponHand.fit_forearm(firing_arm,firing_elbow,firing_wrist)
 func animate_reload(t:float,recoil:float,shot_age=10.):
 	magazine.position=mag_origin;magazine.rotation=Vector3.ZERO;action_part.position=action_origin;action_part.rotation=Vector3.ZERO;left_hand.position=hand_origin;left_hand.rotation=Vector3.ZERO;barrel_group.rotation=Vector3.ZERO
-	flash.visible=shot_age<.045
-	flash.rotation.z=shot_age*100
+	if is_instance_valid(flash):flash.visible=shot_age<.045;flash.rotation.z=shot_age*100
 	if t<0:
 		action_part.position.z+=recoil*.045
 		if spec.name=="PULSE":

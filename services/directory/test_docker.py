@@ -20,7 +20,11 @@ try:
     with urllib.request.urlopen(url+'/health',context=context,timeout=10) as response:assert b'directory-only' in response.read()
     for target,ctx in [(url,None),('https://127.0.0.1:18443',context)]:
         try:urllib.request.urlopen(target+'/health',context=ctx,timeout=10);raise AssertionError('Untrusted certificate or hostname accepted')
-        except urllib.error.URLError as error:assert isinstance(error.reason,ssl.SSLCertVerificationError),error
+        except urllib.error.URLError as error:
+            # Caddy may reject an unknown SNI before sending any certificate.
+            # The trusted positive request above must succeed; neither negative
+            # case may establish TLS. Unknown-CA still requires cert rejection.
+            assert isinstance(error.reason,ssl.SSLCertVerificationError if ctx is None else ssl.SSLError),error
     # Scoped CA environment applies only to this disposable test child.
     scoped=dict(env,SSL_CERT_FILE=str(ca))
     subprocess.run(['python','services/directory/check_live.py',url],cwd=ROOT,env=scoped,check=True,timeout=60)
