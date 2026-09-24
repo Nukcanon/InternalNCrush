@@ -64,7 +64,7 @@ var shot_serial=0
 func _ready():
 	motion_seed=fposmod(float(pid)*2.39996,TAU)
 	collision_layer=2;collision_mask=1|4|8
-	shape=CollisionShape3D.new();var cap=CapsuleShape3D.new();cap.radius=.34;cap.height=1.8;shape.shape=cap;shape.position.y=.9;add_child(shape)
+	shape=CollisionShape3D.new();var cap=CapsuleShape3D.new();cap.radius=.25;cap.height=1.8;shape.shape=cap;shape.position.y=.9;add_child(shape)
 	render_root=Node3D.new();add_child(render_root)
 	tag=Label3D.new();tag.font=game.ui.theme.default_font;tag.position.y=2.;tag.font_size=32;tag.outline_size=8;tag.outline_modulate=Color("101f2d");tag.pixel_size=.004;tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;add_child(tag)
 	camera=Camera3D.new();camera.position.y=1.62;camera.fov=82;camera.far=300;camera.near=.08;add_child(camera)
@@ -93,8 +93,14 @@ func set_team(t:int):
 	if game.render_actors:ensure_character()
 	shown_weapon=""
 func ensure_character():
-	if is_instance_valid(character):return
+	if is_instance_valid(character):
+		if not character.get_meta("pose_only",false):return
+		character.queue_free();character=null;shown_weapon=""
 	character=Character.new();render_root.add_child(character);character.build(shown_role,shown_team);character.motion_seed=motion_seed
+func ensure_hit_pose():
+	if is_instance_valid(character):return
+	character=Character.new();render_root.add_child(character);character.build_pose_only(maxi(0,shown_role),maxi(0,shown_team));character.set_meta("pose_only",true);character.motion_seed=motion_seed
+	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,-1.,0.,gait)
 
 func reset_view(yaw:float):
 	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,eye_height(false),0))
@@ -135,12 +141,12 @@ func simulate(dt:float,now:float,can_move:bool):
 	var sprint=not cooking and bool(input_state.sprint) and not crouch and not input_state.ads and not input_state.fire
 	if last_sprint and not sprint:sprint_release=now+.5
 	last_sprint=sprint
-	var speed=11.2 if sprint else 3.1 if crouch else 4.4 if input_state.ads else 7.4
+	var speed=Rules.RUN_SPEED if sprint else Rules.CROUCH_SPEED if crouch else Rules.WALK_SPEED
 	if game.arena and game.arena.wading(global_position):speed*=.72
 	if game.players.has(pid):
 		var p=game.players[pid]
 		var weapon=game.current_weapon(p)
-		if input_state.ads and p.slot<2:speed=float(weapon.get("ads_speed",4.4))
+		if input_state.ads and p.slot<2:speed=minf(speed,float(weapon.get("ads_speed",4.4))*.5)
 		elif p.slot<2:speed*=float(weapon.get("move_speed_scale",1.))
 		if p.get("slow",0)>now:speed*=.6
 		if p.get("shield",0)>now:speed*=.6
@@ -150,9 +156,9 @@ func simulate(dt:float,now:float,can_move:bool):
 	wish=Basis(Vector3.UP,aim_yaw)*wish
 	var target_velocity=wish*speed if can_move else Vector3.ZERO
 	if sliding and can_move:
-		var p=game.players[pid];var age=now-float(p.slide_started);target_velocity=p.slide_direction*maxf(4.,11.5-age*9.)
+		var p=game.players[pid];var age=now-float(p.slide_started);target_velocity=p.slide_direction*maxf(2.4,6.8-age*5.)
 		if not is_on_floor():p.slide_until=now
-	var acceleration=90. if sliding else 48. if wish.length_squared()>.01 else 64.
+	var acceleration=40. if sliding else 22. if wish.length_squared()>.01 else 28.
 	if not is_on_floor():acceleration=16.
 	var planar=Vector2(velocity.x,velocity.z).move_toward(Vector2(target_velocity.x,target_velocity.z),acceleration*dt)
 	velocity.x=planar.x;velocity.z=planar.y
@@ -177,8 +183,13 @@ func update_spread(dt:float,now:float):
 	if p.get("slide_until",0)>now:target+=2.3
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 13.)))
 func headless_pose(p:Dictionary):
-	# Keep gameplay transforms and class dimensions, without solving 32 rigs every tick.
+	# The same small joint hierarchy drives authoritative hit volumes without meshes.
 	set_team(int(p.team))
+	ensure_hit_pose();character.scale.x=float(p.get("hand",1))
+	var w=game.current_weapon(p);var progress=clampf((game.clock-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0.,1.) if p.reload>game.clock else -1.
+	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
+	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/.72,0.,1.))
+	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),game.clock)
 	if not local and not game.server:global_position=target_pos;rotation.y=aim_yaw
 	shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
 	camera.position=Vector3(0,eye_height(bool(input_state.crouch)),0)
@@ -203,7 +214,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	var grounded=is_on_floor() if local or game.server else net_grounded
 	var sprint=last_sprint if local or game.server else net_sprint
 	var progress=clampf((now-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0,1) if p.reload>now else -1.
-	move_blend=lerpf(move_blend,minf(1,speed/7.4),1.-exp(-dt*9))
+	move_blend=lerpf(move_blend,minf(1,speed/Rules.WALK_SPEED),1.-exp(-dt*9))
 	if not local and not game.server and grounded:net_gait+=dt*speed/(2.*Rules.step_length(sprint,bool(input_state.crouch)))
 	var phase=gait if local or game.server else net_gait
 	bob=phase*TAU

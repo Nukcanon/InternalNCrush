@@ -1,3 +1,7 @@
+# 1.1.0 작업 중 — 안정 공개판은 아래 1.0.4
+
+현재 구현·검증 진행 상황은 [game/docs/WORK_1_1.md](game/docs/WORK_1_1.md)를 먼저 읽는다. 신규 서버는 services/directory 및 services/cloudflare-directory, 웹 내보내기는 web/. 공개 Cloudflare URL은 아직 없고 계정 답변 대기 중이다. 새 릴리스/Pages 검증 후 아래 확정 기록을 갱신해야 한다.
+
 # Internal N Crush — 1.0.4 인계
 
 2026-09-24. 공개 상태/커밋/CI/ZIP 해시는 PUBLICATION_STATUS.json이 기준이다. 이전 확정 자료는 game/docs/*V103*에 보존했다.

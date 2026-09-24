@@ -8,3 +8,5 @@ __pycache__/
 assets/models/*.scn
 assets/models/*.glb
 assets/models/*.import
+
+addons/webrtc_native/lib/

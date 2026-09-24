@@ -15,6 +15,7 @@ func clear():
 	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();active_lights=0
 	blood=null
 func blood_hit(point:Vector3,direction:Vector3,amount:float):
+	if not GraphicsOptions.blood_enabled:return
 	if not is_instance_valid(blood):blood=BloodFX.new();add_child(blood)
 	blood.emit_hit(point,direction,amount)
 func group(pos:Vector3) -> Node3D:

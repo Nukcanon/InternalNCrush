@@ -117,5 +117,13 @@
       "resolution": "(1280, 720)"
     }
   ],
-  "benchmark_source_commit": "f3d5a5c03396960a3c7b29959c3f8381ea720f59"
+  "benchmark_source_commit": "f3d5a5c03396960a3c7b29959c3f8381ea720f59",
+  "working_candidate": {
+    "version": "1.1.0",
+    "state": "implemented_validation_in_progress",
+    "notes": "game/docs/WORK_1_1.md",
+    "public_lobby_url": null,
+    "cloudflare_deployment": "awaiting account access",
+    "physical_mobile_validation": false
+  }
 }

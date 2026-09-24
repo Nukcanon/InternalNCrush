@@ -1,54 +1,51 @@
-# Linux / NAS 공개 로비
+# Linux / NAS · 방 목록 서버
 
-Docker Compose v2로 HTTPS 로비 API, WSS 게임 게이트웨이, 서버 권한형 Godot 방 프로세스를 함께 실행한다. 인터넷 로비는 LAN 방 검색과 별도이며 게임 메인 메뉴의 **인터넷 로비**에서 운영자 URL을 입력한다. 이 저장소나 GitHub Pages가 실시간 서버를 호스팅하지는 않는다.
+1.1.0 구성은 방 목록·빠른 매치 배정·입장 승인·WebRTC 접속 신호만 처리합니다. **실제 경기는 방장 PC 또는 브라우저가 계산**하며 NAS에 Godot나 게임 에셋을 설치하지 않습니다. 기존 1.0.x 전용 방 프로세스 구성은 `services/matchmaker/`에 참고용으로 남아 있습니다.
 
-## 설치
+## 쉬운 설정
 
-64비트 Linux x86-64 또는 ARM64, Docker Engine/Compose v2, 공개 DNS 이름이 필요하다. 이미지에는 두 CPU용 Godot 다운로드 경로가 있다. 실제 검증한 CPU와 결과는 [검증 보고서](../game/docs/TEST_REPORT.md)를 확인한다. 32비트 ARM NAS는 지원하지 않는다.
+Windows에 Python 3.9 이상이 있으면 **01_설정.cmd**를 실행하세요. 설치 대상(NAS / Linux), 도메인, 최대 방 수를 선택하면 `.env`와 서버 업로드 ZIP을 만듭니다. 기존 TURN 설정은 유지하고 기존 `.env`는 백업합니다. ZIP에는 설정이 포함되므로 관리자가 보관하세요. 첨부 예시의 구성 방식을 참고해 새로 작성했으며 외부 설치 프로그램을 실행하지 않습니다.
+
+- **NAS**: 기존 HTTPS 역방향 프록시에서 `https://도메인:443` → `http://127.0.0.1:18080`. WebSocket을 허용하고 `X-Real-IP`를 실제 요청자 주소로 덮어쓰세요. 기본 호스트 포트는 루프백으로 제한합니다. 프록시가 별도 컨테이너라면 해당 호스트에 접근 가능한 사설 인터페이스를 운영자가 지정해야 합니다.
+- **Linux**: 도메인의 A/AAAA를 서버로 연결하고 TCP 80/443을 전달합니다. Caddy가 공인 인증서를 발급·갱신합니다. CGNAT나 잘못된 AAAA는 먼저 해결해야 합니다.
+
+업로드 ZIP을 풀고 `nas` 폴더에서 실행합니다. Docker Engine와 Compose v2가 필요합니다.
 
 ```sh
-git clone https://github.com/Nukcanon/InternalNCrush.git
-cd InternalNCrush/nas
-cp .env.example .env
-# .env의 DOMAIN과 ACME_EMAIL을 실제 도메인/이메일로 변경
-docker compose up -d --build
-docker compose ps
+sh 02_start.sh
+sh 03_status.sh
 curl https://실제도메인/health
 ```
 
-DNS A/AAAA를 서버의 공인 IP로 연결하고 공유기/NAS에서 TCP 80·443만 이 구성으로 전달한다. Caddy가 공인 인증서를 발급·갱신한다. 잘못된 AAAA, CGNAT, ISP의 포트 차단이 있으면 먼저 네트워크 환경을 해결해야 한다. NAS 관리 화면이 이미 80/443을 사용한다면 별도 IP 또는 기존 TLS 리버스 프록시 연동이 필요하다. 관리 화면을 게임 포트로 공개하지 않는다.
+`role: directory-only`, `version: 1.1.0`을 확인하고 게임 인터넷 로비에 동일한 HTTPS 주소를 입력하세요. `python setup.py --check`도 인증서 검증을 포함해 접속을 확인합니다. 설정 마법사 없이 `.env.example`을 복사해 직접 설정할 수도 있습니다.
 
-게임 클라이언트에서 `https://실제도메인`으로 연결한다. **공개 방 만들기**는 방장이 시작하고, **빠른 참가**는 원하는 모드 또는 모든 모드로 참가 가능한 방을 찾는다. 새 자동 매칭 방은 2명 이상 들어오면 시작한다. 기본은 8명·8인용 무작위 전장, 참가 인원은 맵 정원을 초과할 수 없다. 게임과 서버 버전은 같아야 한다.
+## 운영과 연결
 
-## 운영
+기본 최대 128개 방(설정 1~512), 디렉터리 컨테이너 1 CPU / 256 MB / 64 프로세스 제한입니다. 이는 처리량 보장이 아닙니다. Python과 Caddy 공식 멀티아키텍처 이미지를 사용하며 실제 ARM NAS 검증은 별도입니다. 비루트 UID 10001, 읽기 전용 루트, 권한 제거, 내부 API 포트 비공개입니다.
 
-- 기본 최대 4개 방, API 세션 최대 2,000개, 게스트당 방 생성 1개. `.env`의 `MAX_ROOMS=1..4`로 줄일 수 있다. 기본 컨테이너 제한은 CPU 4개/메모리 4GB/프로세스 256개이며 이는 처리 성능 보장이 아니다. NAS 사양에 맞춰 시작은 1개 방을 권장한다.
-- 방당 전용 Godot 프로세스 하나. 봇은 공개 매칭의 빈자리를 자동으로 채우지 않는다. 빈 방 180초, 시작 실패 90초, 하트비트 중단 20초 후 정리한다.
-- 세션은 6시간, 입장권은 30초 유효하며 한 번만 사용한다. 재접속은 로비에서 새 입장권을 받는다. 토큰은 클라이언트 메모리에만 둔다.
-- `docker compose logs --tail 100`으로 API/게이트웨이 시작 문제를 확인한다. 개별 게임 프로세스 stdout은 무제한 로그와 정보 노출을 피하려고 버린다. `/health`는 API 가용성만 검사한다. 방 준비 실패는 방 목록에서 사라지므로 외부 모니터링은 실제 입장 검사도 포함해야 한다.
-- 업데이트: `git pull --ff-only` 후 `docker compose up -d --build`. 컨테이너 교체 시 진행 중 경기는 종료되므로 이용자에게 점검 시간을 알리고 적용한다.
-- 종료: `docker compose down`. 인증서 볼륨은 유지한다. `down -v`는 인증서도 지우므로 평상시 업데이트에 사용하지 않는다.
-- 현재 방/게스트 세션은 메모리 저장이다. 재시작 후 복구되지 않는다. 고정 계정, 영구 제재, 순위/MMR, 지역 선택, 관전자 서비스와 여러 NAS 간 분산 배치는 후속 과제다.
-
-## 보안 경계
-
-인터넷 클라이언트↔Caddy는 인증서와 호스트 이름을 검증하는 HTTPS/WSS다. 입장권은 방별 비밀 키로 HMAC-SHA256 서명하고 방/만료/1회용 nonce를 검증한다. 내부 하트비트 API는 게이트웨이에서 차단한다. Godot/API 포트는 호스트로 공개하지 않으며 컨테이너 내부 네트워크에서만 통신한다. Docker 소켓을 마운트하지 않고 게임/API는 비루트 사용자로 실행한다.
-
-이동·발사 간격·탄약·피해·장비·팀·목표·수류탄은 서버가 결정한다. 클라이언트는 입력만 보내며 NaN/무한대/타입 오류, 잘못된 명령, 과도한 입력 빈도와 너무 큰 API 요청을 거부한다. 서버간 API 키와 세션 토큰은 공개 방 목록에 포함하지 않는다.
-
-암호화는 네트워크 구간의 평문 도청/변조를 막기 위한 것이다. 클라이언트 메모리의 상대 위치, 에임봇, 화면 인식, 감염된 PC, 서버 관리자에 대한 보호까지 보장하지 않는다. 현재 스냅샷은 모든 참가자의 위치를 포함하므로 벽 너머 정보의 클라이언트 분석을 완전히 차단하지 못한다. 게스트가 새 세션으로 제재를 우회할 수도 있다. 계정 인증·영구 제재·시야 기반 정보 제한·행동 탐지·운영자 신고/재생 도구·DDoS 보호가 공개 대규모 운영 전에 추가로 필요하다.
-
-LAN 모드는 기존 UDP ENet이며 암호화되지 않는다. 신뢰할 수 있는 내부망에서 사용한다. 인터넷 WSS는 TCP 기반이므로 패킷 손실 시 뒤 데이터가 함께 지연될 수 있다. 로컬 연결 성공을 WAN 대규모 성능 검증으로 해석하지 않는다. 장기 고빈도 경쟁전 서버는 인증된 UDP/DTLS 또는 QUIC 전송을 따로 평가해야 한다.
-
-## 개발 검증
+세션 6시간, 일회용 입장 승인 30초, 방장 상태 수신 8초, 미응답 방 45초 정리를 적용합니다. 방장은 퇴장 전까지 게임 서버 역할을 유지해야 합니다. 방장 자동 이전과 계정/MMR은 지원하지 않습니다. 서비스 재시작은 목록을 초기화하고 신호 연결을 종료하므로 점검 시간에 수행하세요.
 
 ```sh
-pip install -r services/matchmaker/requirements.txt httpx==0.28.1
-python -m unittest services.matchmaker.test_service -v
-GODOT=/절대경로/godot python -m services.matchmaker.run_integration
-python services/matchmaker/test_docker.py
+docker compose logs --tail 100
+docker compose up -d --build
+sh 04_stop.sh
 ```
 
-저장소 루트에서 실행한다. 마지막 검사는 임시 Compose 프로젝트 `inc-ci`를 생성하며 로컬 80/443을 사용한다. 전용 개발/CI 머신에서 실행한다. 테스트가 만든 컨테이너와 볼륨만 종료 시 정리한다. 인증서 검증을 끄지 않고 임시 Caddy CA를 테스트 클라이언트에만 지정해 HTTPS/WSS를 검사하며, 신뢰되지 않는 CA와 다른 호스트 이름의 인증서는 거부하는지도 검사한다. 일반 게임에는 테스트 CA 설정이 적용되지 않는다.
+종료는 인증서 볼륨을 보존합니다. 게임 파일은 이 서버에 없으며 클라이언트는 GitHub Pages 또는 Windows 릴리스에서 받습니다. 봇은 빠른 매치의 빈자리를 자동으로 채우지 않으며 2명부터 시작합니다.
 
-설계 근거: [FastAPI 컨테이너 배포](https://fastapi.tiangolo.com/deployment/docker/), [Caddy 자동 HTTPS](https://caddyserver.com/docs/automatic-https), [Godot WebSocketMultiplayerPeer](https://docs.godotengine.org/en/4.4/classes/class_websocketmultiplayerpeer.html). 공인 도메인/NAS 접속 정보가 제공되지 않은 상태에서는 외부 운영 서버가 배포됐다고 간주하지 않는다.
+STUN으로 직접 연결을 시도합니다. 기업망·대칭 NAT에서 접속이 막히면 운영하는 TURN의 URL과 REST 비밀키를 `.env`에 설정하세요. 기본 구성은 유료 중계를 신청하지 않습니다. NAS는 기본 전투 트래픽을 중계하지 않지만 **TURN을 같은 NAS에서 별도로 운영하면 중계 대역폭은 발생**합니다.
+
+웹 내부망 로비는 동일 외부 주소의 방을 표시합니다. Windows UDP 방과 별도이며 Windows에서도 ‘웹 호환 로비’를 사용하면 함께 참가할 수 있습니다. 공유 NAT에서는 다른 사용자도 같은 그룹일 수 있어 비밀번호 방이 권장됩니다. 목록 핑은 로비 왕복+방장 응답의 추정치, 경기 HUD 핑은 실제 게임 연결 값입니다.
+
+## 보안과 검사
+
+HTTPS/WSS 인증서·호스트 이름 검증, 짧은 입장 승인, 메시지 크기·빈도 제한, 호스트↔참가자 신호 라우팅을 적용합니다. 전투는 WebRTC DTLS/SCTP 암호화와 방장 권한 검증을 사용합니다. Windows 기본 LAN ENet은 평문입니다. 암호화가 클라이언트/방장의 변조, 메모리 분석이나 에임봇을 완전히 막지는 않습니다.
+
+```sh
+pip install -r services/directory/requirements.txt httpx==0.28.1
+python -m unittest services.directory.test_directory nas.test_setup -v
+python services/directory/check_live.py https://실제도메인 --version 1.1.0
+python services/directory/test_docker.py
+```
+
+위 검사는 저장소 루트에서 실행합니다. Docker 검사는 자체 `inc-directory-ci` 프로젝트, 18080/18443 포트와 일회용 CA를 사용하고 자기 컨테이너/볼륨만 정리합니다. 시스템 신뢰 저장소를 변경하지 않습니다. 무료 호스팅 대안은 [Cloudflare 구성](../services/cloudflare-directory/README.md)입니다.

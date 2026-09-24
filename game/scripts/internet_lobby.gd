@@ -6,6 +6,8 @@ var token=""
 var busy=false
 var error=""
 var pending=""
+var scope="internet"
+var list_latency=0
 func valid_endpoint(url:String) -> bool:
 	return url.begins_with("https://") or url.begins_with("http://127.0.0.1:")
 func request(path:String,data:Variant=null) -> Dictionary:
@@ -16,7 +18,9 @@ func request(path:String,data:Variant=null) -> Dictionary:
 	if not token.is_empty():headers.append("Authorization: Bearer "+token)
 	var result=http.request(endpoint+path,headers,HTTPClient.METHOD_GET if data==null else HTTPClient.METHOD_POST,"" if data==null else JSON.stringify(data))
 	if result!=OK:http.queue_free();busy=false;return {"error":"요청을 시작할 수 없습니다."}
+	var began=Time.get_ticks_msec()
 	var response=await http.request_completed;http.queue_free();busy=false
+	if path.begins_with("/v1/rooms") and data==null:list_latency=Time.get_ticks_msec()-began
 	if response[0]!=HTTPRequest.RESULT_SUCCESS:return {"error":"서버 연결을 확인하세요. HTTPS 인증서와 주소가 필요합니다."}
 	var value=JSON.parse_string(response[3].get_string_from_utf8())
 	if not value is Dictionary:return {"error":"서버 응답 형식이 올바르지 않습니다."}
@@ -34,11 +38,12 @@ func join(room_id:String) -> Dictionary:
 	if value.has("ticket"):enter(value)
 	return value
 func matchmake(mode:int) -> Dictionary:
-	var value=await request("/v1/match",{"mode":null if mode<0 else mode})
+	var value=await request("/v1/match",{"mode":null if mode<0 else mode,"scope":scope})
 	if value.has("ticket"):enter(value)
 	elif value.get("pending",false):pending=value.room.id
 	return value
 func enter(value:Dictionary):
+	if str(value.get("transport",""))=="webrtc":game.rtc.begin(value,endpoint);return
 	var url=str(value.get("url",""))
 	if not url.begins_with("wss://") and not (endpoint.begins_with("http://127.0.0.1:") and url.begins_with("ws://127.0.0.1:")):
 		game.ui.notice("암호화된 게임 주소가 필요합니다.");return

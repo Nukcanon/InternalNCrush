@@ -14,7 +14,7 @@ func run():
 	a.input_state.z=-1;a.simulate(.016,0.,true)
 	expect(absf(a.velocity.z)>0 and absf(a.velocity.z)<7.4,"movement accelerates instead of snapping to maximum speed")
 	for i in range(45):a.simulate(.016,0.,true)
-	var expected_speed=7.4*float(Catalog.get_weapon(g.players[1].primary).move_speed_scale)
+	var expected_speed=Rules.WALK_SPEED*float(Catalog.get_weapon(g.players[1].primary).move_speed_scale)
 	expect(absf(absf(a.velocity.z)-expected_speed)<.1,"acceleration reaches the weapon-specific walking speed")
 	a.input_state.z=0;a.simulate(.016,0.,true)
 	expect(absf(a.velocity.z)>0 and absf(a.velocity.z)<7.4,"releasing input brakes over time")

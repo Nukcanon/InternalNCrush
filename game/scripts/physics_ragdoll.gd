@@ -21,8 +21,8 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 	model.animator.stop()
 	if is_instance_valid(source):
 		model.scale=source.scale
-		for path in PARTS:
-			var original=source.rig.get_node(path[0]);model.rig.get_node(path[0]).transform=original.transform
+		for path in OperatorSkin.PATHS:
+			var original=source.rig.get_node(path);model.rig.get_node(path).transform=original.transform
 	elif crouched:model.update_pose(.016,Vector3.ZERO,false,true,true,0.,-1.,0.,0.)
 	var paths={};var joints={}
 	for part in PARTS:paths[model.rig.get_node(part[0])]=part[0]
@@ -30,13 +30,18 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		var bone:Node3D=model.rig.get_node(part[0]);var body=RigidBody3D.new();body.name="Body"+str(bodies.size());add_child(body)
 		body.global_position=bone.to_global(Vector3(0,part[4],0));body.global_basis=bone.global_basis.orthonormalized()
 		if body.global_basis.determinant()<0:var b=body.global_basis;b.x=-b.x;body.global_basis=b
-		body.mass=part[5];body.collision_layer=16;body.collision_mask=1|4|8;body.linear_damp=.42;body.angular_damp=2.2;body.continuous_cd=true
+		# Cosmetic corpses contact static architecture only. Equipment/props and
+		# other limbs cannot feed impulses back into their joint chain.
+		body.mass=part[5];body.collision_layer=16;body.collision_mask=1;body.linear_damp=.42;body.angular_damp=2.2;body.continuous_cd=true
 		var shape=CollisionShape3D.new();var capsule=CapsuleShape3D.new();capsule.radius=part[3];capsule.height=maxf(part[2],part[3]*2.01);shape.shape=capsule;body.add_child(shape)
 		var physics=PhysicsMaterial.new();physics.friction=.85;physics.bounce=.02;body.physics_material_override=physics
 		followers.append({"bone":bone,"offset":body.global_transform.affine_inverse()*bone.global_transform})
 		body.linear_velocity=launch_velocity(push,velocity);body.angular_velocity=Vector3(push.z,0,-push.x)*.7
 		bodies.append(body);joints[part[0]]={"body":body,"anchor":bone.global_position}
 	launch_origin=bodies[0].global_position
+	for body in bodies:
+		for other in bodies:
+			if body!=other:body.add_collision_exception_with(other)
 	for part in PARTS:
 		if part[1]=="":continue
 		var hinge=part[0].ends_with("Knee") or part[0].ends_with("Elbow")
@@ -63,16 +68,17 @@ func copy_geometry(node:Node3D,body:RigidBody3D,paths:Dictionary,start:Node3D):
 		elif child is Node3D and not child is WeaponVisual:copy_geometry(child,body,paths,start)
 func _physics_process(dt:float):
 	age+=dt
-	if not bodies.is_empty() and age>.05:
+	if not bodies.is_empty() and age>.05 and age<1.4:
 		var delta=bodies[0].global_position-launch_origin;var distance=Vector2(delta.x,delta.z).length()
 		# A cosmetic 1–3m launch budget. Damping removes horizontal energy while
 		# gravity, world contact and joint rotation continue, including on stairs.
 		var drag=smoothstep(1.65,2.65,distance)*28.
 		for body in bodies:
+			if body.sleeping or body.freeze:continue
 			var v=body.linear_velocity;var horizontal=Vector2(v.x,v.z).limit_length(7.)*exp(-drag*dt)
 			body.linear_velocity=Vector3(horizontal.x,clampf(v.y,-20.,6.),horizontal.y);body.angular_velocity=body.angular_velocity.limit_length(12.)
 	for i in range(followers.size()):followers[i].bone.global_transform=bodies[i].global_transform*followers[i].offset
 	if is_instance_valid(model):model.sync_deform()
-	if age>4. and bodies.all(func(body):return body.linear_velocity.length()<.25 and body.angular_velocity.length()<.5):
+	if age>2.5 and bodies.all(func(body):return body.sleeping or (body.linear_velocity.length()<.16 and body.angular_velocity.length()<.3)):
 		for body in bodies:body.freeze=true
 	if age>6.:queue_free()

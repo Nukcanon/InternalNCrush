@@ -191,7 +191,7 @@ func build(which:int):
 	CombatLayout.build(self)
 	MapIdentity.renew(self)
 	WorldDressing.build(self)
-	building=false;SurfaceCleanup.clean(architecture);batch_architecture();apply_surface_detail()
+	building=false;SurfaceCleanup.clean(architecture);PlanarCleanup.clean(architecture);batch_architecture();apply_surface_detail()
 	ArenaLighting.build(self)
 func batch_architecture():
 	var meshes=[];gather_meshes(architecture,meshes);var chunks={}

@@ -79,6 +79,9 @@ func build(w:Dictionary,hands=true):
 	var idx=int(w.model_index);var role=int(w.role);var pistol=int(w.slot)==1 and w.kind=="gun"
 	accent=[Color("72b7a9"),Color("b0c195"),Color("d6b66b"),Color("dc9c59"),Color("969bca"),Color("69c6ac")][role]
 	reload_style=str(w.reload_style)
+	if w.name in ["HIVE","TIDAL"]:reload_style="drum"
+	elif w.name in ["RAPID-9","KESTREL","FLUX"]:reload_style="bullpup"
+	elif w.name in ["SCOUT","MONOLITH"]:reload_style="bolt"
 	barrel_group=piece("Barrel");magazine=piece("Magazine",Vector3(0,-.09,-.18));action_part=piece("Action",Vector3(0,.027,-.17))
 	var model=w.name
 	if pistol:
@@ -154,8 +157,8 @@ func build(w:Dictionary,hands=true):
 		if geo:
 			var finish=MeshFactory.vertex_material.duplicate();finish.set_shader_parameter("finish_roughness",.48);finish.set_shader_parameter("finish_metallic",.32);geo.material_override=finish
 	if hands:
-		support_rig=WeaponHand.new();left_hand.add_child(support_rig);support_rig.rotation.z=PI/2;support_rig.build(true,pistol,role)
-		firing_rig=WeaponHand.new();right_hand.add_child(firing_rig);firing_rig.rotation.z=-PI/2;firing_rig.build(false,pistol,role)
+		support_rig=WeaponHand.new();left_hand.add_child(support_rig);support_rig.build(true,pistol,role)
+		firing_rig=WeaponHand.new();right_hand.add_child(firing_rig);firing_rig.build(false,pistol,role)
 		support_arm=WeaponHand.forearm(self,role);firing_arm=WeaponHand.forearm(self,role);update_hands(-1.,0.,10.)
 		for mesh in find_children("*","MeshInstance3D",true,false):mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	flash=Node3D.new();flash.name="MuzzleFlash";muzzle.add_child(flash)
@@ -201,8 +204,12 @@ func update_hands(t:float,recoil:float,shot_age:float):
 	if not is_instance_valid(support_rig):return
 	var release=sin(clampf(t,0.,1.)*PI) if t>=0 else 0.
 	support_rig.pose(release,0.);firing_rig.pose(0.,maxf(0.,1.-shot_age/.12))
-	WeaponHand.fit_forearm(support_arm,Vector3(-.25,-.29,.24),left_hand.position+Vector3(-.046,0,.009))
-	WeaponHand.fit_forearm(firing_arm,Vector3(.20,-.27,.30),right_hand.position+Vector3(.046,0,.009))
+	var support_elbow=Vector3(-.28,-.29,.10).lerp(Vector3(-.24,-.34,.22),release*.5)
+	var firing_elbow=Vector3(.26,-.27,.29)
+	var support_wrist=WeaponHand.align_wrist(support_rig,left_hand.position,support_elbow,Vector3(.8,.65,.08))
+	var firing_wrist=WeaponHand.align_wrist(firing_rig,right_hand.position,firing_elbow,Vector3(-1.,.1,.15))
+	WeaponHand.fit_forearm(support_arm,support_elbow,support_wrist)
+	WeaponHand.fit_forearm(firing_arm,firing_elbow,firing_wrist)
 func animate_reload(t:float,recoil:float,shot_age=10.):
 	magazine.position=mag_origin;magazine.rotation=Vector3.ZERO;action_part.position=action_origin;action_part.rotation=Vector3.ZERO;left_hand.position=hand_origin;left_hand.rotation=Vector3.ZERO;barrel_group.rotation=Vector3.ZERO
 	flash.visible=shot_age<.045
@@ -222,6 +229,15 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 			barrel_group.rotation.x=sin(u*PI)*-.5;left_hand.position+=Vector3(.05,-.04,.18)*sin(u*PI)
 		"box":
 			action_part.rotation.x=-sin(u*PI)*1.3;magazine.position+=Vector3(-.21,-.11,0)*remove;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.08,0,.03),sin(u*PI));left_hand.position.y+=latch*.12
+		"drum":
+			magazine.position+=Vector3(-.12,-.22,.04)*remove;magazine.rotation.z=remove*.38
+			left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.09,-.075,.015),smoothstep(.04,.2,u)*(1.-smoothstep(.77,.94,u)));action_part.position.z+=latch*.07
+		"bullpup":
+			magazine.position+=Vector3(-.07,-.25,.035)*remove;magazine.rotation.z=-remove*.16
+			left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.035,-.07,.012),smoothstep(.02,.17,u)*(1.-smoothstep(.76,.94,u)));action_part.position.z+=latch*.075
+		"bolt":
+			action_part.position.z+=smoothstep(.02,.12,u)*(1.-smoothstep(.82,.95,u))*.11;action_part.rotation.z=-sin(u*PI)*.6
+			magazine.position+=Vector3(-.04,-.20,.015)*remove;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.035,-.06,0),sin(u*PI))
 		"pistol":
 			magazine.position+=Vector3(0,-.22,.04)*remove;left_hand.position=hand_origin.lerp(magazine.position+Vector3(-.045,-.055,.015),sin(u*PI));action_part.position.z+=latch*.065
 		_:

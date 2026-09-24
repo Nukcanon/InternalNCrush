@@ -5,8 +5,19 @@ const HEIGHTS=[1.80,1.72,1.88,1.76,1.83,1.70]
 const WIDTHS=[1.0,.92,1.08,1.01,.98,.93]
 const FEMALE_ROLES=[1,5]
 const IDENTITIES=["MASON", "SERA", "BRIGGS", "REED", "VALE", "MINA"]
+const SKIN_COLORS=[Color("b3a28c"),Color("c7b69f"),Color("89765f"),Color("b9a48a"),Color("9b866e"),Color("c2b099")]
 static func joint(parent:Node,label:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=label;n.position=pos;parent.add_child(n);return n
+static func pose_rig(which:int) -> Node3D:
+	var rig=Node3D.new();rig.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,WIDTHS[which])
+	var hips=joint(rig,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
+	joint(chest,"Head",Vector3(0,.36,0));joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
+	for side in [-1,1]:
+		var prefix="Left" if side<0 else "Right"
+		var arm=joint(chest,prefix+"Arm",Vector3(side*(.185 if which in FEMALE_ROLES else .207),.105,0))
+		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0));joint(elbow,"Hand",Vector3(0,-.275,0))
+		var leg=joint(hips,prefix+"Leg",Vector3(side*.099,-.025,0));var knee=joint(leg,"Knee",Vector3(0,-.415,0));joint(knee,"Foot",Vector3(0,-.415,0))
+	return rig
 # Elliptical cross sections make anatomical volumes and fabric, with continuous normals.
 # Each ring is (height, half-width, half-depth, depth-offset).
 static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=20,sculpt:bool=false) -> MeshInstance3D:
@@ -27,6 +38,15 @@ static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=20,sc
 			var u=Vector3(cos(a)*s.y,s.x,sin(a)*s.z+s.w)
 			var v=Vector3(cos(b)*s.y,s.x,sin(b)*s.z+s.w)
 			for point in [p,q,u,q,v,u]:st.add_vertex(sculpt_face(point) if sculpt else point)
+	# Every loft is a closed solid, including the stock/receiver seen from behind.
+	# Separate smoothing groups keep end caps from rounding side normals.
+	st.set_smooth_group(-1)
+	for end in [0,rings.size()-1]:
+		var r=rings[end];var center=Vector3(0,r.x,r.w)
+		for i in range(sides):
+			var a=TAU*i/sides;var b=TAU*(i+1)/sides
+			var p=Vector3(cos(a)*r.y,r.x,sin(a)*r.z+r.w);var q=Vector3(cos(b)*r.y,r.x,sin(b)*r.z+r.w)
+			for point in ([center,q,p] if end==0 else [center,p,q]):st.add_vertex(point)
 	st.generate_normals();st.index();return M.instance(parent,st.commit(),pos,color)
 static func sculpt_face(point:Vector3) -> Vector3:
 	if point.z>=0:return point
@@ -72,19 +92,22 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 			cord(parent,Vector3(0,.03,.143),Vector3(0,-.11,.153),.027,hair)
 			cord(parent,Vector3(-.028,.015,.15),Vector3(.028,.015,.15),.008,Color("779085"))
 	if which==1:
-		oval(parent,Vector3(-.014,.131,.013),Vector3(.20,.048,.20),Color("5c6954"))
+		# Fitted beret: a band wraps the temples and the asymmetric crown rests on it.
+		loft(parent,Vector3(0,0,.013),[Vector4(.071,.090,.103,0),Vector4(.090,.091,.105,0),Vector4(.099,.089,.103,0)],Color("455447"),28)
+		var crown=loft(parent,Vector3(-.009,0,.013),[Vector4(.089,.091,.103,0),Vector4(.125,.108,.108,.006),Vector4(.159,.076,.079,.01),Vector4(.171,.006,.008,.012)],Color("5c6954"),28);crown.rotation.z=-.10
 	elif which==2:
 		loft(parent,Vector3(0,.012,.014),[Vector4(.067,.094,.10,0),Vector4(.093,.098,.101,0),Vector4(.145,.065,.08,0),Vector4(.155,.008,.014,0)],Color("5c696b"),24)
 	elif which==3:
-		oval(parent,Vector3(0,.14,0),Vector3(.20,.05,.205),Color("bb955c"));oval(parent,Vector3(0,.108,-.117),Vector3(.21,.018,.12),Color("a5804f"))
+		loft(parent,Vector3(0,0,.012),[Vector4(.073,.095,.109,0),Vector4(.112,.094,.109,0),Vector4(.145,.078,.088,.006),Vector4(.164,.010,.014,.008)],Color("bb955c"),28)
+		oval(parent,Vector3(0,.079,-.115),Vector3(.192,.018,.135),Color("a5804f"))
 	elif which==5:
-		oval(parent,Vector3(0,.136,.014),Vector3(.175,.036,.18),Color("d1c9ab"))
+		loft(parent,Vector3(0,0,.014),[Vector4(.070,.085,.101,0),Vector4(.104,.086,.102,0),Vector4(.147,.067,.081,0),Vector4(.162,.009,.012,0)],Color("d1c9ab"),28)
 	# Small communication headset leaves the face and human silhouette readable.
 	oval(parent,Vector3(.092,.012,.014),Vector3(.038,.059,.051),Color("414947"))
 	cord(parent,Vector3(.099,-.004,0),Vector3(.061,-.055,-.10),.005,Color("383f3f"))
 static func build(which:int,team:int) -> Node3D:
 	var root=Node3D.new();root.name="Operator";root.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,WIDTHS[which]);root.set_meta("height_m",HEIGHTS[which]);root.set_meta("gender","female" if which in FEMALE_ROLES else "male");root.set_meta("identity",IDENTITIES[which])
-	var skin=[Color("bd9278"),Color("d8b098"),Color("91674f"),Color("c69b77"),Color("a5775c"),Color("d0aa91")][which]
+	var skin=SKIN_COLORS[which]
 	var hair=[Color("463931"),Color("352f2d"),Color("302927"),Color("655346"),Color("55514b"),Color("583f31")][which]
 	var shirt=Color("718891") if team==0 else Color("98806a")
 	var trousers=Color("475963") if team==0 else Color("655e50")
@@ -100,7 +123,7 @@ static func build(which:int,team:int) -> Node3D:
 
 	for side in [-1,1]:
 		M.box(chest,Vector3(side*.132,.055,-.177),Vector3(.041,.28,.018),vest.lightened(.10),Vector3(-.12,0,side*-.10),.4)
-		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.207,.13,0))
+		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*(.185 if which in FEMALE_ROLES else .207),.105,0))
 		oval(arm,Vector3(-side*.028,-.025,0),Vector3(.119,.15,.131),shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.285,.046,.048,0),Vector4(-.20,.058,.058,0),Vector4(-.12,.061,.062,0),Vector4(-.045,.065,.068,0),Vector4(.016,.05,.056,0)],shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.19,.069,.069,0),Vector4(-.155,.075,.074,0)],team_color)

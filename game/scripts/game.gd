@@ -54,7 +54,7 @@ var bomb={"planted":false,"site":-1,"time":0.0,"actor":0,"progress":0.0,"positio
 var server=false
 var dedicated=false
 var local_id=1
-var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":2,"antialias":2,"shadow_quality":2,"decor_quality":2,"frame_limit":0,"hud_scale":.8,"hud_opacity":.38}
+var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":2,"antialias":2,"shadow_quality":2,"decor_quality":2,"frame_limit":0,"hud_scale":.8,"hud_opacity":.38,"mobile_initialized":false,"touch_sensitivity":.0028}
 var pending_loadout={"role":0,"primary":"a1","secondary":"pistol","armor":0,"team":-1,"gadget":0}
 var snapshot_timer=0.0
 var input_timer=0.0
@@ -90,21 +90,35 @@ var pending_peers={}
 var full_sync_timer=0.
 var room_search_active=false
 var room_search_timer=0.
+var room_search_sent=0
 var connection_notice=false
 var public_room:PublicRoom
 var internet:InternetLobby
+var rtc:RtcTransport
+var touch:TouchControls
 var join_ticket=""
 func _ready():
 	if demo_mode:
 		start_demo();return
-	C.load_all();load_profile();setup_input();apply_display_settings()
+	profile.blood_effects=false
+	C.load_all();load_profile()
+	if str(profile.lobby_url).is_empty():
+		var defaults=JSON.parse_string(FileAccess.get_file_as_string("res://assets/lobby_defaults.json"))
+		if defaults is Dictionary:profile.lobby_url=str(defaults.get("url",""))
+	if TouchControls.supported() and not profile.get("mobile_initialized",false):
+		profile.merge({"mobile_initialized":true,"graphics_quality":0,"shadow_quality":0,"decor_quality":0,"antialias":1,"frame_limit":60,"width":1280,"height":720},true)
+	setup_input();apply_display_settings()
+	if OS.has_feature("web"):get_viewport().size_changed.connect(apply_display_settings)
 	GraphicsOptions.apply(self)
 	internet=InternetLobby.new();internet.game=self;add_child(internet)
+	rtc=RtcTransport.new();rtc.game=self;add_child(rtc)
 	public_room=PublicRoom.new();add_child(public_room)
 	combat_fx=CombatFX.new();add_child(combat_fx)
 	audio_bank=GameAudio.new();add_child(audio_bank);audio_bank.profile=profile
 	version_check=VersionCheck.new();add_child(version_check)
 	ui=UI.new();ui.game=self;add_child(ui);ui.menu();save_profile()
+	if TouchControls.supported():
+		touch=TouchControls.new();touch.game=self;ui.root.add_child(touch)
 	if DisplayServer.get_name()!="headless":kill_replay=KillReplay.new();kill_replay.game=self;add_child(kill_replay)
 	version_check.changed.connect(func():ui.update_version_badge())
 	if DisplayServer.get_name()!="headless" and not "--no-update-check" in OS.get_cmdline_user_args():version_check.call_deferred("check")
@@ -165,6 +179,11 @@ func save_profile():
 	AudioServer.set_bus_volume_db(0,linear_to_db(maxf(.001,float(profile.volume))))
 func apply_display_settings():
 	if DisplayServer.get_name()=="headless" or demo_mode:return
+	if OS.has_feature("web"):
+		var viewport=get_tree().root;viewport.content_scale_mode=Window.CONTENT_SCALE_MODE_DISABLED;viewport.content_scale_size=Vector2i.ZERO
+		var selected=display_window_size();var output=viewport.size
+		viewport.scaling_3d_scale=clampf(minf(float(selected.x)/maxi(1,output.x),float(selected.y)/maxi(1,output.y)),.25,1.)
+		return
 	var monitor=clampi(int(profile.monitor),0,maxi(0,DisplayServer.get_screen_count()-1))
 	profile.monitor=monitor
 	if int(profile.display_mode)<0:profile.display_mode=0 if profile.window else 1
@@ -184,12 +203,14 @@ func apply_display_settings():
 		DisplayServer.window_set_position(usable.position+(usable.size-size)/2)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if mode==1 else DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
-	# Godot keeps the desktop output mode; render the scene at the user's chosen size.
-	# https://docs.godotengine.org/en/4.4/tutorials/rendering/multiple_resolutions.html
+	# Keep text/HUD at physical output resolution. Only the 3D buffer scales.
 	var window=get_tree().root
-	window.content_scale_mode=Window.CONTENT_SCALE_MODE_VIEWPORT
+	window.content_scale_mode=Window.CONTENT_SCALE_MODE_DISABLED
 	window.content_scale_aspect=Window.CONTENT_SCALE_ASPECT_KEEP
-	window.content_scale_size=size;window.content_scale_factor=1.
+	window.content_scale_size=Vector2i.ZERO;window.content_scale_factor=1.
+	var output=DisplayServer.window_get_size()
+	window.scaling_3d_mode=Viewport.SCALING_3D_MODE_BILINEAR
+	window.scaling_3d_scale=clampf(minf(float(size.x)/maxi(1,output.x),float(size.y)/maxi(1,output.y)),.25,1.)
 func display_window_size() -> Vector2i:
 	var legacy=[Vector2i(1280,720),Vector2i(1600,900),Vector2i(1920,1080)][clampi(int(profile.resolution),0,2)]
 	return Vector2i(maxi(640,int(profile.width)),maxi(360,int(profile.height))) if int(profile.width)>0 and int(profile.height)>0 else legacy
@@ -216,18 +237,20 @@ func build_world():
 	bot_navigation=BotNavigation.new();bot_navigation.build(arena);bot_agents.clear()
 	if not is_instance_valid(spectator_camera):
 		spectator_camera=Camera3D.new();spectator_camera.near=.1;spectator_camera.far=350;add_child(spectator_camera)
-func host_game():
+func host_game(transport:MultiplayerPeer=null):
 	if phase!="menu" or connection_busy:return
 	R.sanitize_room(options)
 	if options.get("map_random",false):options.map=R.random_map(options)
 	reset_transport_state();stop_room_search()
 	var peer:MultiplayerPeer;var err:int;var port=R.PORT
-	if is_instance_valid(public_room) and public_room.enabled:
+	if transport!=null:peer=transport;err=OK
+	elif OS.has_feature("web"):peer=OfflineMultiplayerPeer.new();err=OK
+	elif is_instance_valid(public_room) and public_room.enabled:
 		port=int(public_room.config.port);peer=WebSocketMultiplayerPeer.new();peer.handshake_timeout=5.;peer.max_queued_packets=256;err=peer.create_server(port)
-	else:peer=ENetMultiplayerPeer.new();err=peer.create_server(port,32,3)
+	else:peer=ENetMultiplayerPeer.new();err=peer.create_server(port,32,4)
 	if err!=OK:ui.notice("방을 만들 수 없습니다. 다른 서버가 실행 중인지 확인하세요. 코드 "+str(err));return
 	multiplayer.multiplayer_peer=peer;multiplayer.server_relay=false;server=true;local_id=1;phase="lobby";public_serial=0;banned_tokens.clear();vote.clear();vote_cooldowns.clear();build_world()
-	if not (is_instance_valid(public_room) and public_room.enabled):
+	if transport==null and not OS.has_feature("web") and not (is_instance_valid(public_room) and public_room.enabled):
 		discovery=PacketPeerUDP.new();discovery.set_broadcast_enabled(true)
 		if discovery.bind(R.DISCOVERY)!=OK:discovery=null
 	if not dedicated:add_player(1,profile.nick,profile.token)
@@ -251,13 +274,18 @@ func join_game(ip:String):
 	if last_server_ip.begins_with("wss://") or last_server_ip.begins_with("ws://127.0.0.1:"):
 		peer=WebSocketMultiplayerPeer.new();peer.handshake_timeout=10.;peer.max_queued_packets=512;err=peer.create_client(last_server_ip)
 	else:
-		join_ticket="";peer=ENetMultiplayerPeer.new();err=peer.create_client(last_server_ip,R.PORT,3)
+		join_ticket="";peer=ENetMultiplayerPeer.new();err=peer.create_client(last_server_ip,R.PORT,4)
 	if err!=OK:ui.notice("연결을 시작할 수 없습니다. IP를 확인하세요.");return
 	multiplayer.multiplayer_peer=peer;server=false;connection_busy=true;connection_deadline=Time.get_ticks_msec()+15000;ui.notice("서버에 연결 중… 취소하거나 다시 시도할 수 있습니다.")
 func connected():
 	local_id=multiplayer.get_unique_id();peer_opened(1)
+	if is_instance_valid(rtc) and rtc.active:
+		register.rpc_id(1,profile.nick,rtc.local_uid,options.password,R.VERSION,"");return
 	# Public admission uses its signed identity; do not disclose the persistent LAN token.
 	register.rpc_id(1,profile.nick,"" if not join_ticket.is_empty() else profile.token,"" if not join_ticket.is_empty() else options.password,R.VERSION,join_ticket);join_ticket=""
+func begin_rtc_client(peer:WebRTCMultiplayerPeer):
+	reset_transport_state();stop_room_search();multiplayer.multiplayer_peer=peer;multiplayer.server_relay=false
+	server=false;connection_busy=true;connection_deadline=Time.get_ticks_msec()+25000
 func request_leave():
 	if not server and phase!="menu" and multiplayer.multiplayer_peer.get_connection_status()==MultiplayerPeer.CONNECTION_CONNECTED:
 		depart.rpc_id(1);await get_tree().create_timer(.12).timeout
@@ -284,6 +312,9 @@ func register(nick:String,token:String,password:String,version:String,ticket:Str
 	if players.has(id):return
 	if not rate_limit(id,"register",.5):return
 	var claims={}
+	if is_instance_valid(rtc) and rtc.active:
+		if not rtc.identities.has(id):reject.rpc_id(id,"로비에서 인증한 참가자가 아닙니다.");return
+		token=str(rtc.identities[id].uid);nick=str(rtc.identities[id].nick)
 	if is_instance_valid(public_room) and public_room.enabled:
 		claims=public_room.verify(ticket)
 		if claims.is_empty():reject.rpc_id(id,"입장권이 만료되었거나 유효하지 않습니다. 로비에서 다시 참가하세요.");return
@@ -418,6 +449,7 @@ func disconnected(id:int):
 	if actors.has(id):actors[id].queue_free();actors.erase(id)
 	if server:call_deferred("broadcast_state",true)
 func leave_game(message:String=""):
+	if is_instance_valid(rtc):rtc.close()
 	var return_to_lan=phase=="menu" and ui.screen=="join"
 	if options.get("practice",false):options=R.default_options()
 	kill_events.clear();kill_serial=0
@@ -444,6 +476,8 @@ func leave_game(message:String=""):
 	else:ui.menu()
 	ui.notice(message)
 func search_rooms():
+	if OS.has_feature("web"):return
+	room_search_sent=Time.get_ticks_msec()
 	room_search_active=true;room_search_timer=3.;rooms.clear()
 	ui.update_rooms()
 	if browser:browser.close()
@@ -463,8 +497,10 @@ func network_discovery():
 			var raw=browser.get_packet();var ip=browser.get_packet_ip()
 			if raw.size()>2048:continue
 			var d=JSON.parse_string(raw.get_string_from_utf8())
-			if d is Dictionary and d.get("game")=="RelayStrike":rooms[ip]=d;ui.update_rooms()
+			if d is Dictionary and d.get("game")=="RelayStrike":
+				d.ping=maxi(0,Time.get_ticks_msec()-room_search_sent);rooms[ip]=d;ui.update_rooms()
 func _unhandled_input(event):
+	if is_instance_valid(touch) and (event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag):return
 	if is_instance_valid(kill_replay) and kill_replay.active:
 		if event is InputEventKey and event.pressed and event.keycode in [KEY_SPACE,KEY_ESCAPE]:kill_replay.finish()
 		get_viewport().set_input_as_handled();return
@@ -519,10 +555,11 @@ func send_input(data:Dictionary):
 	players[id].input_time=clock;peer_activity[id]=Time.get_ticks_msec()
 func collect_input():
 	if not actors.has(local_id):return
-	var a=actors[local_id];var on=Input.mouse_mode==Input.MOUSE_MODE_CAPTURED and players[local_id].alive and not (is_instance_valid(kill_replay) and kill_replay.active)
+	var a=actors[local_id];var on=(touch.active() if is_instance_valid(touch) else Input.mouse_mode==Input.MOUSE_MODE_CAPTURED) and players[local_id].alive and not (is_instance_valid(kill_replay) and kill_replay.active)
 	a.input_state.x=Input.get_axis("left","right") if on else 0.;a.input_state.z=Input.get_axis("forward","back") if on else 0.
 	for k in ["sprint","crouch","jump","use"]:a.input_state[k]=on and Input.is_action_pressed(k)
 	a.input_state.ads=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT);a.input_state.fire=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT);a.input_state.alt=on and Input.is_action_pressed("medical")
+	if is_instance_valid(touch):touch.apply_input(a,on)
 	if server:players[local_id].input_time=clock
 	else:send_input.rpc_id(1,a.input_state)
 func _physics_process(dt:float):
@@ -765,7 +802,16 @@ func process_trigger(id:int):
 			if mode=="burst" and p.burst_left==0:p.fire_ready=clock+float(w.get("burst_pause",.3))
 func current_weapon(p:Dictionary) -> Dictionary:return C.get_weapon(p.primary if p.slot==0 else p.secondary)
 func ray(from:Vector3,to:Vector3,exclude:Array=[],mask:int=15) -> Dictionary:
-	var q=PhysicsRayQueryParameters3D.create(from,to,mask);q.exclude=exclude;return get_world_3d().direct_space_state.intersect_ray(q)
+	var q=PhysicsRayQueryParameters3D.create(from,to,mask&~2);q.exclude=exclude
+	var hit=get_world_3d().direct_space_state.intersect_ray(q)
+	if mask&2:
+		var end:Vector3=hit.get("position",to)
+		for id in actors:
+			var actor=actors[id]
+			if actor.get_rid() in exclude or not players.get(id,{}).get("alive",false):continue
+			var body_hit=AnatomicalHit.trace(actor,from,end)
+			if not body_hit.is_empty():hit=body_hit;end=hit.position
+	return hit
 func clear_line(from:Vector3,to:Vector3,exclude:Array=[]) -> bool:return ray(from,to,exclude,1|4|8).is_empty()
 func fire(id:int):
 	var p=players[id];var a=actors[id]
@@ -794,7 +840,7 @@ func fire(id:int):
 		if collider is Actor:
 			var q=players[collider.pid]
 			if not q.alive:continue
-			var zone=CombatBalance.hit_zone(hit.position.y-collider.position.y,collider.body_height,bool(collider.input_state.crouch))
+			var zone=str(hit.get("zone",CombatBalance.hit_zone(hit.position.y-collider.position.y,collider.body_height,bool(collider.input_state.crouch))))
 			var head=zone=="head";dmg=CombatBalance.damage_at(w,dist,zone)
 			dmg*=R.damage_water(arena.submerged(hit.position),arena.wading(a.position),not arena.wading(collider.position))
 			damage(collider.pid,dmg,id,head,wid,origin,hit.position)
@@ -1183,10 +1229,11 @@ func broadcast_state(force:bool,target_peer:int=0):
 			var link=multiplayer.multiplayer_peer.get_peer(peer)
 			if link is ENetPacketPeer and link.get_state()!=ENetPacketPeer.STATE_CONNECTED:continue
 			if link is WebSocketPeer and (link.get_ready_state()!=WebSocketPeer.STATE_OPEN or link.get_current_outbound_buffered_amount()>24000):continue
+			if link is Dictionary and (not link.get("connected",false) or link.get("channels",[]).any(func(channel):return channel.get_ready_state()!=WebRTCDataChannel.STATE_OPEN)):continue
 			if force:full_state.rpc_id(peer,state)
 			else:
 				for i in range(parts):snapshot_chunk.rpc_id(peer,snapshot_sequence,i,parts,packed.slice(i*1000,mini(packed.size(),(i+1)*1000)))
-@rpc("authority","call_remote","unreliable",1)
+@rpc("authority","call_remote","unreliable",3)
 func snapshot_chunk(seq:int,index:int,count:int,bytes:PackedByteArray):
 	# Individual chunks may arrive out of order; apply only complete, newer frames.
 	if seq<=received_sequence or count<1 or count>128 or index<0 or index>=count or bytes.size()>1000:return

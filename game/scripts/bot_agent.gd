@@ -175,11 +175,11 @@ func navigate(destination:Vector3,dt:float):
 	var a=game.actors[id];var now=game.clock
 	if a.position.distance_to(destination)<1.6:return
 	if now>=next_path or path.is_empty():
-		path=game.bot_navigation.route(a.position,destination);waypoint=1 if path.size()>1 else 0;next_path=now+1.4+rng.randf()*.4;stats.repaths+=1
+		path=game.bot_navigation.route(a.position,destination);waypoint=0;next_path=now+1.4+rng.randf()*.4;stats.repaths+=1
 	if path.is_empty():return
-	while waypoint<path.size()-1 and a.position.distance_to(path[waypoint])<1.05:waypoint+=1
+	while waypoint<path.size()-1 and a.position.distance_to(path[waypoint])<.45:waypoint+=1
 	var toward=path[waypoint]-a.position;toward.y=0
-	if toward.length()<.7:return
+	if toward.length()<.22:return
 	var desired=toward.normalized()
 	var hit=game.ray(a.position+Vector3.UP*.65,a.position+Vector3.UP*.65+desired*1.25,[a.get_rid()],1|4)
 	if not hit.is_empty():
@@ -198,7 +198,7 @@ func navigate(destination:Vector3,dt:float):
 func look(at:Vector3,dt:float,enemy:bool):
 	var a=game.actors[id];var p=game.players[id];var delta=at-a.eye();var yaw=atan2(-delta.x,-delta.z);var pitch=atan2(delta.y,Vector2(delta.x,delta.z).length())
 	if enemy:
-		var moving=Vector2(a.velocity.x,a.velocity.z).length()/7.4
+		var moving=Vector2(a.velocity.x,a.velocity.z).length()/Rules.WALK_SPEED
 		var error=deg_to_rad([3.8,1.8,.65][difficulty])*(1.+moving*[.5,.3,.15][difficulty]);yaw+=sin(game.clock*2.1+id)*error;pitch+=cos(game.clock*1.8+id*.7)*error*.65
 		var spray=AimModel.current_spray(game.current_weapon(p),p,a.aim_progress,bool(a.input_state.crouch));pitch-=deg_to_rad(spray.y)*[.18,.48,.78][difficulty];yaw+=deg_to_rad(spray.x)*[.18,.48,.78][difficulty]
 	a.input_state.yaw=lerp_angle(float(a.input_state.yaw),yaw,1.-exp(-dt*[5.,8.,12.][difficulty]));a.input_state.pitch=lerpf(float(a.input_state.pitch),clampf(pitch,-1.3,1.3),1.-exp(-dt*10))

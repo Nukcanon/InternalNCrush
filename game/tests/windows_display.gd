@@ -13,7 +13,7 @@ func run():
 			var native=DisplayServer.screen_get_size(screen);var choices=DisplayOptions.resolutions_for(native)
 			var resolution=g.ui.panel.find_child("ResolutionChoices",true,false);var manual=g.ui.panel.find_child("CustomResolution",true,false)
 			var rendered=root.get_texture().get_size()
-			var ok=actual_screen==screen and actual_mode==expected and choices.all(func(v):return v.x<=native.x and v.y<=native.y) and not manual.visible and not resolution.disabled and rendered==Vector2(960,540)
+			var ok=actual_screen==screen and actual_mode==expected and choices.all(func(v):return v.x<=native.x and v.y<=native.y) and not manual.visible and not resolution.disabled and rendered==Vector2(size) and is_equal_approx(root.scaling_3d_scale,minf(960./size.x,540./size.y))
 			resolution.select(resolution.item_count-1);resolution.item_selected.emit(resolution.selected)
 			ok=ok and manual.visible
 			if not ok:failures+=1

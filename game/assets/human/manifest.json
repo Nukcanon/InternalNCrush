@@ -1,11 +1,19 @@
 [
   {
+    "path": "CREDITS.md",
+    "sha256": "485dab47781a2369bb390f9f835dbefd45dea9b25a7cb114aa1fa2addd1f09de"
+  },
+  {
     "path": "female.json",
-    "sha256": "35c7241a0d0c6d50961b251e1969e11a7e6b92cc100054406b4b195914efa713"
+    "sha256": "d02a91d7fb06c57bf265b6c060fef73a78e1c4b1b8eee2fffe8250cfd0402a7c"
   },
   {
     "path": "male.json",
-    "sha256": "f3f9342a344b7b98d2e5411f24fc617e07786d71ec00aa2e73fe9765fa0ce299"
+    "sha256": "f800b7571361a70db83dd29b4ece024ee23867efdf70e41479efc0bb4767f2f1"
+  },
+  {
+    "path": "source/.gdignore",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   {
     "path": "source/base.obj",
@@ -38,5 +46,29 @@
   {
     "path": "source/universal-male-young-averagemuscle-averageweight.target",
     "sha256": "4ba5396ddabda448ece15650a566fbebfbb10239256ccb201e8f883429e12249"
+  },
+  {
+    "path": "textures/female.png",
+    "sha256": "b2a6ac8cd4f9febdb447368e29c76cd68410bb66e46d9dcfa2d5f75126eea8fc"
+  },
+  {
+    "path": "textures/female_asian.png",
+    "sha256": "1d82f782b7d2da732229633bd2d14754d873fff53cdb1d088977bcf67ae19dde"
+  },
+  {
+    "path": "textures/male.png",
+    "sha256": "862a26e335e958b70534cb5f0d7c47ef30ab148a56c42b3e9da969cf76f12963"
+  },
+  {
+    "path": "textures/male_dark.png",
+    "sha256": "e3f0dbb634e4c68561338f0087f7a122444e84ec56df102212f1222aa12e4d50"
+  },
+  {
+    "path": "textures/origin.json",
+    "sha256": "468ebda39fa2632129ed24489b48f2a3dc2daa7427dc1474c1ce4f7d79f2f623"
+  },
+  {
+    "path": "textures/upstream-materials.txt",
+    "sha256": "f2a48f8ef489ea94a62fae5a563f07cf4377adae171331db3eed48931f65172c"
   }
 ]

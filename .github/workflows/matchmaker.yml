@@ -1,4 +1,4 @@
-name: Docker lobby and encrypted gameplay
+name: Lightweight directory and encrypted signaling
 on:
   push:
     paths: ['nas/**', 'services/**', 'game/**', '.github/workflows/matchmaker.yml', '.dockerignore']
@@ -19,12 +19,42 @@ jobs:
           python-version: '3.13'
       - name: API authentication, reservations and limits
         run: |
-          pip install -r services/matchmaker/requirements.txt httpx==0.28.1
-          python -m unittest services.matchmaker.test_service -v
-      - name: Compose Linux build and certificate-verified HTTPS/WSS gameplay
-        run: python services/matchmaker/test_docker.py
+          pip install -r services/directory/requirements.txt httpx==0.28.1
+          python -m unittest services.directory.test_directory nas.test_setup -v
+      - name: Compose Linux build and certificate-verified HTTPS/WSS signaling
+        run: python services/directory/test_docker.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: docker-tls-validation
-          path: validation/docker-v102/*.log
+          path: validation/docker-v11/*.log
+
+  worker-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Worker policy and real HTTP/WebSocket contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip install -r services/directory/requirements.txt
+          npm install -g pnpm@10.17.1
+          cd services/cloudflare-directory
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm exec wrangler dev --port 30881 --ip 127.0.0.1 --show-interactive-dev-session=false > /tmp/inc-worker.log 2>&1 &
+          WORKER_PID=$!
+          trap 'kill "$WORKER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:30881/health; then break; fi
+            sleep 1
+          done
+          cd ../..
+          python services/directory/check_live.py http://127.0.0.1:30881 --version 1.1.0

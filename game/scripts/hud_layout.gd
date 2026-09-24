@@ -27,6 +27,12 @@ static func apply(ui:Node):
 	for key in ORIGINS:
 		var group=ui.hud.get_node_or_null("Hud_"+key)
 		if group:group.position=position_for(key,amount);group.scale=Vector2.ONE*amount
+	if TouchControls.supported():
+		ui.hud.get_node("Hud_health").position=Vector2(22,95)
+		ui.hud.get_node("Hud_ammo").position=Vector2(1025,95)
+		ui.hud.get_node("Hud_gear").hide()
+		ui.banner.position=Vector2(320,86);ui.banner.size=Vector2(640,48);ui.banner.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;ui.banner.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		ui.stats.hide()
 	for panel in ui.hud.find_children("*","Panel",true,false):
 		if not panel.has_meta("hud_plate"):continue
 		var style=panel.get_theme_stylebox("panel").duplicate();style.bg_color.a=clampf(float(ui.game.profile.get("hud_opacity",.38)),.1,.8);panel.add_theme_stylebox_override("panel",style)

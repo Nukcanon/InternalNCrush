@@ -1,0 +1,13 @@
+# Bind only to loopback. NAS HTTPS proxy must overwrite X-Real-IP.
+{
+ auto_https off
+}
+:80 {
+ request_body {
+  max_size 4KB
+ }
+ header X-Content-Type-Options nosniff
+ reverse_proxy directory:8080 {
+  header_up X-Real-IP {http.request.header.X-Real-IP}
+ }
+}

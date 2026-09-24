@@ -25,6 +25,10 @@ def package(build_dir: Path, output_dir: Path) -> Path:
         'licenses/AUDIO_KENNEY_LICENSE.txt': PROJECT / 'assets/AUDIO_KENNEY_LICENSE.txt',
         'licenses/SOUND_CREDITS.md': PROJECT / 'SOUND_CREDITS.md',
     }
+    library='libwebrtc_native.windows.template_release.x86_64.dll'
+    files[library]=build_dir/library
+    for notice in sorted((PROJECT/'addons/webrtc_native').glob('LICENSE.*')):
+        files['licenses/webrtc/'+notice.name]=notice
     for name, source in files.items():
         if not source.is_file() or source.stat().st_size == 0:
             raise SystemExit(f'Missing release input: {name}')

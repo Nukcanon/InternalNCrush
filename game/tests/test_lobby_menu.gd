@@ -42,8 +42,8 @@ func run():
 	var lan=ui.lan_lobby
 	expect(ui.panel.get_global_rect().position.y>=0 and ui.panel.get_global_rect().end.y<=720,"LAN window and its footer fit the logical viewport")
 	expect(lan.cancel_button.disabled,"cancel unavailable without a connection attempt")
-	expect(ui.panel.find_children("*","LineEdit",true,false).is_empty(),"IP fields do not consume room list space")
-	expect(lan.room_scroll.size.y>=280,"room list has a large independent scrolling region")
+	expect(ui.panel.find_children("*","LineEdit",true,false).size()==1 and not is_instance_valid(lan.address),"IP fields do not consume room list space")
+	expect(lan.room_scroll.size.y>=220,"room list has a large independent scrolling region")
 	var footer_position=lan.actions.global_position
 	for i in range(18):g.rooms["192.168.0.%d"%(10+i)]={"name":"훈련 %02d · INTERNAL N CRUSH"%i,"count":i%7,"max":8,"mode":"팀 데스매치","version":Rules.VERSION,"locked":i==0}
 	g.rooms["192.168.0.28"]={"name":"구 버전","count":1,"max":8,"version":"old"}

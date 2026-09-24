@@ -4,11 +4,15 @@ extends RefCounted
 static var detail=2
 static var shadows=2
 static var antialias=1
+static var blood_enabled=false
 
 static func apply(game:Node):
 	detail=clampi(int(game.profile.get("decor_quality",2)),0,2)
 	shadows=clampi(int(game.profile.get("shadow_quality",2)),0,2)
 	antialias=clampi(int(game.profile.get("antialias",2)),0,3)
+	blood_enabled=bool(game.profile.get("blood_effects",false))
+	if not blood_enabled and is_instance_valid(game.combat_fx) and is_instance_valid(game.combat_fx.blood):
+		game.combat_fx.blood.queue_free();game.combat_fx.blood=null
 	if DisplayServer.get_name()=="headless":return
 	Engine.max_fps=int(game.profile.get("frame_limit",0))
 	RenderingServer.directional_shadow_atlas_set_size([1024,2048,4096][shadows],true)
@@ -22,6 +26,7 @@ static func apply_viewport(viewport:Viewport):
 static func build(ui:Node):
 	ui.label("그래픽 성능",24)
 	var profile=ui.game.profile
+	ui.check("유혈 효과 · 기본 꺼짐",bool(profile.get("blood_effects",false)),func(on):profile.blood_effects=on;apply(ui.game);ui.game.save_profile())
 	var controls=[]
 	var preset=ui.option("품질 프리셋",["낮음 · 저사양","중간 · 균형","높음 · 세부 표현","사용자 설정"],int(profile.get("graphics_quality",2)),func(i):
 		if i==3:return

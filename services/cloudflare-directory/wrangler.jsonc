@@ -1,0 +1,14 @@
+{
+  "name": "internal-n-crush-lobby",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "vars": {
+    "GAME_VERSION": "1.1.0",
+    "MAX_ROOMS": "32",
+    "ALLOWED_ORIGINS": "https://nukcanon.github.io,http://127.0.0.1:8088,http://localhost:8088"
+  },
+  "durable_objects": {"bindings": [{"name": "DIRECTORY", "class_name": "Directory"}]},
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["Directory"]}],
+  "observability": {"enabled": false}
+}

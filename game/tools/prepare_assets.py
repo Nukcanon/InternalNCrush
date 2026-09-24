@@ -20,3 +20,5 @@ for entry in json.loads((assets/'human/manifest.json').read_text()):
  path=assets/'human'/entry['path']
  if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=entry['sha256']:
   raise SystemExit('Bundled anatomical source is missing or changed: '+entry['path'])
+
+runpy.run_path(str(Path(__file__).with_name("prepare_webrtc.py")),run_name="__main__")

@@ -51,10 +51,17 @@ func build(which:int,side:int):
 		if not templates.has(key):
 			var source=make_rig(role,team);M.own_recursive(source,source);var packed=PackedScene.new();packed.pack(source);templates[key]=packed;source.free()
 		rig=templates[key].instantiate()
-	add_child(rig);hips=rig.get_node("Hips");chest=hips.get_node("Chest");head=chest.get_node("Head");right_arm=chest.get_node("RightArm");left_arm=chest.get_node("LeftArm");right_elbow=right_arm.get_node("Elbow");left_elbow=left_arm.get_node("Elbow");socket=chest.get_node("WeaponSocket");animator=rig.get_node("AnimationPlayer")
+	bind_rig()
 	animator.play("idle")
 	deform=rig.get_node_or_null("DeformSkeleton")
 	if not deform:deform=OperatorSkin.install(rig,key)
+func bind_rig():
+	add_child(rig);hips=rig.get_node("Hips");chest=hips.get_node("Chest");head=chest.get_node("Head");right_arm=chest.get_node("RightArm");left_arm=chest.get_node("LeftArm");right_elbow=right_arm.get_node("Elbow");left_elbow=left_arm.get_node("Elbow");socket=chest.get_node("WeaponSocket");animator=rig.get_node("AnimationPlayer")
+func build_pose_only(which:int,side:int):
+	role=which;team=side;enable_physics=false
+	rig=HumanModel.pose_rig(role);add_clips(rig);bind_rig();animator.play("idle")
+	var weapon=WeaponVisual.new();socket.add_child(weapon);weapon.scale=Vector3.ONE*.85
+	weapon.right_hand=weapon.piece("RightHand",Vector3(.044,-.12,.035));weapon.left_hand=weapon.piece("LeftHand",Vector3(-.042,-.073,-.38))
 func react(direction:float):hit_time=.32;hit_sign=direction
 func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pitch:float,reloading:float,kick:float,gait_phase:float=-1.,turn:float=0.):
 	var speed=Vector2(move.x,move.z).length()
@@ -104,7 +111,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	hips.position+=lower_lag
 	chest.position=Vector3(-lower_lag.x*.75,.3,-lower_lag.z*.75)
 	var cycle=phase*TAU
-	var movement=clampf(speed/7.4,0,1) if grounded else 0.
+	var movement=clampf(speed/Rules.RUN_SPEED,0,1) if grounded else 0.
 	var breath=sin(motion_clock*1.9+motion_seed)
 	chest.scale=Vector3(.96,1.+breath*.003,.95+breath*.003) if role in HumanModel.FEMALE_ROLES else Vector3(1.,1.+breath*.003,1.+breath*.003)
 	if speed<.25:hips.position.x+=sin(motion_clock*.75+motion_seed)*.008;hips.rotation.z+=sin(motion_clock*.75+motion_seed)*.006
@@ -123,10 +130,10 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	right_target.x-=kick*.09
 	arm_right=arm_right.lerp(right_target,1.-exp(-dt*18));arm_left=arm_left.lerp(left_target,1.-exp(-dt*18))
 	right_arm.rotation=arm_right;left_arm.rotation=arm_left
-	right_arm.position.y=.13+cos(cycle)*movement*.016;left_arm.position.y=.13-cos(cycle)*movement*.025
+	right_arm.position.y=.105+cos(cycle)*movement*.010;left_arm.position.y=.105-cos(cycle)*movement*.014
 	right_elbow.rotation=Vector3(lerpf(.92,.7+sin(cycle)*.14,visual_sprint),0,0)
 	left_elbow.rotation=Vector3(lerpf(.38,.70+cos(cycle)*.23,visual_sprint)-reach*.35,0,0)
-	socket.position=Vector3(.07,-.09-visual_sprint*.08+cos(cycle)*movement*.012,-.07+visual_sprint*.08)
+	socket.position=Vector3(.11,-visual_sprint*.08+cos(cycle)*movement*.012,-.15+visual_sprint*.08)
 	socket.rotation=Vector3(-aiming*.5+visual_sprint*(.3+sin(cycle)*.10)-kick*.08,visual_sprint*.12-turn*.012,visual_sprint*(.18+sin(cycle)*.06)-reach*.18+sin(cycle)*movement*.035)
 	hit_time=maxf(0,hit_time-dt);var hit=sin(hit_time/.32*PI)*.2
 	chest.rotation+=Vector3(hit*.45,0,hit*hit_sign);head.rotation.x-=hit*.4
@@ -260,9 +267,11 @@ func grip_weapon(dt:float):
 	if not is_instance_valid(weapon):return
 	var right_target=chest.to_local(weapon.right_hand.global_position)
 	var left_target=chest.to_local(weapon.left_hand.global_position)
-	solve_arm(right_arm,right_elbow,right_target,Vector3(1,-.65,.25),dt,1.-visual_sprint*.2)
-	solve_arm(left_arm,left_elbow,left_target,Vector3(-1,-.4,.1),dt,1.-visual_sprint)
+	solve_arm(right_arm,right_elbow,right_target,Vector3(.75,-.9,.35),dt,1.-visual_sprint*.2)
+	solve_arm(left_arm,left_elbow,left_target,Vector3(-.75,-.8,.35),dt,1.-visual_sprint)
 func solve_arm(arm:Node3D,elbow:Node3D,target:Vector3,pole:Vector3,dt:float,weight:float):
+	var palm_target=target
+	target+=(arm.position-target).normalized()*.055
 	var delta=target-arm.position
 	var distance=clampf(delta.length(),.08,.548)
 	var direction=delta.normalized()
@@ -274,6 +283,13 @@ func solve_arm(arm:Node3D,elbow:Node3D,target:Vector3,pole:Vector3,dt:float,weig
 	arm.quaternion=arm.quaternion.slerp(upper,weight)
 	var lower_direction=arm.basis.inverse()*(target-elbow_pos).normalized()
 	elbow.quaternion=elbow.quaternion.slerp(Quaternion(Vector3.DOWN,lower_direction.normalized()),weight)
+	var hand=elbow.get_node("Hand")
+	var wrist_axis=(elbow_pos-palm_target).normalized()
+	var normal=Vector3(.8,.65,.08) if arm==left_arm else Vector3(-1.,.1,.15)
+	var z=-(normal-wrist_axis*normal.dot(wrist_axis)).normalized()
+	var x=wrist_axis.cross(z).normalized();z=x.cross(wrist_axis).normalized()
+	var desired=elbow.global_basis.orthonormalized().inverse()*chest.global_basis.orthonormalized()*Basis(x,wrist_axis,z)
+	hand.quaternion=hand.quaternion.slerp(desired.get_rotation_quaternion(),weight)
 
 func throw_pose(started:float,held:bool,until:float,now:float):
 	if held:

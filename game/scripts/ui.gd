@@ -69,14 +69,20 @@ var navigation_confirm:ConfirmationDialog
 var hud_blue:Label
 var hud_orange:Label
 var operator_name:Label
+var internet_filter=RoomFilters.defaults()
+var internet_rooms=[]
+const MENU_SCALE=.88
+var ACTION_HEIGHT=84 if TouchControls.supported() else 40
 func _ready():
 	lan_lobby=LanLobby.new(self)
 	root=Control.new();root.size=Vector2(1280,720);root.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(root)
 	get_viewport().size_changed.connect(scale_interface);scale_interface()
 	damage_indicator=DamageIndicator.new();damage_indicator.game=game;root.add_child(damage_indicator)
-	theme=Theme.new();theme.default_font_size=20
+	theme=Theme.new();theme.default_font_size=28 if TouchControls.supported() else 20
 	if ResourceLoader.exists("res://assets/fonts/Rajdhani-SemiBold.ttf"):
 		var font=FontVariation.new();font.base_font=load("res://assets/fonts/Rajdhani-SemiBold.ttf");font.fallbacks=[load("res://assets/fonts/DoHyeon-Regular.ttf"),load("res://assets/Korean.ttf")];theme.default_font=font
+		for source_font in [font.base_font]+font.fallbacks:
+			source_font.multichannel_signed_distance_field=true;source_font.msdf_size=96
 	var style=StyleBoxFlat.new();style.bg_color=Color(.055,.09,.13,.86);style.border_color=Color("4c5f72");style.set_border_width_all(1);style.set_corner_radius_all(4);style.content_margin_left=18;style.content_margin_right=18;style.content_margin_top=12;style.content_margin_bottom=12
 	theme.set_stylebox("panel","PanelContainer",style)
 	var btn=style.duplicate();btn.bg_color=Color("253344");btn.border_color=Color("536272");btn.border_width_left=3;theme.set_stylebox("normal","Button",btn)
@@ -97,30 +103,40 @@ func clear_panel(keep_background=false):
 	if is_instance_valid(background) and not keep_background:background.queue_free();background=null
 	if panel:panel.queue_free();panel=null
 func make_panel(title:String,width=780):
+	if TouchControls.supported():width=maxi(width,1000)
 	clear_panel(game.phase=="menu");Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	if is_instance_valid(hud):hud.hide()
 	if is_instance_valid(background):
 		for child in background.get_children():
 			if child is Label or child==version_box:child.hide()
-	panel=PanelContainer.new();panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER);panel.position=Vector2(-width*.47,-305);panel.custom_minimum_size=Vector2(width,0);root.add_child(panel);panel.scale=Vector2(.94,.94)
+	panel=PanelContainer.new();panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER);panel.position=Vector2(-width*MENU_SCALE*.5,-280);panel.custom_minimum_size=Vector2(width,0);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
 	panel_body=VBoxContainer.new();panel_body.add_theme_constant_override("separation",14);panel.add_child(panel_body)
 	var scroll=ScrollContainer.new();panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,560);panel_body.add_child(scroll)
 	stack=VBoxContainer.new();stack.size_flags_horizontal=Control.SIZE_EXPAND_FILL;stack.add_theme_constant_override("separation",12);scroll.add_child(stack)
 	var eyebrow=Label.new();eyebrow.text="NUKCANON  /  INTERNAL N CRUSH";eyebrow.add_theme_color_override("font_color",Color("5ce1c3"));eyebrow.add_theme_font_size_override("font_size",14);stack.add_child(eyebrow)
 	label(title,32)
 func pin_actions(node:Control):
+	node.set_meta("pinned_actions",true)
 	node.get_parent().remove_child(node);panel_body.add_child(node)
 	panel_scroll.custom_minimum_size.y=535
+	if node is BoxContainer:
+		node.alignment=BoxContainer.ALIGNMENT_END
+		for child in node.get_children():
+			if child is Button:child.custom_minimum_size=Vector2(160,ACTION_HEIGHT);child.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	elif node is Button:
+		node.custom_minimum_size=Vector2(200,ACTION_HEIGHT);node.size_flags_horizontal=Control.SIZE_SHRINK_END
 func label(text:String,size=20,parent:Node=null) -> Label:
-	var l=Label.new();l.text=text;l.add_theme_font_size_override("font_size",maxi(17,size));l.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;(parent if parent else stack).add_child(l);return l
+	var l=Label.new();l.text=text;l.add_theme_font_size_override("font_size",maxi(26,size) if TouchControls.supported() else maxi(17,size));l.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;(parent if parent else stack).add_child(l);return l
 func button(text:String,callback:Callable,parent:Node=null) -> Button:
-	var b=Button.new();b.text=text;b.custom_minimum_size.y=42
+	var b=Button.new();b.text=text;b.custom_minimum_size.y=ACTION_HEIGHT
 	var returning=text in ["메인메뉴","돌아가기"]
 	b.pressed.connect(func():
 		game.play_sound("ui",Vector3.ZERO,false)
 		if returning and screen in ["practice","host","join","internet","internet_create"]:confirm_navigation(callback,text)
 		else:callback.call())
 	(parent if parent else stack).add_child(b)
+	if parent and parent.get_meta("pinned_actions",false):
+		b.custom_minimum_size=Vector2(160,ACTION_HEIGHT);b.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	if returning:
 		for state in ["normal","hover","pressed"]:
 			var style=theme.get_stylebox(state,"Button").duplicate();style.bg_color=Color("593b4b") if state=="normal" else Color("805263");style.border_color=Color("c28c9a");b.add_theme_stylebox_override(state,style)
@@ -134,6 +150,10 @@ func confirm_navigation(callback:Callable,destination:String):
 		var dialog=navigation_confirm;navigation_confirm=null;dialog.queue_free();callback.call())
 	navigation_confirm.canceled.connect(func():navigation_confirm.queue_free();navigation_confirm=null)
 	navigation_confirm.popup_centered(Vector2i(440,160))
+func confirm_practice():
+	confirm_navigation(func():clear_panel();PracticeSession.start(game),"연습장")
+	if is_instance_valid(navigation_confirm):
+		navigation_confirm.title="연습장";navigation_confirm.dialog_text="연습장으로 이동하시겠습니까?";navigation_confirm.ok_button_text="연습장 입장"
 func option(title:String,items:Array,selected:int,callback:Callable=Callable(),parent:Node=null) -> OptionButton:
 	var row=HBoxContainer.new();(parent if parent else stack).add_child(row);var l=Label.new();l.text=title;l.custom_minimum_size.x=155;row.add_child(l)
 	var b=OptionButton.new();b.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -158,7 +178,7 @@ func menu():
 	clear_panel(true);screen="menu";Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	ensure_menu_background()
 	for child in background.get_children():child.show()
-	panel=PanelContainer.new();panel.position=Vector2(758,73);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);panel.scale=Vector2(.94,.94)
+	panel=PanelContainer.new();panel.position=Vector2(795,94);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
 	build_main_actions()
 func ensure_menu_background():
 	if is_instance_valid(background):return
@@ -171,6 +191,7 @@ func ensure_menu_background():
 	var intro=Label.new();intro.text="장비를 고르고, 팀과 전장을 지배하세요.\n6개 병과 · 31개 전장 · 자유 훈련장";intro.position=Vector2(68,400);intro.add_theme_font_size_override("font_size",22);intro.modulate=Color("d6e5ed");background.add_child(intro)
 	version_box=VBoxContainer.new();version_box.position=Vector2(68,545);version_box.custom_minimum_size.x=560;background.add_child(version_box)
 func build_main_actions():
+	if TouchControls.supported():build_touch_main_actions();return
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",9);panel.add_child(stack)
 	var name=label("닉네임",19);name.modulate=Color("a7c5d4")
 	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="게임에서 사용할 닉네임";nick.max_length=20;nick.custom_minimum_size.y=47;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
@@ -180,10 +201,12 @@ func build_main_actions():
 	stack.add_child(HSeparator.new());label("연습",23)
 	var practice_actions=HBoxContainer.new();practice_actions.add_theme_constant_override("separation",10);stack.add_child(practice_actions)
 	button("봇 전투",practice_menu,practice_actions).size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	button("연습장",func():clear_panel();PracticeSession.start(game),practice_actions).size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	button("연습장",confirm_practice,practice_actions).size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	stack.add_child(HSeparator.new());label("설정",23)
 	button("환경 설정",settings)
-	stack.add_child(HSeparator.new());button("게임 종료",func():game.exit_game())
+	stack.add_child(HSeparator.new());button("게임 페이지" if OS.has_feature("web") else "게임 종료",func():
+		if OS.has_feature("web"):JavaScriptBridge.eval("window.location.href='https://nukcanon.github.io/nukcanon/internal-n-crush.html'")
+		else:game.exit_game())
 	notice_label=label("",17);update_version_badge()
 func scale_interface():
 	# Keep the established 1280x720 UI coordinates while rendering at the selected resolution.
@@ -191,7 +214,7 @@ func scale_interface():
 func update_version_badge():
 	if screen!="menu" or not is_instance_valid(version_box):return
 	for child in version_box.get_children():version_box.remove_child(child);child.queue_free()
-	var version=label("WINDOWS  /  v"+Rules.VERSION,18,version_box);version.modulate=Color("b2c8d5")
+	var version=label(("WEB  /  v" if OS.has_feature("web") else "WINDOWS  /  v")+Rules.VERSION,18,version_box);version.modulate=Color("b2c8d5")
 	if game.version_check.state=="newer":
 		var warning=label("새 버전 "+game.version_check.latest+"이 있습니다.\n함께 접속할 사람들과 버전을 맞춰 주세요.",18,version_box);warning.modulate=Color("ffd18d")
 		button("최신 버전 다운로드",func():OS.shell_open(VersionCheck.PAGE),version_box)
@@ -200,7 +223,7 @@ func training_menu():
 	label("FIELD ACADEMY",30)
 	label("4개 높이의 야외 사격장 · 고정/이동 표적 · 회복과 방호 연습
 표적은 공격하지 않으며 처치하면 4초 뒤 돌아옵니다. 입구 보급 구역에서 장비를 재충전하세요.",18)
-	button("자유 연습장",func():clear_panel();PracticeSession.start(game))
+	button("자유 연습장",confirm_practice)
 	stack.add_child(HSeparator.new());label("봇 전투",27)
 	label("실제 경기 규칙으로 조준, 전술과 목표 수행을 연습합니다.",18)
 	button("봇 연습 설정",practice_menu);button("메인메뉴",menu)
@@ -255,13 +278,14 @@ func host_settings():
 	label("봇도 참가 인원에 포함됩니다.\n선택 인원이 방 정원을 넘으면 정원까지 추가합니다.",16)
 	stack=outer;var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);button("이 설정으로 방 만들기",func():game.host_game(),actions);button("돌아가기",join_menu,actions);pin_actions(actions);notice_label=label("",14)
 func join_menu():
-	lan_lobby.show()
+	if OS.has_feature("web"):internet_menu("lan")
+	else:lan_lobby.show()
 func update_rooms():
 	lan_lobby.update_rooms()
 func lobby():
 	make_panel("대기실 · "+str(game.options.room),1100);screen="lobby"
 	label(Rules.MODES[int(game.options.mode)]+"   ·   "+("스킬 ON" if game.options.skills else "스킬 OFF")+"   ·   최대 "+str(game.options.max_players)+"명",16)
-	if game.server:
+	if game.server and not OS.has_feature("web"):
 		var ips=[]
 		for ip in IP.get_local_addresses():
 			if "." in ip and not ip.begins_with("127."):ips.append(ip)
@@ -331,6 +355,9 @@ func settings():
 		displays.append("모니터 %d · %d × %d · %.0f Hz"%[i+1,native.x,native.y,DisplayServer.screen_get_refresh_rate(i)])
 	var monitor=option("출력 모니터",displays,int(game.profile.monitor))
 	var mode=option("화면 모드",["창 모드","전체 화면 · 빠른 앱 전환","전체 화면 · 게임 전용"],maxi(0,int(game.profile.display_mode)));mode.name="DisplayMode"
+	if OS.has_feature("web"):
+		monitor.disabled=true;mode.disabled=true
+		label("브라우저 창 크기에 맞춰 표시됩니다. 전체 화면은 플레이 페이지의 전체 화면 버튼으로 전환하세요.",17)
 	var mode_help=label("",17)
 	var resolutions=[]
 	var current=game.display_window_size()
@@ -545,7 +572,7 @@ func refresh_gear_detail():
 	preview_caption.text=w.name+" · "+str(w.get("category",mode))
 	gear_detail.text="피해 %d%s    /    %s · 분당 %d발\n탄창 %d · 예비탄 %d    /    재장전 %.1f초\n안정성 %d / 100    /    조준 속도 %d ms\n무게 %.2f kg    /    휴대성 %d / 100\n기본 퍼짐 %.2f°    /    조준 시 %.2f°\n피해 감소 시작 %.0f m"%[w.damage," × "+str(int(w.pellets)) if w.pellets>1 else "",mode,60./maxf(.01,float(w.interval)),w.mag,w.reserve,w.reload,w.get("stability",0),w.get("ads_ms",250),w.get("weight_kg",0),w.get("portability",0),w.spread,w.get("ads_spread",0),w.reach]
 	gear_detail.tooltip_text="안정성↑: 연속 사격 퍼짐 감소 · 조준 시간↓: 더 빠른 조준\n무게↑ / 휴대성↓: 이동 중 퍼짐 증가 · 퍼짐은 반각 기준"
-	gear_detail.text="머리 ×%.2f · 몸통 ×1 · 다리 ×%.2f\n조준 이동 %.2f m/s · 비조준 %.1f° / 조준 %.1f°"%[w.zone_multipliers.head,w.zone_multipliers.legs,w.get("ads_speed",4.4),w.spread,w.ads_spread]
+	gear_detail.text="머리 ×%.2f · 몸통 ×1 · 다리 ×%.2f\n조준 이동 %.2f m/s · 비조준 %.1f° / 조준 %.1f°"%[w.zone_multipliers.head,w.zone_multipliers.legs,float(w.get("ads_speed",4.4))*.5,w.spread,w.ads_spread]
 	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 24/초\n유효 거리 10 m · 에너지 180\n아군을 향해 발사하면 지속 회복합니다.\n같은 아군에게 여러 LINK 효과는 중첩되지 않습니다."
 	if w.kind=="repair":gear_detail.text="FIX · 구조물 수리 · 에너지 100\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
 	if preview_kind==0:
@@ -616,6 +643,8 @@ func show_hud():
 	scoreboard=MatchScoreboard.new();scoreboard.game=game;hud.add_child(scoreboard);scoreboard.visible=false
 	flash_overlay=ColorRect.new();flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);flash_overlay.color=Color(.055,.065,.08,0);flash_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(flash_overlay)
 	HudLayout.attach(self)
+	if is_instance_valid(game.touch):
+		root.move_child(game.touch,-1)
 	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func notice(message:String):
 	if message.is_empty():return
@@ -678,17 +707,19 @@ func refresh():
 	elif game.phase=="buy":banner.text="준비 %.0f초 · B 병과/장비 · 공격팀 대기 / 수비팀 배치"%game.remaining
 	elif game.bomb.planted:banner.text="장치 작동까지 %.1f초 · 해체 E 유지"%game.bomb.time
 	elif game.bomb.actor==game.local_id:banner.text="상호작용 %.1f초"%game.bomb.progress
-	elif game.options.get("practice",false):banner.text="B 병과/장비 · 입구 보급 구역에서 탄약·가젯·스킬 재충전"
+	elif game.options.get("practice",false):banner.text=("병과/장비 버튼" if TouchControls.supported() else "B 병과/장비")+" · 입구 보급 구역에서 탄약·가젯·스킬 재충전"
 	elif Time.get_ticks_msec()>notice_until:banner.text=""
-	scoreboard.visible=Input.is_action_pressed("score") or game.phase=="result"
+	scoreboard.visible=Input.is_action_pressed("score") or game.phase=="result" or (is_instance_valid(game.touch) and game.touch.held.get("score",false))
 	if scoreboard.visible:scoreboard.refresh_scores()
 
 func map_selector():
 	map_refresh=MapSelection.build(self)
 
-func internet_menu():
-	make_panel("인터넷 로비",980);screen="internet"
+func internet_menu(scope:String="internet"):
+	game.internet.scope=scope
+	make_panel("내부망 로비" if scope=="lan" else "인터넷 로비",980);screen="internet"
 	var service=game.internet
+	if scope=="lan":label("웹 호환 내부망 방입니다. 참가자 모두 같은 로비 주소를 사용하세요. 브라우저는 UDP 자동 검색을 지원하지 않습니다.",17)
 	var footer=HBoxContainer.new();footer.add_theme_constant_override("separation",12);stack.add_child(footer);pin_actions(footer)
 	var address=edit("로비 서버",str(game.profile.get("lobby_url","")),func(_v):pass)
 	address.placeholder_text="https://play.example.com"
@@ -697,10 +728,11 @@ func internet_menu():
 		var result=await service.connect_service(address.text)
 		if screen!="internet":return
 		if result.has("error"):notice(result.error)
-		else:internet_menu(),footer)
+		else:internet_menu(scope),footer)
 	if service.token.is_empty():
 		label("운영 중인 로비 서버 주소를 입력하세요.\n서버 운영자는 저장소의 Docker/NAS 구성을 사용할 수 있습니다.",17)
 	else:
+		RoomFilters.build(self,stack,internet_filter,render_internet_rooms)
 		var selected_mode=[-1]
 		option("빠른 참가 모드",["모든 모드"]+Rules.MODES,0,func(i):selected_mode[0]=i-1)
 		var actions=footer
@@ -711,6 +743,7 @@ func internet_menu():
 			elif result.get("pending",false):wait_internet_room(result.room.id),actions)
 		button("공개 방 만들기",internet_create,actions)
 		button("목록 새로고침",refresh_internet_rooms)
+		label("예상 핑은 로비까지의 왕복 시간과 방장 응답 시간을 합친 값입니다. 게임에서는 직접 연결 핑을 표시합니다.",16)
 		room_list=VBoxContainer.new();stack.add_child(room_list)
 		refresh_internet_rooms()
 	notice_label=label("",17)
@@ -720,19 +753,34 @@ func internet_menu():
 	button("메인메뉴",menu,footer)
 func refresh_internet_rooms():
 	if screen!="internet" or game.internet.token.is_empty():return
-	var result=await game.internet.request("/v1/rooms")
+	var result=await game.internet.request("/v1/rooms?scope="+game.internet.scope)
 	if screen!="internet" or not is_instance_valid(room_list):return
 	if result.has("error"):notice(result.error);return
+	internet_rooms=result.get("rooms",[])
+	for room in internet_rooms:room.ping=-1 if room.get("host_rtt")==null else int(room.host_rtt)+game.internet.list_latency
+	render_internet_rooms()
+func render_internet_rooms():
+	if screen!="internet" or not is_instance_valid(room_list):return
 	for child in room_list.get_children():room_list.remove_child(child);child.queue_free()
-	for room in result.get("rooms",[]):
+	var selected=RoomFilters.select(internet_rooms,internet_filter)
+	for room in selected:
 		var row=HBoxContainer.new();room_list.add_child(row)
-		var description=label("%s · %s · %d/%d\n%s"%[room.name,Rules.MODES[int(room.mode)],room.players,room.capacity,Rules.MAPS[int(room.map)]],17,row);description.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		var description=label("%s · %s · %d/%d\n%s · %s"%[room.name,Rules.MODES[int(room.mode)],room.players,room.capacity,Rules.MAPS[int(room.map)],"예상 %d ms"%int(room.ping) if int(room.ping)>=0 else "핑 측정 중"],17,row);description.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		var room_id=str(room.id)
-		var join=button("준비 중" if room.phase=="starting" else "참가",func():wait_internet_room(room_id),row);join.disabled=room.phase=="starting" or int(room.players)>=int(room.capacity)
-	if result.get("rooms",[]).is_empty():label("열린 방이 없습니다. 빠른 참가로 경기를 만들 수 있습니다.",17,room_list)
+		var join=button("준비 중" if room.phase=="starting" else "참가",func():
+			game.options.password=""
+			if room.get("locked",false):internet_password(room_id)
+			else:wait_internet_room(room_id),row);join.disabled=room.phase=="starting" or int(room.players)>=int(room.capacity)
+	if selected.is_empty():label("검색 조건에 맞는 방이 없습니다. 방을 만들거나 검색 조건을 바꿔 보세요.",17,room_list)
+func internet_password(room_id:String):
+	var dialog=ConfirmationDialog.new();dialog.title="방 비밀번호";dialog.ok_button_text="접속";dialog.cancel_button_text="돌아가기";root.add_child(dialog)
+	var password=LineEdit.new();password.secret=true;password.placeholder_text="방 비밀번호";password.custom_minimum_size=Vector2(350,45);dialog.add_child(password)
+	dialog.confirmed.connect(func():game.options.password=password.text;dialog.queue_free();wait_internet_room(room_id))
+	dialog.canceled.connect(dialog.queue_free);dialog.popup_centered(Vector2i(420,150));password.grab_focus()
 func internet_create():
 	make_panel("공개 방 만들기",880);screen="internet_create"
 	var title=edit("방 이름",str(game.profile.nick)+"의 경기",func(_v):pass)
+	edit("방 비밀번호 · 선택",str(game.options.get("password","")),func(value):game.options.password=value,true)
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):game.options.mode=i;if map_refresh.is_valid():map_refresh.call())
 	map_selector()
 	option("진행 경기 수",["무한","2판","4판","6판","10판"],maxi(0,[0,2,4,6,10].find(int(game.options.rounds))),func(i):game.options.rounds=[0,2,4,6,10][i])
@@ -740,11 +788,11 @@ func internet_create():
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);pin_actions(actions)
 	button("방 만들고 참가",func():
 		Rules.sanitize_room(game.options)
-		var result=await game.internet.request("/v1/rooms",{"name":title.text.left(40),"mode":int(game.options.mode),"map":int(game.options.map),"capacity":int(game.options.max_players),"map_random":bool(game.options.map_random),"map_rotation":bool(game.options.map_rotation),"rounds":int(game.options.rounds),"prep_seconds":int(game.options.prep_seconds)})
+		var result=await game.internet.request("/v1/rooms",{"name":title.text.left(40),"mode":int(game.options.mode),"map":int(game.options.map),"capacity":int(game.options.max_players),"map_random":bool(game.options.map_random),"map_rotation":bool(game.options.map_rotation),"rounds":int(game.options.rounds),"prep_seconds":int(game.options.prep_seconds),"scope":game.internet.scope,"locked":not str(game.options.password).is_empty()})
 		if result.has("error"):notice(result.error)
 		else:wait_internet_room(result.id),actions)
 	notice_label=label("방장이 대기실에서 경기를 시작합니다.",17)
-	button("돌아가기",internet_menu,actions)
+	button("돌아가기",func():internet_menu(game.internet.scope),actions)
 func wait_internet_room(room_id:String):
 	for i in range(30):
 		if screen not in ["internet","internet_create"] or game.phase!="menu":return
@@ -753,3 +801,15 @@ func wait_internet_room(room_id:String):
 		var message=str(result.get("error","연결 대기 중"));notice(message)
 		if not message.contains("준비 중"):return
 		await get_tree().create_timer(2.).timeout
+
+func build_touch_main_actions():
+	panel.position=Vector2(145,64);panel.custom_minimum_size=Vector2(1120,0)
+	for child in background.get_children():
+		if child is Label or child==version_box:child.hide()
+	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",14);panel.add_child(stack)
+	label("INTERNAL N CRUSH",38)
+	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=64;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
+	for items in [[["내부망 로비",join_menu],["인터넷 로비",internet_menu]],[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
+		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)
+		for item in items:button(item[0],item[1],row).size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	label("왼손 이동 · 오른손 화면 조준 · 이동 스틱 끝까지 밀면 달리기",25)

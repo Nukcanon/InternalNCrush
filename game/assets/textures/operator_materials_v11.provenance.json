@@ -1,0 +1,16 @@
+{
+  "date": "2026-09-24",
+  "generator": "OpenAI image generation",
+  "asset": "Original albedo microdetail atlas generated for Internal N Crush",
+  "dimensions": [
+    1254,
+    1254
+  ],
+  "quadrants": [
+    "skin",
+    "ripstop",
+    "glove leather",
+    "hair"
+  ],
+  "prompt": "Use case: photorealistic-natural. Asset type: production game material atlas, a square 2048 by 2048 image divided precisely into four equal edge-to-edge quadrants, each an orthographic flat seamless material swatch. Top left: neutral desaturated beige human skin microdetail, naturally irregular extremely fine pores, tiny fine creases, no reddening, no freckles or large marks; a 12 cm skin patch. Top right: neutral medium grey tactical cotton ripstop cloth, fine woven fiber structure and subtle 7 mm ripstop grid, 25 cm swatch. Bottom left: neutral charcoal grey supple leather gloves material, fine leather grain, 12 cm swatch. Bottom right: neutral grey-brown short hair fiber surface with fine natural strands predominantly vertical and slightly irregular, 12 cm swatch. All four surfaces completely flat, no perspective, no objects, no anatomy silhouette, no stitches at image borders, no text or labels, no seams between quadrants beyond the exact quadrant division. Albedo/color texture only: uniformly diffuse neutral white lighting, no directional shadows, no highlights, no baked shiny reflections, no vignette. Realistic restrained high-end game texture detail, suitable for multiplying with character skin/clothing colors. Fill every pixel, no margins."
+}

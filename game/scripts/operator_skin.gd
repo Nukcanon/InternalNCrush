@@ -15,7 +15,7 @@ static func install(rig:Node3D,key:String) -> Skeleton3D:
 	if not templates.has(key):
 		var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		for i in range(PATHS.size()):_append_geometry(rig.get_node(PATHS[i]),rig,i,rest,st)
-		var fabric=SurfaceFinish.human_material()
+		var fabric=SurfaceFinish.human_material(int(key.split("_")[0]))
 		st.index();st.set_material(fabric);templates[key]=st.commit()
 	for path in PATHS:_hide_geometry(rig.get_node(path))
 	var skin=Skin.new()
@@ -57,7 +57,7 @@ static func _append_geometry(node:Node3D,rig:Node3D,index:int,rest:Array,st:Surf
 		if child is MeshInstance3D:
 			var transform=_relative(child,rig)
 			for surface in range(child.mesh.get_surface_count()):
-				var a=child.mesh.surface_get_arrays(surface);var vertices=a[Mesh.ARRAY_VERTEX];var normals=a[Mesh.ARRAY_NORMAL];var indices=a[Mesh.ARRAY_INDEX];var colors=a[Mesh.ARRAY_COLOR];var uv2=a[Mesh.ARRAY_TEX_UV2]
+				var a=child.mesh.surface_get_arrays(surface);var vertices=a[Mesh.ARRAY_VERTEX];var normals=a[Mesh.ARRAY_NORMAL];var indices=a[Mesh.ARRAY_INDEX];var colors=a[Mesh.ARRAY_COLOR];var uv2=a[Mesh.ARRAY_TEX_UV2];var uv=a[Mesh.ARRAY_TEX_UV]
 				var material=child.material_override if child.material_override else child.mesh.surface_get_material(surface)
 				var count=indices.size() if indices!=null and not indices.is_empty() else vertices.size()
 				for j in range(count):
@@ -73,7 +73,8 @@ static func _append_geometry(node:Node3D,rig:Node3D,index:int,rest:Array,st:Surf
 					else:
 						st.set_bones(PackedInt32Array([int(weights.x),int(weights.y),0,0]));st.set_weights(PackedFloat32Array([weights.z,weights.w,0.,0.]))
 					st.set_color(colors[k] if colors!=null and not colors.is_empty() else material.albedo_color.srgb_to_linear() if material is StandardMaterial3D else Color.WHITE)
-					st.set_uv2(uv2[k] if uv2!=null and not uv2.is_empty() else Vector2(.82,0.))
+					st.set_uv(uv[k] if uv!=null and not uv.is_empty() else Vector2.ZERO)
+					st.set_uv2(uv2[k] if child.has_meta("authored_anatomy") and uv2!=null and not uv2.is_empty() else Vector2(.86,1.01))
 					st.set_normal((transform.basis.inverse().transposed()*normals[k]).normalized());st.add_vertex(position)
 		elif child is Node3D and not child.has_meta("deform_bone") and child.name!="WeaponSocket":_append_geometry(child,rig,index,rest,st)
 static func sync(rig:Node3D,skeleton:Skeleton3D):

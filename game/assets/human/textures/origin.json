@@ -1,0 +1,27 @@
+{
+  "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+  "license": "CC0-1.0",
+  "source_page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+  "files": [
+    {
+      "file": "male.png",
+      "zip_path": "skins/young_caucasian_male/young_lightskinned_male_diffuse.png",
+      "sha256": "862a26e335e958b70534cb5f0d7c47ef30ab148a56c42b3e9da969cf76f12963"
+    },
+    {
+      "file": "female.png",
+      "zip_path": "skins/young_caucasian_female/young_lightskinned_female_diffuse.png",
+      "sha256": "b2a6ac8cd4f9febdb447368e29c76cd68410bb66e46d9dcfa2d5f75126eea8fc"
+    },
+    {
+      "file": "male_dark.png",
+      "zip_path": "skins/young_african_male/young_darkskinned_male_diffuse.png",
+      "sha256": "e3f0dbb634e4c68561338f0087f7a122444e84ec56df102212f1222aa12e4d50"
+    },
+    {
+      "file": "female_asian.png",
+      "zip_path": "skins/young_asian_female/young_lightskinned_female_diffuse3.png",
+      "sha256": "1d82f782b7d2da732229633bd2d14754d873fff53cdb1d088977bcf67ae19dde"
+    }
+  ]
+}

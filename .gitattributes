@@ -3,3 +3,6 @@ game/assets/human/source/** -text
 game/assets/human/*.json -text
 game/assets/fonts/*-OFL.txt -text
 *.ttf binary
+
+# Keep all checksum-pinned human texture/provenance files byte-for-byte.
+game/assets/human/** -text

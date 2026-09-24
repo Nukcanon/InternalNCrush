@@ -6,3 +6,10 @@ __pycache__/
 services/matchmaker/.env
 nas/.env
 **/.venv/
+
+**/node_modules/
+**/.wrangler/
+web/build/
+nas/*.zip
+nas/.env.backup-*
+services/cloudflare-directory/.dev.vars*

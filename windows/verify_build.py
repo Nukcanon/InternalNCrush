@@ -45,7 +45,7 @@ def main():
         parser.error(f'Port {args.port} is already in use; choose another --port.')
     with zipfile.ZipFile(archive) as package:
         names = package.namelist()
-        assert package.testzip() is None and len(names) == 13, 'Release ZIP integrity or manifest mismatch'
+        assert package.testzip() is None and len(names) == 21, 'Release ZIP integrity or manifest mismatch'
         assert all((destination / name).resolve().is_relative_to(destination) for name in names)
         package.extractall(destination)
     binary = destination / 'InternalNCrush/InternalNCrush.exe'

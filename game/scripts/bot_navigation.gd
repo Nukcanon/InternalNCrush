@@ -87,12 +87,37 @@ func route(from:Vector3,to:Vector3) -> PackedVector3Array:
 		if arena.building:
 			for id in layer_ground:layers.set_point_disabled(id,grid.is_point_solid(layer_ground[id]) or layer_dynamic.has(id))
 		if layers.get_point_count()==0:return PackedVector3Array()
-		var start_id=layers.get_closest_point(from);var end_id=layers.get_closest_point(to)
+		var start_id=reachable_entry(from);var end_id=layers.get_closest_point(to)
+		if start_id<0:return PackedVector3Array()
 		return layers.get_point_path(start_id,end_id)
 	var start=nearest(from);var end=nearest(to);var out=PackedVector3Array()
 	if grid.is_point_solid(start) or grid.is_point_solid(end):return out
 	for id in grid.get_id_path(start,end,true):out.append(point(id))
 	return out
+func reachable_entry(from:Vector3) -> int:
+	# Nearest in 3D can be on the side of a stair above the actor. Only join
+	# the graph through a continuous walking surface at the actor's height.
+	var center=cell(from);var best=-1;var distance=INF
+	for radius in range(1,5):
+		for x in range(-radius,radius+1):
+			for z in range(-radius,radius+1):
+				for id in layer_cells.get(center+Vector2i(x,z),[]):
+					if layers.is_point_disabled(id):continue
+					var to=layers.get_point_position(id);var d=from.distance_squared_to(to)
+					if d<distance and continuous_entry(from,to):best=id;distance=d
+		if best>=0:return best
+	return -1
+func continuous_entry(from:Vector3,to:Vector3) -> bool:
+	var previous=arena.walk_height(from)
+	if absf(previous-from.y)>.4:return false
+	var count=maxi(1,ceili(Vector2(to.x-from.x,to.z-from.z).length()/.25))
+	for step in range(1,count+1):
+		var p=from.lerp(to,float(step)/count);var height=INF;var delta=INF
+		for y in arena.navigation_heights(p):
+			if absf(y-previous)<delta:delta=absf(y-previous);height=y
+		if delta>.16 or not arena.navigation_clear(Vector3(p.x,height,p.z)):return false
+		previous=height
+	return absf(previous-to.y)<.1
 func danger(pos:Vector3,amount=2.):
 	var center=cell(pos)
 	for x in range(-2,3):

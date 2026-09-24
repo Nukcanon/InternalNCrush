@@ -1,3 +1,5 @@
+> **Legacy 1.0.x service.** This allocator is retained for historical reference. The 1.1.0 deployment uses `services/directory/` and does not run game processes on the NAS. See [current NAS setup](../../nas/README.md).
+
 # Matchmaker service source
 
 Linux/NAS 설치 및 운영: [nas/README.md](../../nas/README.md).

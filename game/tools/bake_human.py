@@ -24,15 +24,17 @@ def rotate_to_down(v,axis):
     return add(add(v,cross(k,v)),mul(cross(k,cross(k,v)),1/max(1+c,1e-8)))
 
 def bake(gender):
-    vertices=[];faces=[];groups={};group=''
+    vertices=[];faces=[];face_uvs=[];uvs=[];groups={};group=''
     for line in (ROOT/'source/base.obj').read_text().splitlines():
         fields=line.split()
         if not fields:continue
         if fields[0]=='v':vertices.append(list(map(float,fields[1:4])))
+        elif fields[0]=='vt':uvs.append([float(fields[1]),1-float(fields[2])])
         elif fields[0]=='g':group=fields[1];groups.setdefault(group,set())
         elif fields[0]=='f':
             ids=[int(x.split('/')[0])-1 for x in fields[1:]];groups[group].update(ids)
-            if group=='body':faces.append(ids)
+            if group=='body':
+                faces.append(ids);face_uvs.append([int(x.split('/')[1])-1 for x in fields[1:]])
     for name in [f'caucasian-{gender}-young.target',f'universal-{gender}-young-averagemuscle-averageweight.target']:
         for line in (ROOT/'source'/name).read_text().splitlines():
             f=line.split()
@@ -41,10 +43,11 @@ def bake(gender):
         ids=groups['joint-'+name];return [sum(vertices[i][k] for i in ids)/len(ids) for k in range(3)]
     head=joint('head');neck=joint('neck');pelvis=joint('pelvis')
     segments={};dest={}
+    shoulder_width=.185 if gender=='female' else .207
     for side,prefix,arm,leg in [(1,'l',6,12),(-1,'r',3,9)]:
         shoulder=joint(prefix+'-shoulder');elbow=joint(prefix+'-elbow');wrist=joint(prefix+'-hand');finger=joint(prefix+'-finger-3-2')
         hip=joint(prefix+'-upper-leg');knee=joint(prefix+'-knee');ankle=joint(prefix+'-ankle');toe=joint(prefix+'-foot-1')
-        for bone,start,end,target,target_end in [(arm,shoulder,elbow,[side*.207,1.37,0],[side*.207,1.09,0]),(arm+1,elbow,wrist,[side*.207,1.09,0],[side*.207,.815,0]),(arm+2,wrist,finger,[side*.207,.815,0],[side*.207,.71,0]),(leg,hip,knee,[side*.099,.915,0],[side*.099,.5,0]),(leg+1,knee,ankle,[side*.099,.5,0],[side*.099,.085,0])]:
+        for bone,start,end,target,target_end in [(arm,shoulder,elbow,[side*shoulder_width,1.345,0],[side*shoulder_width,1.065,0]),(arm+1,elbow,wrist,[side*shoulder_width,1.065,0],[side*shoulder_width,.790,0]),(arm+2,wrist,finger,[side*shoulder_width,.790,0],[side*shoulder_width,.685,0]),(leg,hip,knee,[side*.099,.915,0],[side*.099,.5,0]),(leg+1,knee,ankle,[side*.099,.5,0],[side*.099,.085,0])]:
             segments[bone]=(start,end,target,target_end);dest[bone]=target
         dest[leg+2]=[side*.099,.085,0];segments[leg+2]=(ankle,toe,dest[leg+2],[side*.099,.02,-.13])
     def torso(v):
@@ -53,7 +56,11 @@ def bake(gender):
         for (a,ta),(b,tb) in zip(knots,knots[1:]):
             if y<=b:ny=ta+(y-a)/(b-a)*(tb-ta);break
         hz=smooth(5.5,6.3,y);zcenter=.1*(1-hz)+head[2]*hz
-        return [v[0]*(.105*(1-hz)+.1*hz),ny,-(v[2]-zcenter)*.1]
+        width=.095 if gender=='female' else .105
+        nx=v[0]*(width*(1-hz)+.1*hz)
+        # Natural trapezius slope: neck stays high; outer deltoid sits lower.
+        ny-=.026*smooth(.06,.20,abs(nx))*smooth(1.22,1.34,ny)*(1-smooth(1.41,1.49,ny))
+        return [nx,ny,-(v[2]-zcenter)*.1]
     def transform(v,bone):
         if bone in [0,1,2]:return torso(v)
         a,b,t,u=segments[bone];axis=sub(b,a);rel=sub(v,a)
@@ -109,10 +116,12 @@ def bake(gender):
             if kinds[i] in [1,2] and adjacency[i]:
                 avg=[sum(previous[j][k] for j in adjacency[i])/len(adjacency[i]) for k in range(3)]
                 points[i]=mix(p,avg,.35)
-    triangles=[]
-    for face in faces:
+    triangles=[];triangle_uvs=[]
+    for face,face_uv in zip(faces,face_uvs):
         ids=[mapping[i] for i in face]
-        for j in range(1,len(ids)-1):triangles.append([ids[0],ids[j],ids[j+1]])
+        for j in range(1,len(ids)-1):
+            triangles.append([ids[0],ids[j],ids[j+1]])
+            triangle_uvs.append([uvs[face_uv[k]] for k in [0,j,j+1]])
     normals=[[0.,0.,0.] for p in points]
     for a,b,c in triangles:
         normal=cross(sub(points[b],points[a]),sub(points[c],points[a]))
@@ -128,6 +137,7 @@ def bake(gender):
             points[i]=add(p,mul(normals[i],allowance))
     # Godot clockwise winding is the same index order after reflecting Z.
     result={'vertices':[[round(x,6) for x in p] for p in points],'faces':triangles,'weights':[[[b,round(w,6)] for b,w in q] for q in weights],'kinds':kinds,'face_coordinates':facial,'eyes':[]}
+    result['face_uvs']=triangle_uvs
     for side in ['r','l']:
         p=torso(joint(side+'-eye'));result['eyes'].append([round(p[0],6),round(p[1]-1.6,6),round(p[2],6)])
     (ROOT/f'{gender}.json').write_text(json.dumps(result,separators=(',',':')))

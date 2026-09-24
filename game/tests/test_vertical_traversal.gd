@@ -20,8 +20,9 @@ func run():
 			bot.path.clear();bot.next_path=0.;bot.goal=goal
 			var started=a.position
 			for step in range(2400):
-				g.clock+=1./60.;a.input_state.x=0.;a.input_state.z=0.;a.input_state.sprint=false
-				bot.navigate(goal,1./60.);a.simulate(1./60.,g.clock,true)
+				var dt=Engine.time_scale/Engine.physics_ticks_per_second
+				g.clock+=dt;a.input_state.x=0.;a.input_state.z=0.;a.input_state.sprint=false
+				bot.navigate(goal,dt);a.simulate(dt,g.clock,true)
 				if a.position.distance_to(goal)<2.1:break
 				await physics_frame
 			checks+=1

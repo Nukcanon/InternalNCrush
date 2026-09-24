@@ -1,0 +1,13 @@
+{
+  "name": "internal-n-crush-directory",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 30881",
+    "deploy": "wrangler deploy",
+    "test": "node --test test-policy.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.136.3"
+  }
+}

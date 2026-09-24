@@ -1,18 +1,21 @@
 services:
-  arena:
-    build:
-      context: ..
-      dockerfile: services/matchmaker/Dockerfile
+  directory:
+    build: ../services/directory
     init: true
     restart: unless-stopped
     environment:
-      PUBLIC_BASE_URL: https://${DOMAIN:?Set DOMAIN in .env}
-      MAX_ROOMS: ${MAX_ROOMS:-4}
+      MAX_ROOMS: ${MAX_ROOMS:-128}
+      GAME_VERSION: 1.1.0
+      ALLOWED_ORIGINS: https://nukcanon.github.io
+      TRUST_PROXY: "1"
+      TURN_URLS: ${TURN_URLS:-}
+      TURN_SECRET: ${TURN_SECRET:-}
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    pids_limit: 256
-    mem_limit: 4g
-    cpus: 4
+    read_only: true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
       interval: 30s
@@ -23,15 +26,15 @@ services:
     image: caddy:2.11.4-alpine
     restart: unless-stopped
     environment:
-      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
-      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
-    ports: ["80:80", "443:443"]
+      DOMAIN: ${DOMAIN:?Run the setup wizard first}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports: ["${BIND_IP:-127.0.0.1}:${HTTP_PORT:-18080}:80", "${BIND_IP:-127.0.0.1}:${HTTPS_PORT:-18443}:443"]
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./${CADDY_CONFIG:-Caddyfile.external}:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      arena:
+      directory:
         condition: service_healthy
     networks: [private]
 networks:

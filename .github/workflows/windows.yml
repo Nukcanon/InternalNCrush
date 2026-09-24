@@ -4,6 +4,7 @@ on:
     paths:
       - 'game/**'
       - 'windows/**'
+      - 'web/**'
       - '.github/workflows/windows.yml'
   workflow_dispatch:
 permissions:
@@ -27,6 +28,8 @@ jobs:
           mkdir -p ~/.local/share/godot/export_templates/4.4.1.stable
           unzip -p /tmp/templates.tpz templates/windows_release_x86_64.exe > ~/.local/share/godot/export_templates/4.4.1.stable/windows_release_x86_64.exe
           unzip -p /tmp/templates.tpz templates/windows_debug_x86_64.exe > ~/.local/share/godot/export_templates/4.4.1.stable/windows_debug_x86_64.exe
+          unzip -p /tmp/templates.tpz templates/web_nothreads_release.zip > ~/.local/share/godot/export_templates/4.4.1.stable/web_nothreads_release.zip
+          unzip -p /tmp/templates.tpz templates/web_nothreads_debug.zip > ~/.local/share/godot/export_templates/4.4.1.stable/web_nothreads_debug.zip
           python3 game/tools/prepare_assets.py
       - name: Import and bake original models
         run: |
@@ -56,25 +59,43 @@ jobs:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
           LIFECYCLE_STAGGER: '1.5'
         run: python3 game/tests/run_network_lifecycle.py
+      - name: Touch input and WebRTC host/client integration
+        env:
+          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
+        run: |
+          set -euo pipefail
+          pip install -r services/directory/requirements.txt
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_touch.gd -- --touch-test --no-save-profile --no-update-check
+          python3 game/tests/run_network_rtc.py
       - name: Export Windows and package
         run: |
           set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/out/InternalNCrush"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --export-release "Windows Desktop" "$GITHUB_WORKSPACE/out/InternalNCrush/InternalNCrush.exe"
           python3 game/tools/package_release.py --build-dir out/InternalNCrush --output-dir out
+      - name: Export single-thread Web build
+        run: |
+          set -euo pipefail
+          mkdir -p web/build
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --export-release Web ../web/build/index.html
+          python3 web/package_web.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InternalNCrush-Web
+          path: web/build/*
       - name: Publish downloadable build
         if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view internal-n-crush-v1.0.4 >/dev/null 2>&1 || gh release create internal-n-crush-v1.0.4 --target "$GITHUB_SHA" --title "Internal N Crush 1.0.4" --notes-file game/docs/RELEASE_NOTES.md --latest
-          gh release upload internal-n-crush-v1.0.4 out/InternalNCrush_Windows_v1.0.4.zip out/SHA256SUMS.txt --clobber
+          gh release view internal-n-crush-v1.1.0 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.0 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.0" --notes-file game/docs/RELEASE_NOTES.md --latest
+          gh release upload internal-n-crush-v1.1.0 out/InternalNCrush_Windows_v1.1.0.zip out/SHA256SUMS.txt --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.0.4.zip
+          path: out/InternalNCrush_Windows_v1.1.0.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: functional-validation
-          path: validation/functional-v104/*.log
+          path: validation/functional-v11/*.log
