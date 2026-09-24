@@ -1,9 +1,9 @@
 {
   "version": "1.0.3",
-  "publication_state": "local_validation_complete_publication_pending",
+  "publication_state": "published_and_verified",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": null,
+  "source_commit": "003b8b9b8728bed3a29f9ebde572cc788ba2ddab",
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
   "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.3",
   "previous_live_version": "1.0.2",
@@ -13,11 +13,83 @@
     "rotation_existing_and_late_clients": true,
     "native_windows_source": true,
     "maps": 32,
-    "rectangles_per_capacity": 2
+    "rectangles_per_capacity": 2,
+    "native_windows_published_payload": true,
+    "windows_modes": [
+      "practice:10 actors",
+      "training:8 actors"
+    ],
+    "packaged_defusal_maps": "12/12",
+    "network_capacity": "32 simultaneous clients, fresh snapshots",
+    "network_lifecycle": "8 peers, reconnect + server restart, stagger 0.15s and 1.5s",
+    "network_props_and_doors": "existing and late-joining clients",
+    "docker_tls": "actual Linux Compose HTTPS API + two certificate-verified WSS Godot clients",
+    "tls_negative_cases": [
+      "unknown CA rejected",
+      "wrong hostname rejected",
+      "internal API returns 404"
+    ],
+    "public_lobby_loopback": true,
+    "site": "Canonical HTML/JSON match after LF/CRLF normalization; all three PNGs byte-identical; browser inspected"
   },
   "remaining": [
-    "Public CI, release ZIP and website verification",
-    "Human competitive playtests, actual NAS/WAN/low-end long sessions",
-    "Some frame spikes and intermittent Compatibility shutdown texture warning"
-  ]
+    "Human competitive win-rate and weapon-choice playtests",
+    "Actual multi-PC LAN/WAN, deployed NAS ARM64, low-end and long 32-player sessions",
+    "Some frame spikes and intermittent Compatibility shutdown GL texture warnings",
+    "Authored AAA art/mocap quality is not certified; procedural animation and visual active physics remain",
+    "Public operation requires operator domain/server; accounts, MMR, durable bans, visibility filtering, behavioral detection and DDoS operations remain"
+  ],
+  "published_version": "1.0.3",
+  "verified_at_utc": "2026-09-24T02:10:29.812077+00:00",
+  "build_result": "success",
+  "pages_verified": true,
+  "build_run": 35944422965,
+  "build_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35944422965",
+  "docker_run": 35944423059,
+  "docker_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/35944423059",
+  "docker_result": "success",
+  "site_commit": "b4a329045b9f13fab42f97d435d3d4edad8033db",
+  "pages_run": 35945880227,
+  "pages_run_url": "https://github.com/Nukcanon/nukcanon/actions/runs/35945880227",
+  "pages_result": "success",
+  "release_asset": {
+    "name": "InternalNCrush_Windows_v1.0.3.zip",
+    "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.0.3/InternalNCrush_Windows_v1.0.3.zip",
+    "bytes": 57734396,
+    "sha256": "bf55528267d7ac1db628a7a5ebc5ad60b7229bc8ea6396c14f97ad5dce1b7cf8",
+    "files": 9,
+    "anonymous_download_hash_verified": true
+  },
+  "benchmark": [
+    {
+      "frames": 6060,
+      "map": 13,
+      "max_ms": 117.609,
+      "mean_ms": 1.9801800330033,
+      "p95_ms": 3.999,
+      "players": 8,
+      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+      "resolution": "(1280, 720)"
+    },
+    {
+      "frames": 2771,
+      "map": 0,
+      "max_ms": 128.362,
+      "mean_ms": 4.33391158426561,
+      "p95_ms": 9.817,
+      "players": 32,
+      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+      "resolution": "(1280, 720)"
+    }
+  ],
+  "practice_benchmark": {
+    "frames": 6012,
+    "max_ms": 5.492,
+    "mean_ms": 1.99607069194943,
+    "mode": "practice",
+    "p95_ms": 4.042,
+    "players": 10,
+    "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+    "resolution": "(1280, 720)"
+  }
 }

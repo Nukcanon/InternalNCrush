@@ -33,3 +33,12 @@ models는 prepare_assets.py → Godot editor import → tools/build_models.gd �
 ## 남은 품질/운영 과제
 
 사람 경쟁전 테스트, 외부 다중 PC/NAS ARM64·저사양/장시간 32인, 일부 프레임 급증, 간헐적 종료 GL texture 349524 bytes 경고. 수작업 AAA 모델/모션캡처/완전 안티치트라고 말하지 않는다. WSS는 암호화되고 LAN ENet은 평문이며 모든 상대 위치가 스냅샷에 있으므로 벽핵·에임봇까지 해결한 것이 아니다. 계정/MMR/영구 제재/정보 제한/행동 탐지/분산 운영은 별도 과제다.
+
+## 공개 배포 최종 확인
+
+- 소스 `003b8b9b8728bed3a29f9ebde572cc788ba2ddab`. [Windows 빌드 35944422965](https://github.com/Nukcanon/InternalNCrush/actions/runs/35944422965) 성공: 기능 1,503/1,503, 32명 최신 스냅샷 완료 장벽, 독립 클라이언트, 재접속/서버 재시작, 물체·문/늦은 참가, 맵 순환, 1.5초 지연 참가 라이프사이클.
+- [Docker 빌드 35944423059](https://github.com/Nukcanon/InternalNCrush/actions/runs/35944423059) 성공: API 10/10, 실제 Linux Compose HTTPS→인증서 검증 WSS 클라이언트 2개, 알 수 없는 CA/잘못된 호스트 거부, 내부 API 404.
+- [1.0.3 릴리스](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.3), ZIP 9개 파일·57,734,396 bytes. SHA-256 `bf55528267d7ac1db628a7a5ebc5ad60b7229bc8ea6396c14f97ad5dce1b7cf8`. CI 파일과 익명 공개 다운로드 해시 일치.
+- CI ZIP을 풀어 실제 Windows EXE 연습장(10 actors)·봇 경기(8 actors) 정상 종료 확인. 동일 배포 PCK의 설치·해체 전장 12개 생성 확인. 테스트 실행은 사용자 설정 저장/업데이트 체크를 비활성화했다. 종료 GL texture 경고는 여전히 관찰되었다.
+- 사이트 `b4a329045b9f13fab42f97d435d3d4edad8033db`, [Pages 35945880227](https://github.com/Nukcanon/nukcanon/actions/runs/35945880227) 성공. 공개 HTML/버전 JSON의 줄바꿈 정규화 비교와 3개 이미지 바이트 검증 및 브라우저 표시 확인. 기존 주소와 두 안내 섹션 유지.
+- 연습장 추가 12초 표본: RTX 4080 SUPER, 1280×720, VSync OFF, 평균 1.996ms / P95 4.042ms / 최대 5.492ms. 짧은 고정 시점 표본이며 실제 저사양/장시간 보장이 아니다.

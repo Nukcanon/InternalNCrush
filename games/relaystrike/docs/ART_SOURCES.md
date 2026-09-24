@@ -6,7 +6,7 @@ The following new raster assets were generated with the OpenAI image generation 
 
 ## field_materials_v103.png
 
-Path: `assets/textures/field_materials_v103.png`. 2048×2048 requested; delivered source retained.
+Path: `assets/textures/field_materials_v103.png`. 2048×2048 requested; actual delivered file 1254×1254, retained unchanged.
 
 Exact prompt:
 
@@ -16,7 +16,7 @@ Use case: stylized-concept. Asset type: production albedo material atlas for a s
 
 ## smoke_particle_v103.png
 
-Path: `assets/textures/smoke_particle_v103.png`. 1024×1024 requested; transparent sprite.
+Path: `assets/textures/smoke_particle_v103.png`. 1024×1024 requested; actual delivered file 1254×1254, transparent sprite.
 
 Exact prompt:
 

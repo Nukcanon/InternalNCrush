@@ -55,3 +55,12 @@ Windows NVIDIA RTX 4080 SUPER, Compatibility/OpenGL 3.3. 캐릭터 얼굴·달�
 - 모션은 절차적 포즈·GPU 스키닝·관절 스프링/래그돌이며 모션캡처/수작업 AAA 품질 평가 완료가 아니다. 살아 있는 관절은 월드와 충돌하지 않는 시각 보조이고 서버 이동은 캡슐 기반이다.
 - Compatibility 종료 시 Font/텍스처 정리 순서로 추정되는 349524 bytes GL texture leak 경고가 일부 런에 남는다. 원인 확정/완전 해결이라고 표현하지 않는다. 게임 중 스크립트 오류와 구분한다.
 - Docker 기능은 실제 공개 운영 서버 주소를 제공하지 않는다. 계정/MMR/영구 제재/상대 정보 제한/행동 탐지/DDoS 운영은 후속 과제.
+
+## 공개 배포 최종 확인
+
+- 소스 `003b8b9b8728bed3a29f9ebde572cc788ba2ddab`. [Windows 빌드 35944422965](https://github.com/Nukcanon/InternalNCrush/actions/runs/35944422965) 성공: 기능 1,503/1,503, 32명 최신 스냅샷 완료 장벽, 독립 클라이언트, 재접속/서버 재시작, 물체·문/늦은 참가, 맵 순환, 1.5초 지연 참가 라이프사이클.
+- [Docker 빌드 35944423059](https://github.com/Nukcanon/InternalNCrush/actions/runs/35944423059) 성공: API 10/10, 실제 Linux Compose HTTPS→인증서 검증 WSS 클라이언트 2개, 알 수 없는 CA/잘못된 호스트 거부, 내부 API 404.
+- [1.0.3 릴리스](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.0.3), ZIP 9개 파일·57,734,396 bytes. SHA-256 `bf55528267d7ac1db628a7a5ebc5ad60b7229bc8ea6396c14f97ad5dce1b7cf8`. CI 파일과 익명 공개 다운로드 해시 일치.
+- CI ZIP을 풀어 실제 Windows EXE 연습장(10 actors)·봇 경기(8 actors) 정상 종료 확인. 동일 배포 PCK의 설치·해체 전장 12개 생성 확인. 테스트 실행은 사용자 설정 저장/업데이트 체크를 비활성화했다. 종료 GL texture 경고는 여전히 관찰되었다.
+- 사이트 `b4a329045b9f13fab42f97d435d3d4edad8033db`, [Pages 35945880227](https://github.com/Nukcanon/nukcanon/actions/runs/35945880227) 성공. 공개 HTML/버전 JSON의 줄바꿈 정규화 비교와 3개 이미지 바이트 검증 및 브라우저 표시 확인. 기존 주소와 두 안내 섹션 유지.
+- 연습장 추가 12초 표본: RTX 4080 SUPER, 1280×720, VSync OFF, 평균 1.996ms / P95 4.042ms / 최대 5.492ms. 짧은 고정 시점 표본이며 실제 저사양/장시간 보장이 아니다.
