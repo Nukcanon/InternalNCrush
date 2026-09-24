@@ -36,8 +36,18 @@ func run():
 	expect(c.landing_compression>.1,"landing absorbs impact through the pelvis")
 	for i in range(12):c.update_pose(.016,Vector3.ZERO,false,false,true,0,-1,0,0,2.)
 	expect(absf(c.pelvis_yaw)>.05,"turning in place separates lower body and aim rotation")
-	c.update_pose(.016,Vector3(6,0,-2),false,false,true,0,-1,0,.2,0)
-	expect(c.lower_lag.x<0 and c.lower_lag.length()<.13,"direction changes produce bounded opposing lower-body inertia")
+	# Pose offsets are local to the mirrored/rotated rig; acceleration is in world space.
+	# Check both hands explicitly so the random spawn hand cannot change the assertion.
+	var original_hand=c.scale.x
+	for hand in [-1,1]:
+		for yaw in [0.,PI*.5,-PI*.7]:
+			a.reset_view(yaw);c.scale.x=hand
+			c.previous_velocity=Vector3.ZERO;c.lower_lag=Vector3.ZERO;c.lag_velocity=Vector3.ZERO
+			var movement=Vector3(6,0,-2)
+			c.update_pose(.016,movement,false,false,true,0,-1,0,.2,0)
+			var world_lag=c.global_basis*c.lower_lag
+			expect(world_lag.dot(movement)<0 and world_lag.length()<.13,"direction changes oppose world acceleration with bounded inertia (hand %d, yaw %.2f)"%[hand,yaw])
+	a.reset_view(0);c.scale.x=original_hand
 	for index in [7,9,16,17]:
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.playable_polygon.size()>4,"map %d has a nonrectangular perimeter"%index)
