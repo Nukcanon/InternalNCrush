@@ -252,7 +252,8 @@
     "scope_steps": [
       4,
       8
-    ]
+    ],
+    "scope_default": 4
   },
   "r2": {
     "name": "MONOLITH",
@@ -307,7 +308,8 @@
       4,
       8,
       16
-    ]
+    ],
+    "scope_default": 8
   },
   "r3": {
     "name": "ECHO",
