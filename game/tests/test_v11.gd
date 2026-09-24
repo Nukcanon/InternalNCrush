@@ -9,6 +9,7 @@ func run():
 	Catalog.load_all()
 	expect(Rules.WALK_SPEED<=3.3 and Rules.RUN_SPEED<=6.3,"human-scale locomotion caps")
 	expect(not GraphicsOptions.blood_enabled,"blood is disabled before profile load")
+	expect(int(ProjectSettings.get_setting("rendering/limits/opengl/max_lights_per_object"))>=16,"fixed map and transient lights fit without replacing one another")
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.ui.clear_panel();g.set_physics_process(false)
 	g.render_actors=false;g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=13;g.build_world();g.add_player(1,"Target","test_v11")
 	var actor:Actor=g.actors[1];actor.position=Vector3(0,3,0);actor.rotation=Vector3.ZERO;actor.ensure_hit_pose()

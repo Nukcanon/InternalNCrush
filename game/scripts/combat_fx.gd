@@ -227,7 +227,9 @@ func scuff(pos:Vector3):
 	var fade=node.create_tween();fade.tween_interval(3.5);fade.tween_property(node.material_override,"albedo_color:a",0.,1.);fade.tween_callback(node.queue_free)
 
 func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:float):
-	if active_lights>=6:return
+	# Eleven fixed map lights + five transient lights fit the per-surface budget.
+	# A muzzle flash must never evict a permanent light from a merged wall/floor.
+	if active_lights>=5:return
 	var light=OmniLight3D.new();add_child(light);light.position=pos;light.light_color=color;light.light_energy=energy;light.omni_range=radius;light.omni_attenuation=1.5;light.shadow_enabled=false;active_lights+=1
 	light.tree_exited.connect(func():active_lights=maxi(0,active_lights-1))
 	var t=light.create_tween();t.tween_property(light,"light_energy",0.,seconds);t.tween_callback(light.queue_free)
