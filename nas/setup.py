@@ -46,7 +46,10 @@ def package(output, include_config=True):
     files=[p for p in ROOT.iterdir() if p.is_file() and (p.suffix in ['.py','.sh','.cmd','.md','.yaml'] or p.name in ['Caddyfile','Caddyfile.external','.env.example'] or (include_config and p.name=='.env'))]
     source=ROOT.parent/'services/directory'
     with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as archive:
-        for p in files:archive.write(p,'InternalNCrush-NAS/nas/'+p.name)
+        for p in files:
+            name='InternalNCrush-NAS/nas/'+p.name
+            if p.suffix=='.sh':archive.writestr(name,p.read_bytes().replace(b'\r\n',b'\n'))
+            else:archive.write(p,name)
         for name in ['main.py','requirements.txt','Dockerfile']:
             archive.write(source/name,'InternalNCrush-NAS/services/directory/'+name)
 

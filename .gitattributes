@@ -6,3 +6,5 @@ game/assets/fonts/*-OFL.txt -text
 
 # Keep all checksum-pinned human texture/provenance files byte-for-byte.
 game/assets/human/** -text
+*.sh text eol=lf
+*.cmd text eol=crlf

@@ -25,5 +25,8 @@ class SetupTests(unittest.TestCase):
                 self.assertIn('InternalNCrush-NAS/nas/.env.example',z.namelist())
                 self.assertNotIn('InternalNCrush-NAS/nas/.env',z.namelist())
                 self.assertFalse(any('/game/' in n or 'godot' in n.lower() for n in z.namelist()))
+                for name in z.namelist():
+                    if name.endswith('.sh'):
+                        self.assertNotIn(b'\r',z.read(name),'Linux shell scripts must have LF endings even when packaged on Windows')
 
 if __name__=='__main__':unittest.main()
