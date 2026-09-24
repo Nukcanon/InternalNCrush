@@ -44,4 +44,11 @@ func run():
 	expect(is_equal_approx(member.pose.origin.y,3.),"batched props still follow physics")
 	for prop in props.values():expect(prop.collision_layer==8,"batched props retain original collision")
 	arena.free();await process_frame
+	for id in Catalog.weapons:
+		var original=WeaponVisual.new();root.add_child(original);original.build(Catalog.get_weapon(id),false)
+		var reused=WeaponVisual.new();root.add_child(reused);var restored=reused.restore_web_model(Catalog.get_weapon(id),false)
+		expect(restored and reused.muzzle.position.is_equal_approx(original.muzzle.position) and reused.mag_origin.is_equal_approx(original.mag_origin),"baked web weapon sockets "+id)
+		reused.animate_reload(.84,0.,1.);reused.animate_reload(-1.,0.,1.)
+		expect(reused.magazine.position.is_equal_approx(reused.mag_origin),"baked reload resets "+id)
+		original.free();reused.free()
 	print("V113_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

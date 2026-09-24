@@ -90,7 +90,9 @@ func magazine_shape(style:String):
 			block(magazine,Vector3(0,-.062,0),Vector3(.055,.175,.085),edge,-.09)
 			for y in [-.02,-.06,-.1]:block(magazine,Vector3(.029,y,-.003),Vector3(.006,.006,.069),metal)
 			block(magazine,Vector3(0,-.15,.012),Vector3(.067,.023,.094),metal)
+static var web_templates={}
 func build(w:Dictionary,hands=true):
+	if OS.has_feature("web") and restore_web_model(w,hands):return
 	spec=w;name=w.name
 	for color in [metal,edge,light]:
 		var surface=M.material(color);surface.metallic=.55;surface.roughness=.46
@@ -192,6 +194,30 @@ func build(w:Dictionary,hands=true):
 	M.cylinder(flash,Vector3(0,0,-.08),.058,.16,Color("ffeac0"),Vector3(PI/2,0,0),.012,5)
 	flash.visible=false
 	if OS.has_feature("web"):WebMaterials.apply(self)
+func restore_web_model(w:Dictionary,hands:bool) -> bool:
+	var id=""
+	for key in Catalog.weapons:
+		if Catalog.weapons[key].name==w.name:id=key;break
+	var path="res://assets/models/weapon_"+id+".scn"
+	if id.is_empty() or not ResourceLoader.exists(path):return false
+	if not web_templates.has(id):web_templates[id]=load(path)
+	# Reuse the baked receiver/magazine/action, preserving every animation socket.
+	build_pose(w)
+	for child in get_children():child.free()
+	var baked=web_templates[id].instantiate()
+	for child in baked.find_children("*","",true,false):child.owner=null
+	for child in baked.get_children():baked.remove_child(child);add_child(child)
+	baked.free()
+	barrel_group=get_node("Barrel");magazine=get_node("Magazine");action_part=get_node("Action")
+	left_hand=get_node("LeftHand");right_hand=get_node("RightHand");muzzle=barrel_group.get_node("Muzzle");flash=muzzle.get_node("MuzzleFlash")
+	length=-muzzle.position.z;mag_origin=magazine.position;action_origin=action_part.position;hand_origin=left_hand.position
+	if hands:
+		var pistol=int(w.slot)==1 and w.kind=="gun";var role=int(w.role)
+		support_rig=WeaponHand.new();left_hand.add_child(support_rig);support_rig.build(true,pistol,role)
+		firing_rig=WeaponHand.new();right_hand.add_child(firing_rig);firing_rig.build(false,pistol,role)
+		support_arm=WeaponHand.forearm(self,role);firing_arm=WeaponHand.forearm(self,role);update_hands(-1.,0.,10.)
+	WebMaterials.apply(self)
+	return true
 func add_surface_details(pistol:bool,role:int):
 	var side=.046 if pistol else .073 if role==2 else .054
 	for sign_x in [-1,1]:
