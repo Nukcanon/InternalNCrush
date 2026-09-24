@@ -42,8 +42,8 @@ def save_config(values, path):
     if path.exists():shutil.copy2(path,path.with_name('.env.backup-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S')))
     path.write_text('\n'.join(k+'='+v for k,v in values.items())+'\n',encoding='utf-8')
 
-def package(output):
-    files=[p for p in ROOT.iterdir() if p.is_file() and (p.suffix in ['.py','.sh','.cmd','.md','.yaml'] or p.name in ['Caddyfile','Caddyfile.external','.env'])]
+def package(output, include_config=True):
+    files=[p for p in ROOT.iterdir() if p.is_file() and (p.suffix in ['.py','.sh','.cmd','.md','.yaml'] or p.name in ['Caddyfile','Caddyfile.external','.env.example'] or (include_config and p.name=='.env'))]
     source=ROOT.parent/'services/directory'
     with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as archive:
         for p in files:archive.write(p,'InternalNCrush-NAS/nas/'+p.name)

@@ -31,3 +31,8 @@ See [full anatomy provenance](../assets/human/CREDITS.md) and [CC0](../assets/hu
 Rajdhani SemiBold (Latin/UI numerals) and Do Hyeon (Korean display text) are bundled from the official Google Fonts repository under SIL OFL. Exact URLs and SHA-256 hashes: [font manifest](../assets/fonts/manifest.json); license texts are alongside the fonts and in the Windows ZIP. Noto Sans KR remains a fallback.
 
 This update introduces no new AI-generated raster imagery; the two textures above remain the unchanged 1.0.3 assets.
+
+
+## 1.1.0 skin and material update
+
+The new UV skin textures are from the official MakeHuman CC0 system assets pack. Archive names, upstream material authors and original hashes are preserved under `assets/human/textures/`; distribution terms remain CC0. The original generated four-quadrant microdetail atlas is `assets/textures/operator_materials_v11.png`; its exact prompt and creation date are in the adjacent `.provenance.json`. It adds pores, ripstop, leather and hair detail without using a photographed identifiable person. The historical statement above about no new AI images applies to 1.0.4 only.
