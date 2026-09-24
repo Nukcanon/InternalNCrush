@@ -67,5 +67,8 @@ func run():
 	g.render_actors=false;g.add_player(2,"Headless","headless_stature_identity");g.players[2].role=1;g.actors[2].set_team(1)
 	expect(not is_instance_valid(g.actors[2].character),"headless actors do not instantiate render rigs or animation players")
 	expect(is_equal_approx(g.actors[2].shape.shape.height,1.72),"headless actors retain class dimensions without a render rig")
+	g.server=false;g.actors[2].target_pos=Vector3(4,.2,6);g.actors[2].headless_pose(g.players[2])
+	expect(not is_instance_valid(g.actors[2].character),"receiving headless clients do not animate authoritative rigs")
+	expect(g.actors[2].global_position==g.actors[2].target_pos,"lightweight receiving peers still update transforms")
 	replica.free();g.leave_game();g.free();await process_frame;await process_frame
 	print("V1_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

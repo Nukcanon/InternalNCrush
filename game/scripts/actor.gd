@@ -185,6 +185,12 @@ func update_spread(dt:float,now:float):
 func headless_pose(p:Dictionary):
 	# The same small joint hierarchy drives authoritative hit volumes without meshes.
 	set_team(int(p.team))
+	if not local and not game.server:global_position=target_pos;rotation.y=aim_yaw
+	shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
+	camera.position=Vector3(0,eye_height(bool(input_state.crouch)),0)
+	# Receiving headless peers only need capsules/cameras. Server-only anatomy
+	# avoids 32 clients redundantly animating 32 complete authoritative rigs each.
+	if not game.server:return
 	ensure_hit_pose();character.scale.x=float(p.get("hand",1))
 	var w=game.current_weapon(p);var progress=clampf((game.clock-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0.,1.) if p.reload>game.clock else -1.
 	var weapon=character.socket.get_child(0) if character.socket.get_child_count()>0 else null
@@ -195,9 +201,6 @@ func headless_pose(p:Dictionary):
 	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
 	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/.72,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),game.clock)
-	if not local and not game.server:global_position=target_pos;rotation.y=aim_yaw
-	shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
-	camera.position=Vector3(0,eye_height(bool(input_state.crouch)),0)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
