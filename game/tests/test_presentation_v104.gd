@@ -17,6 +17,11 @@ func run():
 			for pair in weights:total+=pair[1];invalid=invalid or pair[0]<0 or pair[0]>=15 or pair[1]<0
 			invalid=invalid or absf(total-1.)>.00001
 		expect(not invalid,gender+" every anatomy vertex has normalized valid skin weights")
+		var cloth_on_jaw=false
+		for index in range(data.vertices.size()):
+			var p=data.vertices[index]
+			if p[1]>1.49 and p[2]<-.04 and absf(p[0])<.065:cloth_on_jaw=cloth_on_jaw or int(data.kinds[index])!=0
+		expect(not cloth_on_jaw,gender+" jaw and upper neck retain skin instead of cloth")
 		for face in data.faces:
 			for i in range(3):
 				var a=data.vertices[face[i]];var b=data.vertices[face[(i+1)%3]]

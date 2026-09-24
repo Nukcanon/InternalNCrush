@@ -4,7 +4,7 @@ from pathlib import Path
 
 project=Path(__file__).resolve().parents[1]
 with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as probe:
-    probe.bind(('127.0.0.1',27888))
+    probe.bind(('127.0.0.1',max(1024,min(65533,int(os.environ.get('INC_TEST_PORT','27888'))))))
 base=[os.environ.get('GODOT','godot'),'--headless','--path',str(project),'--max-fps','60','--script','res://tests/network_props.gd','--']
 with tempfile.TemporaryDirectory(prefix='inc-props-') as folder:
     barrier=Path(folder);processes=[];outputs=[]

@@ -1,11 +1,11 @@
 [
   {
     "path": "female.json",
-    "sha256": "b278cbfb7e694185a6e524b7d6c91ef4e9a7fbda4729778fbe703e1b873f34fc"
+    "sha256": "35c7241a0d0c6d50961b251e1969e11a7e6b92cc100054406b4b195914efa713"
   },
   {
     "path": "male.json",
-    "sha256": "cecb106a12b4d6879db956774680c5e6db9e6ae0acaaab7bac6e22f4d763e42e"
+    "sha256": "f3f9342a344b7b98d2e5411f24fc617e07786d71ec00aa2e73fe9765fa0ce299"
   },
   {
     "path": "source/base.obj",

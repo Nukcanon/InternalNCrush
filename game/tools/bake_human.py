@@ -91,7 +91,9 @@ def bake(gender):
         dominant=max(w,key=lambda q:q[1])[0]
         if dominant in [5,8]:kind=3
         elif dominant in [4,7] and p[1]<1.035:kind=0
-        elif p[1]>1.53 or (p[1]>1.47 and abs(p[0])<.061 and abs(p[2])<.059):kind=0
+        # Keep the whole jaw and upper neck as skin. A narrow neck cylinder
+        # clipped the projecting chin and relaxed it into the shirt surface.
+        elif dominant==2 or p[1]>1.49 or (p[1]>1.47 and abs(p[0])<.061 and abs(p[2])<.059):kind=0
         elif p[1]<1.025 and dominant not in [3,4,5,6,7,8]:kind=2
         else:kind=1
         if dominant in [11,14]:kind=4
