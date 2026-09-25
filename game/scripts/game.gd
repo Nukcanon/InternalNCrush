@@ -1508,10 +1508,9 @@ func hit_reaction(id:int,push:Vector3):
 @rpc("authority","call_local","unreliable",2)
 func wall_mark(pos:Vector3,normal:Vector3):
 	if dedicated or arena==null:return
-	var mark=MeshInstance3D.new();var mesh=PlaneMesh.new();mesh.size=Vector2(.085,.085);mark.mesh=mesh
-	var material=StandardMaterial3D.new();material.albedo_color=Color("3a4040");material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mark.material_override=material
-	add_child(mark);mark.position=pos+normal*.009;mark.quaternion=Quaternion(Vector3.UP,normal.normalized());wall_marks.append(mark)
-	if wall_marks.size()>100:
+	var mark=BulletMark.make(RenderStyle.web())
+	add_child(mark);mark.position=pos+normal*.004;mark.quaternion=Quaternion(Vector3.UP,normal.normalized());mark.rotate_object_local(Vector3.UP,randf()*TAU);wall_marks.append(mark)
+	if wall_marks.size()>(64 if RenderStyle.web() else 128):
 		var first=wall_marks.pop_front()
 		if is_instance_valid(first):first.queue_free()
 
@@ -1522,4 +1521,3 @@ func begin_slide(id:int,forward:bool=false) -> bool:
 	if forward:velocity=Basis(Vector3.UP,a.aim_yaw)*Vector3.FORWARD
 	p.slide_until=clock+.72;p.slide_ready=clock+1.8;p.slide_direction=velocity.normalized();p.slide_started=clock
 	return true
-

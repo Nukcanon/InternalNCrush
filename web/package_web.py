@@ -36,6 +36,7 @@ with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as packag
 with zipfile.ZipFile(archive) as package:assert package.testzip() is None
 release={'version':version,'sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'source_commit':metadata['source_commit']}
 (out/f'WEB_RELEASE_v{version}.json').write_text(json.dumps(release,indent=2)+'\n',encoding='utf-8')
-downloads=[out/f'InternalNCrush_Windows_v{version}.zip',archive]
+downloads=[out/f'InternalNCrush_Windows_v{version}.zip',archive,out/f'InternalNCrush_NAS_Linux_v{version}.zip']
 (out/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in downloads if p.is_file()),encoding='utf-8')
 print('WEB_RELEASE_READY',archive.name,release['sha256'])
+

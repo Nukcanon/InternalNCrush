@@ -58,6 +58,8 @@ jobs:
         with:
           name: presentation-review
           path: validation/presentation-fix/*.png
+      - name: Review native and Web impact craters
+        run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_marks_v115.gd
       - name: Capture native menu screenshots
         run: |
           set -euo pipefail
@@ -117,12 +119,14 @@ jobs:
           web_name="game-${GITHUB_SHA:0:12}"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
           mv "web/build/$web_name.html" web/build/index.html
+          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.1.5.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         with:
           name: graphics-v115
           path: |
             game/assets/menu_slides/*.jpg
+            game/validation/*.png
             web/staging/game/assets/menu_slides/*.jpg
       - uses: actions/upload-artifact@v4
         with:
@@ -139,6 +143,7 @@ jobs:
           path: |
             out/InternalNCrush_Windows_v1.1.5.zip
             out/InternalNCrush_Web_v1.1.5.zip
+            out/InternalNCrush_NAS_Linux_v1.1.5.zip
             out/WEB_RELEASE_v1.1.5.json
             out/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
@@ -166,8 +171,13 @@ jobs:
           set -euo pipefail
           cd release-files
           sha256sum --check SHA256SUMS.txt
-          gh release create internal-n-crush-v1.1.5 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.1.5" --notes "Restore native graphics and live menu; improve Web floor readability and screenshot backgrounds. Godot functional, touch and network validation passed." --repo "$GITHUB_REPOSITORY"
-          gh release upload internal-n-crush-v1.1.5 InternalNCrush_Windows_v1.1.5.zip InternalNCrush_Web_v1.1.5.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          if gh release view internal-n-crush-v1.1.5 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
+            test "$(cat /tmp/is-draft)" = true
+            gh release edit internal-n-crush-v1.1.5 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create internal-n-crush-v1.1.5 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.1.5" --notes "Restore native graphics and live menu; improve Web floor readability and screenshot backgrounds. Godot functional, touch and network validation passed." --repo "$GITHUB_REPOSITORY"
+          fi
+          gh release upload internal-n-crush-v1.1.5 InternalNCrush_Windows_v1.1.5.zip InternalNCrush_Web_v1.1.5.zip InternalNCrush_NAS_Linux_v1.1.5.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
           gh release upload internal-n-crush-v1.1.5 WEB_RELEASE_v1.1.5.json --clobber --repo "$GITHUB_REPOSITORY"
 
