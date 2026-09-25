@@ -1,0 +1,33 @@
+name: Publish reviewed Internal N Crush 1.1.6
+on:
+  workflow_run:
+    workflows: ["Build and publish Internal N Crush 1.1.6"]
+    types: [completed]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == '57518e109278fbb2c9850f2096d204b3e899a3df'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify successful build and exact release source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runtime_sha=$(python3 -c 'import json; print(json.load(open(".github/v116-publication.json"))["source_commit"])')
+          run_id=$(python3 -c 'import json; print(json.load(open(".github/v116-publication.json"))["build_run"])')
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > /tmp/reviewed-run.json
+          python3 -c 'import json; a=json.load(open(".github/v116-publication.json")); r=json.load(open("/tmp/reviewed-run.json")); assert r["conclusion"]=="success" and r["head_sha"]==a["source_commit"]'
+          mkdir /tmp/reviewed-downloads
+          gh release download internal-n-crush-v1.1.6 --repo "$GITHUB_REPOSITORY" --dir /tmp/reviewed-downloads
+          cd /tmp/reviewed-downloads
+          sha256sum --check SHA256SUMS.txt
+          python3 -c 'import json,sys; r=json.load(open("WEB_RELEASE_v1.1.6.json")); assert r["version"]=="1.1.6" and r["source_commit"]==sys.argv[1]' "$runtime_sha"
+          cd "$GITHUB_WORKSPACE"
+          cp RELEASE_NOTES_V116.md /tmp/reviewed-release-notes.md
+          gh release edit internal-n-crush-v1.1.6 --repo "$GITHUB_REPOSITORY" --target "$runtime_sha" --draft=false --latest --notes-file /tmp/reviewed-release-notes.md
+          actual=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/internal-n-crush-v1.1.6" --jq .object.sha)
+          test "$actual" = "$runtime_sha"
