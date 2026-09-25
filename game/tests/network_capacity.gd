@@ -20,7 +20,7 @@ func run():
 	physics_frame.connect(drive)
 func drive():
 	if finishing:return
-	var now=Time.get_ticks_msec()
+	# A release file is written only after every peer and the server pass the barrier.\n\t# Check it before disconnect detection: the server may already be shutting down.\n\tif FileAccess.file_exists(control.path_join("release")):finish(true);return\n\tvar now=Time.get_ticks_msec()
 	if now>next_report:
 		next_report=now+15000;print("CAPACITY_PROGRESS ",label," phase=",g.phase," peers=",g.players.size()," busy=",g.connection_busy," seq=",g.received_sequence)
 	if label!="server" and not ready and g.phase=="lobby" and g.received_sequence>=0:
@@ -29,7 +29,6 @@ func drive():
 		var reason=g.ui.notice_label.text if is_instance_valid(g.ui.notice_label) else "no notice"
 		printerr("CAPACITY_DISCONNECTED ",label," reason=",reason);finish(false);return
 	if Time.get_ticks_msec()-started>180000:finish(false);return
-	if FileAccess.file_exists(control.path_join("release")):finish(true);return
 	if label=="server":
 		var all_clients=true
 		for i in range(32):
