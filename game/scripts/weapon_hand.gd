@@ -8,6 +8,8 @@ var support=false
 var pistol=false
 var skin=Color("bc947c")
 static var finger_shader:Shader
+const HAND_SCALE=1.32
+const ARM_THICKNESS=2.65 # Previous viewmodel used 1.85; enlarge thickness by 43%.
 
 func build(is_support:bool,is_pistol:bool,role:int):
 	support=is_support;pistol=is_pistol
@@ -86,9 +88,9 @@ static func align_wrist(rig:Node3D,palm:Vector3,elbow:Vector3,palm_normal:Vector
 	var y=(elbow-palm).normalized()
 	var z=-(palm_normal-y*palm_normal.dot(y)).normalized()
 	var x=y.cross(z).normalized();z=x.cross(y).normalized()
-	rig.basis=rig.get_parent().basis.inverse()*Basis(x,y,z)
-	return palm+y*.058
+	rig.basis=rig.get_parent().basis.inverse()*Basis(x,y,z).scaled(Vector3.ONE*HAND_SCALE)
+	return palm+y*(.058*HAND_SCALE)
 
 static func fit_forearm(arm:Node3D,elbow:Vector3,wrist:Vector3):
 	var direction=wrist-elbow
-	arm.position=elbow;arm.quaternion=Quaternion(Vector3.UP,direction.normalized());arm.scale=Vector3(1.85,direction.length()/.32,1.85)
+	arm.position=elbow;arm.quaternion=Quaternion(Vector3.UP,direction.normalized());arm.scale=Vector3(ARM_THICKNESS,direction.length()/.32,ARM_THICKNESS)
