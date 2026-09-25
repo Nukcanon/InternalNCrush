@@ -8,7 +8,7 @@ permissions:
   actions: read
 jobs:
   publish:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == '57518e109278fbb2c9850f2096d204b3e899a3df'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == '42d1c7949ba77defafdd83238630fc5cb873b340'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
