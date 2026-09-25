@@ -12,6 +12,9 @@ func run():
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--control="):control=arg.trim_prefix("--control=")
 		if arg.begins_with("--label="):label=arg.trim_prefix("--label=")
+	# This fixture measures simultaneous networking, not 33 real-time simulations
+	# sharing one CI CPU. The authoritative server retains the normal tick rate.
+	if label!="server":Engine.physics_ticks_per_second=20;Engine.max_fps=10
 	started=Time.get_ticks_msec();g=load("res://scripts/game.gd").new();g.name="Capacity";root.add_child(g)
 	if label=="server":
 		g.dedicated=true;g.options.map_random=false;g.options.map=0;g.options.max_players=32;g.host_game();FileAccess.open(control.path_join("server.ready"),FileAccess.WRITE).store_string("ready")

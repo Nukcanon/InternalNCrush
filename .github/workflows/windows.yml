@@ -66,12 +66,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          overwrite: true
           name: details-v116
           path: validation/details-v116/*
       - name: Verify audible combat and deployment feedback
         run: timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/test_audio_feedback.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: graphics-native-v115
           path: |
             game/assets/menu_slides/*.jpg
@@ -132,6 +134,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          overwrite: true
           name: graphics-v115
           path: |
             game/assets/menu_slides/*.jpg
@@ -139,14 +142,17 @@ jobs:
             web/staging/game/assets/menu_slides/*.jpg
       - uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: InternalNCrush-Web
           path: web/build/*
       - uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: InternalNCrush-Windows
           path: out/InternalNCrush_Windows_v1.1.6.zip
       - uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: release-files
           if-no-files-found: error
           path: |
@@ -158,6 +164,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          overwrite: true
           name: functional-validation
           path: |
             validation/functional-v11/*.log
