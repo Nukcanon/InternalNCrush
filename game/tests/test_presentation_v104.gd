@@ -50,6 +50,7 @@ func run():
 			var delta=rag.bodies[0].global_position-origin;largest=maxf(largest,Vector2(delta.x,delta.z).length())
 		trajectories.append(largest);expect(largest>=1. and largest<=3.1,"fatal hit launches corpse 1–3m on an unobstructed level surface: "+str(largest))
 		expect(rag.bodies.filter(func(b):return b.has_meta("fatal_impact")).size()==1,"fatal impulse targets a single closest body")
+		if hit.y>1.5:expect(rag.bodies.any(func(b):return str(b.get_meta("fatal_impact_part","")).ends_with("Head")),"head impact remains on the head after the corpse turns flat")
 		expect(rag.bodies.all(func(b):return b.global_position.is_finite() and b.global_position.y>-.3),"ragdoll remains finite and collides with floor")
 		rag.free();await physics_frame
 	world.free()

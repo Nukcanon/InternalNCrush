@@ -28,6 +28,14 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		for path in OperatorSkin.PATHS:
 			var original=source.rig.get_node(path);model.rig.get_node(path).transform=original.transform
 	elif crouched:model.update_pose(.016,Vector3.ZERO,false,true,true,0.,-1.,0.,0.)
+	# Resolve the struck limb in the living pose before rotating the corpse.
+	var impact_part=0;var impact_offset=Vector3.ZERO;var impact_distance=INF
+	if impact_point.is_finite():
+		for i in range(PARTS.size()):
+			var part=PARTS[i];var bone=model.rig.get_node(part[0]);var center=bone.to_global(Vector3(0,part[4],0))
+			var distance=center.distance_squared_to(impact_point)
+			if distance<impact_distance:
+				impact_distance=distance;impact_part=i;impact_offset=bone.global_basis.orthonormalized().inverse()*(impact_point-center)
 	# Keep the existing exaggerated launch along bullet travel. Open the limbs
 	# before creating joint rest frames so the flying body lands spread out.
 	var flight=Vector3(push.x,0,push.z).normalized()
@@ -71,11 +79,10 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 			joint.set_param(ConeTwistJoint3D.PARAM_SWING_SPAN,.50 if part[0].ends_with("Chest") else .60 if part[0].ends_with("Head") else 1.15)
 			joint.set_param(ConeTwistJoint3D.PARAM_TWIST_SPAN,.42)
 	if impact_point.is_finite():
-		var closest:RigidBody3D=bodies[0]
-		for body in bodies:
-			if body.global_position.distance_squared_to(impact_point)<closest.global_position.distance_squared_to(impact_point):closest=body
+		var closest:RigidBody3D=bodies[impact_part]
 		closest.set_meta("fatal_impact",true)
-		closest.apply_impulse(push.limit_length(1.)*minf(22.,closest.mass*1.8),(impact_point-closest.global_position).limit_length(.2))
+		closest.set_meta("fatal_impact_part",str(PARTS[impact_part][0]))
+		closest.apply_impulse(push.limit_length(1.)*minf(22.,closest.mass*1.8),(closest.global_basis*impact_offset).limit_length(.2))
 	model.sync_deform()
 func copy_geometry(node:Node3D,body:RigidBody3D,paths:Dictionary,start:Node3D):
 	for child in node.get_children():
