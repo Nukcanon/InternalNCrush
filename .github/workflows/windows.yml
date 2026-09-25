@@ -44,6 +44,14 @@ jobs:
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_arenas.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
+      - name: Render presentation regression frames
+        run: |
+          set -euo pipefail
+          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --path game --script res://tests/render_presentation_fix.gd -- --no-save-profile --no-update-check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: presentation-review
+          path: validation/presentation-fix/*.png
       - name: 32-client capacity with paced startup
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
@@ -99,14 +107,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view internal-n-crush-v1.1.3 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.3 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.3" --notes-file game/docs/RELEASE_NOTES.md --latest
-          gh release upload internal-n-crush-v1.1.3 out/InternalNCrush_Windows_v1.1.3.zip out/SHA256SUMS.txt --clobber
+          gh release view internal-n-crush-v1.1.4 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.4 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.4" --notes-file game/docs/RELEASE_NOTES.md --latest
+          gh release upload internal-n-crush-v1.1.4 out/InternalNCrush_Windows_v1.1.4.zip out/SHA256SUMS.txt --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.1.3.zip
+          path: out/InternalNCrush_Windows_v1.1.4.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: functional-validation
-          path: validation/functional-v11/*.log
+          path: |
+            validation/functional-v11/*.log
+            validation/webrtc-v11/*.log

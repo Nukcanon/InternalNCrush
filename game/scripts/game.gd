@@ -1025,7 +1025,7 @@ func valid_placement(pos:Vector3,yaw:float=0.) -> bool:
 	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 func add_device(kind:String,pos:Vector3,id:int,hp:float) -> int:
 	var did=next_device;next_device+=1
-	devices[did]={"id":did,"kind":kind,"pos":pos,"yaw":actors[id].aim_yaw,"owner":id,"team":players[id].team,"hp":hp,"max_hp":hp,"level":1,"next_fire":clock+1,"target":0,"lock":0.,"last_hit":-100.,"disabled":0.,"expires":clock+180 if kind=="cover" and int(options.mode)!=4 else 1e12}
+	devices[did]={"id":did,"kind":kind,"pos":pos,"yaw":actors[id].aim_yaw,"owner":id,"team":players[id].team,"hp":hp,"max_hp":hp,"level":1,"upgrade_ready":clock+AbilityBalance.COOLDOWNS[3],"next_fire":clock+1,"target":0,"lock":0.,"last_hit":-100.,"disabled":0.,"expires":clock+180 if kind=="cover" and int(options.mode)!=4 else 1e12}
 	return did
 func grant_invulnerability(id:int,target:int):
 	if target==0 or not players.has(target) or not players[target].alive:return

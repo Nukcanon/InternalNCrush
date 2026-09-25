@@ -13,11 +13,7 @@ def main():
     if STAGE.exists():
         shutil.rmtree(STAGE)
     shutil.copytree(SOURCE, STAGE, ignore=shutil.ignore_patterns('.godot', '*.glb', '*.uid', '__pycache__'))
-    # Godot 4.4.1's parallel font import can abort on Linux while replacing the
-    # Korean font. This is an editor-only setting, not runtime threading.
-    project = STAGE / 'project.godot'
-    project.write_text(project.read_text(encoding='utf-8') +
-                       '\n[editor]\nimport/use_multiple_threads=false\n', encoding='utf-8')
+    # Sequential editor import is inherited from the common project settings.
     converted = []
     for p in (STAGE / 'assets').rglob('*.png'):
         if 'source' in p.parts:

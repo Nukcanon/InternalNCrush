@@ -33,6 +33,8 @@ void fragment(){
  }
  ROUGHNESS=clamp(UV2.x+(relief-1.)*.10,.58,.97);
  METALLIC=0.;SPECULAR=kind==0.?.24:.14;
+ // Face only: clean painted colors, without photographic pores or glossy highlights.
+ if(kind==4.){ALBEDO=COLOR.rgb;ROUGHNESS=1.;SPECULAR=0.;}
 }
 """
 	var human=ShaderMaterial.new();human.shader=shader
