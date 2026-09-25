@@ -1,0 +1,153 @@
+name: Publish verified Internal N Crush 1.1.4
+on:
+  push:
+    branches: ['release/1.1.4']
+    paths: ['RELEASE_V114.json', '.github/workflows/publish-verified.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  native_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified Windows package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $release = Get-Content RELEASE_V114.json | ConvertFrom-Json
+          gh run download $release.run_id --name InternalNCrush-Windows --dir out
+      - name: Run packaged executable on Windows
+        shell: python
+        run: |
+          from pathlib import Path
+          import zipfile,subprocess,os,time,json
+          out=Path('out').resolve()
+          with zipfile.ZipFile(out/'InternalNCrush_Windows_v1.1.4.zip') as z:
+              assert z.testzip() is None and len(z.namelist())==21
+              z.extractall(out/'unpacked')
+          exe=out/'unpacked/InternalNCrush/InternalNCrush.exe'
+          env=os.environ.copy();env['INC_TEST_PORT']='32888'
+          common=['--no-save-profile','--no-update-check']
+          reports=[]
+          for mode in ['practice','training']:
+              log=out/(mode+'.log')
+              r=subprocess.run([str(exe),'--headless','--log-file',str(log),'--','--'+mode,'--quit-test']+common,env=env,cwd=exe.parent,timeout=90)
+              text=log.read_text(encoding='utf-8',errors='replace')
+              assert r.returncode==0 and 'TEST_EXIT' in text and 'ERROR' not in text,text[-2000:]
+              reports.append({'mode':mode,'exit':r.returncode,'result':[x for x in text.splitlines() if 'TEST_EXIT' in x]})
+          host=subprocess.Popen([str(exe),'--headless','--log-file',str(out/'host.log'),'--','--host-test']+common,env=env,cwd=exe.parent)
+          try:
+              time.sleep(5);assert host.poll() is None
+              log=out/'client.log'
+              r=subprocess.run([str(exe),'--headless','--log-file',str(log),'--','--connect=127.0.0.1','--nick=CI_CLIENT','--quit-test']+common,env=env,cwd=exe.parent,timeout=90)
+              text=log.read_text(encoding='utf-8',errors='replace')
+              assert r.returncode==0 and 'TEST_EXIT players=2 phase=combat' in text and 'ERROR' not in text,text[-2000:]
+              reports.append({'mode':'native_loopback','exit':r.returncode})
+          finally:
+              host.terminate();host.wait(timeout=15)
+          (out/'native-windows.json').write_text(json.dumps(reports,indent=2))
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-windows-verification
+          path: |
+            out/*.log
+            out/native-windows.json
+  web_smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified Web package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "$(jq -r .run_id RELEASE_V114.json)" --name InternalNCrush-Web --dir out/web
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Boot WebAssembly menu and practice
+        shell: python
+        run: |
+          import subprocess,sys,time,json
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+          server=subprocess.Popen([sys.executable,'-m','http.server','8765','--directory','out/web'])
+          results=[]
+          try:
+              time.sleep(1)
+              with sync_playwright() as p:
+                  browser=p.chromium.launch(args=['--enable-unsafe-swiftshader'])
+                  for mode in ['menu','practice']:
+                      page=browser.new_page(viewport={'width':1280,'height':720})
+                      errors=[]
+                      page.on('pageerror',lambda e:errors.append(str(e)))
+                      page.on('console',lambda m:errors.append(m.text) if 'SCRIPT ERROR' in m.text else None)
+                      if mode=='practice':
+                          def route_html(route):
+                              response=route.fetch()
+                              body=response.text().replace('engine.startGame({', 'engine.startGame({args:["--practice","--no-save-profile","--no-update-check"],')
+                              route.fulfill(response=response,body=body)
+                          page.route('**/index.html',route_html)
+                      page.goto('http://127.0.0.1:8765/index.html')
+                      page.locator('#start').click()
+                      page.locator('#status').wait_for(state='detached',timeout=120000)
+                      page.wait_for_timeout(5000)
+                      page.screenshot(path='out/web-'+mode+'.png')
+                      assert not errors,errors
+                      results.append({'mode':mode,'page_errors':errors})
+                      page.close()
+                  browser.close()
+              Path('out/web-browser.json').write_text(json.dumps(results,indent=2))
+          finally:
+              server.terminate();server.wait(timeout=10)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-browser-verification
+          path: |
+            out/web-*.png
+            out/web-browser.json
+  publish:
+    needs: [native_windows, web_smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source validation and download exact artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RUN_ID=$(jq -r .run_id RELEASE_V114.json)
+          SOURCE_SHA=$(jq -r .source_sha RELEASE_V114.json)
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > /tmp/run.json
+          jq -e --arg sha "$SOURCE_SHA" '.head_sha == $sha and .conclusion == "success"' /tmp/run.json
+          BACKEND_RUN_ID=$(jq -r .backend_run_id RELEASE_V114.json)
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKEND_RUN_ID" > /tmp/backend.json
+          jq -e --arg sha "$SOURCE_SHA" '.head_sha == $sha and .conclusion == "success"' /tmp/backend.json
+          gh run download "$RUN_ID" --name InternalNCrush-Windows --dir out/windows
+          gh run download "$RUN_ID" --name InternalNCrush-Web --dir out/web
+          test -s out/windows/InternalNCrush_Windows_v1.1.4.zip
+          test "$(jq -r .version out/web/build.json)" = 1.1.4
+          python3 - <<'PY'
+          import hashlib,json,pathlib,zipfile
+          p=pathlib.Path('out/web')
+          m=json.loads((p/'build.json').read_text())
+          for item in m['files']:
+              f=p/item['path']
+              assert f.is_relative_to(p) and hashlib.sha256(f.read_bytes()).hexdigest()==item['sha256']
+          with zipfile.ZipFile('out/InternalNCrush_Web_v1.1.4.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for f in sorted(p.rglob('*')):
+                  if f.is_file():z.write(f,f.relative_to(p))
+          from nas.setup import package
+          package(pathlib.Path('out/InternalNCrush_NAS_Linux_v1.1.4.zip'),include_config=False)
+          files=[pathlib.Path('out/InternalNCrush_NAS_Linux_v1.1.4.zip'),pathlib.Path('out/windows/InternalNCrush_Windows_v1.1.4.zip'),pathlib.Path('out/InternalNCrush_Web_v1.1.4.zip')]
+          pathlib.Path('out/SHA256SUMS.txt').write_text(''.join(hashlib.sha256(f.read_bytes()).hexdigest()+'  '+f.name+'\n' for f in files))
+          PY
+          if gh release view internal-n-crush-v1.1.4 --json isDraft,targetCommitish > /tmp/release.json 2>/dev/null; then
+            jq -e --arg sha "$SOURCE_SHA" '.isDraft and .targetCommitish == $sha' /tmp/release.json
+          else
+            gh release create internal-n-crush-v1.1.4 --target "$SOURCE_SHA" --title 'Internal N Crush 1.1.4' --notes-file game/docs/RELEASE_NOTES.md --draft
+          fi
+          gh release upload internal-n-crush-v1.1.4 out/windows/InternalNCrush_Windows_v1.1.4.zip out/InternalNCrush_Web_v1.1.4.zip out/InternalNCrush_NAS_Linux_v1.1.4.zip out/SHA256SUMS.txt --clobber
+          gh release edit internal-n-crush-v1.1.4 --draft=false --latest
