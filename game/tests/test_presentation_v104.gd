@@ -8,7 +8,8 @@ func expect(ok:bool,label:String):
 func run():
 	Catalog.load_all()
 	var model=CharacterVisual.new();root.add_child(model);model.build(0,0)
-	expect(model.rig.get_node("ContinuousBody").get_meta("lod_count",0)>0,"authored character has baked distance LODs and skinning")
+	var body=model.rig.get_node("ContinuousBody")
+	expect(body.skin!=null and body.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size()<18000,"comic character retains GPU skinning within the base mesh triangle budget")
 	model.free()
 	for gender in ["male","female"]:
 		var data=JSON.parse_string(FileAccess.get_file_as_string("res://assets/human/"+gender+".json"));var invalid=false;var longest=0.

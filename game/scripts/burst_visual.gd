@@ -18,6 +18,7 @@ func build(fire:bool):
 		var direction=Vector3(cos(angle),rng.randf_range(.4,1.4),sin(angle)).normalized()
 		puffs.append({"node":mesh,"material":mat,"delay":float(i%6)*.012,"life":.44 if flame else 1.2 if dust else 2.8,"velocity":direction*(2.3 if dust else 1.05),"size":rng.randf_range(1.8,2.9) if not dust else 2.3,"alpha":mat.albedo_color.a,"flame":flame,"dust":dust})
 	# Fire/smoke puffs above remain identical at every quality; only tiny debris scales.
+	if GraphicsOptions.physics_effects<2 or OS.has_feature("web"):return
 	for i in range([4,8,12][GraphicsOptions.detail]):
 		if debris_count>=[12,36,72][GraphicsOptions.detail]:break
 		var body=RigidBody3D.new();add_child(body);body.position=Vector3.UP*.3;body.mass=.04;body.collision_layer=0;body.collision_mask=1;body.continuous_cd=true;body.linear_damp=.25

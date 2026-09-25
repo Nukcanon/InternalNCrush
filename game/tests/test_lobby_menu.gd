@@ -35,8 +35,8 @@ func run():
 	await capture("main")
 	for text in ["내부망 로비","인터넷 로비","봇 전투","연습장"]:expect(find_button(ui.panel,text)!=null,"main menu direct action "+text)
 	var background=ui.background
-	var live=background.get_child(0) if visual else null
-	var live_clock=live.match_game.clock if visual else 0.
+	var live=background.get_child(0) if visual and g.profile.menu_animation else null
+	var live_clock=live.match_game.clock if is_instance_valid(live) else 0.
 	find_button(ui.panel,"내부망 로비").pressed.emit();await settle()
 	expect(ui.screen=="join" and ui.background==background,"LAN submenu preserves live backdrop")
 	var lan=ui.lan_lobby
@@ -81,7 +81,7 @@ func run():
 	expect(ui.screen=="join","canceling navigation keeps LAN lobby open")
 	find_button(ui.panel,"메인메뉴").pressed.emit();ui.navigation_confirm.confirmed.emit();await settle()
 	expect(ui.screen=="menu" and ui.background==background,"LAN back returns to the same main backdrop")
-	if visual:expect(live.match_game.clock>live_clock,"background bots continued simulating throughout menus")
+	if is_instance_valid(live):expect(live.match_game.clock>live_clock,"background bots continued simulating throughout menus")
 	ui.practice_menu();await settle()
 	var practice_footer=find_button(ui.panel,"병과 · 무기 선택").get_parent()
 	expect(practice_footer.get_parent()==ui.panel_body,"practice start stays outside scroll")
@@ -108,7 +108,7 @@ func run():
 	await capture("graphics")
 	tabs.current_tab=2;await capture("hud-settings")
 	for quality in [0,1,2]:
-		g.profile.decor_quality=quality;g.profile.shadow_quality=quality;g.profile.antialias=quality;GraphicsOptions.apply(g)
+		g.profile.physics_effects=2;g.profile.decor_quality=quality;g.profile.shadow_quality=quality;g.profile.antialias=quality;GraphicsOptions.apply(g)
 		var burst=BurstVisual.new();g.add_child(burst);burst.build(true)
 		expect(burst.puffs.size()==24 and burst.puffs.filter(func(p):return p.flame).size()==7,"quality %d preserves full fire/smoke explosion signal"%quality)
 		expect(burst.find_children("*","RigidBody3D",true,false).size()==[4,8,12][quality],"quality %d reduces only decorative debris"%quality)

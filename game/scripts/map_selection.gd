@@ -21,7 +21,9 @@ static func build(ui) -> Callable:
 		count.select(int(game.options.max_players)/2-1);update_maps.call()
 	count.item_selected.connect(func(i):game.options.max_players=count.get_item_id(i);game.options.bots=mini(int(game.options.bots),int(game.options.max_players)-1);update_maps.call())
 	scale.item_selected.connect(func(i):game.options.map_size=scale.get_item_id(i);game.options.map_random=true;update_maps.call())
-	map.item_selected.connect(func(i):game.options.map_random=i==0;if i>0:game.options.map=map.get_item_id(i))
+	map.item_selected.connect(func(i):
+		game.options.map_random=i==0
+		if i>0:game.options.map=map.get_item_id(i))
 	ui.check("무작위 맵 순환",bool(game.options.get("map_rotation",false)),func(value):game.options.map_rotation=value)
 	ui.label("정원 이상의 전장만 표시합니다. 무작위 선택 시 같은 규모의 전장이 순환합니다.\n점령·설치/해체는 양 진영을 한 번씩 진행한 뒤 전장을 바꿉니다.",14)
 	refresh.call();return refresh

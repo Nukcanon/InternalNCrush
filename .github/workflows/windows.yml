@@ -1,4 +1,4 @@
-name: Build Internal N Crush Windows
+name: Build and replace Internal N Crush 1.1.4
 on:
   push:
     paths:
@@ -8,10 +8,10 @@ on:
       - '.github/workflows/windows.yml'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: internal-n-crush-release
-  cancel-in-progress: true
+  group: internal-n-crush-validate-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   windows:
     runs-on: ubuntu-latest
@@ -43,6 +43,11 @@ jobs:
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_arenas.gd
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
+      - name: Refresh cartoon equipment thumbnails
+        run: |
+          set -euo pipefail
+          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --path game --script res://tools/build_thumbnails.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
       - name: Render presentation regression frames
         run: |
@@ -96,23 +101,27 @@ jobs:
           mkdir -p web/build
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/index.html"
+          web_name="game-${GITHUB_SHA:0:12}"
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
+          mv "web/build/$web_name.html" web/build/index.html
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Web
           path: web/build/*
-      - name: Publish downloadable build
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release view internal-n-crush-v1.1.4 >/dev/null 2>&1 || gh release create internal-n-crush-v1.1.4 --target "$GITHUB_SHA" --title "Internal N Crush 1.1.4" --notes-file game/docs/RELEASE_NOTES.md --latest
-          gh release upload internal-n-crush-v1.1.4 out/InternalNCrush_Windows_v1.1.4.zip out/SHA256SUMS.txt --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
           path: out/InternalNCrush_Windows_v1.1.4.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          if-no-files-found: error
+          path: |
+            out/InternalNCrush_Windows_v1.1.4.zip
+            out/InternalNCrush_Web_v1.1.4.zip
+            out/WEB_RELEASE_v1.1.4.json
+            out/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -120,3 +129,25 @@ jobs:
           path: |
             validation/functional-v11/*.log
             validation/webrtc-v11/*.log
+  replace-release:
+    needs: windows
+    if: github.ref == 'refs/heads/main' && github.repository == 'Nukcanon/InternalNCrush'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: release-files
+      - name: Replace existing 1.1.4 downloads after successful tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd release-files
+          sha256sum --check SHA256SUMS.txt
+          gh release view internal-n-crush-v1.1.4 --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh release upload internal-n-crush-v1.1.4 InternalNCrush_Windows_v1.1.4.zip InternalNCrush_Web_v1.1.4.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          # Publish the installation descriptor last, after both downloads exist.
+          gh release upload internal-n-crush-v1.1.4 WEB_RELEASE_v1.1.4.json --clobber --repo "$GITHUB_REPOSITORY"

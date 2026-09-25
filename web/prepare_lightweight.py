@@ -13,6 +13,15 @@ def main():
     if STAGE.exists():
         shutil.rmtree(STAGE)
     shutil.copytree(SOURCE, STAGE, ignore=shutil.ignore_patterns('.godot', '*.glb', '*.uid', '__pycache__'))
+    # Comic operators/hands no longer load photo atlases. Remove only assets
+    # with no runtime references; preserve smoke, all maps and every game mode.
+    for folder in ['assets/human/textures']:
+        shutil.rmtree(STAGE / folder, ignore_errors=True)
+    for name in ['field_materials_v103.png', 'operator_materials_v11.png']:
+        for suffix in ['', '.import']:
+            (STAGE / 'assets/textures' / (name + suffix)).unlink(missing_ok=True)
+    for suffix in ['', '.import']:
+        (STAGE / 'assets' / ('menu_action.ogv' + suffix)).unlink(missing_ok=True)
     # Sequential editor import is inherited from the common project settings.
     converted = []
     for p in (STAGE / 'assets').rglob('*.png'):
@@ -31,9 +40,8 @@ def main():
     for p in (STAGE / 'scripts').glob('*.gd'):
         text = p.read_text(encoding='utf-8').replace('res://assets/Korean.ttf', 'res://assets/fonts/DoHyeon-Regular.ttf')
         if p.name=='human_model.gd':
-            text=text.replace('sides:int=20','sides:int=8').replace('range(3):','range(1):').replace('var t=step/3.','var t=step/1.').replace('mesh.radial_segments=20;mesh.rings=12','mesh.radial_segments=8;mesh.rings=4')
-        if p.name=='weapon_hand.gd':
-            text=text.replace('skin,12)','skin,6)').replace('fabric,28)','fabric,8)').replace('fabric.darkened(.14),24)','fabric.darkened(.14),8)')
+            # Only the shared loft helper still used for first-person hands.
+            text=text.replace('range(3):','range(1):').replace('var t=step/3.','var t=step/1.')
         p.write_text(text, encoding='utf-8')
     # Packed arena labels retain this resource path: provide the smaller font there too.
     shutil.copyfile(STAGE / 'assets/fonts/DoHyeon-Regular.ttf', STAGE / 'assets/Korean.ttf')
@@ -42,7 +50,7 @@ def main():
         original_import.unlink()
     preset = STAGE / 'export_presets.cfg'
     text = preset.read_text(encoding='utf-8')
-    text = text.replace('assets/human/source/*"', 'assets/human/source/*,assets/human/male.json,assets/human/female.json,assets/arenas/geometry/*"')
+    text = text.replace('assets/human/source/*', 'assets/human/source/*,assets/human/male.json,assets/human/female.json,assets/arenas/geometry/*')
     preset.write_text(text, encoding='utf-8')
     (ROOT / 'web/staging/asset_report.json').write_text(json.dumps(converted, indent=2), encoding='utf-8')
     print('LIGHTWEIGHT_WEB_PROJECT', STAGE, 'textures', len(converted))

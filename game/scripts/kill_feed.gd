@@ -16,6 +16,8 @@ func _ready():
 	position=Vector2(949,78);custom_minimum_size.x=425;scale=Vector2(.72,.72);mouse_filter=Control.MOUSE_FILTER_IGNORE;add_theme_constant_override("separation",5)
 func refresh(events:Array,local_id:int,now:int):
 	var visible_events=events.filter(func(event):return now-int(event.received)<LIFETIME_MS)
+	var limit=1 if TouchControls.supported() else MAX_ROWS
+	visible_events=visible_events.slice(maxi(0,visible_events.size()-limit))
 	var next=""
 	for event in visible_events:next+=str(event.serial)+"/"
 	if next==signature:return

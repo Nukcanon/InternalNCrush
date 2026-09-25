@@ -1,81 +1,49 @@
 extends SceneTree
+# Keep the authored near-view shape on Web. Lower-detail meshes are attached as
+# distance LODs, never substituted permanently for the base mesh.
 func _initialize():call_deferred("run")
+func prepare_meshes(node:Node,add_lods:bool) -> int:
+	var indices=0
+	for visual in node.find_children("*","MeshInstance3D",true,false):
+		if not visual.mesh is ArrayMesh:continue
+		var importer=ImporterMesh.new()
+		for surface_index in range(visual.mesh.get_surface_count()):
+			var arrays=visual.mesh.surface_get_arrays(surface_index)
+			if arrays[Mesh.ARRAY_INDEX]==null or arrays[Mesh.ARRAY_INDEX].is_empty():
+				var surface=SurfaceTool.new();surface.create_from(visual.mesh,surface_index);surface.index()
+				arrays=surface.commit().surface_get_arrays(0)
+			indices+=arrays[Mesh.ARRAY_INDEX].size()
+			if add_lods:importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,arrays,[],{},visual.mesh.surface_get_material(surface_index))
+		if add_lods:
+			importer.generate_lods(60.,60.,[]);visual.mesh=importer.get_mesh()
+	WebMaterials.apply(node)
+	return indices
+func save_scene(node:Node,path:String) -> bool:
+	MeshFactory.own_recursive(node,node);var packed=PackedScene.new()
+	return packed.pack(node)==OK and ResourceSaver.save(packed,path,ResourceSaver.FLAG_COMPRESS)==OK
 func run():
-	var before=0;var after=0
+	var operator_indices=0;var weapon_indices=0;var map_indices=0
 	for role in range(6):
 		for team in range(2):
 			var path="res://assets/models/operator_%d_%d.scn"%[role,team]
 			var node=load(path).instantiate();root.add_child(node)
-			var body=node.get_node("ContinuousBody");var old=body.mesh
-			var arrays=old.surface_get_arrays(0);var original=arrays[Mesh.ARRAY_INDEX].size();before+=original
-			var importer=ImporterMesh.new();importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,arrays)
-			importer.generate_lods(60.,60.,[])
-			var selected=arrays[Mesh.ARRAY_INDEX]
-			for lod in range(importer.get_surface_lod_count(0)):
-				var indices=importer.get_surface_lod_indices(0,lod)
-				if indices.size()>=1800 and indices.size()<selected.size():selected=indices
-			arrays[Mesh.ARRAY_INDEX]=selected
-			var intermediate=ArrayMesh.new();intermediate.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-			var surface=SurfaceTool.new();surface.create_from(intermediate,0);surface.deindex();surface.index()
-			surface.set_material(old.surface_get_material(0));body.mesh=surface.commit();after+=selected.size()
-			WebMaterials.apply(node);MeshFactory.own_recursive(node,node);var packed=PackedScene.new();packed.pack(node)
-			if ResourceSaver.save(packed,path,ResourceSaver.FLAG_COMPRESS)!=OK:quit(1);return
+			# Original comic geometry already has native distance LODs and skinning.
+			operator_indices+=prepare_meshes(node,false)
+			if not save_scene(node,path):quit(1);return
 			node.free();await process_frame
-	print("WEB_MODEL_INDICES ",before," -> ",after)
-	var weapon_before=0;var weapon_after=0
 	Catalog.load_all()
 	for id in Catalog.weapons:
 		var path="res://assets/models/weapon_"+id+".scn"
-		var node=load(path).instantiate()
-		for visual in node.find_children("*","MeshInstance3D",true,false):
-			if not visual.mesh is ArrayMesh:continue
-			var mesh=ArrayMesh.new()
-			for surface_index in range(visual.mesh.get_surface_count()):
-				var arrays=visual.mesh.surface_get_arrays(surface_index)
-				if arrays[Mesh.ARRAY_INDEX]==null or arrays[Mesh.ARRAY_INDEX].is_empty():
-					var indexed=SurfaceTool.new();indexed.create_from(visual.mesh,surface_index);indexed.index()
-					arrays=indexed.commit().surface_get_arrays(0)
-				var original=arrays[Mesh.ARRAY_INDEX].size()
-				var importer=ImporterMesh.new();importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,arrays);importer.generate_lods(60.,60.,[])
-				var selected=arrays[Mesh.ARRAY_INDEX]
-				for lod in range(importer.get_surface_lod_count(0)):
-					var indices=importer.get_surface_lod_indices(0,lod)
-					if indices.size()>=maxi(60,int(original*.25)) and indices.size()<selected.size():selected=indices
-				arrays[Mesh.ARRAY_INDEX]=selected
-				var intermediate=ArrayMesh.new();intermediate.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-				var surface=SurfaceTool.new();surface.create_from(intermediate,0);surface.deindex();surface.index();surface.set_material(visual.mesh.surface_get_material(surface_index));surface.commit(mesh)
-				weapon_before+=original;weapon_after+=selected.size()
-			if mesh.get_surface_count()>0:visual.mesh=mesh
-		# Animated weapon sockets remain intact; only surface triangles change.
-		WebMaterials.apply(node);MeshFactory.own_recursive(node,node);var packed=PackedScene.new();packed.pack(node)
-		if ResourceSaver.save(packed,path,ResourceSaver.FLAG_COMPRESS)!=OK:quit(1);return
+		var node=load(path).instantiate();root.add_child(node)
+		weapon_indices+=prepare_meshes(node,true)
+		if not save_scene(node,path):quit(1);return
 		node.free();await process_frame
-	print("WEB_WEAPON_INDICES ",weapon_before," -> ",weapon_after)
-	var map_before=0;var map_after=0
 	for index in range(Rules.MAPS.size()):
 		var path="res://assets/arenas/complete/map_%02d.scn"%index
-		var node=load(path).instantiate()
-		for visual in node.find_children("*","MeshInstance3D",true,false):
-			if not visual.mesh is ArrayMesh:continue
-			var mesh=ArrayMesh.new()
-			for surface_index in range(visual.mesh.get_surface_count()):
-				var arrays=visual.mesh.surface_get_arrays(surface_index)
-				if arrays[Mesh.ARRAY_INDEX]==null or arrays[Mesh.ARRAY_INDEX].is_empty():
-					var indexed=SurfaceTool.new();indexed.create_from(visual.mesh,surface_index);indexed.index()
-					arrays=indexed.commit().surface_get_arrays(0)
-				var original=arrays[Mesh.ARRAY_INDEX].size()
-				var importer=ImporterMesh.new();importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,arrays);importer.generate_lods(60.,60.,[])
-				var selected=arrays[Mesh.ARRAY_INDEX]
-				for lod in range(importer.get_surface_lod_count(0)):
-					var indices=importer.get_surface_lod_indices(0,lod)
-					if indices.size()>=maxi(90,int(original*.10)) and indices.size()<selected.size():selected=indices
-				arrays[Mesh.ARRAY_INDEX]=selected
-				var intermediate=ArrayMesh.new();intermediate.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-				var surface=SurfaceTool.new();surface.create_from(intermediate,0);surface.deindex();surface.index();surface.set_material(visual.mesh.surface_get_material(surface_index));surface.commit(mesh)
-				map_before+=original;map_after+=selected.size()
-			if mesh.get_surface_count()>0:visual.mesh=mesh
-		# Only visual meshes change: collision, navigation and gameplay cover remain intact.
-		WebMaterials.apply(node);MeshFactory.own_recursive(node,node);var packed=PackedScene.new();packed.pack(node)
-		if ResourceSaver.save(packed,path,ResourceSaver.FLAG_COMPRESS)!=OK:quit(1);return
+		var node=load(path).instantiate();root.add_child(node)
+		map_indices+=prepare_meshes(node,true)
+		# Collision, navigation, cover and base visual surfaces remain unchanged.
+		if not save_scene(node,path):quit(1);return
 		node.free();await process_frame
-	print("WEB_ARENA_INDICES ",map_before," -> ",map_after);quit()
+	print("WEB_BASE_INDICES_PRESERVED operators=",operator_indices," weapons=",weapon_indices," arenas=",map_indices)
+	quit()

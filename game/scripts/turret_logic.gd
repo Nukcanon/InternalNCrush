@@ -26,8 +26,10 @@ static func visible_point(game:Node,d:Dictionary,id:int,exclude:Array) -> Vector
 static func upgrade(game:Node,id:int,did:int):
 	var p=game.players[id];var d=game.devices[did]
 	if d.level>=4:game.feedback(id,"","최대 단계 · 기관총 + 미사일");return
-	if game.clock<float(d.get("upgrade_ready",0)):game.feedback(id,"","업그레이드 준비 중 · %d초"%ceili(d.upgrade_ready-game.clock));return
-	d.level+=1;d.max_hp=AbilityBalance.turret_hp(d.level);d.hp=minf(d.max_hp,d.hp+45.);d.disabled=game.clock+1.5;d.upgrade_ready=game.clock+18.
+	var ready=maxf(float(d.get("upgrade_ready",0)),float(p.skill_ready))
+	if game.clock<ready:game.feedback(id,"","업그레이드 준비 중 · %d초"%ceili(ready-game.clock));return
+	d.level+=1;d.max_hp=AbilityBalance.turret_hp(d.level);d.hp=minf(d.max_hp,d.hp+45.);d.disabled=game.clock+1.5
+	d.upgrade_ready=game.clock+AbilityBalance.COOLDOWNS[3];p.skill_ready=d.upgrade_ready
 	game.feedback(id,"heal","포탑 %d단계 · %s"%[d.level,["기관단총","돌격소총","기관총","기관총 + 미사일"][d.level-1]])
 	p.placing=""
 static func tick(game:Node,dt:float):
@@ -77,8 +79,8 @@ static func tick(game:Node,dt:float):
 		if not obstruction.is_empty():continue
 		if game.clock>=d.next_fire:
 			d.next_fire=game.clock+INTERVALS[d.level-1]
-			var hit=game.ray(muzzle,muzzle+direction*(300. if remote else muzzle.distance_to(aim)+2.),exclude)
-			var end:Vector3=hit.get("position",aim)
+			var flight=Ballistics.trace(game,muzzle,direction,300. if remote else muzzle.distance_to(aim)+2.,exclude)
+			var hit:Dictionary=flight.hit;var end:Vector3=flight.end
 			var amount=DAMAGE[d.level-1]
 			if remote:amount=remote_damage(amount,muzzle.distance_to(end))
 			if not hit.is_empty():

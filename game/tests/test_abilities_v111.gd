@@ -16,7 +16,7 @@ func run():
 	g.use_skill(1);expect(g.devices.is_empty() and p.placing=="turret" and p.skill_ready==0.,"placement preview spends no charge and creates no device")
 	expect(Deployment.confirm(g,1) and g.devices.size()==1 and p.builds==1,"click confirmation validates floor and awards one build")
 	var did=g.devices.keys()[0];var turret=g.devices[did]
-	for level in range(2,5):turret.upgrade_ready=0.;TurretLogic.upgrade(g,1,did);expect(turret.level==level,"nearby turret upgrade level %d"%level)
+	for level in range(2,5):turret.upgrade_ready=0.;p.skill_ready=0.;TurretLogic.upgrade(g,1,did);expect(turret.level==level,"nearby turret upgrade level %d"%level)
 	TurretLogic.upgrade(g,1,did);expect(turret.level==4,"turret upgrades stop at level four")
 	turret.disabled=0.;turret.next_fire=1000.;turret.rocket_ready=0.;turret.target=2;turret.lock=0.;turret.next_scan=1000.
 	TurretLogic.tick(g,.016);expect(g.rockets.size()==1 and turret.rocket_ready==102.,"level four launches a slow missile once every two seconds")

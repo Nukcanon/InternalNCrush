@@ -20,15 +20,23 @@ func run():
 	expect(turret.upgrade_ready==135.,"first deployment waits full cooldown")
 	TurretLogic.upgrade(g,1,did);expect(turret.level==1,"early upgrade rejected")
 	g.clock=135.;TurretLogic.upgrade(g,1,did);expect(turret.level==2,"upgrade available at deadline")
+	expect(turret.upgrade_ready==170. and p.skill_ready==170.,"upgrade resets both clocks to a full 35 seconds")
 	a.position.x+=12.;p.placing="turret"
+	await physics_frame;await physics_frame
+	expect(not Deployment.confirm(g,1),"moving away cannot bypass the upgrade cooldown by replacing the turret")
+	var away=AbilityBalance.skill_state(g,1)
+	a.position=turret.pos+Vector3.RIGHT*2.
+	var nearby=AbilityBalance.skill_state(g,1)
+	expect(nearby.remaining==away.remaining and nearby.duration==35. and away.duration==35.,"approaching the turret preserves the meter deadline and scale")
+	a.position.x+=12.;g.clock=170.
 	await physics_frame;await physics_frame
 	expect(Deployment.confirm(g,1),"replacement succeeds after deployment cooldown")
 	expect(not g.devices.has(did) and g.devices.size()==1,"old turret removed once")
 	did=g.devices.keys()[0];turret=g.devices[did]
-	expect(turret.level==1 and turret.upgrade_ready==170.,"replacement gets fresh upgrade deadline")
-	expect(p.skill_ready==170.,"replacement preserves deployment cooldown")
+	expect(turret.level==1 and turret.upgrade_ready==205.,"replacement gets fresh upgrade deadline")
+	expect(p.skill_ready==205.,"replacement preserves deployment cooldown")
 	TurretLogic.upgrade(g,1,did);expect(turret.level==1,"replacement cannot instantly upgrade")
-	g.clock=169.99;TurretLogic.upgrade(g,1,did);expect(turret.level==1,"upgrade remains locked before deadline")
-	g.clock=170.;TurretLogic.upgrade(g,1,did);expect(turret.level==2,"replacement upgrades at deadline")
+	g.clock=204.99;TurretLogic.upgrade(g,1,did);expect(turret.level==1,"upgrade remains locked before deadline")
+	g.clock=205.;TurretLogic.upgrade(g,1,did);expect(turret.level==2,"replacement upgrades at deadline")
 	g.free();await process_frame
 	print("TURRET_REPLACEMENT_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

@@ -10,5 +10,4 @@ func run():
 	g.arena.get_node("Sun").shadow_bias=.25;g.arena.get_node("Sun").shadow_normal_bias=1.5;await shot("v103-surface-bias")
 	g.arena.get_node("Sun").shadow_enabled=false;await shot("v103-surface-no-shadow")
 	g.arena.get_node("Sun").shadow_enabled=true
-	SurfaceFinish.architecture.shader.code=SurfaceFinish.architecture.shader.code.replace("float large=noise(p*.65);","float large=.5;").replace("float fine=(noise(p*22.)-.5)*clamp(1.-length(fwidth(p))*12.,0.,1.);","float fine=0.;")
 	await shot("v103-surface-no-noise");g.leave_game();g.free();await process_frame;quit()

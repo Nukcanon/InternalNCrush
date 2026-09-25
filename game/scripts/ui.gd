@@ -38,6 +38,7 @@ var flash_overlay:ColorRect
 var roster:Label
 var notice_label:Label
 var notice_until=0
+var practice_hint_until=0
 var hit_until=0
 var room_list:VBoxContainer
 var gear_primary:OptionButton
@@ -95,7 +96,14 @@ func _ready():
 	var pressed=btn.duplicate();pressed.bg_color=Color("386479");pressed.border_color=Color("ffc66b");theme.set_stylebox("pressed","Button",pressed)
 	for type in ["OptionButton","LineEdit","SpinBox"]:
 		theme.set_stylebox("normal",type,btn);theme.set_stylebox("hover",type,hov);theme.set_stylebox("focus",type,pressed)
-	var disabled=btn.duplicate();disabled.bg_color=Color("20313e");theme.set_stylebox("disabled","Button",disabled)
+	var disabled=btn.duplicate();disabled.bg_color=Color("383c40");disabled.border_color=Color("63676b")
+	for type in ["Button","OptionButton"]:
+		theme.set_stylebox("disabled",type,disabled);theme.set_color("font_disabled_color",type,Color("a4a7ab"))
+	var track=StyleBoxFlat.new();track.bg_color=Color("18212a");track.content_margin_left=16 if TouchControls.supported() else 10;track.content_margin_right=track.content_margin_left
+	var grab=StyleBoxFlat.new();grab.bg_color=Color("7c919d");grab.set_corner_radius_all(6);grab.content_margin_top=24;grab.content_margin_bottom=24
+	theme.set_stylebox("scroll","VScrollBar",track)
+	for state in ["grabber","grabber_highlight","grabber_pressed"]:theme.set_stylebox(state,"VScrollBar",grab)
+	theme.set_constant("h_separation","ScrollContainer",18)
 	theme.set_color("font_color","Label",Color("e8f2f3"));theme.set_color("font_color","Button",Color("e8f2f3"));root.theme=theme
 	theme.set_color("font_outline_color","Label",Color(0.01,0.025,0.04,.65));theme.set_constant("outline_size","Label",1)
 func clear_panel(keep_background=false):
@@ -116,7 +124,8 @@ func make_panel(title:String,width=780,compact=false):
 	panel=PanelContainer.new();panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER);panel.position=Vector2(-width*MENU_SCALE*.5,-280);panel.custom_minimum_size=Vector2(width,0);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
 	panel_body=VBoxContainer.new();panel_body.add_theme_constant_override("separation",14);panel.add_child(panel_body)
 	var scroll=ScrollContainer.new();panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,560);panel_body.add_child(scroll)
-	stack=VBoxContainer.new();stack.size_flags_horizontal=Control.SIZE_EXPAND_FILL;stack.add_theme_constant_override("separation",12);scroll.add_child(stack)
+	var inset=MarginContainer.new();inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;inset.add_theme_constant_override("margin_right",18);scroll.add_child(inset)
+	stack=VBoxContainer.new();stack.size_flags_horizontal=Control.SIZE_EXPAND_FILL;stack.add_theme_constant_override("separation",12);inset.add_child(stack)
 	var eyebrow=Label.new();eyebrow.text="NUKCANON  /  INTERNAL N CRUSH";eyebrow.add_theme_color_override("font_color",Color("5ce1c3"));eyebrow.add_theme_font_size_override("font_size",14);stack.add_child(eyebrow)
 	label(title,32)
 func pin_actions(node:Control):
@@ -187,12 +196,12 @@ func menu():
 func ensure_menu_background():
 	if is_instance_valid(background):return
 	background=Control.new();background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);root.add_child(background)
-	if DisplayServer.get_name()!="headless":
+	if DisplayServer.get_name()!="headless" and not OS.has_feature("web") and game.profile.get("menu_animation",false):
 		var live=load("res://scripts/menu_demo.gd").new();live.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(live)
 	var shade=ColorRect.new();shade.color=Color(.015,.04,.065,.36);shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(shade)
 	var brand=Label.new();brand.text="NUKCANON  /  TACTICAL LAN FPS";brand.position=Vector2(68,102);brand.add_theme_font_size_override("font_size",19);brand.modulate=Color("7be4cd");background.add_child(brand)
 	var title=Label.new();title.text="INTERNAL\nN CRUSH";title.position=Vector2(62,166);title.add_theme_font_size_override("font_size",64);background.add_child(title)
-	var intro=Label.new();intro.text="장비를 고르고, 팀과 전장을 지배하세요.\n6개 병과 · 31개 전장 · 자유 훈련장";intro.position=Vector2(68,400);intro.add_theme_font_size_override("font_size",22);intro.modulate=Color("d6e5ed");background.add_child(intro)
+	var intro=Label.new();intro.text="내부망에서 자유롭게 하는 게임\n6개 병과 · 31개 전장 · 5개 게임 모드";intro.position=Vector2(68,400);intro.add_theme_font_size_override("font_size",22);intro.modulate=Color("d6e5ed");background.add_child(intro)
 	version_box=VBoxContainer.new();version_box.position=Vector2(68,545);version_box.custom_minimum_size.x=560;background.add_child(version_box)
 func build_main_actions():
 	if TouchControls.supported():build_touch_main_actions();return
@@ -227,8 +236,7 @@ func update_version_badge():
 func training_menu():
 	make_panel("연습",900)
 	label("FIELD ACADEMY",30)
-	label("4개 높이의 야외 사격장 · 고정/이동 표적 · 회복과 방호 연습
-표적은 공격하지 않으며 처치하면 4초 뒤 돌아옵니다. 입구 보급 구역에서 장비를 재충전하세요.",18)
+	label("4개 높이의 야외 사격장 · 고정/이동 표적 · 회복과 방호 연습\n표적은 공격하지 않으며 처치하면 4초 뒤 돌아옵니다. 입구 보급 구역에서 장비를 재충전하세요.",18)
 	button("자유 연습장",confirm_practice)
 	stack.add_child(HSeparator.new());label("봇 전투",27)
 	label("실제 경기 규칙으로 조준, 전술과 목표 수행을 연습합니다.",18)
@@ -238,7 +246,9 @@ func practice_menu():
 	if int(game.options.bots) not in [3,5,7,15,31]:game.options.bots=7
 	option("난이도",["하 · 반응과 조준을 완화","중 · 목표와 지원 역할 수행","상 · 빠른 반응, 사격·후퇴 판단 강화"],game.options.get("bot_difficulty",1),func(i):game.options.bot_difficulty=i)
 	option("봇 인원",["3명","5명","7명","15명","31명"],maxi(0,[3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[3,5,7,15,31][i])
-	option("게임 모드",Rules.MODES,game.options.mode,func(i):game.options.mode=i;if map_refresh.is_valid():map_refresh.call())
+	option("게임 모드",Rules.MODES,game.options.mode,func(i):
+		game.options.mode=i
+		if map_refresh.is_valid():map_refresh.call())
 	map_selector()
 	label("장애물 우회 · 목표 수행 · 회복/수리 · 가젯/스킬 사용\n체력, 탄약, 최근 교전 상황에 따라 행동을 바꿉니다.",16)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
@@ -257,7 +267,9 @@ func host_settings():
 	var outer=stack;var groups=section_tabs(["경기","팀 · 참가","병과 · 전투","봇"]);stack=groups[0]
 	edit("방 이름",game.options.room,func(t):game.options.room=t.left(40))
 	edit("비밀번호 (선택)",str(game.options.get("password","")),func(t):game.options.password=t,true)
-	option("게임 모드",Rules.MODES,game.options.mode,func(i):game.options.mode=i;if map_refresh.is_valid():map_refresh.call())
+	option("게임 모드",Rules.MODES,game.options.mode,func(i):
+		game.options.mode=i
+		if map_refresh.is_valid():map_refresh.call())
 	map_selector()
 	option("경기 시간",["5분","10분","15분","20분"],[5,10,15,20].find(game.options.minutes),func(i):game.options.minutes=[5,10,15,20][i])
 	option("목표 점수",["30","60","100","200"],[30,60,100,200].find(game.options.target),func(i):game.options.target=[30,60,100,200][i])
@@ -374,7 +386,7 @@ func settings():
 	var times_label=label("×",18,dimensions);times_label.custom_minimum_size.x=25;times_label.autowrap_mode=TextServer.AUTOWRAP_OFF
 	var height=SpinBox.new();height.min_value=360;height.max_value=32768;height.value=current.y;height.custom_minimum_size.x=190;dimensions.add_child(height)
 	var update_visibility=func():
-		resolution.disabled=false;dimensions.visible=resolution.selected==resolutions.size()
+		resolution.disabled=OS.has_feature("web");dimensions.visible=not OS.has_feature("web") and resolution.selected==resolutions.size()
 		mode_help.text=["크기를 조절할 수 있는 창으로 플레이합니다.","테두리 없는 창을 화면 가득 표시합니다. 다른 앱으로 전환하기 편합니다.","독점 전체 화면입니다. 게임에 집중하는 모드이며 앱 전환 때 잠깐 깜빡일 수 있습니다."][mode.selected]
 	var update_choices=func():
 		var native=DisplayServer.screen_get_size(monitor.selected)
@@ -409,6 +421,9 @@ func settings():
 	sensitivity_control("정조준 감도 배율",float(game.profile.ads_sensitivity),.2,1.5,func(v):game.profile.ads_sensitivity=v;game.save_profile())
 	sensitivity_control("저격 조준 마우스 감도",float(game.profile.sniper_mouse_sensitivity),.1,2.,func(v):game.profile.sniper_mouse_sensitivity=v;game.save_profile())
 	sensitivity_control("저격 조준 터치 감도",float(game.profile.sniper_touch_sensitivity),.1,2.,func(v):game.profile.sniper_touch_sensitivity=v;game.save_profile())
+	if TouchControls.supported():
+		check("에임 어시스트",bool(game.profile.touch_aim_assist),func(on):game.profile.touch_aim_assist=on;game.save_profile())
+		check("조준한 적에게 자동 발사",bool(game.profile.touch_auto_fire),func(on):game.profile.touch_auto_fire=on;game.save_profile())
 	label("저격 조준 중 휠로 배율 조절 · SCOUT 4/8× · MONOLITH 4/8/16×. 마지막 배율을 총마다 기억합니다. 모바일은 배율 ± 버튼을 사용합니다.",16)
 	label("화면과 감도 설정은 다음 실행에도 유지됩니다.",14)
 	stack=tabs[1]
@@ -501,7 +516,8 @@ func gear():
 	for i in range(5):
 		var category=i;var tab=button(["주무기","보조","가젯","방어구","스킬"][i],func():gear_category=category;preview_secondary=category==1;preview_kind=[1,1,2,3,4][category];refresh_gear_detail();refresh_gear_cards(),tabs);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	var scroll=ScrollContainer.new();scroll.custom_minimum_size=Vector2(625,260);form.add_child(scroll)
-	gear_cards=GridContainer.new();gear_cards.columns=3;gear_cards.add_theme_constant_override("h_separation",8);gear_cards.add_theme_constant_override("v_separation",8);scroll.add_child(gear_cards)
+	var cards_inset=MarginContainer.new();cards_inset.add_theme_constant_override("margin_right",18);scroll.add_child(cards_inset)
+	gear_cards=GridContainer.new();gear_cards.columns=3;gear_cards.add_theme_constant_override("h_separation",8);gear_cards.add_theme_constant_override("v_separation",8);cards_inset.add_child(gear_cards)
 	role_detail=label("",17,form);role_detail.modulate=Color("8fcbed")
 	var right=VBoxContainer.new();right.custom_minimum_size.x=440;right.size_flags_horizontal=Control.SIZE_EXPAND_FILL;split.add_child(right)
 	preview_widget=EquipmentPreview.new();right.add_child(preview_widget);preview_widget.custom_minimum_size=Vector2(440,clampf(get_viewport().get_visible_rect().size.y*.32,220.,380.));preview_widget.size_flags_vertical=Control.SIZE_SHRINK_BEGIN
@@ -700,7 +716,7 @@ func refresh():
 		if turret:
 			var d=game.devices[turret];interaction_hint.visible=true
 			interaction_hint.text="[ F ] 포탑 업그레이드 %d → %d"%[d.level,d.level+1] if d.level<4 else "포탑 최대 단계"
-	if p.get("placing","")!="":interaction_hint.text="클릭 설치 · 같은 설치 키로 취소 · 빨강: 설치 불가";interaction_hint.visible=true
+	if p.get("placing","")!="":interaction_hint.text=("발사 버튼: 설치 확정 · 스킬/가젯: 취소" if TouchControls.supported() else "클릭 설치 · 같은 설치 키로 취소 · 빨강: 설치 불가");interaction_hint.visible=true
 	if p.get("invul_select",0)>game.clock:interaction_hint.text="아군 조준 후 클릭: 무적 · F 두 번: 자신";interaction_hint.visible=true
 	if p.get("mark",0)>game.clock:interaction_hint.text="위치 노출 · %.1f초"%(p.mark-game.clock);interaction_hint.visible=true
 	if p.get("invulnerable",0)>game.clock:interaction_hint.text="무적 보호 · %.1f초"%(p.invulnerable-game.clock);interaction_hint.visible=true
@@ -733,7 +749,9 @@ func refresh():
 	var labels=["1  "+Catalog.get_weapon(p.primary).name,"2  "+Catalog.get_weapon(p.secondary).name,"3  "+("해체 키트" if p.gadget==9 else "파편 수류탄" if GrenadeLogic.equipped(p) else Rules.GADGETS[p.role] if p.role!=4 else "연막탄")+" ×"+str(p.gadget_count if p.role!=4 else p.smoke),"4  "+("섬광탄 ×"+str(p.flash_count) if p.role==4 else "—")]
 	for i in range(4):
 		slots[i].text=labels[i].substr(3);slots[i].modulate=Color("6eebc7") if p.slot==i else Color("b6cbd4")
-		slot_panels[i].self_modulate=Color("75cebb") if p.slot==i else Color.WHITE
+		var usable=ActionState.equipment_ready(game,game.local_id,i)
+		slot_panels[i].self_modulate=(Color("75cebb") if p.slot==i else Color.WHITE) if usable else Color("737373")
+		if not usable:slots[i].modulate=Color("888888")
 		if i>=2 and not game.options.classes:slots[i].text=str(i+1)+"  사용 안 함"
 	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 설정"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
@@ -749,7 +767,7 @@ func refresh():
 	elif game.bomb.actor==game.local_id:banner.text="상호작용 %.1f초"%game.bomb.progress
 	elif int(game.options.mode)==4 and int(game.bomb.get("carrier",0))==game.local_id:banner.text="폭탄 운반 중 · A 또는 B에서 E 유지"
 	elif int(game.options.mode)==4 and game.bomb.get("dropped",false) and p.team==MatchFlow.attackers(game):banner.text="폭탄을 회수하세요 · 가까이에서 E"
-	elif game.options.get("practice",false):banner.text=("병과/장비 버튼" if TouchControls.supported() else "B 병과/장비")+" · 입구 보급 구역에서 탄약·가젯·스킬 재충전"
+	elif game.options.get("practice",false) and Time.get_ticks_msec()<practice_hint_until:banner.text=("병과/장비 버튼" if TouchControls.supported() else "B 병과/장비")+" · 입구 보급 구역에서 탄약·가젯·스킬 재충전"
 	elif Time.get_ticks_msec()>notice_until:banner.text=""
 	scoreboard.visible=Input.is_action_pressed("score") or game.phase=="result" or (is_instance_valid(game.touch) and game.touch.held.get("score",false))
 	if scoreboard.visible:scoreboard.refresh_scores()
@@ -823,7 +841,9 @@ func internet_create():
 	make_panel("공개 방 만들기",880);screen="internet_create"
 	var title=edit("방 이름",str(game.profile.nick)+"의 경기",func(_v):pass)
 	edit("방 비밀번호 · 선택",str(game.options.get("password","")),func(value):game.options.password=value,true)
-	option("게임 모드",Rules.MODES,game.options.mode,func(i):game.options.mode=i;if map_refresh.is_valid():map_refresh.call())
+	option("게임 모드",Rules.MODES,game.options.mode,func(i):
+		game.options.mode=i
+		if map_refresh.is_valid():map_refresh.call())
 	map_selector()
 	option("진행 경기 수",["무한","2판","4판","6판","10판"],maxi(0,[0,2,4,6,10].find(int(game.options.rounds))),func(i):game.options.rounds=[0,2,4,6,10][i])
 	option("설치·해체 준비 시간",["30초","45초","60초"],maxi(0,[30,45,60].find(int(game.options.get("prep_seconds",45)))),func(i):game.options.prep_seconds=[30,45,60][i])
@@ -854,4 +874,4 @@ func build_touch_main_actions():
 	for items in [[["내부망 로비",join_menu],["인터넷 로비",internet_menu]],[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)
 		for item in items:button(item[0],item[1],row).size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	label("왼손 이동 · 오른손 화면 조준 · 이동 스틱 끝까지 밀면 달리기",25)
+	label("왼손 이동 · 오른손 화면 조준 · 달리기 버튼으로 켜기/끄기",25)

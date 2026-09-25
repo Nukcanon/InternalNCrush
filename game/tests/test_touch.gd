@@ -28,7 +28,11 @@ func run():
 	touch(0,Vector2(165,500),true);drag(0,Vector2(165,410),Vector2(0,-90))
 	touch(1,Vector2(1165,465),true);touch(2,Vector2(880,310),true);drag(2,Vector2(930,290),Vector2(50,-20))
 	game.collect_input()
-	expect(a.input_state.z<-.9 and a.input_state.fire and a.input_state.sprint,"simultaneous movement, run and fire")
+	expect(a.input_state.z<-.9 and a.input_state.fire and not a.input_state.sprint,"stick edge moves without involuntary sprint")
+	touch(7,Vector2(120,380),true);touch(7,Vector2(120,380),false);game.collect_input()
+	expect(a.input_state.sprint,"sprint button stays toggled after release")
+	touch(7,Vector2(120,380),true);touch(7,Vector2(120,380),false);game.collect_input()
+	expect(not a.input_state.sprint,"second sprint tap stops sprinting")
 	expect(a.input_state.yaw<0 and a.input_state.pitch>0,"independent aim drag while moving/firing")
 	var before_yaw=float(a.input_state.yaw)
 	drag(0,Vector2(170,410),Vector2(-700,800))
@@ -53,6 +57,27 @@ func run():
 	expect(a.input_state.crouch,"crouch stays toggled without a held finger")
 	touch(6,Vector2(1190,680),true);touch(6,Vector2(1190,680),false);game.collect_input()
 	expect(not a.input_state.crouch,"second crouch tap stands up")
+	game.players[1].reload=game.clock+2.;game.touch.held.ads=true
+	touch(6,Vector2(1020,450),true);touch(6,Vector2(1020,450),false);game.collect_input()
+	expect(not a.input_state.ads,"an unavailable ADS toggle can still be switched off")
+	game.players[1].reload=0.
+	game.touch.redraw_timer=0.;game.touch._process(0.)
+	expect(not game.touch.buttons.has("bomb"),"practice has no misleading bomb installation button")
+	game.options.mode=4;game.touch.redraw_timer=0.;game.touch._process(0.)
+	expect(game.touch.buttons.has("bomb") and not ActionState.available(game,1,"bomb"),"bomb button appears only for bomb mode and is grey without a valid action")
+	game.options.mode=0
+	game.touch.held.auto_fire=false;game.profile.touch_auto_fire=false;game.touch.press("auto_fire",true);game.touch.press("auto_fire",false)
+	expect(game.profile.touch_auto_fire,"auto fire can be enabled without holding the trigger")
+	game.profile.touch_auto_fire=false
+	game.ui.notice_until=0;game.ui.practice_hint_until=Time.get_ticks_msec()+1000;game.ui.refresh()
+	expect(not game.ui.banner.text.is_empty(),"practice welcome hint is initially visible")
+	game.ui.practice_hint_until=0;game.ui.refresh();expect(game.ui.banner.text.is_empty(),"practice welcome hint expires")
+	for scale in [.65,.8,1.1]:
+		game.profile.hud_scale=scale;HudLayout.apply(game.ui)
+		expect(game.ui.hud.get_node("Hud_ammo").position.y>=145.,"mobile ammunition stays below the single kill row at every scale")
+	var feed=[]
+	for i in range(3):feed.append({"serial":i,"received":Time.get_ticks_msec(),"attacker":1,"victim":2,"attacker_team":0,"victim_team":1,"attacker_name":"A","victim_name":"B","weapon":"a1"})
+	game.ui.kill_feed.refresh(feed,1,Time.get_ticks_msec());expect(game.ui.kill_feed.get_child_count()==1,"mobile kill feed shows only the most recent kill")
 	game.players[1].mag[game.players[1].primary]=0
 	touch(6,Vector2(1050,590),true);touch(6,Vector2(1050,590),false)
 	expect(float(game.players[1].reload)>game.clock,"reload button begins a real weapon reload")

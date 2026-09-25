@@ -9,6 +9,7 @@ static func start(game):
 	game.players[1].team=0;game.phase="combat";game.remaining=999999.
 	for id in game.players:game.spawn(id)
 	game.ui.show_hud();game.announce("FIELD ACADEMY · 공격하지 않는 표적 · B 병과/장비 · 입구 보급 구역에서 탄약·스킬 재충전")
+	game.ui.practice_hint_until=Time.get_ticks_msec()+8000
 static func spawn_point(id:int) -> Vector3:return TARGETS[clampi(-id-1,0,TARGETS.size()-1)] if id<0 else Vector3(0,.15,35)
 static func input(game,id:int):
 	var p=game.players[id];var a=game.actors[id];var index=-id-1
@@ -23,3 +24,5 @@ static func tick(game):
 	var p=game.players[1];var a=game.actors[1]
 	if p.alive and a.position.z>30. and absf(a.position.x)<12. and game.clock>float(p.get("refit_ready",0)):
 		game.equip_ammo(p);p.skill_ready=0.;p.gadget_ready=0.;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.gadget_count=3;p.smoke=2;p.flash_count=2;p.hp=100.;p.refit_ready=game.clock+2.
+		for device in game.devices.values():
+			if device.kind=="turret" and int(device.owner)==1:device.upgrade_ready=0.

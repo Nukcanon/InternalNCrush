@@ -29,7 +29,7 @@ static func apply(ui:Node):
 		if group:group.position=position_for(key,amount);group.scale=Vector2.ONE*amount
 	if TouchControls.supported():
 		ui.hud.get_node("Hud_health").position=Vector2(22,95)
-		ui.hud.get_node("Hud_ammo").position=Vector2(1025,95)
+		ui.hud.get_node("Hud_ammo").position=Vector2(1258-263*amount,145)
 		ui.hud.get_node("Hud_gear").hide()
 		ui.banner.position=Vector2(320,86);ui.banner.size=Vector2(640,48);ui.banner.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;ui.banner.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 		ui.stats.hide()

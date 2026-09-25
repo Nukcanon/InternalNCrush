@@ -56,7 +56,7 @@ var bomb={"planted":false,"site":-1,"time":0.0,"actor":0,"progress":0.0,"positio
 var server=false
 var dedicated=false
 var local_id=1
-var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"sniper_mouse_sensitivity":.75,"sniper_touch_sensitivity":.65,"scope_zoom":{},"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":0,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028}
+var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"sniper_mouse_sensitivity":.75,"sniper_touch_sensitivity":.65,"scope_zoom":{},"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":60,"lighting_quality":1,"physics_effects":1,"fog_enabled":false,"menu_animation":false,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028,"touch_aim_assist":true,"touch_auto_fire":false,"web_render_scale":1.,"web_quality":-1,"web_options":{}}
 var bot_start_loadout={}
 var pending_loadout={"role":0,"primary":"a1","secondary":"pistol","armor":0,"team":-1,"gadget":0}
 var snapshot_timer=0.0
@@ -101,6 +101,7 @@ var public_room:PublicRoom
 var internet:InternetLobby
 var rtc:RtcTransport
 var touch:TouchControls
+var web_graphics:WebGraphics
 var join_ticket=""
 func _ready():
 	if demo_mode:
@@ -115,6 +116,8 @@ func _ready():
 	if int(profile.performance_revision)<2:
 		if int(profile.graphics_quality)!=3:profile.merge({"graphics_quality":0 if TouchControls.supported() else 1,"shadow_quality":0,"decor_quality":0 if TouchControls.supported() else 1,"antialias":0},true)
 		profile.performance_revision=2
+	if OS.has_feature("web"):
+		web_graphics=WebGraphics.new();web_graphics.game=self;add_child(web_graphics)
 	setup_input();apply_display_settings()
 	if OS.has_feature("web"):get_viewport().size_changed.connect(apply_display_settings)
 	GraphicsOptions.apply(self)
@@ -190,8 +193,8 @@ func apply_display_settings():
 	if DisplayServer.get_name()=="headless" or demo_mode:return
 	if OS.has_feature("web"):
 		var viewport=get_tree().root;viewport.content_scale_mode=Window.CONTENT_SCALE_MODE_DISABLED;viewport.content_scale_size=Vector2i.ZERO
-		var selected=display_window_size();var output=viewport.size
-		viewport.scaling_3d_scale=clampf(minf(float(selected.x)/maxi(1,output.x),float(selected.y)/maxi(1,output.y)),.25,1.)
+		# A saved desktop/mobile 720p preference must not blur a larger browser.
+		viewport.scaling_3d_scale=WebGraphics.render_scale(profile,web_graphics.scale_3d if is_instance_valid(web_graphics) else 1.)
 		return
 	var monitor=clampi(int(profile.monitor),0,maxi(0,DisplayServer.get_screen_count()-1))
 	profile.monitor=monitor
@@ -748,7 +751,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 		"team_policy":
 			if id!=1:return
 			options.next_teams=clampi(int(data.get("next_teams",options.next_teams)),0,2);broadcast_state(true)
-		"slide":begin_slide(id)
+		"slide":begin_slide(id,bool(data.get("forward",false)))
 		"skill":use_skill(id)
 		"gadget":use_gadget(id)
 		"gadget_press":
@@ -903,7 +906,10 @@ func fire(id:int):
 		var sample=CombatBalance.pellet_sample(pellet,int(w.pellets),pattern_rotation) if int(w.pellets)>1 else Vector2(randf(),randf())
 		var dir=AimModel.cone_direction(forward,spread,sample.x,sample.y)
 		var reach=float(w.get("max_range",300.));var aim_hit=ray(eye,eye+dir*reach,[a.get_rid()]);var aim_point=aim_hit.get("position",eye+dir*reach)
-		var hit=blocked_barrel if not blocked_barrel.is_empty() else ray(origin,origin+(aim_point-origin).normalized()*minf(reach,origin.distance_to(aim_point)+.15),[a.get_rid()]);last_end=hit.get("position",aim_point)
+		# Keep close-range muzzle convergence, then trace the full range with mild
+		# gravity. A missed distant target must not terminate the ray at its chest.
+		var flight=Ballistics.trace(self,origin,(aim_point-origin).normalized(),reach,[a.get_rid()]) if blocked_barrel.is_empty() else {"hit":blocked_barrel,"end":blocked_barrel.position}
+		var hit:Dictionary=flight.hit;last_end=flight.end
 		pellet_ends.append(last_end)
 		if hit.is_empty():continue
 		var dist=origin.distance_to(hit.position);var dmg=CombatBalance.damage_at(w,dist)
@@ -1039,6 +1045,7 @@ func use_skill(id:int):
 	var p=players[id];var a=actors[id]
 	if not options.skills or not options.classes or not can_attack(p) or phase!="combat":return
 	if p.role==3:
+		if p.get("placing","")=="turret":Deployment.begin(self,id,"turret");return
 		var nearby=Deployment.nearby_turret(self,id)
 		if nearby:TurretLogic.upgrade(self,id,nearby);return
 	if clock<p.skill_ready:feedback(id,"","스킬 충전 중: "+str(int(ceil(p.skill_ready-clock)))+"초");return
@@ -1065,6 +1072,7 @@ func use_skill(id:int):
 func use_gadget(id:int):
 	if int(players[id].gadget)==9:feedback(id,"","해체 키트 · 장치 앞에서 E를 10초 유지");return
 	var p=players[id];var a=actors[id]
+	if p.get("placing","")=="cover":Deployment.begin(self,id,"cover");return
 	if MarkerTracker.equipped(p):feedback(id,"","표식기 자동 추적 · 무기 조준경으로 적을 2초간 추적하세요.");return
 	if not options.classes or not can_attack(p) or phase!="combat" or p.gadget_count<=0 or clock<p.gadget_ready:return
 	if GrenadeLogic.equipped(p):
@@ -1272,7 +1280,7 @@ func next_match():
 		for i in range(ids.size()):players[ids[i]].team=i%2;actors[ids[i]].set_team(i%2)
 	start_match(false)
 func broadcast_state(force:bool,target_peer:int=0):
-	if not server or arena==null:return
+	if not server or arena==null or multiplayer.get_peers().is_empty():return
 	var list=[]
 	for id in players:
 		var p=players[id];var a=actors[id];var d=p.duplicate();d.erase("token");d.erase("contributors");d.pos=a.position;d.yaw=a.aim_yaw;d.pitch=a.aim_pitch;d.crouch=a.input_state.crouch;d.velocity=a.velocity;d.grounded=a.is_on_floor();d.sprint=a.last_sprint;d.ads=a.input_state.ads;d.spread_angle=a.spread_angle;list.append(d)
@@ -1495,9 +1503,10 @@ func wall_mark(pos:Vector3,normal:Vector3):
 		var first=wall_marks.pop_front()
 		if is_instance_valid(first):first.queue_free()
 
-func begin_slide(id:int) -> bool:
+func begin_slide(id:int,forward:bool=false) -> bool:
 	if not players.has(id) or phase!="combat":return false
 	var p=players[id];var a=actors[id];var velocity=Vector3(a.velocity.x,0,a.velocity.z)
-	if not p.alive or p.shield>clock or p.slow>clock or p.get("cooking",0)>0 or not a.is_on_floor() or velocity.length()<4. or clock<float(p.get("slide_ready",0)):return false
+	if not p.alive or p.shield>clock or p.slow>clock or p.get("cooking",0)>0 or not a.is_on_floor() or (not forward and velocity.length()<4.) or clock<float(p.get("slide_ready",0)):return false
+	if forward:velocity=Basis(Vector3.UP,a.aim_yaw)*Vector3.FORWARD
 	p.slide_until=clock+.72;p.slide_ready=clock+1.8;p.slide_direction=velocity.normalized();p.slide_started=clock
 	return true

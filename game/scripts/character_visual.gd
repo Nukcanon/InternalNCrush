@@ -60,6 +60,7 @@ func build(which:int,side:int):
 	animator.play("idle")
 	deform=rig.get_node_or_null("DeformSkeleton")
 	if not deform:deform=OperatorSkin.install(rig,key)
+	WebMaterials.apply(rig)
 func bind_rig():
 	add_child(rig);hips=rig.get_node("Hips");chest=hips.get_node("Chest");head=chest.get_node("Head");right_arm=chest.get_node("RightArm");left_arm=chest.get_node("LeftArm");right_elbow=right_arm.get_node("Elbow");left_elbow=left_arm.get_node("Elbow");socket=chest.get_node("WeaponSocket");animator=rig.get_node("AnimationPlayer")
 func build_pose_only(which:int,side:int):
@@ -166,7 +167,7 @@ func sync_deform():
 static func joint(parent:Node,name:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;parent.add_child(n);return n
 static func make_rig(which:int,side:int) -> Node3D:
-	var root=HumanModel.build(which,side);root.name=ROLE_NAMES[which]
+	var root=CartoonModel.build(which,side);root.name=ROLE_NAMES[which]
 	M.merge_rig(root);add_clips(root)
 	return root
 static func role_badge(parent:Node3D,which:int,pos:Vector3,factor:float):
@@ -256,7 +257,7 @@ func solve_feet(dt:float,move:Vector3,crouched:bool,sprinting:bool,phase:float):
 		var lift=0. if stance else sin((p-duty)/(1.-duty)*PI)*(.16 if sprinting else .055 if crouched else .09)*movement_blend
 		var foot_z=direction.z*travel-(.035 if crouched else 0.)
 		var foot_x=direction.x*travel
-		if is_inside_tree() and speed>.25:
+		if GraphicsOptions.physics_effects==2 and not OS.has_feature("web") and is_inside_tree() and speed>.25:
 			var desired=rig.to_global(Vector3(leg.position.x+foot_x,.1,foot_z))
 			if stance and not contact[i]:planted[i]=desired
 			if stance and planted[i].is_finite() and desired.distance_to(planted[i])<1.2:

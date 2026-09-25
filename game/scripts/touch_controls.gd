@@ -15,7 +15,9 @@ var stick_id=-1
 var look_id=-1
 var enabled=false
 var was_active=false
-var last_run_tap=-1000
+var availability={}
+var redraw_timer=0.
+var auto_trigger_at=0.
 static func supported() -> bool:
 	if "--touch-test" in OS.get_cmdline_user_args():return true
 	if OS.has_feature("web"):
@@ -28,29 +30,42 @@ func _ready():
 		"jump":Rect2(1150,565,104,82),"crouch":Rect2(1150,660-10,104,60),
 		"sprint":Rect2(75,350,105,78),"slide":Rect2(200,350,105,78),
 		"skill":Rect2(395,542,105,76),"gadget":Rect2(514,542,105,76),"use":Rect2(633,542,105,76),"medical":Rect2(752,542,105,76),
-		"gear":Rect2(430,452,170,70),"mode":Rect2(620,452,170,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
+		"gear":Rect2(430,452,170,70),"auto_fire":Rect2(75,260,230,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
 	for i in range(4):buttons["slot"+str(i)]=Rect2(390+i*126,635,118,70)
 func active() -> bool:
 	return enabled and is_instance_valid(game.ui) and not is_instance_valid(game.ui.panel) and game.phase in ["combat","buy","round_end","result"] and game.players.has(game.local_id)
 func reset():
 	if held.get("gadget",false) and game.players.has(game.local_id):game.command("gadget_release",{})
-	fingers.clear();positions.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1
+	fingers.clear();positions.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1;auto_trigger_at=0.
 func _notification(what):
 	# A browser/app switch may omit the last touch-up event. Never retain a
 	# virtual trigger or movement stick when the window loses focus.
 	if enabled and is_instance_valid(game) and what in [NOTIFICATION_WM_WINDOW_FOCUS_OUT,NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_APPLICATION_PAUSED]:reset()
-func _process(_dt):
+func _process(dt):
 	visible=active()
 	if not visible and was_active:reset()
 	was_active=visible
 	if visible:
+		redraw_timer-=dt
+		if redraw_timer>0:return
+		redraw_timer=.05
+		var p=game.players[game.local_id]
+		buttons.erase("bomb");buttons.erase("gadget_mode")
+		if int(game.options.mode)==4:buttons.bomb=Rect2(620,452,190,70)
+		# Bomb and grenade selection are separate actions, including in bomb mode.
+		if p.role==4 and p.gadget!=9:buttons.gadget_mode=Rect2(820,452,145,70)
+		if int(game.options.mode)!=4:held.bomb=false
 		if SniperScope.active(game):
 			buttons["zoom_out"]=Rect2(970,305,105,70);buttons["zoom_in"]=Rect2(1090,305,105,70)
 		else:buttons.erase("zoom_out");buttons.erase("zoom_in")
 		if Input.mouse_mode!=Input.MOUSE_MODE_VISIBLE:Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
+		for action in buttons:
+			availability[action]=ActionState.equipment_ready(game,game.local_id,int(action.trim_prefix("slot"))) if action.begins_with("slot") else ActionState.available(game,game.local_id,action)
 		queue_redraw()
 func press(action:String,on:bool):
-	if action in ["ads","crouch"]:
+	# Releases must always be accepted, even if the ability became unavailable.
+	if on and not (action in ["ads","crouch","sprint"] and held.get(action,false)) and not ActionState.available(game,game.local_id,action):return
+	if action in ["ads","crouch","sprint"]:
 		if on:held[action]=not held.get(action,false)
 		return
 	held[action]=on
@@ -63,14 +78,13 @@ func press(action:String,on:bool):
 			if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish();return
 			if not game.players[game.local_id].alive:game.cycle_spectator();return
 			game.trigger_seq+=1;game.actors[game.local_id].input_state.trigger_seq=game.trigger_seq
-		"reload","skill","slide":game.command(action,{})
+		"reload","skill":game.command(action,{})
+		"slide":
+			held.crouch=false;game.command("slide",{"forward":true})
 		"gear":game.ui.gear()
-		"mode":game.command("gadget_mode",{})
+		"gadget_mode":game.command("gadget_mode",{})
+		"auto_fire":game.profile.touch_auto_fire=not game.profile.get("touch_auto_fire",false);game.save_profile()
 		"menu":game.ui.toggle_pause()
-		"sprint":
-			var stamp=Time.get_ticks_msec()
-			if stamp-last_run_tap<300:game.command("slide",{})
-			last_run_tap=stamp
 func _input(event):
 	if not active():return
 	var inverse=get_global_transform_with_canvas().affine_inverse()
@@ -113,17 +127,27 @@ func _input(event):
 func apply_input(actor:Actor,on:bool):
 	actor.input_state.x=movement.x if on else 0.;actor.input_state.z=movement.y if on else 0.
 	for key in ["crouch","jump","use","ads","fire"]:actor.input_state[key]=on and held.get(key,false)
-	actor.input_state.sprint=on and (held.get("sprint",false) or movement.length()>.94)
+	actor.input_state.use=on and (held.get("use",false) or (held.get("bomb",false) and ActionState.available(game,game.local_id,"bomb")))
+	actor.input_state.sprint=on and held.get("sprint",false) and movement.length()>.1
 	actor.input_state.alt=on and held.get("medical",false)
+	if on:
+		if look_id>=0 or held.get("ads",false) or held.get("fire",false):TouchAim.assist(game,actor,1./30.)
+		if TouchAim.can_auto_fire(game,actor):
+			actor.input_state.fire=true;actor.input_state.sprint=false
+			var p=game.players[game.local_id];var w=game.current_weapon(p)
+			if game.clock>=maxf(auto_trigger_at,float(p.fire_ready)):
+				game.trigger_seq+=1;actor.input_state.trigger_seq=game.trigger_seq;auto_trigger_at=game.clock+maxf(.08,float(w.interval))
 func _draw():
 	if not visible:return
 	var font=game.ui.theme.default_font
-	var labels={"fire":"발사","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"보조 발사","gear":"병과 / 장비","mode":"설치 모드","menu":"메뉴","score":"기록"}
+	var labels={"fire":"발사","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기 ON" if held.get("sprint",false) else "달리기 OFF","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"보조 발사","gear":"병과 / 장비","gadget_mode":"연막 / 섬광","bomb":"폭탄 해체" if game.bomb.get("planted",false) else "폭탄 설치","auto_fire":"자동 발사 ON" if game.profile.get("touch_auto_fire",false) else "자동 발사 OFF","menu":"메뉴","score":"기록"}
 	var p=game.players.get(game.local_id,{})
-	labels.use=BombLogic.use_label(game,game.local_id)
 	labels.zoom_in="배율 +";labels.zoom_out="배율 −"
 	for action in buttons:
 		var rect:Rect2=buttons[action];var color=Color(.04,.075,.10,.40) if not held.get(action,false) else Color(.18,.48,.54,.75)
+		var ready=bool(availability.get(action,false))
+		if not ready:color=Color(.22,.23,.24,.72)
+		elif action=="auto_fire" and game.profile.get("touch_auto_fire",false):color=Color(.18,.48,.54,.75)
 		if action=="fire":draw_circle(rect.get_center(),rect.size.x*.5,color);draw_arc(rect.get_center(),rect.size.x*.5,0,TAU,48,Color(.86,.96,1,.6),2.,true)
 		else:draw_style_box(plate(color),rect)
 		var title=labels.get(action,"");var font_size=26
@@ -134,16 +158,19 @@ func _draw():
 			if int(p.get("slot",0))==index:draw_rect(rect,Color("65dfc1"),false,3.)
 		if action=="skill":
 			var state=AbilityBalance.skill_state(game,game.local_id);var remain=state.remaining
-			title="%d초"%ceili(remain) if remain>0 else state.label;font_size=22
-			var fraction=1.-clampf(remain/state.duration,0.,1.) if state.enabled else 0.
+			title="설치 취소" if p.get("placing","")=="turret" else "%d초"%ceili(remain) if remain>0 else state.label;font_size=22
+			var fraction=1.-clampf(remain/state.duration,0.,1.)
 			draw_line(rect.position+Vector2(8,rect.size.y-5),rect.position+Vector2(8+(rect.size.x-16)*fraction,rect.size.y-5),Color("6cdfc3"),3.)
 		if action=="gadget":title="표식기 · 자동" if not p.is_empty() and MarkerTracker.equipped(p) else "가젯 ×"+str(p.get("gadget_count",0));font_size=22
+		if action=="gadget" and p.get("placing","")=="cover":title="설치 취소"
+		if action=="fire" and p.get("placing","")!="":title="설치 확정";font_size=22
 		if action=="fire" and not p.get("alive",false):title="다음 관전";font_size=22
 		if action=="fire" and is_instance_valid(game.kill_replay) and game.kill_replay.active:title="건너뛰기";font_size=22
-		draw_string(font,rect.position+Vector2(5,rect.size.y*.5+9),title,HORIZONTAL_ALIGNMENT_CENTER,rect.size.x-10,font_size,Color("eefaff"))
+		font_size=mini(font_size,maxi(12,int(font_size*(rect.size.x-14)/maxf(1.,font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x))))
+		draw_string(font,rect.position+Vector2(7,rect.size.y*.5+font_size*.35),title,HORIZONTAL_ALIGNMENT_CENTER,rect.size.x-14,font_size,Color("eefaff") if ready else Color("aeb1b4"))
 	var center=stick_center if stick_id>=0 else Vector2(165,530)
 	draw_circle(center,90,Color(.06,.11,.15,.27));draw_arc(center,90,0,TAU,48,Color(.8,.94,1,.5),2.,true)
 	draw_circle(center+movement*64,35,Color(.7,.9,.96,.55))
-	if stick_id<0:draw_string(font,center+Vector2(-50,117),"이동 / 달리기",HORIZONTAL_ALIGNMENT_CENTER,100,22,Color("d2e6e8"))
+	if stick_id<0:draw_string(font,center+Vector2(-50,117),"이동",HORIZONTAL_ALIGNMENT_CENTER,100,22,Color("d2e6e8"))
 func plate(color:Color) -> StyleBoxFlat:
 	var style=StyleBoxFlat.new();style.bg_color=color;style.border_color=Color(.8,.92,1,.5);style.set_border_width_all(1);style.set_corner_radius_all(14);return style

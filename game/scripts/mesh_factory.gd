@@ -69,7 +69,7 @@ static func merge_children(parent:Node3D):
 			var finish=float(-1-int(child.material_override.get_meta("surface_kind"))) if child.material_override.has_meta("surface_kind") else child.material_override.metallic
 			st.set_uv2(Vector2(child.material_override.roughness,finish));st.set_color(child.material_override.albedo_color.srgb_to_linear());st.set_normal((child.transform.basis.inverse().transposed()*normals[i]).normalized());st.add_vertex(child.transform*vertices[i])
 		parent.remove_child(child);child.free()
-	st.set_material(vertex_material);var node=MeshInstance3D.new();node.name="Geometry";node.mesh=st.commit();parent.add_child(node)
+	st.index();st.set_material(vertex_material);var node=MeshInstance3D.new();node.name="Geometry";node.mesh=st.commit();parent.add_child(node)
 static func merge_rig(parent:Node3D):
 	for child in parent.get_children():
 		if child is Node3D and not child is MeshInstance3D:merge_rig(child)

@@ -15,10 +15,14 @@ static func skill_state(game:Node,id:int) -> Dictionary:
 	var duration=COOLDOWNS[role];var label=Rules.SKILLS[role]
 	var enabled=game.options.skills and game.options.classes and game.phase=="combat" and game.can_attack(p)
 	if role==3:
+		# Installation and every upgrade share one 35-second ability clock.
+		# Distance changes the action label, never the progress denominator/deadline.
+		for device in game.devices.values():
+			if device.kind=="turret" and int(device.owner)==id:
+				remaining=maxf(remaining,float(device.get("upgrade_ready",0))-game.clock)
 		var did=Deployment.nearby_turret(game,id)
 		if did:
-			var d=game.devices[did];label="포탑 강화";duration=18.
-			remaining=maxf(0.,float(d.get("upgrade_ready",0))-game.clock)
+			var d=game.devices[did];label="포탑 강화"
 			if d.level>=4:enabled=false;label="최대 단계"
 		elif p.get("placing","")=="turret":label="설치 위치 선택"
 	return {"remaining":remaining,"duration":duration,"enabled":enabled,"label":label}

@@ -42,6 +42,7 @@ var fall_started=false
 var fatal_sound_played=false
 var begin_usec=0
 var map_instance=0
+var warm_clock=0.
 static func bullet_camera_point(start:Vector3,end:Vector3,progress:float) -> Vector3:
 	var direction=(end-start).normalized()
 	if direction.length_squared()<.1:direction=Vector3.FORWARD
@@ -125,7 +126,9 @@ func request(kill:Dictionary):
 	if history.size()<2:return
 	pending=kill.duplicate();pending_delay=.04
 func _process(dt):
-	if game.phase in ["combat","lobby"] and not game.demo_mode:warm_one()
+	warm_clock-=dt
+	if game.phase in ["combat","lobby"] and not game.demo_mode and warm_clock<=0.:
+		warm_one();warm_clock=.05 if OS.has_feature("web") else .025
 	if not pending.is_empty():
 		pending_delay-=dt
 		if pending_delay<=0:
@@ -185,7 +188,7 @@ func _process(dt):
 				if not fatal_sound_played:fatal_sound_played=true;game.play_sound("gun_"+str(event.weapon) if Catalog.weapons.has(event.weapon) else "gun_h1",Vector3.ZERO,false)
 				title.text="킬 리플레이 · 마지막 탄환 · 슬로 모션"
 				var t=clampf((elapsed-RUNUP_SECONDS)/BULLET_SECONDS,0,1);var start:Vector3=event.origin;var end:Vector3=event.hit_point;var direction=(end-start).normalized()
-				bullet.show();bullet_trail.show();bullet.position=start.lerp(end,smoothstep(0.,1.,t))
+				bullet.show();bullet_trail.show();bullet.position=Ballistics.between(start,end,smoothstep(0.,1.,t)) if Catalog.weapons.has(event.weapon) or event.weapon=="turret" else start.lerp(end,smoothstep(0.,1.,t))
 				follow_bullet(smoothstep(0.,1.,t))
 				var length=minf(1.4,start.distance_to(bullet.position));bullet_trail.position=bullet.position-direction*length*.5;bullet_trail.scale.y=maxf(.001,length);bullet_trail.quaternion=Quaternion(Vector3.UP,direction)
 			else:
@@ -229,6 +232,8 @@ func hide_live(hidden:bool):
 	for a in game.actors.values():a.visible=not hidden and game.players.get(a.pid,{}).get("alive",false)
 	if is_instance_valid(game.arena):
 		for p in game.arena.props.values():p.visible=not hidden
+		for child in game.arena.get_children():
+			if child is WebPropBatch:child.visible=not hidden
 	for node in game.device_nodes.values():node.visible=not hidden
 	for node in game.drop_nodes.values():node.visible=not hidden
 func finish():

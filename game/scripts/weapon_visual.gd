@@ -91,8 +91,8 @@ func magazine_shape(style:String):
 			for y in [-.02,-.06,-.1]:block(magazine,Vector3(.029,y,-.003),Vector3(.006,.006,.069),metal)
 			block(magazine,Vector3(0,-.15,.012),Vector3(.067,.023,.094),metal)
 static var web_templates={}
-func build(w:Dictionary,hands=true):
-	if OS.has_feature("web") and restore_web_model(w,hands):return
+func build(w:Dictionary,hands=true,use_cache=true):
+	if use_cache and restore_web_model(w,hands):return
 	spec=w;name=w.name
 	for color in [metal,edge,light]:
 		var surface=M.material(color);surface.metallic=.55;surface.roughness=.46
@@ -183,8 +183,7 @@ func build(w:Dictionary,hands=true):
 	M.merge_rig(self)
 	for part in [self,barrel_group,magazine,action_part]:
 		var geo=part.get_node_or_null("Geometry")
-		if geo:
-			var finish=MeshFactory.vertex_material.duplicate();finish.set_shader_parameter("finish_roughness",.48);finish.set_shader_parameter("finish_metallic",.32);geo.material_override=finish
+		if geo:geo.material_override=SurfaceFinish.equipment_material()
 	if hands:
 		support_rig=WeaponHand.new();left_hand.add_child(support_rig);support_rig.build(true,pistol,role)
 		firing_rig=WeaponHand.new();right_hand.add_child(firing_rig);firing_rig.build(false,pistol,role)
@@ -193,7 +192,9 @@ func build(w:Dictionary,hands=true):
 	flash=Node3D.new();flash.name="MuzzleFlash";muzzle.add_child(flash)
 	M.cylinder(flash,Vector3(0,0,-.08),.058,.16,Color("ffeac0"),Vector3(PI/2,0,0),.012,5)
 	flash.visible=false
-	if OS.has_feature("web"):WebMaterials.apply(self)
+	WebMaterials.apply(self)
+	if hands:
+		for mesh in find_children("*","MeshInstance3D",true,false):mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func restore_web_model(w:Dictionary,hands:bool) -> bool:
 	var id=""
 	for key in Catalog.weapons:
@@ -217,6 +218,8 @@ func restore_web_model(w:Dictionary,hands:bool) -> bool:
 		firing_rig=WeaponHand.new();right_hand.add_child(firing_rig);firing_rig.build(false,pistol,role)
 		support_arm=WeaponHand.forearm(self,role);firing_arm=WeaponHand.forearm(self,role);update_hands(-1.,0.,10.)
 	WebMaterials.apply(self)
+	if hands:
+		for mesh in find_children("*","MeshInstance3D",true,false):mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return true
 func add_surface_details(pistol:bool,role:int):
 	var side=.046 if pistol else .073 if role==2 else .054
