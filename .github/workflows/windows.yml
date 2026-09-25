@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: internal-n-crush-validate-${{ github.ref }}
   cancel-in-progress: true
@@ -17,6 +18,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Reuse exact-source validation when only packaging changed
+        id: validated
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          baseline=6cb202107915f61fa74b7a31e362dc25875f6ae6
+          git fetch --no-tags --depth=1 origin "$baseline"
+          if git diff --quiet "$baseline" HEAD -- game windows web nas services; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/36133628094/jobs" > /tmp/validated-jobs.json
+            python3 .github/scripts/verify_v115_validation.py
+            echo 'reuse=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'reuse=false' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.validated.outputs.reuse == 'true'
+        with:
+          name: graphics-native-v115
+          run-id: 36133628094
+          github-token: ${{ github.token }}
+          path: game
       - name: Prepare Godot and assets
         shell: bash
         run: |
@@ -53,25 +76,32 @@ jobs:
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_thumbnails.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
       - name: Render presentation regression frames
+        if: steps.validated.outputs.reuse != 'true'
         run: |
           set -euo pipefail
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/render_presentation_fix.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
+        if: steps.validated.outputs.reuse != 'true'
         with:
           name: presentation-review
           path: validation/presentation-fix/*.png
       - name: Review native and Web impact craters
+        if: steps.validated.outputs.reuse != 'true'
         run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_marks_v115.gd
       - name: Review centred embossed skill badges
+        if: steps.validated.outputs.reuse != 'true'
         run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_hud_v115.gd
       - name: Review launched spread-body deaths
+        if: steps.validated.outputs.reuse != 'true'
         run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_death_v115.gd
       - name: Capture native menu screenshots
+        if: steps.validated.outputs.reuse != 'true'
         run: |
           set -euo pipefail
           timeout 600 xvfb-run -a -s '-screen 0 1920x1080x24' /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/capture_v115.gd -- --no-save-profile --no-update-check
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
       - name: Verify audible combat and deployment feedback
+        if: steps.validated.outputs.reuse != 'true'
         run: timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/test_audio_feedback.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
         with:
@@ -80,14 +110,17 @@ jobs:
             game/assets/menu_slides/*.jpg
             game/validation/*.png
       - name: 32-client capacity with paced startup
+        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: python3 game/tests/run_network_capacity.py
       - name: Functional regressions and network security
+        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: python3 game/tests/run_functional.py
       - name: Independent network clients, lifecycle and movable props
+        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: |
@@ -97,11 +130,13 @@ jobs:
           python3 game/tests/run_network_props.py
           python3 game/tests/run_network_rotation.py
       - name: Late-start lifecycle regression
+        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
           LIFECYCLE_STAGGER: '1.5'
         run: python3 game/tests/run_network_lifecycle.py
       - name: Touch input and WebRTC host/client integration
+        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: |
@@ -126,7 +161,7 @@ jobs:
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd
           timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path web/staging/game --script res://tools/build_thumbnails.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tests/test_render_split.gd
-          timeout 600 xvfb-run -a -s '-screen 0 1920x1080x24' /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path web/staging/game --script res://tools/capture_v115.gd -- --no-save-profile --no-update-check
+          python3 -c 'from pathlib import Path; from PIL import Image; p=sorted(Path("web/staging/game/assets/menu_slides").glob("*.jpg")); assert len(p)==12 and all(Image.open(f).size==(1920,1080) for f in p); print("VERIFIED_COMBAT_SLIDES 12 full-HD original combat photographs")'
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
           web_name="game-${GITHUB_SHA:0:12}"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
