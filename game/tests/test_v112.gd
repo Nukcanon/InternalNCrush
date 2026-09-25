@@ -165,7 +165,7 @@ func run():
 		var weapon=WeaponVisual.new();root.add_child(weapon);weapon.build(w,false)
 		var duration=w.reload
 		weapon.animate_reload(.85,0.)
-		if weapon.reload_style in ["shell","break","box"]:
+		if weapon.reload_style in ["shell","break","box","revolver"]:
 			expect(weapon.action_part.position.is_equal_approx(weapon.action_origin),"no generic rifle action on alternate reload "+id)
 		else:expect(weapon.action_part.position.z>weapon.action_origin.z+.06,"chambering phase "+id)
 		weapon.animate_reload(1.,0.)
