@@ -111,11 +111,16 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 		airborne_time+=dt
 		hips.position=Vector3(0,.89-visual_crouch*.19,.035)
 		hips.rotation=Vector3(-.08,0,0)
-		var tuck=clampf(move.y/6.,0,1);tuck=maxf(tuck,clampf(-move.y/22.,0.,.4))
+		# Rise with a leading knee; extend both legs before contact and absorb landing.
+		var rise=clampf(move.y/6.,0.,1.)
+		var flight=sin(clampf(airborne_time/.55,0.,1.)*PI)
+		var extending=clampf(-move.y/6.,0.,1.)
 		for i in range(2):
 			var leg=hips.get_node("LeftLeg" if i==0 else "RightLeg");var knee=leg.get_node("Knee");var foot=knee.get_node("Foot")
-			leg.rotation=Vector3(.18+tuck*.55+(i*2.-1.)*minf(speed/20.,.18),0,(i*2.-1.)*.055)
-			knee.rotation=Vector3(-.25-tuck*.95,0,0);foot.rotation=Vector3(.1+tuck*.28,0,0)
+			var lead=1. if i==0 else .60
+			leg.rotation=Vector3(lerpf(.16+(rise*.58+flight*.25)*lead,.10,extending),0,(i*2.-1.)*.065)
+			knee.rotation=Vector3(lerpf(-.20-(rise*.85+flight*.35)*lead,-.22,extending),0,0)
+			foot.rotation=Vector3(lerpf(.12+rise*.18,.04,extending),0,0)
 	if grounded:airborne_time=0.
 	hips.rotation.y+=pelvis_yaw
 	hips.rotation+=acceleration_lean*.35
@@ -144,7 +149,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	right_arm.position.y=.105+cos(cycle)*movement*.010;left_arm.position.y=.105-cos(cycle)*movement*.014
 	right_elbow.rotation=Vector3(lerpf(.92,.7+sin(cycle)*.14,visual_sprint),0,0)
 	left_elbow.rotation=Vector3(lerpf(.38,.70+cos(cycle)*.23,visual_sprint)-reach*.35,0,0)
-	socket.position=Vector3(.11,-visual_sprint*.08+cos(cycle)*movement*.012,-.15+visual_sprint*.08)
+	socket.position=Vector3(.11,visual_crouch*.095-visual_sprint*.08+cos(cycle)*movement*.012,-.15-visual_crouch*.035+visual_sprint*.08)
 	socket.rotation=Vector3(-aiming*.5+visual_sprint*(.3+sin(cycle)*.10)-kick*.08,visual_sprint*.12-turn*.012,visual_sprint*(.18+sin(cycle)*.06)-reach*.18+sin(cycle)*movement*.035)
 	hit_time=maxf(0,hit_time-dt);var hit=sin(hit_time/.32*PI)*.2
 	chest.rotation+=Vector3(hit*.45,0,hit*hit_sign);head.rotation.x-=hit*.4
@@ -243,7 +248,7 @@ func solve_feet(dt:float,move:Vector3,crouched:bool,sprinting:bool,phase:float):
 	var local_motion=global_basis.inverse()*horizontal
 	var direction=local_motion.normalized() if speed>.05 else Vector3.FORWARD
 	var stride=(.53 if sprinting else .40 if not crouched else .22)*movement_blend
-	var hip_height=lerpf(.91,.57,visual_crouch)-landing_compression
+	var hip_height=lerpf(.91,.59,visual_crouch)-landing_compression
 	var cycle=fposmod(maxf(0,phase),1.)
 	hips.position=Vector3(sin(cycle*TAU)*.018*movement_blend,hip_height+cos(cycle*TAU*2)*.009*movement_blend,.075*visual_crouch)
 	hips.rotation=Vector3(-.07 if sprinting else .035 if crouched else 0,clampf(-direction.x*.12,-.12,.12)*movement_blend,sin(cycle*TAU)*.018*movement_blend)
@@ -254,9 +259,10 @@ func solve_feet(dt:float,move:Vector3,crouched:bool,sprinting:bool,phase:float):
 		var duty=.58 if sprinting else .72 if crouched else .64
 		var stance=p<duty
 		var travel=lerpf(stride,-stride,p/duty) if stance else lerpf(-stride,stride,smoothstep(duty,1.,p))
-		var lift=0. if stance else sin((p-duty)/(1.-duty)*PI)*(.16 if sprinting else .055 if crouched else .09)*movement_blend
-		var foot_z=direction.z*travel-(.035 if crouched else 0.)
-		var foot_x=direction.x*travel
+		var lift=0. if stance else sin((p-duty)/(1.-duty)*PI)*(.16 if sprinting else .075 if crouched else .09)*movement_blend
+		var stagger=(-.22 if i==0 else .20)*visual_crouch*(1.-movement_blend*.75)
+		var foot_z=direction.z*travel+stagger
+		var foot_x=direction.x*travel+(i*2.-1.)*.045*visual_crouch
 		if GraphicsOptions.physics_effects==2 and not OS.has_feature("web") and is_inside_tree() and speed>.25:
 			var desired=rig.to_global(Vector3(leg.position.x+foot_x,.1,foot_z))
 			if stance and not contact[i]:planted[i]=desired

@@ -11,15 +11,13 @@ static func configure(on:bool):
 	dynamic_lighting=on
 	if shader!=null:update_shader()
 static func update_shader():
-	var code=shader.code
-	code=code.replace("render_mode unshaded;","render_mode specular_disabled;" ) if dynamic_lighting else code.replace("render_mode specular_disabled;","render_mode unshaded;")
-	if shader.code!=code:shader.code=code
+	# Lighting changes update uniforms; never compile shaders during combat.
 	if vertex:vertex.set_shader_parameter("dynamic_lighting",dynamic_lighting)
 	for material in colors.values():material.set_shader_parameter("dynamic_lighting",dynamic_lighting)
 static func make(color:Color=Color.WHITE,use_vertex:bool=true) -> ShaderMaterial:
 	if shader==null:
 		shader=Shader.new();shader.code="""shader_type spatial;
-render_mode unshaded;
+render_mode specular_disabled;
 // toon_surface
 uniform vec4 tint : source_color = vec4(1.0);
 uniform float vertex_color = 1.0;
@@ -35,8 +33,8 @@ void fragment() {
     float band = light < 0.05 ? 0.70 : (light < 0.58 ? 0.86 : 1.0);
     // Grazing-angle ink darkened entire distant floors, not just silhouettes.
     // Keep paint independent of camera angle and guarantee ambient readability.
-    ALBEDO = paint * (dynamic_lighting ? 0.72 : band);
-    EMISSION = dynamic_lighting ? paint * 0.28 : vec3(0.0);
+    ALBEDO = dynamic_lighting ? paint * 0.72 : vec3(0.0);
+    EMISSION = dynamic_lighting ? paint * 0.28 : paint * band;
 }
 void light() {
     float d = max(dot(NORMAL, LIGHT), 0.0);

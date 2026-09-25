@@ -1,4 +1,4 @@
-name: Build and publish Internal N Crush 1.1.5
+name: Build and publish Internal N Crush 1.1.6
 on:
   push:
     paths:
@@ -18,26 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Reuse exact-source validation when only packaging changed
-        id: validated
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          baseline=6cb202107915f61fa74b7a31e362dc25875f6ae6
-          git fetch --no-tags --depth=1 origin "$baseline"
-          if git diff --quiet "$baseline" HEAD -- game windows web nas services; then
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/36133628094/jobs" > /tmp/validated-jobs.json
-            python3 .github/scripts/verify_v115_validation.py
-            echo 'reuse=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'reuse=false' >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/download-artifact@v4
-        if: steps.validated.outputs.reuse == 'true'
+      - name: Reuse unchanged approved menu photographs
+        uses: actions/download-artifact@v4
         with:
           name: graphics-native-v115
-          run-id: 36133628094
+          run-id: 36136057333
           github-token: ${{ github.token }}
           path: game
       - name: Prepare Godot and assets
@@ -70,38 +55,19 @@ jobs:
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_arenas.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
-      - name: Refresh cartoon equipment thumbnails
+      - name: Validate revised grips, turret timing and mobile layout
         run: |
           set -euo pipefail
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_thumbnails.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
-      - name: Render presentation regression frames
-        if: steps.validated.outputs.reuse != 'true'
-        run: |
-          set -euo pipefail
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/render_presentation_fix.gd -- --no-save-profile --no-update-check
+          timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_details_v116.gd
+          timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_details_gameplay_v116.gd -- --no-save-profile --no-update-check
+      - name: Render all revised weapon grips and movement poses
+        run: timeout 300 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_details_v116.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
-        if: steps.validated.outputs.reuse != 'true'
+        if: always()
         with:
-          name: presentation-review
-          path: validation/presentation-fix/*.png
-      - name: Review native and Web impact craters
-        if: steps.validated.outputs.reuse != 'true'
-        run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_marks_v115.gd
-      - name: Review centred embossed skill badges
-        if: steps.validated.outputs.reuse != 'true'
-        run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_hud_v115.gd
-      - name: Review launched spread-body deaths
-        if: steps.validated.outputs.reuse != 'true'
-        run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_death_v115.gd
-      - name: Capture native menu screenshots
-        if: steps.validated.outputs.reuse != 'true'
-        run: |
-          set -euo pipefail
-          timeout 600 xvfb-run -a -s '-screen 0 1920x1080x24' /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/capture_v115.gd -- --no-save-profile --no-update-check
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
+          name: details-v116
+          path: validation/details-v116/*
       - name: Verify audible combat and deployment feedback
-        if: steps.validated.outputs.reuse != 'true'
         run: timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/test_audio_feedback.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
         with:
@@ -110,17 +76,14 @@ jobs:
             game/assets/menu_slides/*.jpg
             game/validation/*.png
       - name: 32-client capacity with paced startup
-        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: python3 game/tests/run_network_capacity.py
       - name: Functional regressions and network security
-        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: python3 game/tests/run_functional.py
       - name: Independent network clients, lifecycle and movable props
-        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: |
@@ -130,13 +93,11 @@ jobs:
           python3 game/tests/run_network_props.py
           python3 game/tests/run_network_rotation.py
       - name: Late-start lifecycle regression
-        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
           LIFECYCLE_STAGGER: '1.5'
         run: python3 game/tests/run_network_lifecycle.py
       - name: Touch input and WebRTC host/client integration
-        if: steps.validated.outputs.reuse != 'true'
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: |
@@ -159,14 +120,13 @@ jobs:
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_models.gd
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd
-          timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path web/staging/game --script res://tools/build_thumbnails.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tests/test_render_split.gd
           python3 -c 'from pathlib import Path; from PIL import Image; p=sorted(Path("web/staging/game/assets/menu_slides").glob("*.jpg")); assert len(p)==12 and all(Image.open(f).size==(1920,1080) for f in p); print("VERIFIED_COMBAT_SLIDES 12 full-HD original combat photographs")'
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
           web_name="game-${GITHUB_SHA:0:12}"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
           mv "web/build/$web_name.html" web/build/index.html
-          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.1.5.zip", include_config=False)'
+          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.1.6.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -183,16 +143,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.1.5.zip
+          path: out/InternalNCrush_Windows_v1.1.6.zip
       - uses: actions/upload-artifact@v4
         with:
           name: release-files
           if-no-files-found: error
           path: |
-            out/InternalNCrush_Windows_v1.1.5.zip
-            out/InternalNCrush_Web_v1.1.5.zip
-            out/InternalNCrush_NAS_Linux_v1.1.5.zip
-            out/WEB_RELEASE_v1.1.5.json
+            out/InternalNCrush_Windows_v1.1.6.zip
+            out/InternalNCrush_Web_v1.1.6.zip
+            out/InternalNCrush_NAS_Linux_v1.1.6.zip
+            out/WEB_RELEASE_v1.1.6.json
             out/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -212,19 +172,19 @@ jobs:
         with:
           name: release-files
           path: release-files
-      - name: Create draft 1.1.5 downloads after successful tests
+      - name: Create draft 1.1.6 downloads after successful tests
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           cd release-files
           sha256sum --check SHA256SUMS.txt
-          if gh release view internal-n-crush-v1.1.5 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
+          if gh release view internal-n-crush-v1.1.6 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
             test "$(cat /tmp/is-draft)" = true
-            gh release edit internal-n-crush-v1.1.5 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+            gh release edit internal-n-crush-v1.1.6 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create internal-n-crush-v1.1.5 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.1.5" --notes "Restore native graphics and live menu; improve Web floor readability and screenshot backgrounds. Godot functional, touch and network validation passed." --repo "$GITHUB_REPOSITORY"
+            gh release create internal-n-crush-v1.1.6 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.1.6" --notes "Refine weapon grips and reloads, crouch/jump motion, turret acquisition, checkbox contrast, mobile layout and aim assistance; preserve existing menu photographs." --repo "$GITHUB_REPOSITORY"
           fi
-          gh release upload internal-n-crush-v1.1.5 InternalNCrush_Windows_v1.1.5.zip InternalNCrush_Web_v1.1.5.zip InternalNCrush_NAS_Linux_v1.1.5.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.1.6 InternalNCrush_Windows_v1.1.6.zip InternalNCrush_Web_v1.1.6.zip InternalNCrush_NAS_Linux_v1.1.6.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
-          gh release upload internal-n-crush-v1.1.5 WEB_RELEASE_v1.1.5.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.1.6 WEB_RELEASE_v1.1.6.json --clobber --repo "$GITHUB_REPOSITORY"

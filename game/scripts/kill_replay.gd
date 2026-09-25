@@ -92,10 +92,16 @@ func warm_one():
 		var p=game.players[id];var role=int(p.role) if game.options.classes else 0;var wid=p.primary if p.slot==0 else p.secondary
 		var signature=str([role,p.team,wid])
 		if signatures.get(id,"")!=signature:
-			if models.has(id):models[id].queue_free()
-			var node=Node3D.new();stage.add_child(node);models[id]=node;signatures[id]=signature
-			var body=CharacterVisual.new();body.enable_physics=false;body.name="Body";node.add_child(body);body.build(role,int(p.team))
+			var node=models.get(id)
+			if not is_instance_valid(node) or node.get_meta("body_signature","")!=str([role,p.team]):
+				if is_instance_valid(node):node.queue_free()
+				node=Node3D.new();stage.add_child(node);models[id]=node
+				var body=CharacterVisual.new();body.enable_physics=false;body.name="Body";node.add_child(body);body.build(role,int(p.team))
+				node.set_meta("body_signature",str([role,p.team]))
+			var body=node.get_node("Body")
+			for old in body.socket.get_children():old.free()
 			var weapon=WeaponVisual.new();body.socket.add_child(weapon);weapon.build(Catalog.get_weapon(wid),false);weapon.scale=Vector3.ONE*.8
+			signatures[id]=signature
 			return
 		if not first_person_guns.has(wid):
 			var weapon=WeaponVisual.new();camera.add_child(weapon);weapon.build(Catalog.get_weapon(wid));weapon.hide();first_person_guns[wid]=weapon;return

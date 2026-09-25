@@ -18,7 +18,13 @@ var was_active=false
 var availability={}
 var redraw_timer=0.
 var auto_trigger_at=0.
+static var supported_cache=-1
+var plate_cache={}
 static func supported() -> bool:
+	if supported_cache>=0:return supported_cache==1
+	supported_cache=1 if detect_supported() else 0
+	return supported_cache==1
+static func detect_supported() -> bool:
 	if "--touch-test" in OS.get_cmdline_user_args():return true
 	if OS.has_feature("web"):
 		return bool(JavaScriptBridge.eval("navigator.maxTouchPoints>0 && (matchMedia('(pointer:coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent))"))
@@ -29,9 +35,9 @@ func _ready():
 		"fire":Rect2(1100,400,130,130),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
 		"jump":Rect2(1150,565,104,82),"crouch":Rect2(1150,660-10,104,60),
 		"sprint":Rect2(75,350,105,78),"slide":Rect2(200,350,105,78),
-		"skill":Rect2(395,542,105,76),"gadget":Rect2(514,542,105,76),"use":Rect2(633,542,105,76),"medical":Rect2(752,542,105,76),
+		"skill":Rect2(409,542,105,76),"gadget":Rect2(528,542,105,76),"use":Rect2(647,542,105,76),"medical":Rect2(766,542,105,76),
 		"gear":Rect2(430,452,170,70),"auto_fire":Rect2(75,260,230,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
-	for i in range(4):buttons["slot"+str(i)]=Rect2(390+i*126,635,118,70)
+	for i in range(4):buttons["slot"+str(i)]=Rect2(392+i*126,635,118,70)
 func active() -> bool:
 	return enabled and is_instance_valid(game.ui) and not is_instance_valid(game.ui.panel) and game.phase in ["combat","buy","round_end","result"] and game.players.has(game.local_id)
 func reset():
@@ -173,4 +179,5 @@ func _draw():
 	draw_circle(center+movement*64,35,Color(.7,.9,.96,.55))
 	if stick_id<0:draw_string(font,center+Vector2(-50,117),"이동",HORIZONTAL_ALIGNMENT_CENTER,100,22,Color("d2e6e8"))
 func plate(color:Color) -> StyleBoxFlat:
-	var style=StyleBoxFlat.new();style.bg_color=color;style.border_color=Color(.8,.92,1,.5);style.set_border_width_all(1);style.set_corner_radius_all(14);return style
+	if plate_cache.has(color):return plate_cache[color]
+	var style=StyleBoxFlat.new();style.bg_color=color;style.border_color=Color(.8,.92,1,.5);style.set_border_width_all(1);style.set_corner_radius_all(14);plate_cache[color]=style;return style

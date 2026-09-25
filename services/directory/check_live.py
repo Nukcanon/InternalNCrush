@@ -48,5 +48,5 @@ async def check(url, version):
     print('DIRECTORY_LIVE_OK HTTP/auth/admission/SDP/ICE/replay/round_end/host departure')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('url');p.add_argument('--version',default='1.1.5');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('url');p.add_argument('--version',default='1.1.6');a=p.parse_args()
     asyncio.run(asyncio.wait_for(check(a.url.rstrip('/'),a.version),35))

@@ -19,12 +19,14 @@ func run():
 	for level in range(2,5):turret.upgrade_ready=0.;p.skill_ready=0.;TurretLogic.upgrade(g,1,did);expect(turret.level==level,"nearby turret upgrade level %d"%level)
 	TurretLogic.upgrade(g,1,did);expect(turret.level==4,"turret upgrades stop at level four")
 	turret.disabled=0.;turret.next_fire=1000.;turret.rocket_ready=0.;turret.target=2;turret.lock=0.;turret.next_scan=1000.
+	TurretLogic.track(turret,(b.eye()-Vector3.UP*.35-TurretLogic.origin(turret)).normalized(),1.)
 	TurretLogic.tick(g,.016);expect(g.rockets.size()==1 and turret.rocket_ready==102.,"level four launches a slow missile once every two seconds")
 	TurretLogic.tick(g,.016);expect(g.rockets.size()==1,"missile cooldown prevents duplicate launches")
 	g.rockets.clear();turret.level=1;turret.next_fire=0.;turret.next_scan=0.;turret.target=0;turret.lock=0.
 	b.position=Vector3(40,0,16);await physics_frame;TurretLogic.tick(g,.016);expect(turret.target==0 and q.hp==100.,"automatic fire rejects a target outside its forward arc")
 	p.primary="remote";p.slot=0;a.input_state.fire=true;var delta=b.eye()-Vector3.UP*.3-a.eye();a.aim_yaw=atan2(-delta.x,-delta.z);a.aim_pitch=atan2(delta.y,Vector2(delta.x,delta.z).length())
-	TurretLogic.tick(g,.016);expect(turret.remote and q.hp<100.,"remote control can hit a target outside the automatic arc")
+	for frame in range(60):TurretLogic.tick(g,1./60.)
+	expect(turret.remote and q.hp<100.,"remote control can hit a target outside the automatic arc")
 	expect(100.-q.hp<TurretLogic.DAMAGE[0],"remote hit applies distance falloff")
 	p.role=0;p.skill_ready=0.;g.use_skill(1);expect(p.dash==105. and p.dash_recovery==108.,"movement skill has five fast seconds and three recovery seconds")
 	p.role=1;p.skill_ready=0.;g.use_skill(1);expect(q.mark==104. and p.skill_ready==140.,"scan marks for four seconds with forty-second cooldown")

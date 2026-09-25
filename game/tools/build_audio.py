@@ -111,5 +111,13 @@ for i in range(int(.55*rate)):
  impact=(math.sin(2*math.pi*(80*hit+1.8*(1-math.exp(-hit*25))))*.7+rng.uniform(-1,1)*.13)*(1-math.exp(-hit*900))*math.exp(-hit*14) if t>.075 else 0
  sting.append(sweep+impact)
 write('kill_sting',lowpass(sting,2200),gain=-4)
+# Original short two-tone acquisition chirp; existing effects are unchanged.
+alert=[]
+for i in range(int(.10*rate)):
+ t=i/rate; local=t if t<.045 else t-.055
+ envelope=max(0.,math.sin(min(1.,max(0.,local)/.04)*math.pi)) if (t<.04 or t>=.055) else 0.
+ alert.append(math.sin(2*math.pi*(1450 if t<.045 else 1850)*t)*envelope*.32)
+write('turret_detect',alert,gain=-4)
 (root/'assets/audio_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print('AUDIO_BUILT',len(manifest),'sample-based clips;',sum(k.startswith('gun_') for k in manifest),'distinct weapon mixes')
+

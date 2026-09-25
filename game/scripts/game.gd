@@ -1428,6 +1428,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 		if shot_at>=float(p.get("shot_time",-100.)) and (p.primary if p.slot==0 else p.secondary)==shot_state.weapon:
 			p.shot_time=shot_at;p.bloom=shot_state.bloom;p.spray_phase=shot_state.spray_phase;p.spray_index=int(p.spray_phase)
 	if kind=="shot" and is_instance_valid(kill_replay):kill_replay.record_shot(from,to,owner)
+	if kind=="turret_detect":play_sound("turret_detect",from,true);return
 	var sound={"turret_break":"explosion","cover_break":"explosion","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"deploy","skill":"skill","smoke":"smoke"}.get(kind,"")
 	if kind=="shot":sound="gun_"+(players[owner].primary if players[owner].slot==0 else players[owner].secondary) if players.has(owner) else "gun_a1"
 	if kind not in ["heal","repair"] or clock-float(heal_sound_times.get(owner,-100))>.22:

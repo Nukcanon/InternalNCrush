@@ -308,7 +308,8 @@ func visual(dt:float,p:Dictionary,now:float):
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
 	camera.fov=lerpf(88. if sprint else 82.,SniperScope.fov(game.profile,w),ads_blend)
 	var base=Vector3(.255,-.255,-.46).lerp(Vector3(0,-.14,-.5),ads_blend)
-	var motion=move_blend*(1.-ads_blend*.93)
+	base+=Vector3(-.025,.095,-.025)*crouch_blend*(1.-ads_blend)
+	var motion=move_blend*(1.-ads_blend*.93)*(1.-crouch_blend*.35)
 	base.y+=sin(now*1.9)*.002*(1.-move_blend)*(1.-ads_blend)
 	base+=Vector3(cos(bob)*.022,cos(bob*2)*.017,0)*motion
 	var rotation_target=Vector3(recoil*lerpf(.34,.12,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)

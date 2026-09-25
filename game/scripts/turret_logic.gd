@@ -1,6 +1,10 @@
 class_name TurretLogic
 extends RefCounted
 const HALF_ARC=PI*50./180.
+const ALERT_DELAY=.10
+const PATROL_SPEED=HALF_ARC # 100-degree sweep in two seconds; round trip four.
+const TRACK_SPEED=HALF_ARC*2./.45
+const FIRE_TOLERANCE=PI/90.
 const SCALES=[.5,.65,.82,1.]
 const INTERVALS=[.12,.15,.10,.10]
 const DAMAGE=[2.8,4.5,3.6,3.8]
@@ -32,16 +36,29 @@ static func upgrade(game:Node,id:int,did:int):
 	d.upgrade_ready=game.clock+AbilityBalance.COOLDOWNS[3];p.skill_ready=d.upgrade_ready
 	game.feedback(id,"heal","포탑 %d단계 · %s"%[d.level,["기관단총","돌격소총","기관총","기관총 + 미사일"][d.level-1]])
 	p.placing=""
+static func patrol(d:Dictionary,dt:float):
+	var current=float(d.get("head_yaw",d.yaw))
+	var side=float(d.get("patrol_side",1.))
+	var offset=wrapf(current-float(d.yaw),-PI,PI)
+	offset=move_toward(offset,HALF_ARC*side,PATROL_SPEED*dt)
+	if absf(offset-HALF_ARC*side)<.0001:side=-side
+	d.patrol_side=side;d.head_yaw=float(d.yaw)+offset
+	d.head_pitch=move_toward(float(d.get("head_pitch",0.)),0.,TRACK_SPEED*dt)
+static func track(d:Dictionary,direction:Vector3,dt:float) -> bool:
+	var desired=atan2(-direction.x,-direction.z);var pitch=asin(clampf(direction.y,-1.,1.))
+	var yaw=float(d.get("head_yaw",d.yaw))
+	d.head_yaw=yaw+clampf(wrapf(desired-yaw,-PI,PI),-TRACK_SPEED*dt,TRACK_SPEED*dt)
+	d.head_pitch=move_toward(float(d.get("head_pitch",0.)),pitch,TRACK_SPEED*dt)
+	return absf(wrapf(desired-float(d.head_yaw),-PI,PI))<=FIRE_TOLERANCE and absf(pitch-float(d.head_pitch))<=FIRE_TOLERANCE
 static func tick(game:Node,dt:float):
 	for did in game.devices.keys():
-		# A shot can kill another turret's owner and remove that device mid-tick.
 		if not game.devices.has(did):continue
 		var d=game.devices[did]
 		if game.clock>d.expires:game.remove_device(did);continue
 		if d.kind!="turret" or game.clock<d.disabled or game.phase!="combat":continue
 		var owner=game.players.get(d.owner,{})
 		if owner.is_empty() or owner.protect>game.clock:continue
-		var from=origin(d);var target=0;var aim=from+Basis(Vector3.UP,d.yaw)*Vector3.FORWARD*range_for(game,d.level)
+		var from=origin(d);var target=int(d.get("target",0));var aim=Vector3.INF
 		var remote=owner.alive and owner.slot==0 and game.current_weapon(owner).kind=="remote"
 		d.remote=remote
 		var exclude=[]
@@ -49,31 +66,36 @@ static func tick(game:Node,dt:float):
 		if remote:
 			var a=game.actors[d.owner]
 			var eye_hit=game.ray(a.eye(),a.eye()+a.direction()*300.,[a.get_rid()])
-			aim=eye_hit.get("position",a.eye()+a.direction()*300.)
-			d.lock=game.clock
+			aim=eye_hit.get("position",a.eye()+a.direction()*300.);d.target=0;d.lock=game.clock
 		else:
-			# Target search at 10 Hz, while rotation/fire and projectiles remain fixed-tick.
-			if game.clock>=float(d.get("next_scan",0)):
+			if game.players.has(target) and game.players[target].alive and game.enemies(owner,game.players[target]):aim=visible_point(game,d,target,exclude)
+			if not aim.is_finite():target=0;d.target=0
+			# Hold a visible target instead of alternating locks between nearby enemies.
+			if target==0 and game.clock>=float(d.get("next_scan",0.)):
 				d.next_scan=game.clock+.1
 				var best=range_for(game,d.level)
 				for id in game.players:
 					var p=game.players[id]
 					if not p.alive or id==d.owner or not game.enemies(owner,p):continue
 					var point=visible_point(game,d,id,exclude)
-					if point==Vector3.INF:continue
+					if not point.is_finite():continue
 					var distance=Vector2(point.x-from.x,point.z-from.z).length()
-					if distance<best:best=distance;target=id
-				if target!=int(d.target):d.target=target;d.lock=game.clock+.18
-			target=int(d.target)
-			if not game.players.has(target) or not game.players[target].alive:target=0;d.target=0
-			if target:
-				aim=visible_point(game,d,target,exclude)
-				if aim==Vector3.INF:target=0;d.target=0;continue
-		d.aim=aim
+					if distance<best:best=distance;target=id;aim=point
+				if target!=0:
+					d.target=target;d.lock=game.clock+ALERT_DELAY
+					game.event_fx.rpc("turret_detect",from,Vector3.ZERO,int(d.owner))
+			if target==0:
+				patrol(d,dt)
+				d.aim=from+Basis(Vector3.UP,float(d.head_yaw))*Vector3.FORWARD*5.
+				continue
+		if game.clock<float(d.lock):continue
+		var aligned=track(d,(aim-from).normalized(),dt)
+		var barrel_direction=Basis(Vector3.UP,float(d.head_yaw))*Basis(Vector3.RIGHT,float(d.head_pitch))*Vector3.FORWARD
+		d.aim=from+barrel_direction*maxf(2.,from.distance_to(aim))
 		var firing=bool(game.actors[d.owner].input_state.fire) and owner.reload<=0 and game.can_attack(owner) if remote else target!=0
-		if not firing or game.clock<d.lock:continue
-		var direction=(aim-from).normalized()
-		# Muzzle follows the target without recoil; obstruction still wins over targeting.
+		if not firing or not aligned:continue
+		var direction=barrel_direction
+		# Shots follow the physical barrel only after acquisition and slew complete.
 		var muzzle=from+direction*(.94*SCALES[d.level-1])
 		var obstruction=game.ray(from,muzzle,exclude,1|4|8)
 		if not obstruction.is_empty():continue

@@ -20,9 +20,9 @@ func _ready():
 func _process(dt:float):
 	if frames.size()<2 or not is_visible_in_tree():return
 	elapsed+=dt
-	# Hold for seven seconds, then crossfade for one second.
-	layers[1].modulate.a=clampf(elapsed-7.,0.,1.)
-	if elapsed>=8.:
+	# Two seconds per image, including a short crossfade.
+	layers[1].modulate.a=clampf((elapsed-1.65)/.35,0.,1.)
+	if elapsed>=2.:
 		elapsed=0.;index=(index+1)%frames.size()
 		if index==0:
 			var previous=frames[0];frames.shuffle()

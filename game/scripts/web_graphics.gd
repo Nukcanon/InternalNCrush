@@ -29,6 +29,9 @@ static func resolve(profile:Dictionary,auto_level:int=1) -> Dictionary:
 	settings.shadow_quality=clampi(int(settings.shadow_quality),0,1)
 	settings.antialias=clampi(int(settings.antialias),0,2)
 	settings.decor_quality=clampi(int(settings.decor_quality),0,2)
+	# Automatic adjustments must not allocate MSAA/shadow buffers or switch lighting
+	# while the player is fighting. Manual high/custom still enables those features.
+	if mode<0:settings.lighting_quality=0;settings.shadow_quality=0;settings.antialias=0
 	settings.physics_effects=0
 	return settings
 static func render_scale(profile:Dictionary,auto_scale:float=1.) -> float:

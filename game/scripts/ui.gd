@@ -83,7 +83,7 @@ func _ready():
 	root=Control.new();root.size=Vector2(1280,720);root.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(root)
 	get_viewport().size_changed.connect(scale_interface);scale_interface()
 	damage_indicator=DamageIndicator.new();damage_indicator.game=game;root.add_child(damage_indicator)
-	theme=Theme.new();theme.default_font_size=28 if TouchControls.supported() else 20
+	theme=Theme.new();install_check_icons();theme.default_font_size=28 if TouchControls.supported() else 20
 	if ResourceLoader.exists("res://assets/fonts/Rajdhani-SemiBold.ttf"):
 		var font=FontVariation.new();font.base_font=load("res://assets/fonts/Rajdhani-SemiBold.ttf");font.fallbacks=[load("res://assets/fonts/DoHyeon-Regular.ttf"),load("res://assets/Korean.ttf")];theme.default_font=font
 		for source_font in [font.base_font]+font.fallbacks:
@@ -175,6 +175,14 @@ func option(title:String,items:Array,selected:int,callback:Callable=Callable(),p
 	row.add_child(b)
 	if callback.is_valid():b.item_selected.connect(callback)
 	return b
+func install_check_icons():
+	# Stable white outline in both checked and unchecked states, including disabled.
+	for selected in [false,true]:
+		var mark='<path d="M6 12l4 4 8-9" fill="none" stroke="#76e6c3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' if selected else ''
+		var svg='<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect x="2" y="2" width="20" height="20" rx="3" fill="#172531" stroke="white" stroke-width="2"/>'+mark+'</svg>'
+		var image=Image.new();image.load_svg_from_string(svg)
+		var texture=ImageTexture.create_from_image(image)
+		for key in (["checked","checked_disabled"] if selected else ["unchecked","unchecked_disabled"]):theme.set_icon(key,"CheckBox",texture)
 func check(title:String,value:bool,callback:Callable) -> CheckBox:
 	var b=CheckBox.new();b.text=title;b.button_pressed=value;b.toggled.connect(callback);b.custom_minimum_size.y=40
 	# Keep icon/text in the exact same layout for normal, hover and toggled states.
@@ -424,7 +432,7 @@ func settings():
 	sensitivity_control("저격 조준 마우스 감도",float(game.profile.sniper_mouse_sensitivity),.1,2.,func(v):game.profile.sniper_mouse_sensitivity=v;game.save_profile())
 	sensitivity_control("저격 조준 터치 감도",float(game.profile.sniper_touch_sensitivity),.1,2.,func(v):game.profile.sniper_touch_sensitivity=v;game.save_profile())
 	if TouchControls.supported():
-		check("에임 어시스트",bool(game.profile.touch_aim_assist),func(on):game.profile.touch_aim_assist=on;game.save_profile())
+		check("가까운 적으로 에임 보정",bool(game.profile.touch_aim_assist),func(on):game.profile.touch_aim_assist=on;game.save_profile())
 		check("조준한 적에게 자동 발사",bool(game.profile.touch_auto_fire),func(on):game.profile.touch_auto_fire=on;game.save_profile())
 	label("저격 조준 중 휠로 배율 조절 · SCOUT 4/8× · MONOLITH 4/8/16×. 마지막 배율을 총마다 기억합니다. 모바일은 배율 ± 버튼을 사용합니다.",16)
 	label("화면과 감도 설정은 다음 실행에도 유지됩니다.",14)

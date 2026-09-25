@@ -6,19 +6,23 @@ var fingers:Array=[]
 var materials:Array=[]
 var support=false
 var pistol=false
+var handed_mesh:Node3D
+var contact_state:Array=[]
+var last_pose=Vector2.INF
 var skin=Color("bc947c")
 static var finger_shader:Shader
 const HAND_SCALE=1.32
-const ARM_THICKNESS=2.65 # Previous viewmodel used 1.85; enlarge thickness by 43%.
+const SUPPORT_SCALE=1.45
+const ARM_THICKNESS=2.86 # Gentle increase; the wrist receives the larger change.
 
 func build(is_support:bool,is_pistol:bool,role:int):
 	support=is_support;pistol=is_pistol
 	skin=HumanModel.SKIN_COLORS[role]
 	var fabric=Color("45554e")
-	HumanModel.loft(self,Vector3.ZERO,[Vector4(-.041,.032,.014,0),Vector4(-.025,.041,.016,0),Vector4(.005,.038,.015,0),Vector4(.030,.029,.014,.001),Vector4(.048,.022,.013,.002)],skin,8)
+	HumanModel.loft(self,Vector3.ZERO,[Vector4(-.041,.032,.014,0),Vector4(-.025,.041,.016,0),Vector4(.005,.038,.015,0),Vector4(.030,.034,.024,.001),Vector4(.048,.036,.027,.002)],skin,8)
 	# A fitted back-of-hand panel and a flat wrist cuff, without inflated capsule ends.
 	HumanModel.loft(self,Vector3(0,.018,.006),[Vector4(-.042,.028,.010,0),Vector4(-.02,.034,.012,0),Vector4(.012,.025,.010,0)],fabric,8)
-	HumanModel.loft(self,Vector3(0,.050,0),[Vector4(-.013,.024,.016,0),Vector4(.003,.025,.017,0),Vector4(.015,.025,.017,0)],fabric,8)
+	HumanModel.loft(self,Vector3(0,.050,0),[Vector4(-.013,.036,.027,0),Vector4(.003,.037,.028,0),Vector4(.015,.037,.028,0)],fabric,8)
 	for mesh in get_children():
 		if mesh is MeshInstance3D:
 			var is_skin=mesh.material_override.albedo_color==skin
@@ -30,6 +34,21 @@ render_mode unshaded, cull_disabled;
 uniform vec4 tint : source_color;
 uniform vec3 curl;
 uniform vec3 lengths;
+uniform mat4 hand_to_weapon = mat4(1.0);
+uniform mat4 weapon_to_hand = mat4(1.0);
+uniform int contact_count = 0;
+uniform vec3 contact_min[3];
+uniform vec3 contact_max[3];
+vec3 outside_contact(vec3 p, vec3 lo, vec3 hi) {
+ if(all(greaterThan(p,lo)) && all(lessThan(p,hi))) {
+  vec3 low=p-lo, high=hi-p;
+  float d=min(min(low.x,low.y),min(low.z,min(high.x,min(high.y,high.z))));
+  if(d==low.x)p.x=lo.x; else if(d==high.x)p.x=hi.x;
+  else if(d==low.y)p.y=lo.y; else if(d==high.y)p.y=hi.y;
+  else if(d==low.z)p.z=lo.z; else p.z=hi.z;
+ }
+ return p;
+}
 varying vec3 paint_normal;
 mat3 bend(float angle) { float c=cos(angle),s=sin(angle);return mat3(vec3(1,0,0),vec3(0,c,s),vec3(0,-s,c)); }
 void vertex() {
@@ -37,6 +56,11 @@ void vertex() {
  if(original_y < -lengths.x-lengths.y) { vec3 pivot=vec3(0,-lengths.x-lengths.y,0);mat3 r=bend(curl.z);VERTEX=pivot+r*(VERTEX-pivot);NORMAL=r*NORMAL; }
  if(original_y < -lengths.x) { vec3 pivot=vec3(0,-lengths.x,0);mat3 r=bend(curl.y);VERTEX=pivot+r*(VERTEX-pivot);NORMAL=r*NORMAL; }
  mat3 r=bend(curl.x);VERTEX=r*VERTEX;NORMAL=r*NORMAL;
+ // A geometric grip constraint keeps bent fingertips outside the receiver,
+ // grip and moving magazine. It does not change the weapon or gameplay shape.
+ vec3 p=(hand_to_weapon*vec4(VERTEX,1.0)).xyz;
+ for(int i=0;i<3;i++){if(i<contact_count)p=outside_contact(p,contact_min[i],contact_max[i]);}
+ VERTEX=(weapon_to_hand*vec4(p,1.0)).xyz;
  paint_normal=normalize(MODEL_NORMAL_MATRIX*NORMAL);
 }
 void fragment() {
@@ -60,9 +84,18 @@ void fragment() {
 		var nail=HumanModel.loft(finger,Vector3.ZERO,[Vector4(-length+.003,radius*.32,.0012,radius*.64),Vector4(-length+.010,radius*.65,.0014,radius*.72),Vector4(-length+.016,radius*.45,.001,radius*.72)],skin.lightened(.12),6)
 		var nail_material=material.duplicate();nail_material.set_shader_parameter("tint",skin.lightened(.12));nail.material_override=nail_material;nail.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		fingers.append(finger);materials.append([material,nail_material])
+	# Reflect the anatomical mesh once, independently of wrist orientation.
+	# Actor handedness mirrors both complete arms later for left-handed players.
+	handed_mesh=Node3D.new();handed_mesh.name="AnatomicalHand"
+	var geometry=get_children();add_child(handed_mesh)
+	for node in geometry:remove_child(node);handed_mesh.add_child(node)
+	handed_mesh.scale.x=-1. if support else 1.
 	pose(0.,0.)
 
 func pose(release:float,trigger:float):
+	var state=Vector2(release,trigger)
+	if state.is_equal_approx(last_pose):return
+	last_pose=state
 	var opened=clampf(release,0.,1.)
 	for index in range(5):
 		var curl=Vector3(.78,1.18,.58) if support else Vector3(.72,1.23,.66)
@@ -88,9 +121,25 @@ static func align_wrist(rig:Node3D,palm:Vector3,elbow:Vector3,palm_normal:Vector
 	var y=(elbow-palm).normalized()
 	var z=-(palm_normal-y*palm_normal.dot(y)).normalized()
 	var x=y.cross(z).normalized();z=x.cross(y).normalized()
-	rig.basis=rig.get_parent().basis.inverse()*Basis(x,y,z).scaled(Vector3.ONE*HAND_SCALE)
-	return palm+y*(.058*HAND_SCALE)
+	var size=HAND_SCALE*(SUPPORT_SCALE if rig.support else 1.)
+	rig.basis=rig.get_parent().basis.inverse()*Basis(x,y,z).scaled(Vector3.ONE*size)
+	return palm+y*(.058*size)
 
 static func fit_forearm(arm:Node3D,elbow:Vector3,wrist:Vector3):
 	var direction=wrist-elbow
 	arm.position=elbow;arm.quaternion=Quaternion(Vector3.UP,direction.normalized());arm.scale=Vector3(ARM_THICKNESS,direction.length()/.32,ARM_THICKNESS)
+
+func constrain_contacts(rig_to_weapon:Transform3D,boxes:Array):
+	var state=[rig_to_weapon,boxes]
+	if state==contact_state:return
+	contact_state=state.duplicate(true)
+	var minima=PackedVector3Array();var maxima=PackedVector3Array()
+	for box in boxes:minima.append(box.position-Vector3.ONE*.002);maxima.append(box.end+Vector3.ONE*.002)
+	for index in range(fingers.size()):
+		var transform=rig_to_weapon*handed_mesh.transform*fingers[index].transform
+		for material in materials[index]:
+			material.set_shader_parameter("hand_to_weapon",transform)
+			material.set_shader_parameter("weapon_to_hand",transform.affine_inverse())
+			material.set_shader_parameter("contact_count",boxes.size())
+			material.set_shader_parameter("contact_min",minima)
+			material.set_shader_parameter("contact_max",maxima)
