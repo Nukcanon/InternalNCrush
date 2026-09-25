@@ -24,8 +24,8 @@ func run():
 		var corpse=AnimatedDeath.new();g.add_child(corpse);corpse.build(null,Vector3(0,.01,0),direction,0,0,0.,false,Vector3.ZERO)
 		for i in range(90):await physics_frame
 		var chest_direction=(corpse.model.chest.global_position-corpse.model.hips.global_position).normalized()
-		expect(corpse.position.dot(direction)>.1,"lightweight corpse travels away from impact")
-		expect(chest_direction.dot(direction)>.8,"corpse falls in the impact direction, not backwards")
+		expect(corpse.position.dot(direction)>.1,"lightweight corpse preserves the existing launch away from the shooter")
+		expect(chest_direction.dot(direction)>.8,"falling pose follows the existing away-from-shooter launch")
 		expect(corpse.position.y>-.03 and corpse.position.y<.08,"corpse rests on floor")
 		expect(corpse.find_children("*","RigidBody3D",true,false).is_empty(),"Web death uses no jointed rigid bodies")
 		corpse.free();await physics_frame

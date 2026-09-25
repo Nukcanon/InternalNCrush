@@ -2,7 +2,8 @@ extends SceneTree
 ## Actual bot combat at full HD. Screenshots are generated independently per platform.
 func _initialize():call_deferred("run")
 func run():
-	root.size=Vector2i(1920,1080)
+	root.content_scale_mode=Window.CONTENT_SCALE_MODE_DISABLED;root.content_scale_size=Vector2i.ZERO
+	root.scaling_3d_scale=1.;root.size=Vector2i(1920,1080)
 	DirAccess.make_dir_recursive_absolute("res://assets/menu_slides")
 	var number=0
 	for map_index in [0,7,13]:
@@ -23,7 +24,7 @@ func run():
 			await create_timer(2.).timeout
 			await process_frame;await RenderingServer.frame_post_draw
 			var picture=root.get_texture().get_image();number+=1
-			if picture.is_empty() or picture.save_jpg("res://assets/menu_slides/%02d.jpg"%number,.92)!=OK:quit(1);return
+			if picture.is_empty() or picture.get_size()!=Vector2i(1920,1080) or picture.save_jpg("res://assets/menu_slides/%02d.jpg"%number,.92)!=OK:quit(1);return
 		game.free();camera.free();await process_frame
 	print("MENU_SLIDES_OK count=",number," resolution=1920x1080 style=", "web" if RenderStyle.web() else "native")
 	quit()

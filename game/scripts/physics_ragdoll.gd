@@ -24,6 +24,14 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		for path in OperatorSkin.PATHS:
 			var original=source.rig.get_node(path);model.rig.get_node(path).transform=original.transform
 	elif crouched:model.update_pose(.016,Vector3.ZERO,false,true,true,0.,-1.,0.,0.)
+	# Keep the existing exaggerated launch along bullet travel. Open the limbs
+	# before creating joint rest frames so the flying body lands spread out.
+	model.chest.rotation=Vector3.ZERO
+	model.left_arm.rotation=Vector3(.03,0,-1.1);model.right_arm.rotation=Vector3(.03,0,1.1)
+	model.left_elbow.rotation=Vector3(.10,0,0);model.right_elbow.rotation=Vector3(.10,0,0)
+	for side in [-1,1]:
+		var leg=model.hips.get_node("LeftLeg" if side<0 else "RightLeg")
+		leg.rotation=Vector3(.03,0,side*.28);leg.get_node("Knee").rotation=Vector3(-.08,0,0)
 	var paths={};var joints={}
 	for part in PARTS:paths[model.rig.get_node(part[0])]=part[0]
 	for part in PARTS:
@@ -36,7 +44,7 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		var shape=CollisionShape3D.new();var capsule=CapsuleShape3D.new();capsule.radius=part[3];capsule.height=maxf(part[2],part[3]*2.01);shape.shape=capsule;body.add_child(shape)
 		var physics=PhysicsMaterial.new();physics.friction=.85;physics.bounce=.02;body.physics_material_override=physics
 		followers.append({"bone":bone,"offset":body.global_transform.affine_inverse()*bone.global_transform})
-		body.linear_velocity=launch_velocity(push,velocity);body.angular_velocity=Vector3(push.z,0,-push.x)*.7
+		body.linear_velocity=launch_velocity(push,velocity);body.angular_velocity=Vector3(push.z,0,-push.x).normalized()*1.8
 		bodies.append(body);joints[part[0]]={"body":body,"anchor":bone.global_position}
 	launch_origin=bodies[0].global_position
 	for body in bodies:
@@ -51,7 +59,7 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		if hinge:
 			joint.set_flag(HingeJoint3D.FLAG_USE_LIMIT,true);joint.set_param(HingeJoint3D.PARAM_LIMIT_LOWER,-2.25 if part[0].ends_with("Knee") else -.08);joint.set_param(HingeJoint3D.PARAM_LIMIT_UPPER,.08 if part[0].ends_with("Knee") else 2.35)
 		else:
-			joint.set_param(ConeTwistJoint3D.PARAM_SWING_SPAN,.50 if part[0].ends_with("Chest") else .60 if part[0].ends_with("Head") else 1.15)
+			joint.set_param(ConeTwistJoint3D.PARAM_SWING_SPAN,.50 if part[0].ends_with("Chest") else .60 if part[0].ends_with("Head") else .48 if part[0].ends_with("Arm") else .24)
 			joint.set_param(ConeTwistJoint3D.PARAM_TWIST_SPAN,.42)
 	if impact_point.is_finite():
 		var closest:RigidBody3D=bodies[0]
