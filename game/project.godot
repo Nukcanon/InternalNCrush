@@ -25,3 +25,6 @@ limits/debugger/max_chars_per_second=32768
 
 [threading]
 worker_pool/max_threads=2
+
+[editor]
+import/use_multiple_threads=false
