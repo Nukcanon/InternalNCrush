@@ -20,7 +20,10 @@ func run():
 	physics_frame.connect(drive)
 func drive():
 	if finishing:return
-	# A release file is written only after every peer and the server pass the barrier.\n\t# Check it before disconnect detection: the server may already be shutting down.\n\tif FileAccess.file_exists(control.path_join("release")):finish(true);return\n\tvar now=Time.get_ticks_msec()
+	# A release file is written only after every peer and the server pass the barrier.
+	# Check it before disconnect detection: the server may already be shutting down.
+	if FileAccess.file_exists(control.path_join("release")):finish(true);return
+	var now=Time.get_ticks_msec()
 	if now>next_report:
 		next_report=now+15000;print("CAPACITY_PROGRESS ",label," phase=",g.phase," peers=",g.players.size()," busy=",g.connection_busy," seq=",g.received_sequence)
 	if label!="server" and not ready and g.phase=="lobby" and g.received_sequence>=0:
@@ -44,3 +47,4 @@ func finish(ok:bool):
 	finishing=true
 	if not ok:printerr("CAPACITY_TIMEOUT_OR_LOST_PEER ",label," peers=",g.players.size())
 	g.set_physics_process(false);g.leave_game();g.queue_free();await process_frame;await process_frame;quit(0 if ok else 1)
+

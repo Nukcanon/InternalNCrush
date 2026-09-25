@@ -49,6 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --check-only --script res://tests/network_capacity.gd
           timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_render_split.gd
           timeout 90 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_motion_v115.gd -- --no-save-profile --no-update-check
           timeout 90 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_ragdoll_v115.gd
