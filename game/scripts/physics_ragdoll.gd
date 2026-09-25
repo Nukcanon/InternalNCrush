@@ -30,6 +30,9 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 	elif crouched:model.update_pose(.016,Vector3.ZERO,false,true,true,0.,-1.,0.,0.)
 	# Keep the existing exaggerated launch along bullet travel. Open the limbs
 	# before creating joint rest frames so the flying body lands spread out.
+	var flight=Vector3(push.x,0,push.z).normalized()
+	if flight.length_squared()<.1:flight=Vector3.FORWARD
+	model.hips.quaternion=Quaternion(Vector3.UP,Basis(Vector3.UP,-facing)*flight)
 	model.chest.rotation=Vector3.ZERO
 	model.left_arm.rotation=Vector3(.03,0,-1.1);model.right_arm.rotation=Vector3(.03,0,1.1)
 	model.left_elbow.rotation=Vector3(.10,0,0);model.right_elbow.rotation=Vector3(.10,0,0)
@@ -49,7 +52,7 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		var shape=CollisionShape3D.new();var capsule=CapsuleShape3D.new();capsule.radius=part[3];capsule.height=maxf(part[2],part[3]*2.01);shape.shape=capsule;body.add_child(shape)
 		var physics=PhysicsMaterial.new();physics.friction=.85;physics.bounce=.02;body.physics_material_override=physics
 		followers.append({"bone":bone,"offset":body.global_transform.affine_inverse()*bone.global_transform})
-		body.linear_velocity=launch_velocity(push,velocity);body.angular_velocity=Vector3(push.z,0,-push.x)*.7
+		body.linear_velocity=launch_velocity(push,velocity);body.angular_velocity=Vector3(push.z,0,-push.x)*.18
 		bodies.append(body);joints[part[0]]={"body":body,"anchor":bone.global_position}
 	launch_origin=bodies[0].global_position
 	last_settle_position=launch_origin

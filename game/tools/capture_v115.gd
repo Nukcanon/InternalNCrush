@@ -16,17 +16,16 @@ func run():
 		await create_timer(5.).timeout
 		for i in range(4):
 			var pair=[]
+			var viewpoint=Vector3.INF
 			for attempt in range(450):
 				pair=combat_pair(game)
-				if not pair.is_empty():break
+				if not pair.is_empty():viewpoint=combat_camera(game,pair[0],pair[1],i)
+				if viewpoint.is_finite():break
 				await create_timer(.1).timeout
-			if pair.is_empty():printerr("No active combat available for menu photograph");quit(1);return
+			if pair.is_empty() or not viewpoint.is_finite():printerr("No unobstructed active combat available for menu photograph");quit(1);return
 			var actor=pair[0];var opponent=pair[1]
 			var target=actor.position+Vector3.UP*1.3
-			var facing=(opponent.position-actor.position).normalized()
-			var offset=-facing*4.+facing.cross(Vector3.UP)*(2. if i%2==0 else -2.)+Vector3.UP*1.8
-			var hit=game.ray(target,target+offset,[],1)
-			camera.position=hit.position+(target-hit.position).normalized()*.25 if not hit.is_empty() else target+offset
+			camera.position=viewpoint
 			camera.look_at(target.lerp(opponent.position+Vector3.UP*1.1,.55))
 			await process_frame;await RenderingServer.frame_post_draw
 			var picture=root.get_texture().get_image();number+=1
@@ -49,3 +48,11 @@ func combat_pair(game:Node) -> Array:
 			if not game.ray(actor.eye(),opponent.eye(),[],1).is_empty():continue
 			nearest=distance;best=[actor,opponent]
 	return best
+
+func combat_camera(game:Node,actor:Node3D,opponent:Node3D,index:int) -> Vector3:
+	var target=actor.eye();var facing=(opponent.position-actor.position).normalized();var side=facing.cross(Vector3.UP)
+	var offsets=[-facing*4.+side*2.+Vector3.UP*1.2,-facing*4.-side*2.+Vector3.UP*1.2,side*4.+Vector3.UP,-side*4.+Vector3.UP,-facing*3.+Vector3.UP*.4,facing*2.+side*3.+Vector3.UP*.6]
+	for j in range(offsets.size()):
+		var candidate=target+offsets[(j+index)%offsets.size()]
+		if game.ray(target,candidate,[],1).is_empty() and game.ray(candidate,opponent.eye(),[],1).is_empty():return candidate
+	return Vector3.INF

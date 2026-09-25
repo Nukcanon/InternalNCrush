@@ -37,6 +37,8 @@ func run():
 		var collision=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(.2,2.,8.);collision.shape=box;wall.add_child(collision);walls.append(wall)
 	await physics_frame
 	var rag=PhysicsRagdoll.new();g.add_child(rag);rag.build(null,Vector3.ZERO,Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
+	var torso_axis=(rag.model.chest.global_position-rag.model.hips.global_position).normalized()
+	expect(absf(torso_axis.y)<.15 and torso_axis.dot(Vector3.FORWARD)>.9,"native corpse launches lying along bullet travel")
 	for frame in range(240):await physics_frame
 	expect(rag.bodies.all(func(b):return b.global_position.is_finite() and b.global_position.y>-.3),"wedged ragdoll stays finite and above the floor")
 	expect(rag.settled and rag.bodies.all(func(b):return b.freeze),"wedged ragdoll stops all joint jitter")
