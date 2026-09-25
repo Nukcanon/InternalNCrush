@@ -26,13 +26,12 @@ void fragment(){
  float relief=clamp(lum/max(.04,mid),.55,1.6);
  ALBEDO=COLOR.rgb*mix(1.,relief,kind==3.?.55:.32);
  if(kind==0.){
-   vec3 skin=texture(skin_texture,UV).rgb;
-   if(OUTPUT_IS_SRGB){skin=pow(skin,vec3(2.2));}
-   float grey=dot(skin,vec3(.2126,.7152,.0722));
-   ALBEDO=mix(skin,vec3(grey),.20)*vec3(.94,1.,1.02)*.72;
+   // Flat authored skin palette removes photographic pores and mottling.
+   ALBEDO=COLOR.rgb;
  }
  ROUGHNESS=clamp(UV2.x+(relief-1.)*.10,.58,.97);
- METALLIC=0.;SPECULAR=kind==0.?.24:.14;
+ METALLIC=0.;SPECULAR=kind==0.?0.:.14;
+ if(kind==0.){ROUGHNESS=1.;}
 }
 """
 	var human=ShaderMaterial.new();human.shader=shader

@@ -54,7 +54,9 @@ static func confirm(game:Node,id:int) -> bool:
 		if game.devices[did].owner==id and game.devices[did].kind==kind:owned.append(did)
 	if kind=="cover" and owned.size()>=2:game.feedback(id,"","엄폐물은 두 개까지 설치할 수 있습니다.");return false
 	if kind=="turret":
-		for did in owned:game.remove_device(did)
+		for did in owned:
+			game.event_fx.rpc("turret_break",game.devices[did].pos+Vector3.UP*.85,Vector3.ZERO,id)
+			game.remove_device(did)
 	var did=game.add_device(kind,preview.pos,id,AbilityBalance.turret_hp(1) if kind=="turret" else AbilityBalance.COVER_HP[int(p.gadget)])
 	game.devices[did].disabled=game.clock+1.5
 	if kind=="turret":p.skill_ready=game.clock+AbilityBalance.COOLDOWNS[3]

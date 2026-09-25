@@ -36,5 +36,14 @@ static func apply(node:Node3D,device:Dictionary,local_id:int):
 	var key="%s:%s:%s"%[owned,device.team,device.get("level",1)]
 	if node.get_meta("silhouette_state","")==key:return
 	node.set_meta("silhouette_state",key)
-	for mesh in node.find_children("*","MeshInstance3D",true,false):
-		mesh.material_overlay=material_for(int(device.team),mesh.get_aabb().grow(.025)) if owned else null
+	var meshes=node.find_children("*","MeshInstance3D",true,false)
+	# Union the whole assembly in root space, then express it in each mesh space.
+	# A per-part box mistakes a neighbouring part for a wall.
+	var bounds=AABB();var first=true
+	for mesh in meshes:
+		var relative=node.global_transform.affine_inverse()*mesh.global_transform
+		var part=relative*mesh.get_aabb()
+		bounds=part if first else bounds.merge(part);first=false
+	for mesh in meshes:
+		var relative=mesh.global_transform.affine_inverse()*node.global_transform
+		mesh.material_overlay=material_for(int(device.team),relative*bounds.grow(.06)) if owned else null
