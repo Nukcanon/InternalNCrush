@@ -40,5 +40,8 @@ def main():
                 else:p.terminate()
                 p.wait(timeout=10)
         for log in logs:log.close()
+        for role in ['directory','host','client']:
+            path=OUT/(role+'.log')
+            if path.exists():print(role+':\n'+path.read_text(encoding='utf-8',errors='replace'))
 
 if __name__=='__main__':main()

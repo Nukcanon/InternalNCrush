@@ -117,4 +117,6 @@ jobs:
         if: always()
         with:
           name: functional-validation
-          path: validation/functional-v11/*.log
+          path: |
+            validation/functional-v11/*.log
+            validation/webrtc-v11/*.log
