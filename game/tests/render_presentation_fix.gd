@@ -41,7 +41,7 @@ func run():
 	turret.get_node("TurretHead").rotation.y=1.2
 	DeploymentSilhouette.apply(turret,{"owner":1,"team":0,"level":1},1);await shot("turret-rotated-overlay")
 	DeploymentSilhouette.apply(turret,{"owner":2,"team":0,"level":1},1);await shot("turret-rotated-plain")
-	MeshFactory.box(world,Vector3(.5,1.,-1.2),Vector3(2.,3.,.15),Color("a0a0a0"))
+	MeshFactory.box(world,Vector3(1.3,1.6,-2.),Vector3(2.,3.,.15),Color("a0a0a0"))
 	await shot("turret-wall-plain")
 	DeploymentSilhouette.apply(turret,{"owner":1,"team":0,"level":1},1);await shot("turret-wall-overlay")
 	world.free();await process_frame;print("PRESENTATION_RENDER_OK");quit()

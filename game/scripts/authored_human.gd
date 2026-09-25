@@ -23,8 +23,9 @@ static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trouse
 				var surface_kind=0 if kind==0 else 2 if kind in [3,4] else 1
 				# Muted lip/ear coloration is part of the surface, never floating spheres.
 				if kind==0 and p[1]>1.48:
-					var lip=exp(-pow(float(q[0])/.025,4)-pow((float(q[1])+.050)/.011,4))*smoothstep(.065,.10,-float(q[2]))
-					color=color.lerp(Color("946b60") if which not in [2,4] else Color("68483f"),lip*.53)
+					if p[1]>1.53:surface_kind=4 # Face palette; leave other skin materials intact.
+					var lip=exp(-pow(float(q[0])/.025,4)-pow((float(q[1])+.027)/.003,4))*smoothstep(.065,.10,-float(q[2]))
+					color=color.lerp(Color("946b60") if which not in [2,4] else Color("68483f"),lip*.30)
 					var cheek=exp(-pow((absf(q[0])-.045)/.035,2)-pow((q[1]+.008)/.03,2))*smoothstep(.04,.08,-q[2])
 					color=color.lerp(color*Color(1.,.94,.91),cheek*.28)
 					var hairline=.091 if q[2]<-.040 else .050 if absf(q[0])>.055 else .004
