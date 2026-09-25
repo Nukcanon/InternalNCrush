@@ -1,0 +1,74 @@
+name: Verify public 1.1.4 files and practice UI
+on:
+  push:
+    branches: ['release/1.1.4']
+    paths: ['.github/workflows/verify-live.yml']
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          pip install playwright Pillow
+          python -m playwright install --with-deps chromium
+      - name: Verify public files and launch practice using its menu button
+        shell: python
+        run: |
+          import hashlib,json,urllib.request,concurrent.futures,io
+          from pathlib import Path
+          from PIL import Image,ImageChops
+          from playwright.sync_api import sync_playwright
+          out=Path('out');out.mkdir()
+          base='https://nukcanon.github.io/nukcanon/'
+          def fetch(url):
+              with urllib.request.urlopen(url,timeout=120) as r:return r.read()
+          manifest=json.loads(fetch(base+'play/build.json'))
+          assert manifest['version']=='1.1.4'
+          def check(item):
+              data=fetch(base+'play/'+item['path'])
+              assert len(data)==item['bytes'] and hashlib.sha256(data).hexdigest()==item['sha256'],item['path']
+              return item['path']
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:checked=list(pool.map(check,manifest['files']))
+          assert json.loads(fetch(base+'internal-n-crush-version.json'))['version']=='1.1.4'
+          html=fetch(base+'internal-n-crush.html').decode()
+          assert 'InternalNCrush_Windows_v1.1.4.zip' in html and 'InternalNCrush_NAS_Linux_v1.1.4.zip' in html
+          release='https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/'
+          sums=fetch(release+'SHA256SUMS.txt').decode()
+          assets=[]
+          for line in sums.splitlines():
+              digest,name=line.split()
+              data=fetch(release+name)
+              assert hashlib.sha256(data).hexdigest()==digest,name
+              assets.append(dict(name=name,sha256=digest,bytes=len(data)))
+          errors=[];logs=[]
+          with sync_playwright() as p:
+              browser=p.chromium.launch(args=['--enable-unsafe-swiftshader'])
+              page=browser.new_page(viewport={'width':1280,'height':720})
+              page.on('pageerror',lambda e:errors.append(str(e)))
+              page.on('console',lambda m:logs.append(m.text))
+              page.goto(base+'play/index.html')
+              page.locator('#start').click()
+              page.locator('#status').wait_for(state='detached',timeout=120000)
+              page.wait_for_timeout(5000)
+              before=page.screenshot(path=str(out/'live-menu.png'))
+              # Practice button position observed in the 1280x720 rendered menu.
+              page.mouse.click(1090,382)
+              page.wait_for_timeout(8000)
+              after=page.screenshot(path=str(out/'live-practice.png'))
+              a=Image.open(io.BytesIO(before)).convert('RGB').crop((800,95,1190,580))
+              b=Image.open(io.BytesIO(after)).convert('RGB').crop((800,95,1190,580))
+              difference=ImageChops.difference(a,b)
+              changed=sum(any(pixel) for pixel in difference.getdata())/(a.width*a.height)
+              assert changed>.75,'Practice click did not change the menu panel'
+              assert not errors and not any('SCRIPT ERROR' in line for line in logs),(errors,logs)
+              browser.close()
+          result=dict(version='1.1.4',web_files=checked,web_bytes=sum(x['bytes'] for x in manifest['files']),assets=assets,practice_menu_clicked=True,menu_panel_changed_ratio=changed,page_errors=errors)
+          (out/'live-verification.json').write_text(json.dumps(result,indent=2))
+          (out/'browser.log').write_text('\n'.join(logs))
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-live-verification
+          path: out/*
