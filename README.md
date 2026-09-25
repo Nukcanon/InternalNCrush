@@ -1,4 +1,4 @@
-# Internal N Crush 1.1.3
+# Internal N Crush 1.1.4
 
 Windows / Web tactical FPS with six operators, 31 competitive arenas and a four-level outdoor practice range. Godot 4.4.1. The player hosting a room runs the authoritative game; the lightweight lobby only provides room discovery and WebRTC signaling.
 

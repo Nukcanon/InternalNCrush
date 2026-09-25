@@ -1,183 +1,79 @@
 {
-  "version": "1.1.3",
-  "published_version": "1.1.3",
-  "previous_live_version": "1.1.2",
+  "version": "1.1.4",
+  "published_version": "1.1.4",
+  "previous_live_version": "1.1.3",
   "publication_state": "published_and_verified",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": "75b7db7ce49e5fd6653cc46b686114c4de6881c0",
-  "runtime_source_commit": "75b7db7ce49e5fd6653cc46b686114c4de6881c0",
+  "source_commit": "3e87f868e10cefa98db9723096fcfe4b55f25710",
+  "runtime_source_commit": "3e87f868e10cefa98db9723096fcfe4b55f25710",
+  "integration_commit": "9426a9b004488c715eb2bde9ca1f2f24554a3d71",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.1.4",
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
   "web_play_url": "https://nukcanon.github.io/nukcanon/play/",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.1.3",
-  "verified_at_utc": "2026-09-24T21:30:02.550899+00:00",
+  "verified_at_utc": "2026-09-25T04:57:42.203561+00:00",
+  "build_run": 36094461263,
   "build_result": "success",
-  "build_run": 36033303552,
-  "build_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/36033303552",
-  "docker_result": "success",
-  "docker_run": 36033303427,
-  "docker_source_commit": "75b7db7ce49e5fd6653cc46b686114c4de6881c0",
-  "docker_run_url": "https://github.com/Nukcanon/InternalNCrush/actions/runs/36033303427",
-  "site_commit": "82648afcd118dc2417076e1fbe3cdfc1b229bb44",
-  "pages_verified": true,
+  "backend_run": 36094461238,
+  "backend_result": "success",
+  "packaged_execution_run": 36095815353,
+  "packaged_execution_result": "success",
+  "public_verification_run": 36096319950,
+  "public_verification_result": "success",
+  "site_commit": "9970d05b091d1a6dc6bb1547b470c33725e44894",
+  "pages_run": 36096028101,
   "pages_result": "success",
-  "pages_run": 36061684402,
-  "pages_run_url": "https://github.com/Nukcanon/nukcanon/actions/runs/36061684402",
-  "release_asset": {
-    "name": "InternalNCrush_Windows_v1.1.3.zip",
-    "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.3/InternalNCrush_Windows_v1.1.3.zip",
-    "sha256": "cfe73ab305769fba9ec64f9681bff648f16c6c5d8cce1eae669bc799664ab8f3",
-    "bytes": 119703815,
-    "anonymous_download_hash_verified": true,
-    "files": 21,
-    "download_hash_verified": true
-  },
-  "nas_asset": {
-    "name": "InternalNCrush_NAS_Linux_v1.1.3.zip",
-    "bytes": 15365,
-    "sha256": "676a32d7fb2e91e52bc237cd85d40b4c1f0f7ade237fea7b5e39ed3db39d1b01",
-    "files": 14,
-    "operator_env_included": false,
-    "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.3/InternalNCrush_NAS_Linux_v1.1.3.zip",
-    "anonymous_download_hash_verified": true
-  },
+  "assets": [
+    {
+      "name": "InternalNCrush_NAS_Linux_v1.1.4.zip",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_NAS_Linux_v1.1.4.zip",
+      "bytes": 15306,
+      "sha256": "060018447730669547d8bb1789dcee91bf5e64681d5d84c76a5bacb5c66ecf25",
+      "anonymous_download_hash_verified": true
+    },
+    {
+      "name": "InternalNCrush_Web_v1.1.4.zip",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_Web_v1.1.4.zip",
+      "bytes": 30837771,
+      "sha256": "b920194a6402e574fa8886a94c2bb33d585052b7680cb6115baecb90b3d68c29",
+      "anonymous_download_hash_verified": true
+    },
+    {
+      "name": "InternalNCrush_Windows_v1.1.4.zip",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_Windows_v1.1.4.zip",
+      "bytes": 119705653,
+      "sha256": "a39ad99cf193991ca5eceff634cd8c48c7f540ae8ccb7a6e16a0372d5f137f6d",
+      "anonymous_download_hash_verified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/SHA256SUMS.txt",
+      "bytes": 298,
+      "sha256": "f4b006ba4615457ab6aa1bceffbf43bb28e93461d7c9f124f5caaf1f0e2ae675"
+    }
+  ],
   "web_build": {
-    "bytes": 67401185,
     "files": 19,
+    "bytes": 67403873,
     "threads": false,
-    "manifest": "https://nukcanon.github.io/nukcanon/play/build.json",
     "all_published_hashes_verified": true
   },
   "checks": {
-    "functional": "3581/3581 final source CI; 25 suites",
-    "touch_input": "23/23",
-    "spawn_exits": "48/48 actual simulated movement across 12 defusal maps, both rounds and teams",
-    "web_collision_parity": "32/32 original and lightweight map collision signatures match",
-    "network_capacity": "32 independent clients with fresh full-state barrier",
-    "network_lifecycle": "8 peers, reconnect/server restart, staggered start",
-    "network_props_doors_rotation": "passed, including late peers",
-    "webrtc": "actual host/client snapshots and disconnect passed",
-    "packaged_windows_webrtc": true,
-    "windows_modes": [
-      {
-        "mode": "practice",
-        "exit": 0,
-        "test_exit": [
-          "TEST_EXIT players=10 phase=combat"
-        ],
-        "known_shutdown_texture_warning": true
-      },
-      {
-        "mode": "training",
-        "exit": 0,
-        "test_exit": [
-          "TEST_EXIT players=8 phase=combat"
-        ],
-        "known_shutdown_texture_warning": true
-      },
-      {
-        "mode": "network-client-headless-host",
-        "exit": 0,
-        "test_exit": [
-          "TEST_EXIT players=2 phase=combat"
-        ],
-        "known_shutdown_texture_warning": false
-      },
-      {
-        "mode": "network-client-window-host",
-        "exit": 0,
-        "test_exit": [
-          "TEST_EXIT players=2 phase=combat"
-        ],
-        "known_shutdown_texture_warning": false
-      }
-    ],
-    "nas_setup": "3/3 local tests",
-    "docker_tls": "Linux Compose HTTPS/WSS and certificate rejection checks passed",
-    "worker_contract": "CI passed",
-    "site": "All 19 manifest files byte-verified; public v1.1.3 menu and practice launched; no browser error/warning logs",
-    "new_regressions": "92/92 including damage zones, body proportions, shields, prop batching and 28 baked weapon sockets/reloads",
-    "occlusion_gpu": "visible delta0, hidden delta289.7059, unauthorized delta0; actual human self-occlusion delta0",
-    "capacity": "32 independent clients passed locally and in final CI; first CI attempt lost a peer without a game error log"
+    "functional": "3722/3722; 27 suites",
+    "touch": "23/23",
+    "network": "32 clients, reconnect, restart, late join, props and map rotation passed",
+    "webrtc": "real host/client snapshots and disconnect passed",
+    "windows": "Packaged EXE on Windows headless: practice 10 players, training 8 players, loopback 2 players; all combat and exit 0",
+    "graphics": "412 Linux rendered frames; turret visible/rotated RGB delta 0; wall occlusion delta 26684 pixels",
+    "web": "Public Chromium menu and actual practice entry confirmed; no page or script errors"
   },
   "public_lobby_url": null,
-  "cloudflare_deployment": "not deployed; account authentication required",
-  "benchmark": [
-    {
-      "draw_calls": 318.0,
-      "frames": 4182,
-      "graphics": 1,
-      "map": 13,
-      "max_ms": 151.374,
-      "mean_ms": 2.87005930176949,
-      "objects": 641.0,
-      "p95_ms": 4.667,
-      "physics_bodies": 16.0,
-      "physics_ms": 3.131,
-      "players": 8,
-      "primitives": 124310.0,
-      "process_ms": 3.059,
-      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
-      "resolution": "(1024, 680)"
-    },
-    {
-      "draw_calls": 617.0,
-      "frames": 2341,
-      "graphics": 1,
-      "map": 0,
-      "max_ms": 133.64,
-      "mean_ms": 5.13320504058095,
-      "objects": 1011.0,
-      "p95_ms": 9.718,
-      "physics_bodies": 60.0,
-      "physics_ms": 67.543,
-      "players": 32,
-      "primitives": 628732.0,
-      "process_ms": 50.215,
-      "renderer": "NVIDIA GeForce RTX 4080 SUPER",
-      "resolution": "(1024, 680)"
-    }
-  ],
-  "benchmark_quality": "medium",
-  "benchmark_source_commit": "75b7db7ce49e5fd6653cc46b686114c4de6881c0",
   "remaining": [
-    "GTX960/integrated GPUs and physical phones/tablets including iOS Safari, multi-PC external LAN/WAN and ARM NAS tests",
-    "First v1.1.3 CI attempt lost a peer during 32-process startup without a game error log; same source passed local capacity and rerun. Exact environmental/runtime cause not established.",
-    "Long 32-player sessions and human competitive win-rate playtests",
-    "Compatibility shutdown GL texture warnings and intermittent frame spikes",
-    "First Windows firewall prompt in a clean installation",
-    "Public lobby deployment/account; operator TURN where NAT requires it; host migration, accounts/MMR and commercial anti-cheat are not implemented"
+    "Physical low-end GPUs and mobile devices, iOS Safari, external WAN/NAT/TURN and long multiplayer sessions were not tested.",
+    "Windows packaged tests were headless; graphical checks used Linux and Chromium SwiftShader.",
+    "Walls intersecting the conservative turret assembly bounds may suppress some silhouette.",
+    "Reload visual checks cover sampled poses and camera angles, not every possible intersection.",
+    "Existing NAS operators must update their directory to 1.1.4. No public directory has been deployed."
   ],
-  "web_performance_sample": {
-    "test": "instrumented local Web build, fixed map13, 7bots+host, IAB1280x720",
-    "hardware": "RTX4080SUPER host; not GTX960 or a physical mobile device",
-    "weapon_creation_before_ms": [
-      50,
-      75
-    ],
-    "weapon_creation_after_ms": [
-      0.1,
-      6
-    ],
-    "note": "ranges of observed build function costs, not complete frame times; sporadic process/physics spikes still observed",
-    "fps_samples_after": [
-      57,
-      54,
-      57,
-      51,
-      57,
-      57,
-      57,
-      54,
-      56,
-      47,
-      55,
-      57,
-      57,
-      57,
-      56
-    ],
-    "physical_mobile_tested": false
-  },
-  "benchmark_note": "Native RTX4080SUPER 1024x680, 12-second samples, random match behavior; not a controlled FPS uplift or low-end/Web benchmark."
+  "report": "game/docs/TEST_REPORT_V114.md"
 }
