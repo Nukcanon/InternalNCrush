@@ -32,10 +32,11 @@ void vertex() {
 }
 void fragment() {
     float light = dot(normalize(world_normal), normalize(vec3(0.35, 0.85, 0.4)));
-    float band = light < 0.05 ? 0.52 : (light < 0.58 ? 0.76 : 1.0);
-    float rim = abs(dot(normalize(NORMAL), normalize(VIEW)));
-    float ink = smoothstep(0.08, 0.20, rim);
-    ALBEDO = mix(paint * 0.20, paint * (dynamic_lighting ? 1.0 : band), ink);
+    float band = light < 0.05 ? 0.70 : (light < 0.58 ? 0.86 : 1.0);
+    // Grazing-angle ink darkened entire distant floors, not just silhouettes.
+    // Keep paint independent of camera angle and guarantee ambient readability.
+    ALBEDO = paint * (dynamic_lighting ? 0.72 : band);
+    EMISSION = dynamic_lighting ? paint * 0.28 : vec3(0.0);
 }
 void light() {
     float d = max(dot(NORMAL, LIGHT), 0.0);
@@ -54,3 +55,4 @@ static func vertex_material() -> ShaderMaterial:
 static func color_material(color:Color) -> ShaderMaterial:
 	if not colors.has(color):colors[color]=make(color,false)
 	return colors[color]
+

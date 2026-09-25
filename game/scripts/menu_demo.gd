@@ -8,7 +8,7 @@ var multiplayer_path:NodePath
 var render_accumulator=0.
 func _ready():
 	stretch=true;stretch_shrink=1;mouse_filter=Control.MOUSE_FILTER_IGNORE
-	viewport=SubViewport.new();viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.handle_input_locally=false;viewport.gui_disable_input=true;viewport.audio_listener_enable_3d=false;add_child(viewport)
+	viewport=SubViewport.new();viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED;viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.handle_input_locally=false;viewport.gui_disable_input=true;viewport.audio_listener_enable_3d=false;add_child(viewport)
 	GraphicsOptions.apply_viewport(viewport)
 	multiplayer_path=viewport.get_path();get_tree().set_multiplayer(SceneMultiplayer.new(),multiplayer_path)
 	match_game=load("res://scripts/game.gd").new();match_game.demo_mode=true;viewport.add_child(match_game)
@@ -29,3 +29,4 @@ func _exit_tree():
 	# Remove only this override. Registering the shared API here rewrites its
 	# RPC root to a disappearing viewport and breaks subsequent online matches.
 	if not multiplayer_path.is_empty():get_tree().set_multiplayer(null,multiplayer_path)
+

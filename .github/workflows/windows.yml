@@ -1,4 +1,4 @@
-name: Build and replace Internal N Crush 1.1.4
+name: Build and publish Internal N Crush 1.1.5
 on:
   push:
     paths:
@@ -41,7 +41,8 @@ jobs:
         run: |
           set -euo pipefail
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
+          timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_render_split.gd
+          timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_arenas.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
       - name: Refresh cartoon equipment thumbnails
@@ -57,6 +58,13 @@ jobs:
         with:
           name: presentation-review
           path: validation/presentation-fix/*.png
+      - name: Capture native menu screenshots
+        run: |
+          set -euo pipefail
+          timeout 600 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/capture_v115.gd -- --no-save-profile --no-update-check
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
+      - name: Verify audible combat and deployment feedback
+        run: timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/test_audio_feedback.gd -- --no-save-profile --no-update-check
       - name: 32-client capacity with paced startup
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
@@ -100,11 +108,22 @@ jobs:
           python3 web/prepare_lightweight.py
           mkdir -p web/build
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd
+          timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_models.gd
+          timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd
+          timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path web/staging/game --script res://tools/build_thumbnails.gd
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tests/test_render_split.gd
+          timeout 600 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path web/staging/game --script res://tools/capture_v115.gd -- --no-save-profile --no-update-check
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
           web_name="game-${GITHUB_SHA:0:12}"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
           mv "web/build/$web_name.html" web/build/index.html
           python3 web/package_web.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: graphics-v115
+          path: |
+            game/assets/menu_slides/*.jpg
+            web/staging/game/assets/menu_slides/*.jpg
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Web
@@ -112,15 +131,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.1.4.zip
+          path: out/InternalNCrush_Windows_v1.1.5.zip
       - uses: actions/upload-artifact@v4
         with:
           name: release-files
           if-no-files-found: error
           path: |
-            out/InternalNCrush_Windows_v1.1.4.zip
-            out/InternalNCrush_Web_v1.1.4.zip
-            out/WEB_RELEASE_v1.1.4.json
+            out/InternalNCrush_Windows_v1.1.5.zip
+            out/InternalNCrush_Web_v1.1.5.zip
+            out/WEB_RELEASE_v1.1.5.json
             out/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -129,7 +148,7 @@ jobs:
           path: |
             validation/functional-v11/*.log
             validation/webrtc-v11/*.log
-  replace-release:
+  publish-release:
     needs: windows
     if: github.ref == 'refs/heads/main' && github.repository == 'Nukcanon/InternalNCrush'
     runs-on: ubuntu-latest
@@ -140,14 +159,15 @@ jobs:
         with:
           name: release-files
           path: release-files
-      - name: Replace existing 1.1.4 downloads after successful tests
+      - name: Create draft 1.1.5 downloads after successful tests
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           cd release-files
           sha256sum --check SHA256SUMS.txt
-          gh release view internal-n-crush-v1.1.4 --repo "$GITHUB_REPOSITORY" >/dev/null
-          gh release upload internal-n-crush-v1.1.4 InternalNCrush_Windows_v1.1.4.zip InternalNCrush_Web_v1.1.4.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          gh release create internal-n-crush-v1.1.5 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.1.5" --notes "Restore native graphics and live menu; improve Web floor readability and screenshot backgrounds. Godot functional, touch and network validation passed." --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.1.5 InternalNCrush_Windows_v1.1.5.zip InternalNCrush_Web_v1.1.5.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
-          gh release upload internal-n-crush-v1.1.4 WEB_RELEASE_v1.1.4.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.1.5 WEB_RELEASE_v1.1.5.json --clobber --repo "$GITHUB_REPOSITORY"
+

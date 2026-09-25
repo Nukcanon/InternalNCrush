@@ -119,4 +119,5 @@ static func build(ui:Node):
 	ui.option("최대 프레임",["제한 없음","30 FPS","60 FPS","90 FPS","120 FPS"],maxi(0,[0,30,60,90,120].find(int(profile.frame_limit))),func(i):profile.frame_limit=[0,30,60,90,120][i];apply_settings(ui.game))
 	ui.label("자동은 전투 중 성능을 확인해 효과를 먼저 조절합니다. 선명도는 85% 아래로 내리지 않으며, 여유가 생기면 복원합니다. 항목을 직접 바꾸면 사용자 설정으로 전환합니다. 광원을 끄면 그림자도 꺼집니다.",17)
 	ui.label("모든 품질에서 가까운 캐릭터·무기·지형의 기본 형태와 카툰 색상을 유지합니다. 연습장·봇·킬 리플레이·5개 모드와 연막의 전술적 효과는 동일합니다.",17)
-	ui.button("자동 설정으로 복원",func():preset.select(0);preset.item_selected.emit(0))
+	ui.button("기본설정으로 복원",func():profile.web_render_scale=1.;profile.web_options={};profile.frame_limit=60;preset.select(0);preset.item_selected.emit(0))
+

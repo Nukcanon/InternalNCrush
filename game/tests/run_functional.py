@@ -7,7 +7,7 @@ import sys
 
 PROJECT = Path(__file__).resolve().parents[1]
 OUT = PROJECT.parent / "validation/functional-v11"
-TESTS = ["rules", "regressions", "ai_aim", "bots", "v04", "v05", "kill_feed", "v06", "v07", "v1", "v101", "vertical_traversal", "v102", "v103", "arena_flow_v103", "network_security", "lobby_menu", "combat_v104", "presentation_v104", "v11", "v111", "abilities_v111", "spawn_exits", "v112", "v113", "turret_replacement", "silhouette_assembly", "ballistics", "cartoon_review", "web_graphics"]
+TESTS = ["rules", "regressions", "ai_aim", "bots", "v04", "v05", "kill_feed", "v06", "v07", "v1", "v101", "vertical_traversal", "v102", "v103", "arena_flow_v103", "network_security", "lobby_menu", "combat_v104", "presentation_v104", "v11", "v111", "abilities_v111", "spawn_exits", "v112", "v113", "turret_replacement", "silhouette_assembly", "ballistics", "cartoon_review", "web_graphics", "render_split", "motion_v115"]
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
@@ -34,3 +34,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+

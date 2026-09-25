@@ -64,6 +64,7 @@ var turn_sway=0.
 var shot_serial=0
 var fall_peak=0.
 var falling=false
+const STEP_HEIGHT=.28
 func _ready():
 	motion_seed=fposmod(float(pid)*2.39996,TAU)
 	collision_layer=2;collision_mask=1|4|8
@@ -178,6 +179,7 @@ func simulate(dt:float,now:float,can_move:bool):
 	grounded_jump=bool(input_state.jump)
 	was_grounded=is_on_floor()
 	var before=global_position
+	if can_move:try_low_step(dt)
 	move_and_slide()
 	# Collision recovery can nudge a stationary spawn sideways. That is not a
 	# walking step, especially while movement is disabled during round setup.
@@ -202,6 +204,26 @@ func simulate(dt:float,now:float,can_move:bool):
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
 	global_position.x=clampf(global_position.x,-bound.x+2,bound.x-2);global_position.z=clampf(global_position.z,-bound.y+2,bound.y-2)
 	if global_position.y< (-12. if game.arena and game.arena.vertical_map else -4.):global_position.y=.2;velocity.y=0
+func try_low_step(dt:float) -> bool:
+	# Only a grounded walk may step: never climb in mid-air or cancel a jump.
+	if not is_on_floor() or velocity.y>0. or input_state.jump:return false
+	var motion=Vector3(velocity.x,0,velocity.z)*dt
+	if motion.length_squared()<.000001:return false
+	var obstacle=KinematicCollision3D.new()
+	if not test_move(global_transform,motion,obstacle):return false
+	if obstacle.get_collider() is RigidBody3D:return false # Push small props instead.
+	if obstacle.get_normal().y>=cos(floor_max_angle):return false
+	if test_move(global_transform,Vector3.UP*STEP_HEIGHT):return false
+	var raised=global_transform;raised.origin.y+=STEP_HEIGHT
+	if test_move(raised,motion):return false
+	raised.origin+=motion
+	var landing=KinematicCollision3D.new()
+	if not test_move(raised,Vector3.DOWN*(STEP_HEIGHT+.02),landing):return false
+	if landing.get_collider() is RigidBody3D or landing.get_normal().y<cos(floor_max_angle):return false
+	var rise=STEP_HEIGHT+landing.get_travel().y
+	if rise<=.005 or rise>STEP_HEIGHT:return false
+	global_position.y+=rise+.002
+	return true
 func update_spread(dt:float,now:float):
 	if not game.players.has(pid):return
 	var p=game.players[pid];var w=game.current_weapon(p)
@@ -309,3 +331,4 @@ func show_shot(at:float) -> bool:
 		var source=gun.to_global(Vector3(.09,.01,-.16))
 		game.combat_fx.eject_case(source,camera.global_basis.x,camera.global_basis.y,global_position.y,shot_serial+pid)
 	return true
+

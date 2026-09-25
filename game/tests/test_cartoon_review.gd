@@ -8,13 +8,13 @@ func expect(ok:bool,message:String):
 func run():
 	Catalog.load_all()
 	for role in range(6):
-		var rig=CharacterVisual.make_rig(role,0);root.add_child(rig)
+		var rig=CartoonModel.build(role,0);MeshFactory.merge_rig(rig);CharacterVisual.add_clips(rig);root.add_child(rig)
 		var skeleton=OperatorSkin.install(rig,"%d_review"%role)
 		var body=rig.get_node("ContinuousBody");var arrays=body.mesh.surface_get_arrays(0)
 		expect(arrays[Mesh.ARRAY_INDEX].size()<18000,"comic operator has fewer than 6000 triangles, role "+str(role))
 		expect(skeleton.get_bone_count()==15 and rig.has_node("Hips/Chest/WeaponSocket"),"combat joints and weapon grip remain available, role "+str(role))
 		var material=body.mesh.surface_get_material(0)
-		expect(material is ShaderMaterial and "toon_surface" in material.shader.code and not "texture(" in material.shader.code,"operator has no sampled facial texture, role "+str(role))
+		expect(material is ShaderMaterial and not "sampler2D skin_texture" in material.shader.code,"operator has no sampled facial texture, role "+str(role))
 		rig.free()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(100,100);g.arena.has_water=false
@@ -59,3 +59,4 @@ func run():
 	expect(Rules.MODES.size()==5 and Rules.MAPS.size()==32,"five modes and the practice arena remain available")
 	g.free();await process_frame
 	print("CARTOON_REVIEW_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)
+

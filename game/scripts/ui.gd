@@ -196,9 +196,11 @@ func menu():
 func ensure_menu_background():
 	if is_instance_valid(background):return
 	background=Control.new();background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);root.add_child(background)
-	if DisplayServer.get_name()!="headless" and not OS.has_feature("web") and game.profile.get("menu_animation",false):
+	if DisplayServer.get_name()!="headless" and not OS.has_feature("web") and game.profile.get("menu_animation",true):
 		var live=load("res://scripts/menu_demo.gd").new();live.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(live)
-	var shade=ColorRect.new();shade.color=Color(.015,.04,.065,.36);shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(shade)
+	else:
+		var slides=load("res://scripts/menu_slideshow.gd").new();slides.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(slides)
+	var shade=ColorRect.new();shade.color=Color(.015,.04,.065,.28);shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(shade)
 	var brand=Label.new();brand.text="NUKCANON  /  TACTICAL LAN FPS";brand.position=Vector2(68,102);brand.add_theme_font_size_override("font_size",19);brand.modulate=Color("7be4cd");background.add_child(brand)
 	var title=Label.new();title.text="INTERNAL\nN CRUSH";title.position=Vector2(62,166);title.add_theme_font_size_override("font_size",64);background.add_child(title)
 	var intro=Label.new();intro.text="내부망에서 자유롭게 하는 게임\n6개 병과 · 31개 전장 · 5개 게임 모드";intro.position=Vector2(68,400);intro.add_theme_font_size_override("font_size",22);intro.modulate=Color("d6e5ed");background.add_child(intro)
@@ -875,3 +877,4 @@ func build_touch_main_actions():
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)
 		for item in items:button(item[0],item[1],row).size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	label("왼손 이동 · 오른손 화면 조준 · 달리기 버튼으로 켜기/끄기",25)
+

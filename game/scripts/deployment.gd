@@ -62,7 +62,7 @@ static func confirm(game:Node,id:int) -> bool:
 	if kind=="turret":p.skill_ready=game.clock+AbilityBalance.COOLDOWNS[3]
 	else:p.gadget_count-=1;p.gadget_ready=game.clock+.8
 	p.placing="";p.fire_ready=game.clock+.35;p.builds=int(p.get("builds",0))+1
-	game.effect.rpc("deploy",preview.pos,Vector3.ZERO,id)
+	game.event_fx.rpc("deploy",preview.pos,Vector3.ZERO,id)
 	game.feedback(id,"","포탑 설치 · 가까이에서 F로 업그레이드" if kind=="turret" else "엄폐물 설치 완료")
 	return true
 
@@ -74,3 +74,4 @@ static func nearby_turret(game:Node,id:int) -> int:
 		var distance=game.actors[id].position.distance_to(d.pos)
 		if distance<best and game.clear_line(game.actors[id].eye(),d.pos+Vector3.UP*.6,[game.actors[id].get_rid(),game.device_nodes[did].get_rid()] if game.device_nodes.has(did) else [game.actors[id].get_rid()]):best=distance;found=did
 	return found
+

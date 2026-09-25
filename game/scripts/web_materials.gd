@@ -15,6 +15,7 @@ static func simplify(material:Material) -> Material:
 	var result=ToonMaterials.color_material(material.get_shader_parameter("tint")) if "uniform vec4 tint" in code else ToonMaterials.vertex_material()
 	cache[material]=result;return result
 static func apply(root:Node):
+	if not RenderStyle.web():return
 	for node in root.find_children("*","MeshInstance3D",true,false):
 		node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON if GraphicsOptions.shadows>0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if node.material_override:node.material_override=simplify(node.material_override)
@@ -22,3 +23,4 @@ static func apply(root:Node):
 			for i in range(node.mesh.get_surface_count()):
 				var material=node.get_active_material(i)
 				if material:node.set_surface_override_material(i,simplify(material))
+

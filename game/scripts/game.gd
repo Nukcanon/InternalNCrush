@@ -5,6 +5,7 @@ const A=preload("res://scripts/actor.gd")
 const W=preload("res://scripts/arena.gd")
 const UI=preload("res://scripts/ui.gd")
 var demo_mode=false
+var demo_map=7
 var render_actors=DisplayServer.get_name()!="headless"
 var kill_replay:KillReplay
 var bot_navigation:BotNavigation
@@ -56,7 +57,7 @@ var bomb={"planted":false,"site":-1,"time":0.0,"actor":0,"progress":0.0,"positio
 var server=false
 var dedicated=false
 var local_id=1
-var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"sniper_mouse_sensitivity":.75,"sniper_touch_sensitivity":.65,"scope_zoom":{},"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":60,"lighting_quality":1,"physics_effects":1,"fog_enabled":false,"menu_animation":false,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028,"touch_aim_assist":true,"touch_auto_fire":false,"web_render_scale":1.,"web_quality":-1,"web_options":{}}
+var profile={"nick":"Player","token":"","sensitivity":.0023,"ads_sensitivity":.75,"sniper_mouse_sensitivity":.75,"sniper_touch_sensitivity":.65,"scope_zoom":{},"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"lobby_url":"","graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":60,"lighting_quality":1,"physics_effects":1,"corpse_quality":1,"fog_enabled":false,"menu_animation":true,"visual_revision":0,"display_revision":0,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028,"touch_aim_assist":true,"touch_auto_fire":false,"web_render_scale":1.,"web_quality":-1,"web_options":{}}
 var bot_start_loadout={}
 var pending_loadout={"role":0,"primary":"a1","secondary":"pistol","armor":0,"team":-1,"gadget":0}
 var snapshot_timer=0.0
@@ -116,8 +117,17 @@ func _ready():
 	if int(profile.performance_revision)<2:
 		if int(profile.graphics_quality)!=3:profile.merge({"graphics_quality":0 if TouchControls.supported() else 1,"shadow_quality":0,"decor_quality":0 if TouchControls.supported() else 1,"antialias":0},true)
 		profile.performance_revision=2
+	if not OS.has_feature("web") and int(profile.visual_revision)<115:
+		profile.menu_animation=true
+		if int(profile.graphics_quality)!=3:profile.merge(GraphicsOptions.PRESETS[clampi(int(profile.graphics_quality),0,2)],true)
+		profile.visual_revision=115
 	if OS.has_feature("web"):
 		web_graphics=WebGraphics.new();web_graphics.game=self;add_child(web_graphics)
+	if not OS.has_feature("web") and int(profile.display_revision)<115 and DisplayServer.get_name()!="headless":
+		profile.monitor=DisplayServer.window_get_current_screen()
+		var native_size=DisplayServer.screen_get_size(int(profile.monitor))
+		profile.width=native_size.x;profile.height=native_size.y;profile.display_mode=1;profile.window=false
+		profile.graphics_quality=1;profile.merge(GraphicsOptions.PRESETS[1],true);profile.display_revision=115
 	setup_input();apply_display_settings()
 	if OS.has_feature("web"):get_viewport().size_changed.connect(apply_display_settings)
 	GraphicsOptions.apply(self)
@@ -231,7 +241,7 @@ func start_demo():
 	combat_fx=CombatFX.new();add_child(combat_fx)
 	audio_bank=GameAudio.new();add_child(audio_bank);audio_bank.profile=profile
 	ui=UI.new();ui.game=self;add_child(ui);ui.hide()
-	options.map=7;options.bots=6;options.mode=0;options.minutes=60;options.target=9999
+	options.map=demo_map;options.bots=6;options.mode=0;options.minutes=60;options.target=9999
 	phase="lobby";build_world()
 	for i in range(1,7):add_player(-i,"DEMO %d"%i,"menu_demo_%d"%i)
 	phase="combat";remaining=3600.
@@ -977,10 +987,12 @@ func kill_event(event:Dictionary):
 	while kill_events.size()>KillFeed.MAX_ROWS:kill_events.pop_front()
 	if is_instance_valid(kill_replay):kill_replay.request(item)
 func damage_device(did:int,amount:float,source:int):
-	if not devices.has(did):return
+	if not devices.has(did) or amount<=0.:return
 	var d=devices[did]
 	if players.has(source) and d.team==players[source].team and int(options.mode)!=1 and not options.friendly:return
+	var dealt=minf(amount,maxf(0.,float(d.hp)))
 	d.hp-=amount;d.last_hit=clock
+	if dealt>0. and source>0:feedback(source,"hit",("포탑 명중" if d.kind=="turret" else "엄폐물 명중")+" · "+str(roundi(dealt)))
 	if d.hp<=0:event_fx.rpc("turret_break" if d.kind=="turret" else "cover_break",d.pos+Vector3.UP*.85,Vector3.ZERO,source);remove_device(did)
 func aim_player(id:int,range_m:float,ally:bool) -> int:
 	var a=actors[id];var hit=ray(a.eye(),a.eye()+a.direction()*range_m,[a.get_rid()])
@@ -1107,7 +1119,7 @@ func use_gadget(id:int):
 			if players[tid].hp>=100:feedback(id,"","체력이 이미 가득 찼습니다.");return
 			heal_target(id,tid,25)
 	p.gadget_count-=1;p.gadget_ready=clock+.8;p.fire_ready=maxf(p.fire_ready,clock+.4)
-	if p.role!=4:effect.rpc("deploy",a.position,Vector3.ZERO,id)
+	if p.role!=4:event_fx.rpc("deploy",a.position,Vector3.ZERO,id)
 	feedback(id,"",["방어구 +25","상대 표식 · 6초","거치대 활성 · 15초 동안 정지 사격 정확도 증가","엄폐물 설치 완료","섬광탄 사용" if p.gadget==1 else "연막탄 전개 · 10초","응급 회복 +25"][int(p.role)])
 func remove_device(did:int):
 	devices.erase(did)
@@ -1459,7 +1471,7 @@ func impact(pos:Vector3,push:Vector3,eliminated:bool,team:int,role:int=0,variant
 func damage_notice(target:int,origin:Vector3,amount:float,armored:bool):
 	if dedicated or target!=local_id or not actors.has(target):return
 	var direction=origin-actors[target].position
-	ui.damage_indicator.register_hit(direction,amount,Time.get_ticks_msec()/1000.)
+	if is_instance_valid(ui.damage_indicator):ui.damage_indicator.register_hit(direction,amount,Time.get_ticks_msec()/1000.)
 	var now=Time.get_ticks_msec()/1000.
 	if now-last_hurt_sound>.075:play_sound("armor_hurt" if armored else "hurt",Vector3.ZERO,false);last_hurt_sound=now
 
@@ -1510,3 +1522,4 @@ func begin_slide(id:int,forward:bool=false) -> bool:
 	if forward:velocity=Basis(Vector3.UP,a.aim_yaw)*Vector3.FORWARD
 	p.slide_until=clock+.72;p.slide_ready=clock+1.8;p.slide_direction=velocity.normalized();p.slide_started=clock
 	return true
+

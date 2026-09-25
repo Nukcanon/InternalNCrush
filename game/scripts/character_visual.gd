@@ -167,7 +167,7 @@ func sync_deform():
 static func joint(parent:Node,name:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;parent.add_child(n);return n
 static func make_rig(which:int,side:int) -> Node3D:
-	var root=CartoonModel.build(which,side);root.name=ROLE_NAMES[which]
+	var root=CartoonModel.build(which,side) if RenderStyle.web() else HumanModel.build(which,side);root.name=ROLE_NAMES[which]
 	M.merge_rig(root);add_clips(root)
 	return root
 static func role_badge(parent:Node3D,which:int,pos:Vector3,factor:float):
@@ -229,7 +229,7 @@ static func add_clips(root:Node3D):
 		for path in tracks:var track=anim.add_track(Animation.TYPE_VALUE);anim.track_set_path(track,NodePath(path))
 		for frame in range(13):
 			var t=frame/12.;var fall=sin(clampf((t-.12)/.88,0,1)*PI/2);var crouch=sin(t*PI)*.15
-			var end_rot=[Vector3(-1.45,0,.13),Vector3(1.45,0,-.12),Vector3(.15,0,-1.45),Vector3(-.12,0,1.45),Vector3(.9,.2,.7)][index]
+			var end_rot=[Vector3(PI/2,0,.04),Vector3(-PI/2,0,-.04),Vector3(.04,0,PI/2),Vector3(-.04,0,-PI/2),Vector3(.9,.2,.7)][index]
 			var hip=Vector3(0,lerpf(.94,.27,fall)-crouch,0)
 			var poses=[hip,end_rot*fall,Vector3(sin(t*PI)*.16,0,0),Vector3(.96-fall*(1.3 if index%2==0 else .3),0,-fall*.4),Vector3(.65-fall*.7,0,fall*.35),Vector3(fall*.55,0,-fall*.16),Vector3(fall*.2,0,fall*.2),Vector3(-fall*.85,0,0),Vector3(-fall*.4,0,0)]
 			for j in range(poses.size()):anim.track_insert_key(j,t*.9,poses[j])
@@ -330,3 +330,4 @@ func slide_pose(phase:float):
 	left.rotation.x=lerpf(left.rotation.x,1.18,weight);left.get_node("Knee").rotation.x=lerpf(left.get_node("Knee").rotation.x,-.35,weight)
 	right.rotation.x=lerpf(right.rotation.x,.7,weight);right.get_node("Knee").rotation.x=lerpf(right.get_node("Knee").rotation.x,-1.65,weight)
 	sync_deform()
+

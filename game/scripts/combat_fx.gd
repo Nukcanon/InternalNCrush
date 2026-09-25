@@ -294,9 +294,9 @@ func sync_status(game:Node,now:float):
 	for key in status_nodes.keys():
 		if not live.has(key):status_nodes[key].queue_free();status_nodes.erase(key)
 func ragdoll(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,facing:float,crouched:bool,velocity:Vector3,point:Vector3=Vector3.INF):
-	var physical=GraphicsOptions.physics_effects==2 and not OS.has_feature("web")
+	var physical=GraphicsOptions.physics_effects>0 and GraphicsOptions.corpse_quality>0 and not OS.has_feature("web")
 	ragdolls=ragdolls.filter(func(item):return is_instance_valid(item) and not item.is_queued_for_deletion())
-	while ragdolls.size()>=(2 if physical or OS.has_feature("web") or GraphicsOptions.physics_effects==0 else 4):
+	while ragdolls.size()>=((4 if GraphicsOptions.corpse_quality==2 else 2) if physical else 3 if OS.has_feature("web") else 4):
 		var old=ragdolls.pop_front()
 		if is_instance_valid(old):old.queue_free()
 	var node:Node3D=PhysicsRagdoll.new() if physical else AnimatedDeath.new()
@@ -339,3 +339,4 @@ func sync_bomb(game:Node):
 	var worker=int(game.bomb.get("actor",0))
 	if game.bomb.planted and game.phase=="combat" and worker!=0 and game.players.has(worker) and int(game.players[worker].team)!=MatchFlow.attackers(game) and game.clock>=bomb_defuse_at:
 		bomb_defuse_at=game.clock+.38;game.play_sound("bomb_defuse",game.bomb.position,true)
+

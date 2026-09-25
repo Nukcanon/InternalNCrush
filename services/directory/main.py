@@ -19,7 +19,7 @@ from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSION = os.getenv("GAME_VERSION", "1.1.4")
+VERSION = os.getenv("GAME_VERSION", "1.1.5")
 CAPACITIES = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8]+[8]*6+[12]*6
 
 class SessionInput(BaseModel):
@@ -265,3 +265,4 @@ async def signal(ws:WebSocket):
             if peer_id==1:await directory.close_room(room)
             elif 1 in room["peers"]:
                 with contextlib.suppress(Exception):await room["peers"][1]["socket"].send_json({"op":"left","peer":peer_id})
+
