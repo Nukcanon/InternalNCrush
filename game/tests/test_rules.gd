@@ -29,7 +29,9 @@ func run():
 		g.update_world_visuals(.1);await physics_frame;await physics_frame
 		g.clock=136;g.actors[1].aim_pitch=.05
 		g.use_skill(1);expect(g.devices.size()==1 and g.devices[did].level==2,"aimed turret upgrade preserves singleton")
-		g.remove_device(did);expect(g.players[1].skill_ready==135,"destruction does not refund charge")
+		expect(g.players[1].skill_ready==171.,"upgrade starts a fresh 35-second charge")
+		var ready_before_destruction=g.players[1].skill_ready
+		g.remove_device(did);expect(g.players[1].skill_ready==ready_before_destruction,"destruction does not refund charge")
 	g.players[1].alive=false;g.phase="buy";g.options.mode=4;g.players[1].cash=800;g.players[1].armor=0;g.players[1].primary="pistol";g.players[1].owned_primary=false
 	g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==800 and g.players[1].primary=="pistol","insufficient funds rejected")
 	g.players[1].cash=4000;g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==1000 and g.players[1].primary=="a1","purchase costs deducted")
