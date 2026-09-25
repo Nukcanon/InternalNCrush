@@ -1,0 +1,33 @@
+name: Publish reviewed Internal N Crush 1.1.5
+on:
+  push:
+    branches: [main]
+    paths: ['.github/v115-publication.json']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify successful build and exact release source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runtime_sha=$(python3 -c 'import json; print(json.load(open(".github/v115-publication.json"))["source_commit"])')
+          run_id=$(python3 -c 'import json; print(json.load(open(".github/v115-publication.json"))["build_run"])')
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > /tmp/reviewed-run.json
+          python3 -c 'import json; a=json.load(open(".github/v115-publication.json")); r=json.load(open("/tmp/reviewed-run.json")); assert r["conclusion"]=="success" and r["head_sha"]==a["source_commit"]'
+          mkdir /tmp/reviewed-downloads
+          gh release download internal-n-crush-v1.1.5 --repo "$GITHUB_REPOSITORY" --dir /tmp/reviewed-downloads
+          cd /tmp/reviewed-downloads
+          sha256sum --check SHA256SUMS.txt
+          python3 -c 'import json,sys; r=json.load(open("WEB_RELEASE_v1.1.5.json")); assert r["version"]=="1.1.5" and r["source_commit"]==sys.argv[1]' "$runtime_sha"
+          cd "$GITHUB_WORKSPACE"
+          cp game/docs/RELEASE_NOTES_V115.md /tmp/reviewed-release-notes.md
+          printf '\n추가 물리 검증: 두 버전 모두 총알 진행 방향으로 과장되게 날아가며 팔다리를 벌리고 눕습니다. 다운로드판은 지형에 끼인 관절 시체를 전체적으로 안정화하여 지속적인 떨림을 막습니다. 좁은 벽 사이 끼임과 공중 낙하를 포함한 회귀 검사를 통과했습니다.\n' >> /tmp/reviewed-release-notes.md
+          gh release edit internal-n-crush-v1.1.5 --repo "$GITHUB_REPOSITORY" --target "$runtime_sha" --draft=false --latest --notes-file /tmp/reviewed-release-notes.md
+          actual=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/internal-n-crush-v1.1.5" --jq .object.sha)
+          test "$actual" = "$runtime_sha"
