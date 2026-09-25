@@ -34,9 +34,15 @@ void fragment() {
 static func apply(node:Node3D,device:Dictionary,local_id:int):
 	var owned=local_id>0 and int(device.owner)==local_id
 	var key="%s:%s:%s"%[owned,device.team,device.get("level",1)]
-	if node.get_meta("silhouette_state","")==key:return
-	node.set_meta("silhouette_state",key)
-	var meshes=node.find_children("*","MeshInstance3D",true,false)
+	var changed=node.get_meta("silhouette_state","")!=key
+	if changed:
+		node.set_meta("silhouette_state",key)
+		node.set_meta("silhouette_meshes",node.find_children("*","MeshInstance3D",true,false))
+	var meshes=node.get_meta("silhouette_meshes",[])
+	if not owned:
+		if changed:
+			for mesh in meshes:mesh.material_overlay=null
+		return
 	# Union the whole assembly in root space, then express it in each mesh space.
 	# A per-part box mistakes a neighbouring part for a wall.
 	var bounds=AABB();var first=true
@@ -46,4 +52,7 @@ static func apply(node:Node3D,device:Dictionary,local_id:int):
 		bounds=part if first else bounds.merge(part);first=false
 	for mesh in meshes:
 		var relative=mesh.global_transform.affine_inverse()*node.global_transform
-		mesh.material_overlay=material_for(int(device.team),relative*bounds.grow(.06)) if owned else null
+		var local_bounds=relative*bounds.grow(.06)
+		if changed:mesh.material_overlay=material_for(int(device.team),AABB()).duplicate()
+		mesh.material_overlay.set_shader_parameter("bounds_min",local_bounds.position)
+		mesh.material_overlay.set_shader_parameter("bounds_max",local_bounds.end)

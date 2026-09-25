@@ -24,6 +24,11 @@ func run():
 		gun.position=Vector3(.255,-.255,-.46)
 		for i in range(1,10):
 			gun.animate_reload(i/10.,0.);await shot(id+"-reload-"+str(i))
+		gun.position=Vector3.ZERO
+		camera.position=Vector3(.8,.2,.8);camera.look_at(Vector3(0,-.15,-.25))
+		for i in [-1,2,4,6,8]:
+			gun.animate_reload(i/10.,0.);await shot(id+"-side-"+str(i))
+		camera.position=Vector3.ZERO;camera.rotation=Vector3.ZERO
 		gun.free()
 	camera.position=Vector3(0,1.60,-.65);camera.look_at(Vector3(0,1.60,0))
 	for role in range(6):
@@ -33,4 +38,10 @@ func run():
 	await shot("turret-plain")
 	DeploymentSilhouette.apply(turret,{"owner":1,"team":0,"level":1},1)
 	await shot("turret-overlay-visible")
+	turret.get_node("TurretHead").rotation.y=1.2
+	DeploymentSilhouette.apply(turret,{"owner":1,"team":0,"level":1},1);await shot("turret-rotated-overlay")
+	DeploymentSilhouette.apply(turret,{"owner":2,"team":0,"level":1},1);await shot("turret-rotated-plain")
+	MeshFactory.box(world,Vector3(.5,1.,-1.2),Vector3(2.,3.,.15),Color("a0a0a0"))
+	await shot("turret-wall-plain")
+	DeploymentSilhouette.apply(turret,{"owner":1,"team":0,"level":1},1);await shot("turret-wall-overlay")
 	world.free();await process_frame;print("PRESENTATION_RENDER_OK");quit()
