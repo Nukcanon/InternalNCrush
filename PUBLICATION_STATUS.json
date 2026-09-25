@@ -1,66 +1,101 @@
 {
-  "version": "1.1.4",
-  "published_version": "1.1.4",
-  "publication_state": "published_ci_verified",
-  "repository": "https://github.com/Nukcanon/InternalNCrush",
-  "source_branch": "main",
-  "source_commit": "7fecbc8a24ab268e7942949afac0c9f225b419b4",
-  "runtime_source_commit": "7fecbc8a24ab268e7942949afac0c9f225b419b4",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.1.4",
-  "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
-  "web_play_url": "https://nukcanon.github.io/nukcanon/play/",
-  "build_run": 36121517182,
-  "build_result": "success",
-  "site_commit": "cbe4ff06022fef7b9fd74ffe870cf62e488b48c0",
-  "site_install_run": 36123038344,
-  "pages_run": 36123073158,
-  "pages_result": "success",
+  "version": "1.1.5",
+  "source_commit": "8f1ca92fd1c2ca3a77c2f330107c5f19bdf1e761",
+  "validated_game_source": "6cb202107915f61fa74b7a31e362dc25875f6ae6",
+  "validation_run": 36133628094,
+  "validation_note": "All runtime validation and Windows export gates passed; this run then failed only at redundant Web combat-photo recapture. Packaging-only commit reused exact game/windows/web/nas/services inputs and the already reviewed 12 combat images.",
+  "packaging_run": 36136057333,
+  "packaging_conclusion": "success",
+  "publication_run": 36136902187,
+  "publication_conclusion": "success",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.1.5",
+  "published_at": "2026-09-25T12:46:52Z",
   "assets": [
     {
-      "name": "InternalNCrush_NAS_Linux_v1.1.4.zip",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_NAS_Linux_v1.1.4.zip",
-      "bytes": 15306,
-      "sha256": "060018447730669547d8bb1789dcee91bf5e64681d5d84c76a5bacb5c66ecf25"
+      "name": "InternalNCrush_NAS_Linux_v1.1.5.zip",
+      "bytes": 15308,
+      "sha256": "c726c65eb27e71e595105416cf6e5097fcf5995c859e56e790fbecf63292121c",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.5/InternalNCrush_NAS_Linux_v1.1.5.zip"
     },
     {
-      "name": "InternalNCrush_Web_v1.1.4.zip",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_Web_v1.1.4.zip",
-      "bytes": 66836599,
-      "sha256": "02c1e8af8fa25798741ea9519e723c43b63ef301e80afd042c7a46429ee934a0"
+      "name": "InternalNCrush_Web_v1.1.5.zip",
+      "bytes": 77565391,
+      "sha256": "6ac66db0efc31b44a9dcc2fbad45913956482dad0854734db1d693e16996a7fa",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.5/InternalNCrush_Web_v1.1.5.zip"
     },
     {
-      "name": "InternalNCrush_Windows_v1.1.4.zip",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_Windows_v1.1.4.zip",
-      "bytes": 86558783,
-      "sha256": "51e9c66a37abf8ef1d81e1d8eec0336efbc52ab5ec61072fbadfb6f8c0cc3d12"
+      "name": "InternalNCrush_Windows_v1.1.5.zip",
+      "bytes": 113361438,
+      "sha256": "b52569b56465cf469d8da87cd231c3ade870f058f6a6f4cce95a022c3b6b4deb",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.5/InternalNCrush_Windows_v1.1.5.zip"
     },
     {
       "name": "SHA256SUMS.txt",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/SHA256SUMS.txt",
-      "bytes": 196,
-      "sha256": "55ebcc6a1fd017457b4adfdeaec82136e9cf7468b9a4b47ecc9a88b2d5b98c16"
+      "bytes": 298,
+      "sha256": "1475e4c1efa5ffc670f7a3d6eb94d7007618aa6dcdd8e0bf4f47f801f4af0683",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.5/SHA256SUMS.txt"
     },
     {
-      "name": "WEB_RELEASE_v1.1.4.json",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/WEB_RELEASE_v1.1.4.json",
+      "name": "WEB_RELEASE_v1.1.5.json",
       "bytes": 168,
-      "sha256": "f802a7667ce5a71677a30a0b15f823113a69c8a8728254935a9a81b3776d0700"
+      "sha256": "e3705f6919dbae84df140a962dd09779f271f00a011cadbe6977df3f0e9787b3",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.5/WEB_RELEASE_v1.1.5.json"
     }
   ],
-  "checks": {
-    "functional": "3790/3790; 30 suites",
-    "touch": "35/35",
-    "network": "32 clients, lifecycle, late startup, movable props, map rotation, and WebRTC passed",
-    "exports": "Windows and single-thread Web export passed",
-    "site": "Installer verified archive SHA256, manifest file sizes and hashes, source commit, and runtime headers before installation; Pages deployment succeeded"
+  "tests": {
+    "functional": {
+      "suites": 32,
+      "passed": 3818,
+      "total": 3818
+    },
+    "touch": {
+      "passed": 35,
+      "total": 35
+    },
+    "motion": {
+      "passed": 22,
+      "total": 22
+    },
+    "native_ragdoll": {
+      "passed": 14,
+      "total": 14
+    },
+    "audio": {
+      "passed": 13,
+      "total": 13
+    },
+    "native_render_split": {
+      "passed": 5,
+      "total": 5
+    },
+    "web_render_split": {
+      "passed": 5,
+      "total": 5
+    },
+    "capacity_clients": 32,
+    "independent_network_clients": "passed",
+    "lifecycle_regular_and_late_start": "passed",
+    "authoritative_props": "passed",
+    "rotation_sync": "passed",
+    "webrtc_host_client": "passed"
   },
-  "previous_runtime_source_commit": "3e87f868e10cefa98db9723096fcfe4b55f25710",
-  "remaining": [
-    "Physical low-end GPUs, smartphones and iOS performance were not measured.",
-    "New Windows package was exported but not executed on Windows in this run.",
-    "Public browser gameplay was not interactively tested in this run.",
-    "Release tag remains at its original source; use runtime_source_commit for replacement binaries.",
-    "Existing NAS asset was preserved. No public lobby was deployed."
-  ],
-  "report": "game/docs/TEST_REPORT_V114_REPLACEMENT.md"
+  "site": {
+    "url": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
+    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=6ac66db0efc3",
+    "installer_commit": "630f33dd203ab6e24285645a9a8874d452b6d61a",
+    "installer_run": 36137008744,
+    "status": "published",
+    "installer_conclusion": "success",
+    "deployment_commit": "376525a824a95fdf214912a5543bd0d9e2ad5d52",
+    "pages_run": 36137051752,
+    "pages_conclusion": "success",
+    "browser_homepage": "1.1.5 label and exact versioned Windows/play links confirmed",
+    "browser_game": "blocked: remote browser does not support WebGL2; interactive gameplay not verified"
+  },
+  "limitations": [
+    "No interactive Windows executable check on the owner's monitor",
+    "No physical mobile or low-end GPU benchmark",
+    "No real WAN/NAT multiplayer trial",
+    "Remote browser lacks WebGL2; public gameplay/menu interaction could not be verified there"
+  ]
 }
