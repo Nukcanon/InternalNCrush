@@ -29,5 +29,18 @@ func run():
 		expect(corpse.position.y>-.03 and corpse.position.y<.08,"corpse rests on floor")
 		expect(corpse.find_children("*","RigidBody3D",true,false).is_empty(),"Web death uses no jointed rigid bodies")
 		corpse.free();await physics_frame
+	# A spread corpse can catch its limbs between static walls. It must settle
+	# as one chain instead of feeding joint jitter forever.
+	var walls=[]
+	for x in [-.43,.43]:
+		var wall=StaticBody3D.new();g.arena.add_child(wall);wall.position=Vector3(x,1.,-1.)
+		var collision=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(.2,2.,8.);collision.shape=box;wall.add_child(collision);walls.append(wall)
+	await physics_frame
+	var rag=PhysicsRagdoll.new();g.add_child(rag);rag.build(null,Vector3.ZERO,Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
+	for frame in range(240):await physics_frame
+	expect(rag.bodies.all(func(b):return b.global_position.is_finite() and b.global_position.y>-.3),"wedged ragdoll stays finite and above the floor")
+	expect(rag.settled and rag.bodies.all(func(b):return b.freeze),"wedged ragdoll stops all joint jitter")
+	rag.free()
+	for wall in walls:wall.free()
 	g.free();await process_frame
 	print("MOTION_V115_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

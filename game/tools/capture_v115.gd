@@ -15,16 +15,37 @@ func run():
 		var camera=Camera3D.new();camera.far=200.;camera.fov=72.;root.add_child(camera);camera.current=true
 		await create_timer(5.).timeout
 		for i in range(4):
-			var actor=game.actors[-1-i]
+			var pair=[]
+			for attempt in range(450):
+				pair=combat_pair(game)
+				if not pair.is_empty():break
+				await create_timer(.1).timeout
+			if pair.is_empty():printerr("No active combat available for menu photograph");quit(1);return
+			var actor=pair[0];var opponent=pair[1]
 			var target=actor.position+Vector3.UP*1.3
-			var offset=Basis(Vector3.UP,actor.aim_yaw+.35)*Vector3(2.5,2.4,5.)
+			var facing=(opponent.position-actor.position).normalized()
+			var offset=-facing*4.+facing.cross(Vector3.UP)*(2. if i%2==0 else -2.)+Vector3.UP*1.8
 			var hit=game.ray(target,target+offset,[],1)
 			camera.position=hit.position+(target-hit.position).normalized()*.25 if not hit.is_empty() else target+offset
-			camera.look_at(target+actor.direction()*5.)
-			await create_timer(2.).timeout
+			camera.look_at(target.lerp(opponent.position+Vector3.UP*1.1,.55))
 			await process_frame;await RenderingServer.frame_post_draw
 			var picture=root.get_texture().get_image();number+=1
 			if picture.is_empty() or picture.get_size()!=Vector2i(1920,1080) or picture.save_jpg("res://assets/menu_slides/%02d.jpg"%number,.92)!=OK:quit(1);return
+			await create_timer(2.).timeout
 		game.free();camera.free();await process_frame
 	print("MENU_SLIDES_OK count=",number," resolution=1920x1080 style=", "web" if RenderStyle.web() else "native")
 	quit()
+
+func combat_pair(game:Node) -> Array:
+	var best=[];var nearest=35.
+	for id in game.players:
+		var p=game.players[id]
+		if not p.alive or game.clock-float(p.get("shot_time",-100.))>1.2:continue
+		var actor=game.actors[id]
+		for other in game.players:
+			if other==id or not game.players[other].alive or not game.enemies(p,game.players[other]):continue
+			var opponent=game.actors[other];var distance=actor.position.distance_to(opponent.position)
+			if distance<3. or distance>=nearest:continue
+			if not game.ray(actor.eye(),opponent.eye(),[],1).is_empty():continue
+			nearest=distance;best=[actor,opponent]
+	return best

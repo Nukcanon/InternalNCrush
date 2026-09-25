@@ -5,6 +5,10 @@ var age=0.
 var model:CharacterVisual
 var followers:Array=[]
 var launch_origin=Vector3.ZERO
+var settled=false
+var settle_clock=0.
+var still_time=0.
+var last_settle_position=Vector3.ZERO
 static func launch_velocity(push:Vector3,velocity:Vector3) -> Vector3:
 	var forward=Vector3(push.x,0,push.z).normalized()
 	if forward.length_squared()<.1:forward=Vector3.FORWARD
@@ -41,12 +45,14 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		# Cosmetic corpses contact static architecture only. Equipment/props and
 		# other limbs cannot feed impulses back into their joint chain.
 		body.mass=part[5];body.collision_layer=16;body.collision_mask=1;body.linear_damp=.42;body.angular_damp=2.2;body.continuous_cd=true
+		body.contact_monitor=true;body.max_contacts_reported=4
 		var shape=CollisionShape3D.new();var capsule=CapsuleShape3D.new();capsule.radius=part[3];capsule.height=maxf(part[2],part[3]*2.01);shape.shape=capsule;body.add_child(shape)
 		var physics=PhysicsMaterial.new();physics.friction=.85;physics.bounce=.02;body.physics_material_override=physics
 		followers.append({"bone":bone,"offset":body.global_transform.affine_inverse()*bone.global_transform})
-		body.linear_velocity=launch_velocity(push,velocity);body.angular_velocity=Vector3(push.z,0,-push.x).normalized()*1.8
+		body.linear_velocity=launch_velocity(push,velocity);body.angular_velocity=Vector3(push.z,0,-push.x)*.7
 		bodies.append(body);joints[part[0]]={"body":body,"anchor":bone.global_position}
 	launch_origin=bodies[0].global_position
+	last_settle_position=launch_origin
 	for body in bodies:
 		for other in bodies:
 			if body!=other:body.add_collision_exception_with(other)
@@ -59,7 +65,7 @@ func build(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,fac
 		if hinge:
 			joint.set_flag(HingeJoint3D.FLAG_USE_LIMIT,true);joint.set_param(HingeJoint3D.PARAM_LIMIT_LOWER,-2.25 if part[0].ends_with("Knee") else -.08);joint.set_param(HingeJoint3D.PARAM_LIMIT_UPPER,.08 if part[0].ends_with("Knee") else 2.35)
 		else:
-			joint.set_param(ConeTwistJoint3D.PARAM_SWING_SPAN,.50 if part[0].ends_with("Chest") else .60 if part[0].ends_with("Head") else .48 if part[0].ends_with("Arm") else .24)
+			joint.set_param(ConeTwistJoint3D.PARAM_SWING_SPAN,.50 if part[0].ends_with("Chest") else .60 if part[0].ends_with("Head") else 1.15)
 			joint.set_param(ConeTwistJoint3D.PARAM_TWIST_SPAN,.42)
 	if impact_point.is_finite():
 		var closest:RigidBody3D=bodies[0]
@@ -76,7 +82,10 @@ func copy_geometry(node:Node3D,body:RigidBody3D,paths:Dictionary,start:Node3D):
 		elif child is Node3D and not child is WeaponVisual:copy_geometry(child,body,paths,start)
 func _physics_process(dt:float):
 	age+=dt
-	if not bodies.is_empty() and age>.05 and age<1.4:
+	if settled:
+		if age>6.:queue_free()
+		return
+	if not bodies.is_empty() and age>.05:
 		var delta=bodies[0].global_position-launch_origin;var distance=Vector2(delta.x,delta.z).length()
 		# A cosmetic 1–3m launch budget. Damping removes horizontal energy while
 		# gravity, world contact and joint rotation continue, including on stairs.
@@ -87,6 +96,16 @@ func _physics_process(dt:float):
 			body.linear_velocity=Vector3(horizontal.x,clampf(v.y,-20.,6.),horizontal.y);body.angular_velocity=body.angular_velocity.limit_length(12.)
 	for i in range(followers.size()):followers[i].bone.global_transform=bodies[i].global_transform*followers[i].offset
 	if is_instance_valid(model):model.sync_deform()
-	if age>2.5 and bodies.all(func(body):return body.sleeping or (body.linear_velocity.length()<.16 and body.angular_velocity.length()<.3)):
-		for body in bodies:body.freeze=true
+	settle_clock+=dt
+	if settle_clock>=.3:
+		var touching=bodies.any(func(body):return body.get_contact_count()>0)
+		var distance=bodies[0].global_position.distance_to(last_settle_position)
+		still_time=still_time+settle_clock if touching and age>1.2 and distance<.055 else 0.
+		last_settle_position=bodies[0].global_position;settle_clock=0.
+		# A wedged joint can keep reporting angular energy indefinitely. Stop the
+		# whole cosmetic chain together once supported and stationary, with a
+		# bounded contact time as a fallback. Never freeze a free airborne fall.
+		if touching and (still_time>=.6 or age>=3. or (age>1.3 and bodies.all(func(body):return body.sleeping or (body.linear_velocity.length()<.16 and body.angular_velocity.length()<.3)))):
+			for body in bodies:body.linear_velocity=Vector3.ZERO;body.angular_velocity=Vector3.ZERO;body.freeze=true
+			settled=true
 	if age>6.:queue_free()
