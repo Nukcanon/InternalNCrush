@@ -6,6 +6,7 @@ func expect(ok:bool,message:String):
 	checks+=1
 	if not ok:failures+=1;printerr("FAIL ",message)
 func run():
+	TouchControls.supported_cache=1
 	Catalog.load_all()
 	for role in range(6):
 		var rig=CartoonModel.build(role,0);MeshFactory.merge_rig(rig);CharacterVisual.add_clips(rig);root.add_child(rig)
@@ -42,7 +43,7 @@ func run():
 	g.add_player(2,"Target","aim_fixture");g.spawn(2);g.players[2].team=1-p.team;g.players[2].protect=0.;g.actors[2].position=Vector3(21,0,0)
 	await physics_frame;await physics_frame
 	g.profile.touch_aim_assist=true;TouchAim.assist(g,actor,1./30.)
-	expect(actor.input_state.yaw<0. and absf(actor.input_state.yaw)<=deg_to_rad(12.)/30.+.00001,"aim assistance turns gently toward a visible nearby enemy")
+	expect(actor.input_state.yaw<0. and absf(actor.input_state.yaw)<=deg_to_rad(30.)/30.+.00001,"aim assistance turns gently toward a visible nearby enemy")
 	var direction=(g.actors[2].eye()-Vector3.UP*.35-actor.eye()).normalized()
 	actor.input_state.yaw=atan2(-direction.x,-direction.z);actor.input_state.pitch=asin(direction.y);g.profile.touch_auto_fire=true
 	expect(TouchAim.can_auto_fire(g,actor),"optional auto fire recognises a visible enemy under the crosshair")

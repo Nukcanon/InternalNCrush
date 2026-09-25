@@ -25,7 +25,10 @@ func run():
 	g.rockets.clear();turret.level=1;turret.next_fire=0.;turret.next_scan=0.;turret.target=0;turret.lock=0.
 	b.position=Vector3(40,0,16);await physics_frame;TurretLogic.tick(g,.016);expect(turret.target==0 and q.hp==100.,"automatic fire rejects a target outside its forward arc")
 	p.primary="remote";p.slot=0;a.input_state.fire=true;var delta=b.eye()-Vector3.UP*.3-a.eye();a.aim_yaw=atan2(-delta.x,-delta.z);a.aim_pitch=atan2(delta.y,Vector2(delta.x,delta.z).length())
-	for frame in range(60):TurretLogic.tick(g,1./60.)
+	for frame in range(90):
+		g.clock+=1./60.;TurretLogic.tick(g,1./60.)
+		if q.hp<100.:break
+	g.clock=100.
 	expect(turret.remote and q.hp<100.,"remote control can hit a target outside the automatic arc")
 	expect(100.-q.hp<TurretLogic.DAMAGE[0],"remote hit applies distance falloff")
 	p.role=0;p.skill_ready=0.;g.use_skill(1);expect(p.dash==105. and p.dash_recovery==108.,"movement skill has five fast seconds and three recovery seconds")

@@ -11,7 +11,7 @@ func run():
 	var world=Node3D.new();root.add_child(world)
 	var environment=WorldEnvironment.new();environment.environment=Environment.new();world.add_child(environment)
 	environment.environment.background_mode=Environment.BG_COLOR;environment.environment.background_color=Color("677c89")
-	environment.environment.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;environment.environment.ambient_light_energy=.8
+	environment.environment.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;environment.environment.ambient_light_color=Color.WHITE;environment.environment.ambient_light_energy=.8
 	var lamp=DirectionalLight3D.new();world.add_child(lamp);lamp.rotation_degrees=Vector3(-40,-25,0)
 	var camera=Camera3D.new();world.add_child(camera);camera.current=true;camera.fov=70.
 	for id in Catalog.weapons:
@@ -31,10 +31,12 @@ func run():
 		sheet.save_jpg(directory+id+".jpg",.94);gun.free()
 	var model=CharacterVisual.new();model.enable_physics=false;world.add_child(model);model.build(0,0)
 	var weapon=WeaponVisual.new();model.socket.add_child(weapon);weapon.build(Catalog.get_weapon("a1"),false);weapon.scale=Vector3.ONE*.8
-	camera.position=Vector3(2.,1.35,2.7);camera.look_at(Vector3(0,.9,0))
+	camera.position=Vector3(1.55,1.15,-2.2);camera.look_at(Vector3(0,.78,0))
 	var floor_mesh=MeshFactory.box(world,Vector3(0,-.05,0),Vector3(6,.1,6),Color("99a3a5"))
 	for state in range(6):
 		var move=Vector3.ZERO if state<2 else Vector3(0,0,-1.5) if state<4 else Vector3(0,4 if state==4 else -4,0)
-		for frame in range(40):model.update_pose(1./60.,move,false,state in [1,2,3],state<4,0.,-1.,0.,.12 if state==2 else .62)
+		for frame in range(40):
+			model.update_pose(1./60.,move,false,state in [1,2,3],state<4,0.,-1.,0.,.12 if state==2 else .62)
+			await process_frame
 		var img=await picture();img.save_jpg(directory+"motion-"+str(state)+".jpg",.94)
 	world.free();await process_frame;print("DETAILS_REVIEW_OK weapons=",Catalog.weapons.size());quit()

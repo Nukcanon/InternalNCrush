@@ -57,5 +57,5 @@ jobs:
             sleep 1
           done
           cd ../..
-          python services/directory/check_live.py http://127.0.0.1:30881 --version 1.1.5
+          python services/directory/check_live.py http://127.0.0.1:30881 --version 1.1.6
 

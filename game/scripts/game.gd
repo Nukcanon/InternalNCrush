@@ -109,6 +109,7 @@ func _ready():
 		start_demo();return
 	profile.blood_effects=false
 	C.load_all();load_profile()
+	if not TouchControls.supported():profile.touch_aim_assist=false;profile.touch_auto_fire=false
 	if str(profile.lobby_url).is_empty():
 		var defaults=JSON.parse_string(FileAccess.get_file_as_string("res://assets/lobby_defaults.json"))
 		if defaults is Dictionary:profile.lobby_url=str(defaults.get("url",""))

@@ -33,10 +33,11 @@ func build_pose(w:Dictionary):
 	if w.name in ["HIVE","TIDAL"]:reload_style="drum"
 	elif w.name in ["RAPID-9","KESTREL","FLUX"]:reload_style="bullpup"
 	elif w.name in ["SCOUT","MONOLITH"]:reload_style="bolt"
+	elif w.name=="CHIME":reload_style="revolver"
 	var pistol=int(w.slot)==1 and w.kind=="gun"
 	length=(.4 if w.name=="CHIME" else .32 if w.name=="SPARK" else .3) if pistol else .43 if w.kind=="heal" else .29 if w.kind=="repair" else .30 if w.kind=="remote" else LENGTHS.get(w.name,.65)
 	barrel_group=piece("Barrel");magazine=piece("Magazine",Vector3(0,-.09,-.18));action_part=piece("Action",Vector3(0,.027,-.17))
-	if pistol:magazine.position=Vector3(0,-.19,.046)
+	if pistol:magazine.position=Vector3(0,-.013,-.073) if w.name=="CHIME" else Vector3(0,-.19,.046)
 	elif w.kind=="repair":magazine.position=Vector3(0,-.13,-.15)
 	elif w.kind!="heal":magazine.position=Vector3(0,-.087,.05 if w.name in ["RAPID-9","KESTREL","FLUX"] else -.17)
 	mag_origin=magazine.position;action_origin=action_part.position
@@ -105,6 +106,7 @@ func build(w:Dictionary,hands=true,use_cache=true):
 	if w.name in ["HIVE","TIDAL"]:reload_style="drum"
 	elif w.name in ["RAPID-9","KESTREL","FLUX"]:reload_style="bullpup"
 	elif w.name in ["SCOUT","MONOLITH"]:reload_style="bolt"
+	elif w.name=="CHIME":reload_style="revolver"
 	barrel_group=piece("Barrel");magazine=piece("Magazine",Vector3(0,-.09,-.18));action_part=piece("Action",Vector3(0,.027,-.17))
 	var model=w.name
 	if pistol:
@@ -116,7 +118,9 @@ func build(w:Dictionary,hands=true,use_cache=true):
 		tube(barrel_group,Vector3(0,.022,-length*.7),.021,.14,metal)
 		magazine.position=Vector3(0,-.19,.046);magazine_shape("pistol")
 		if model=="CHIME":
-			tube(self,Vector3(0,-.013,-.073),.064,.105,Color("84918e"))
+			for child in magazine.get_children():child.free()
+			magazine.position=Vector3(0,-.013,-.073)
+			tube(magazine,Vector3.ZERO,.064,.105,Color("84918e"))
 			block(self,Vector3(0,.069,-.19),Vector3(.082,.034,.28),edge)
 		elif model=="SPARK":block(self,Vector3(0,-.012,-.17),Vector3(.11,.115,.16),edge);length=.32
 		elif model=="RIVET":tube(self,Vector3(0,.021,-.32),.045,.1,edge)
@@ -277,12 +281,21 @@ func calibrate_grips(visible_round=true):
 	var receiver=AABB(Vector3(-.045,-.065,-.27),Vector3(.09,.14,.30)) if pistol else AABB(Vector3(-width*.5,-.07,-.395),Vector3(width,.145,.39))
 	var grip=AABB(Vector3(-.036,-.225,grip_z-.048),Vector3(.072,.17,.096))
 	grip_boxes=[receiver,grip]
-	if visible_round and spec.kind=="gun" and reload_style in ["shell","break"]:
+	if visible_round and spec.kind=="gun" and reload_style in ["shell","break","revolver"]:
+		var previous=get_node_or_null("ReloadRound")
+		if previous:remove_child(previous);previous.free()
 		reload_round=Node3D.new();reload_round.name="ReloadRound";add_child(reload_round)
-		tube(reload_round,Vector3.ZERO,.012,.07,Color("b4a16d"));tube(reload_round,Vector3(0,0,-.037),.010,.01,Color("714c38"));reload_round.hide()
+		if reload_style=="revolver":
+			for i in range(6):
+				var offset=Vector3(cos(i*TAU/6.)*.035,sin(i*TAU/6.)*.035,0.)
+				tube(reload_round,offset,.009,.045,Color("b4a16d"))
+		else:
+			tube(reload_round,Vector3.ZERO,.012,.07,Color("b4a16d"));tube(reload_round,Vector3(0,0,-.037),.010,.01,Color("714c38"))
+		reload_round.hide()
 func magazine_contact_box() -> AABB:
 	var bounds=AABB(Vector3(-.034,-.17,-.047),Vector3(.068,.18,.105))
-	if reload_style=="pistol":bounds=AABB(Vector3(-.032,-.087,-.042),Vector3(.064,.09,.085))
+	if reload_style=="revolver":bounds=AABB(Vector3(-.066,-.066,-.055),Vector3(.132,.132,.11))
+	elif reload_style=="pistol":bounds=AABB(Vector3(-.032,-.087,-.042),Vector3(.064,.09,.085))
 	elif reload_style=="drum":bounds=AABB(Vector3(-.108,-.148,-.057),Vector3(.216,.216,.114))
 	elif reload_style=="box":bounds=AABB(Vector3(-.092,-.147,-.074),Vector3(.184,.175,.148))
 	elif reload_style in ["shell","break"]:bounds=AABB(Vector3(-.027,-.027,-.25),Vector3(.054,.054,.30))
@@ -315,6 +328,14 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 		return
 	var u=clampf(t/.70,0,1);var contact=smoothstep(.02,.18,u)*(1.-smoothstep(.78,.98,u));var remove=smoothstep(.15,.4,u)*(1.-smoothstep(.52,.76,u));var latch=sin(clampf((u-.78)/.22,0,1)*PI)
 	match reload_style:
+		"revolver":
+			var opened=smoothstep(.0,.18,t)*(1.-smoothstep(.76,.94,t))
+			magazine.position=mag_origin+Vector3(-.10,0.,0.)*opened
+			var seat=smoothstep(.32,.60,t)
+			var pickup=smoothstep(.15,.30,t)*(1.-smoothstep(.65,.80,t))
+			var rounds=magazine.position+Vector3(0,0,.14*(1.-seat))
+			left_hand.position=hand_origin.lerp(rounds+Vector3(-.082,-.024,.025),pickup)
+			if is_instance_valid(reload_round):reload_round.position=rounds;reload_round.visible=t>.20 and t<.60
 		"shell":
 			var cycle=fposmod(clampf((t-.08)/.84,0.,.999)*3.,1.)
 			var reach=smoothstep(.12,.55,cycle);var retreat=smoothstep(.68,1.,cycle)
@@ -348,7 +369,7 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 			magazine.position+=Vector3(0,-.22,.04)*remove;left_hand.position=hand_origin.lerp(magazine.transform*Vector3(-.085,-.055,.015),contact);action_part.position.z+=latch*.065
 		_:
 			magazine.position+=Vector3(-.06,-.25,.06)*remove;magazine.rotation.x=-remove*.18;left_hand.position=hand_origin.lerp(magazine.transform*Vector3(-.084,-.085,0),contact);left_hand.position+=Vector3(-.04,.15,0)*latch;action_part.position.z+=latch*.07
-	if t>=.70 and spec.kind=="gun" and reload_style not in ["shell","break","box"]:
+	if t>=.70 and spec.kind=="gun" and reload_style not in ["shell","break","box","revolver"]:
 		# Final 30%: reach charging control, pull, release, then return to grip.
 		# Actor handedness mirrors receiver and both arms together.
 		var v=clampf((t-.70)/.30,0.,1.)

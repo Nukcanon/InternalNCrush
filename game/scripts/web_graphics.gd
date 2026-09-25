@@ -19,6 +19,9 @@ var elapsed=0.
 var frames=0
 var warmup=8.
 var context=""
+var stall_count=0
+var worst_frame_ms=0.
+var last_stall_report=0
 
 static func quality(profile:Dictionary) -> int:return clampi(int(profile.get("web_quality",-1)),-1,3)
 static func resolve(profile:Dictionary,auto_level:int=1) -> Dictionary:
@@ -62,7 +65,13 @@ func observe(fps:float,target:float) -> bool:
 	if before==Vector2(level,scale_3d):return false
 	hold_windows=6;slow_windows=0;fast_windows=0;return true
 func _process(dt:float):
-	if not is_instance_valid(game) or quality(game.profile)>=0:return
+	if not is_instance_valid(game):return
+	if dt>.25 and get_window().has_focus() and game.phase=="combat":
+		stall_count+=1;worst_frame_ms=maxf(worst_frame_ms,dt*1000.)
+		var now=Time.get_ticks_msec()
+		if now-last_stall_report>10000:
+			last_stall_report=now;print("WEB_FRAME_STALL ms=",roundi(dt*1000.)," map=",game.options.map," actors=",game.actors.size())
+	if quality(game.profile)>=0:return
 	var next_context=str([game.options.map,game.phase])
 	if context!=next_context:context=next_context;reset_samples()
 	# Loading, menus, replay and a background tab are not valid combat samples.
@@ -76,7 +85,10 @@ func _process(dt:float):
 	var fps=frames/elapsed;elapsed=0.;frames=0
 	var cap=int(game.profile.get("frame_limit",60));var target=float(mini(cap,60) if cap>0 else 60)
 	if observe(fps,target):
-		GraphicsOptions.apply(game);game.apply_display_settings();changed.emit(describe())
+		# Auto only changes bounded effect budgets and render scale. Traversing every
+		# mesh/light and replacing materials here caused mid-combat main-thread stalls.
+		GraphicsOptions.detail=int(resolve(game.profile,level).decor_quality)
+		game.apply_display_settings();changed.emit(describe())
 static func apply_settings(game:Node):
 	GraphicsOptions.apply(game);game.apply_display_settings();game.save_profile()
 	if is_instance_valid(game.web_graphics):

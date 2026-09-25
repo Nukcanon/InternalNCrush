@@ -6,6 +6,7 @@ func expect(ok:bool,message:String):
 	checks+=1
 	if not ok:failures+=1;printerr("FAIL ",message)
 func run():
+	TouchControls.supported_cache=0
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(50,50);g.arena.has_water=false
 	g.arena.box(Vector3(0,-.5,0),Vector3(100,1,100),Color.GRAY)
@@ -14,7 +15,11 @@ func run():
 	p.team=0;q.team=1;p.protect=0.;q.protect=0.;p.primary="a1";p.slot=0;p.reload=0.;p.placing="";q.hp=100.;q.armor=0.
 	a.position=Vector3.ZERO;b.position=Vector3(.5,0,-12);a.input_state.yaw=0.;a.input_state.pitch=0.
 	await physics_frame;await physics_frame
+	expect(not g.profile.touch_aim_assist,"desktop forces saved aim assistance off")
 	g.profile.touch_auto_fire=false;g.profile.touch_aim_assist=true
+	TouchAim.assist(g,a,1./30.)
+	expect(a.input_state.yaw==0.,"desktop cannot enable camera magnetism even with a true saved setting")
+	TouchControls.supported_cache=1
 	TouchAim.assist(g,a,1./30.)
 	expect(a.input_state.yaw<0. and a.input_state.pitch<0.,"magnet assistance approaches a nearby visible enemy without auto fire")
 	g.profile.touch_aim_assist=false;var before=Vector2(a.input_state.yaw,a.input_state.pitch);TouchAim.assist(g,a,1./30.)
@@ -22,11 +27,31 @@ func run():
 	g.profile.touch_aim_assist=true;q.team=0;TouchAim.assist(g,a,1./30.)
 	expect(before==Vector2(a.input_state.yaw,a.input_state.pitch),"assist never pulls toward teammates")
 	q.team=1
+	b.position=Vector3(1.,0,-41.);a.input_state.yaw=0.;a.input_state.pitch=0.
+	await physics_frame;TouchAim.assist(g,a,1./30.)
+	expect(a.input_state.yaw==0.,"enemy beyond 40 metres cannot attract aim")
+	b.position=Vector3(1.,0,-39.)
+	await physics_frame;TouchAim.assist(g,a,1./30.)
+	expect(a.input_state.yaw<0.,"near-reticle enemy within 40 metres can attract aim")
+	b.position=Vector3(.5,0,-12);before=Vector2(a.input_state.yaw,a.input_state.pitch)
 	var wall=StaticBody3D.new();g.add_child(wall);wall.position=Vector3(.25,1.,-6.)
 	var shape=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(2,3,.3);shape.shape=box;wall.add_child(shape)
 	await physics_frame;TouchAim.assist(g,a,1./30.)
 	expect(before==Vector2(a.input_state.yaw,a.input_state.pitch),"assist never pulls through a wall")
-	wall.free();a.position=Vector3(-8,0,2);b.position=Basis(Vector3.UP,deg_to_rad(40.))*Vector3(0,0,-15)
+	wall.free()
+	for weapon_id in ["r1","r2","r3","r4","r5"]:
+		p.primary=weapon_id;b.position=Vector3(.02,0,-20.)
+		a.input_state.yaw=0.;a.input_state.pitch=asin((b.eye()-Vector3.UP*.35-a.eye()).normalized().y)
+		a.input_state.ads=false;a.ads_blend=0.
+		await physics_frame;TouchAim.assist(g,a,1./30.)
+		expect(a.input_state.yaw==0.,weapon_id+" has no unscoped magnetism")
+		a.input_state.ads=true;a.ads_blend=1.;TouchAim.assist(g,a,1./30.)
+		expect(a.input_state.yaw<0.,weapon_id+" follows only a nearly centered scoped target")
+		a.input_state.yaw=0.;b.position.x=1.
+		await physics_frame;TouchAim.assist(g,a,1./30.)
+		expect(a.input_state.yaw==0.,weapon_id+" ignores off-center targets under zoom")
+	p.primary="a1";a.input_state.ads=false;a.ads_blend=0.
+	a.position=Vector3(-8,0,2);b.position=Basis(Vector3.UP,deg_to_rad(40.))*Vector3(0,0,-15)
 	await physics_frame
 	var turret={"id":901,"kind":"turret","pos":Vector3.ZERO,"yaw":0.,"head_yaw":-TurretLogic.HALF_ARC,"owner":1,"team":0,"hp":100.,"max_hp":100.,"level":1,"next_fire":0.,"target":0,"lock":0.,"disabled":0.,"expires":1000.}
 	g.devices[901]=turret

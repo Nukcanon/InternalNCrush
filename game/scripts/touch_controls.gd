@@ -27,7 +27,7 @@ static func supported() -> bool:
 static func detect_supported() -> bool:
 	if "--touch-test" in OS.get_cmdline_user_args():return true
 	if OS.has_feature("web"):
-		return bool(JavaScriptBridge.eval("navigator.maxTouchPoints>0 && (matchMedia('(pointer:coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent))"))
+		return bool(JavaScriptBridge.eval("navigator.maxTouchPoints>0 && (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1))"))
 	return OS.has_feature("mobile")
 func _ready():
 	enabled=supported();mouse_filter=Control.MOUSE_FILTER_IGNORE;set_process_input(enabled);visible=false
@@ -137,7 +137,7 @@ func apply_input(actor:Actor,on:bool):
 	actor.input_state.sprint=on and held.get("sprint",false) and movement.length()>.1
 	actor.input_state.alt=on and held.get("medical",false)
 	if on:
-		if look_id>=0 or held.get("ads",false) or held.get("fire",false):TouchAim.assist(game,actor,1./30.)
+		if look_id>=0 or held.get("ads",false) or held.get("fire",false) or game.profile.get("touch_auto_fire",false):TouchAim.assist(game,actor,1./30.)
 		if TouchAim.can_auto_fire(game,actor):
 			actor.input_state.fire=true;actor.input_state.sprint=false
 			var p=game.players[game.local_id];var w=game.current_weapon(p)
