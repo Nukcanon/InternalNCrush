@@ -42,6 +42,7 @@ jobs:
               data=fetch(release+name)
               assert hashlib.sha256(data).hexdigest()==digest,name
               assets.append(dict(name=name,sha256=digest,bytes=len(data)))
+          (out/'verified-files.json').write_text(json.dumps(dict(web_files=checked,web_bytes=sum(x['bytes'] for x in manifest['files']),assets=assets),indent=2))
           errors=[];logs=[]
           with sync_playwright() as p:
               browser=p.chromium.launch(args=['--enable-unsafe-swiftshader'])
@@ -55,6 +56,9 @@ jobs:
               before=page.screenshot(path=str(out/'live-menu.png'))
               # Practice button position observed in the 1280x720 rendered menu.
               page.mouse.click(1090,382)
+              page.wait_for_timeout(1000)
+              # Observed confirmation dialog: enter practice.
+              page.mouse.click(730,410)
               page.wait_for_timeout(8000)
               after=page.screenshot(path=str(out/'live-practice.png'))
               a=Image.open(io.BytesIO(before)).convert('RGB').crop((800,95,1190,580))
