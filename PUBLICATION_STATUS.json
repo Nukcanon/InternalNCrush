@@ -1,79 +1,66 @@
 {
   "version": "1.1.4",
   "published_version": "1.1.4",
-  "previous_live_version": "1.1.3",
-  "publication_state": "published_and_verified",
+  "publication_state": "published_ci_verified",
   "repository": "https://github.com/Nukcanon/InternalNCrush",
   "source_branch": "main",
-  "source_commit": "3e87f868e10cefa98db9723096fcfe4b55f25710",
-  "runtime_source_commit": "3e87f868e10cefa98db9723096fcfe4b55f25710",
-  "integration_commit": "9426a9b004488c715eb2bde9ca1f2f24554a3d71",
+  "source_commit": "7fecbc8a24ab268e7942949afac0c9f225b419b4",
+  "runtime_source_commit": "7fecbc8a24ab268e7942949afac0c9f225b419b4",
   "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.1.4",
   "download_page": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
   "web_play_url": "https://nukcanon.github.io/nukcanon/play/",
-  "verified_at_utc": "2026-09-25T04:57:42.203561+00:00",
-  "build_run": 36094461263,
+  "build_run": 36121517182,
   "build_result": "success",
-  "backend_run": 36094461238,
-  "backend_result": "success",
-  "packaged_execution_run": 36095815353,
-  "packaged_execution_result": "success",
-  "public_verification_run": 36096319950,
-  "public_verification_result": "success",
-  "site_commit": "9970d05b091d1a6dc6bb1547b470c33725e44894",
-  "pages_run": 36096028101,
+  "site_commit": "cbe4ff06022fef7b9fd74ffe870cf62e488b48c0",
+  "site_install_run": 36123038344,
+  "pages_run": 36123073158,
   "pages_result": "success",
   "assets": [
     {
       "name": "InternalNCrush_NAS_Linux_v1.1.4.zip",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_NAS_Linux_v1.1.4.zip",
       "bytes": 15306,
-      "sha256": "060018447730669547d8bb1789dcee91bf5e64681d5d84c76a5bacb5c66ecf25",
-      "anonymous_download_hash_verified": true
+      "sha256": "060018447730669547d8bb1789dcee91bf5e64681d5d84c76a5bacb5c66ecf25"
     },
     {
       "name": "InternalNCrush_Web_v1.1.4.zip",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_Web_v1.1.4.zip",
-      "bytes": 30837771,
-      "sha256": "b920194a6402e574fa8886a94c2bb33d585052b7680cb6115baecb90b3d68c29",
-      "anonymous_download_hash_verified": true
+      "bytes": 66836599,
+      "sha256": "02c1e8af8fa25798741ea9519e723c43b63ef301e80afd042c7a46429ee934a0"
     },
     {
       "name": "InternalNCrush_Windows_v1.1.4.zip",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/InternalNCrush_Windows_v1.1.4.zip",
-      "bytes": 119705653,
-      "sha256": "a39ad99cf193991ca5eceff634cd8c48c7f540ae8ccb7a6e16a0372d5f137f6d",
-      "anonymous_download_hash_verified": true
+      "bytes": 86558783,
+      "sha256": "51e9c66a37abf8ef1d81e1d8eec0336efbc52ab5ec61072fbadfb6f8c0cc3d12"
     },
     {
       "name": "SHA256SUMS.txt",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/SHA256SUMS.txt",
-      "bytes": 298,
-      "sha256": "f4b006ba4615457ab6aa1bceffbf43bb28e93461d7c9f124f5caaf1f0e2ae675"
+      "bytes": 196,
+      "sha256": "55ebcc6a1fd017457b4adfdeaec82136e9cf7468b9a4b47ecc9a88b2d5b98c16"
+    },
+    {
+      "name": "WEB_RELEASE_v1.1.4.json",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.1.4/WEB_RELEASE_v1.1.4.json",
+      "bytes": 168,
+      "sha256": "f802a7667ce5a71677a30a0b15f823113a69c8a8728254935a9a81b3776d0700"
     }
   ],
-  "web_build": {
-    "files": 19,
-    "bytes": 67403873,
-    "threads": false,
-    "all_published_hashes_verified": true
-  },
   "checks": {
-    "functional": "3722/3722; 27 suites",
-    "touch": "23/23",
-    "network": "32 clients, reconnect, restart, late join, props and map rotation passed",
-    "webrtc": "real host/client snapshots and disconnect passed",
-    "windows": "Packaged EXE on Windows headless: practice 10 players, training 8 players, loopback 2 players; all combat and exit 0",
-    "graphics": "412 Linux rendered frames; turret visible/rotated RGB delta 0; wall occlusion delta 26684 pixels",
-    "web": "Public Chromium menu and actual practice entry confirmed; no page or script errors"
+    "functional": "3790/3790; 30 suites",
+    "touch": "35/35",
+    "network": "32 clients, lifecycle, late startup, movable props, map rotation, and WebRTC passed",
+    "exports": "Windows and single-thread Web export passed",
+    "site": "Installer verified archive SHA256, manifest file sizes and hashes, source commit, and runtime headers before installation; Pages deployment succeeded"
   },
-  "public_lobby_url": null,
+  "previous_runtime_source_commit": "3e87f868e10cefa98db9723096fcfe4b55f25710",
   "remaining": [
-    "Physical low-end GPUs and mobile devices, iOS Safari, external WAN/NAT/TURN and long multiplayer sessions were not tested.",
-    "Windows packaged tests were headless; graphical checks used Linux and Chromium SwiftShader.",
-    "Walls intersecting the conservative turret assembly bounds may suppress some silhouette.",
-    "Reload visual checks cover sampled poses and camera angles, not every possible intersection.",
-    "Existing NAS operators must update their directory to 1.1.4. No public directory has been deployed."
+    "Physical low-end GPUs, smartphones and iOS performance were not measured.",
+    "New Windows package was exported but not executed on Windows in this run.",
+    "Public browser gameplay was not interactively tested in this run.",
+    "Release tag remains at its original source; use runtime_source_commit for replacement binaries.",
+    "Existing NAS asset was preserved. No public lobby was deployed."
   ],
-  "report": "game/docs/TEST_REPORT_V114.md"
+  "report": "game/docs/TEST_REPORT_V114_REPLACEMENT.md"
 }

@@ -1,6 +1,6 @@
 # Internal N Crush 1.1.4
 
-This branch contains **unreleased** gameplay, touch, cartoon rendering and arcade ballistics changes. See [implementation and validation status](game/docs/OPTIMIZATION_REVIEW.md). Published downloads and website game binaries still refer to 1.1.4.
+The gameplay, touch, cartoon rendering and arcade ballistics update is published as a replacement 1.1.4 Windows/Web build. See [replacement validation](game/docs/TEST_REPORT_V114_REPLACEMENT.md) and [publication status](PUBLICATION_STATUS.json) for the exact source commit, checksums and test scope.
 
 Windows / Web tactical FPS with six operators, 31 competitive arenas and a four-level outdoor practice range. Godot 4.4.1. The player hosting a room runs the authoritative game; the lightweight lobby only provides room discovery and WebRTC signaling.
 
