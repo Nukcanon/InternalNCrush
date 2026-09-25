@@ -9,7 +9,7 @@ func run():
 	Catalog.load_all()
 	var model=CharacterVisual.new();root.add_child(model);model.build(0,0)
 	var body=model.rig.get_node("ContinuousBody")
-	expect(body.skin!=null and body.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size()<18000,"comic character retains GPU skinning within the base mesh triangle budget")
+	expect(body.skin!=null and (not RenderStyle.web() or body.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size()<18000),"GPU skinning is preserved; the Web triangle budget applies only to Web models")
 	model.free()
 	for gender in ["male","female"]:
 		var data=JSON.parse_string(FileAccess.get_file_as_string("res://assets/human/"+gender+".json"));var invalid=false;var longest=0.

@@ -13,6 +13,12 @@ func keycap(text:String,pos:Vector2,width:float=26.):
 	var font=get_theme_default_font();var baseline=(25.+font.get_ascent(13)-font.get_descent(13))*.5
 	draw_string(font,pos+Vector2(1,baseline),text,HORIZONTAL_ALIGNMENT_CENTER,width-2,13,WHITE)
 func icon(role:int,center:Vector2,radius:float,color:Color):
+	# Centre the visible strokes, not the asymmetric construction origin.
+	match role:
+		0:center+=Vector2(.25,.05)*radius
+		1:center.y+=radius*.45-1.
+		2:center.y-=radius*.1
+		3:center-=Vector2(radius*.175+.5,radius*.225+.75)
 	match role:
 		0:
 			for shift in [-.25,.25]:draw_polyline(PackedVector2Array([center+Vector2(-.6+shift,.45)*radius,center+Vector2(shift,-.55)*radius,center+Vector2(.1+shift,.25)*radius]),color,3.,true)
@@ -34,13 +40,7 @@ func _draw():
 	if not is_instance_valid(game) or not game.players.has(game.local_id):return
 	var p=game.players[game.local_id];var font=get_theme_default_font()
 	var state=AbilityBalance.skill_state(game,game.local_id)
-	var center=Vector2(914,608);var remaining=state.remaining;var duration=state.duration;var enabled=state.enabled
-	draw_circle(center,38.,Color(.08,.11,.15,float(game.profile.get("hud_opacity",.38))));draw_arc(center,36.,0,TAU,64,Color("6c7a87"),2.,true)
-	var ready=remaining<=0. and enabled;var color=GOLD if ready else Color("8697a4")
-	draw_arc(center,36.,-PI/2,-PI/2+TAU*(1.-clampf(remaining/duration,0.,1.)),64,color,4.,true)
-	icon(int(p.role),center,21.,color)
-	if remaining>0.:
-		draw_circle(center,25.,Color(.04,.07,.10,.80));draw_string(font,center+Vector2(-25,8),str(ceili(remaining)),HORIZONTAL_ALIGNMENT_CENTER,50,24,WHITE)
+	badge(int(p.role),Vector2(914,608),float(state.remaining),float(state.duration),bool(state.enabled),float(game.profile.get("hud_opacity",.38)))
 	keycap("F",Vector2(901,654));draw_string(font,Vector2(840,694),state.label,HORIZONTAL_ALIGNMENT_CENTER,150,13,WHITE)
 	for i in range(4):keycap(str(i+1),Vector2(314+i*132,635))
 	var x=309.
@@ -57,3 +57,21 @@ func _draw():
 	if not p.get("pending_loadout",{}).is_empty():details.append("다음 부활 장비 예약")
 	if not p.alive:details=["마우스 · 관전 시점", "클릭 · 대상 전환", "B · 다음 병과/장비"]
 	draw_string(font,Vector2(309,609),"   ·   ".join(details),HORIZONTAL_ALIGNMENT_LEFT,550,14,WHITE)
+
+func badge(role:int,center:Vector2,remaining:float,duration:float,enabled:bool,opacity:float):
+	var ready=remaining<=0. and enabled;var color=GOLD if ready else Color("8697a4")
+	draw_circle(center+Vector2(0,2),39.,Color(0,0,0,.35))
+	draw_circle(center,38.,Color(.08,.11,.15,opacity))
+	draw_arc(center,37.,0,TAU,64,Color("52616d"),2.,true)
+	# Subtle upper highlight / lower shade makes a bevel without a texture or blur.
+	draw_arc(center,33.,PI,TAU,40,Color(1,1,1,.24 if ready else .12),2.,true)
+	draw_arc(center,33.,0,PI,40,Color(0,0,0,.48),2.,true)
+	var progress=1.-clampf(remaining/maxf(.001,duration),0.,1.)
+	draw_arc(center,36.,-PI/2,-PI/2+TAU*progress,64,color,4.,true)
+	icon(role,center+Vector2(.8,1.2),21.,Color(0,0,0,.65))
+	icon(role,center-Vector2(.4,.6),21.,Color(1,1,1,.30 if ready else .14))
+	icon(role,center,21.,color)
+	if remaining>0.:
+		draw_circle(center,25.,Color(.04,.07,.10,.80))
+		var font=get_theme_default_font();var baseline=(font.get_ascent(24)-font.get_descent(24))*.5
+		draw_string(font,center+Vector2(-25,baseline),str(ceili(remaining)),HORIZONTAL_ALIGNMENT_CENTER,50,24,WHITE)

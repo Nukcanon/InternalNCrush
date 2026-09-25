@@ -215,8 +215,11 @@ func try_low_step(dt:float) -> bool:
 	if obstacle.get_normal().y>=cos(floor_max_angle):return false
 	if test_move(global_transform,Vector3.UP*STEP_HEIGHT):return false
 	var raised=global_transform;raised.origin.y+=STEP_HEIGHT
-	if test_move(raised,motion):return false
-	raised.origin+=motion
+	# A capsule touching the riser is still outside its top surface. Probe one
+	# foot radius ahead so the downward sweep finds the tread, not the corner.
+	var step_motion=motion.normalized()*maxf(motion.length(),float(shape.shape.radius)+.03)
+	if test_move(raised,step_motion):return false
+	raised.origin+=step_motion
 	var landing=KinematicCollision3D.new()
 	if not test_move(raised,Vector3.DOWN*(STEP_HEIGHT+.02),landing):return false
 	if landing.get_collider() is RigidBody3D or landing.get_normal().y<cos(floor_max_angle):return false
@@ -331,4 +334,3 @@ func show_shot(at:float) -> bool:
 		var source=gun.to_global(Vector3(.09,.01,-.16))
 		game.combat_fx.eject_case(source,camera.global_basis.x,camera.global_basis.y,global_position.y,shot_serial+pid)
 	return true
-

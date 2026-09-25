@@ -11,7 +11,7 @@ permissions:
   contents: read
 concurrency:
   group: internal-n-crush-validate-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   windows:
     runs-on: ubuntu-latest
@@ -42,6 +42,7 @@ jobs:
           set -euo pipefail
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
           timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_render_split.gd
+          timeout 90 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_motion_v115.gd -- --no-save-profile --no-update-check
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_arenas.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
@@ -60,6 +61,8 @@ jobs:
           path: validation/presentation-fix/*.png
       - name: Review native and Web impact craters
         run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_marks_v115.gd
+      - name: Review centred embossed skill badges
+        run: timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_hud_v115.gd
       - name: Capture native menu screenshots
         run: |
           set -euo pipefail
@@ -122,6 +125,7 @@ jobs:
           python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.1.5.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: graphics-v115
           path: |
@@ -180,4 +184,3 @@ jobs:
           gh release upload internal-n-crush-v1.1.5 InternalNCrush_Windows_v1.1.5.zip InternalNCrush_Web_v1.1.5.zip InternalNCrush_NAS_Linux_v1.1.5.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
           gh release upload internal-n-crush-v1.1.5 WEB_RELEASE_v1.1.5.json --clobber --repo "$GITHUB_REPOSITORY"
-
