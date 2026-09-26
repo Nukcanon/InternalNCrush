@@ -92,9 +92,14 @@ func run():
 	expect(game.players[1].slot==1,"touch weapon tile switches secondary")
 	game.players[1].fire_ready=0.;game.players[1].melee_ready=0.;game.players[1].placing="";game.players[1].cooking=0;game.players[1].protect=0.
 	expect(game.touch.buttons.has("melee") and not game.touch.buttons.has("slot4"),"mobile adds only one melee button and no fifth slot")
-	touch(7,Vector2(1028,524),true);touch(7,Vector2(1028,524),false)
+	var melee_center:Vector2=game.touch.buttons.melee.get_center()
+	touch(7,melee_center,true)
 	expect(game.players[1].melee_started==game.clock and game.players[1].slot==1,"touch quick melee swings without switching the selected gun")
 	expect(not ActionState.available(game,1,"melee"),"mobile melee greys out during cooldown")
+	game.collect_input();game.clock+=.81;game.process_trigger(1)
+	expect(a.input_state.melee and game.players[1].melee_started==game.clock,"held mobile melee repeats after 0.8 seconds")
+	touch(7,melee_center,false);game.collect_input()
+	expect(not a.input_state.melee,"releasing mobile melee clears repeated input")
 	for notification in [Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT,Node.NOTIFICATION_APPLICATION_FOCUS_OUT]:
 		touch(4,Vector2(1165,465),true);touch(0,Vector2(165,500),true);drag(0,Vector2(165,410),Vector2(0,-90))
 		game.touch.notification(notification);game.collect_input()
