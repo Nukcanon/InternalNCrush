@@ -204,7 +204,7 @@
     "name": "SCOUT",
     "role": 1,
     "slot": 0,
-    "damage": 76,
+    "damage": 80,
     "interval": 1.6,
     "mag": 6,
     "reserve": 24,
@@ -253,13 +253,14 @@
       4,
       8
     ],
-    "scope_default": 4
+    "scope_default": 4,
+    "structure_damage_scale": 0.4
   },
   "r2": {
     "name": "MONOLITH",
     "role": 1,
     "slot": 0,
-    "damage": 100,
+    "damage": 150,
     "interval": 2.35,
     "mag": 4,
     "reserve": 16,
@@ -289,7 +290,7 @@
     "falloff_end": 240,
     "min_damage_scale": 0.85,
     "zone_multipliers": {
-      "head": 1.0,
+      "head": 2.0,
       "torso": 1.0,
       "legs": 1.0,
       "hands": 0.6,
@@ -311,7 +312,8 @@
       8,
       16
     ],
-    "scope_default": 8
+    "scope_default": 8,
+    "structure_damage_scale": 0.4
   },
   "r3": {
     "name": "ECHO",
@@ -361,7 +363,8 @@
     "spray_frequency": 2.2,
     "spray_seed": 2.22,
     "spray_direction": 1,
-    "pattern_recovery": 32.33
+    "pattern_recovery": 32.33,
+    "structure_damage_scale": 0.6
   },
   "r4": {
     "name": "LARK",
@@ -411,7 +414,8 @@
     "spray_frequency": 2.7,
     "spray_seed": 2.59,
     "spray_direction": -1,
-    "pattern_recovery": 34.86
+    "pattern_recovery": 34.86,
+    "structure_damage_scale": 0.6
   },
   "r5": {
     "name": "KESTREL",
@@ -461,7 +465,8 @@
     "spray_frequency": 2.4,
     "spray_seed": 2.96,
     "spray_direction": 1,
-    "pattern_recovery": 33.26
+    "pattern_recovery": 33.26,
+    "structure_damage_scale": 0.6
   },
   "h1": {
     "name": "ANCHOR",

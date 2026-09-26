@@ -22,14 +22,14 @@ func fit_frame():
 	if is_instance_valid(camera):camera.size=maxf(frame_height,frame_width/maxf(.3,size.x/maxf(1.,size.y)))
 	if is_instance_valid(skill_symbol):
 		skill_symbol.size=Vector2(76,76);skill_symbol.position=(size-skill_symbol.size)*.5
-func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
+func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:int=1):
 	if not is_instance_valid(stage):return
 	preview_kind=kind
 	if is_instance_valid(model):stage.remove_child(model);model.queue_free()
 	model=Node3D.new();stage.add_child(model)
 	if is_instance_valid(skill_symbol):skill_symbol.hide()
 	if kind==0:
-		var c=CharacterVisual.new();c.enable_physics=false;model.add_child(c);c.build(role,team);c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.)
+		var c=CharacterVisual.new();c.enable_physics=false;model.add_child(c);c.build(role,team);c.set_armor(armor_level);c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.)
 		var gun=WeaponVisual.new();c.socket.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.scale=Vector3.ONE*.8
 		c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.);c.grip_weapon(1.);c.sync_deform()
 		model.rotation.y=-.35;camera.position=Vector3(0,1.4,-4);camera.look_at(Vector3(0,1.3,0));camera.size=1.15
@@ -41,8 +41,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 			bounds=box if first else bounds.merge(box);first=false
 		var focus=bounds.get_center();camera.position=focus+Vector3(0,.35,-3);camera.look_at(focus);camera.size=maxf(.52,bounds.size.x*.70)
 	elif kind==3:
-		HumanModel.loft(model,Vector3(0,.15,0),[Vector4(-.2,.17,.13,0),Vector4(.05,.20,.14,0),Vector4(.18,.17,.11,0)],Color("718891") if gadget==0 else Color("596552") if gadget==1 else Color("3c514f"))
-		for x in [-.12,0,.12]:HumanModel.oval(model,Vector3(x,.10,-.15),Vector3(.10,.15,.06),Color("6e7d63"))
+		ArmorVisual.build(model,gadget,RenderStyle.web())
 		camera.position=Vector3(.5,.6,-3);camera.look_at(Vector3(0,.15,0));camera.size=1.0
 	elif kind==4:
 		if not is_instance_valid(skill_symbol):skill_symbol=SkillIcon.new();add_child(skill_symbol);skill_symbol.size=Vector2(76,76)
@@ -59,7 +58,8 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 		for child in model.get_children():
 			if child is Node3D:child.position-=center
 		var diameter=Vector2(bounds.size.x,bounds.size.z).length()
-		var margin=1.85 if kind==1 else 1.25
+		var compact=kind==3 or (kind==2 and (gadget==8 or (role==0 and gadget==1) or (role==4 and gadget in [0,1])))
+		var margin=1.85 if kind==1 else 2.5 if compact else 1.25
 		frame_width=maxf(.3,diameter)*margin
 		frame_height=maxf(.22,bounds.size.y+diameter*.13)*margin
 		custom_minimum_size.y=clampf(440.*frame_height/frame_width,130.,280.)

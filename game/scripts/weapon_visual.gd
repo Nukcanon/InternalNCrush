@@ -23,6 +23,7 @@ var rocket_grip:HeldGrip
 var grip_boxes:Array=[]
 var length=.7
 var reload_style="rifle"
+var reload_round_count=3
 var metal=Color("202b33")
 var edge=Color("586773")
 var light=Color("9baeb6")
@@ -385,13 +386,17 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 			left_hand.position=hand_origin.lerp(rounds+Vector3(-.082,-.024,.025),pickup)
 			if is_instance_valid(reload_round):reload_round.position=rounds;reload_round.visible=t>.20 and t<.60
 		"shell":
-			var cycle=fposmod(clampf((t-.08)/.84,0.,.999)*3.,1.)
+			var cycle=fposmod(clampf((t-.08)/.72,0.,.999)*maxi(1,reload_round_count),1.)
 			var reach=smoothstep(.12,.55,cycle);var retreat=smoothstep(.68,1.,cycle)
 			var port=Vector3(-.055,-.125,-.19)
 			left_hand.position=hand_origin.lerp(port,reach*(1.-retreat))
 			if is_instance_valid(reload_round):
-				reload_round.visible=t>.08 and t<.92 and cycle<.72
+				reload_round.visible=t>.08 and t<.80 and cycle<.72
 				reload_round.position=left_hand.position+Vector3(.044,.021,-.045)
+			if t>.82:
+				var pump=sin(clampf((t-.82)/.16,0.,1.)*PI)
+				action_part.position=action_origin+Vector3(0,0,.09)*pump
+				left_hand.position=hand_origin+Vector3(0,0,.09)*pump
 		"break":
 			var opened=smoothstep(.0,.2,t)*(1.-smoothstep(.75,.95,t))
 			barrel_group.rotation.x=-.50*opened

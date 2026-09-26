@@ -19,7 +19,7 @@ from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSION = os.getenv("GAME_VERSION", "1.2.1")
+VERSION = os.getenv("GAME_VERSION", "1.2.2")
 CAPACITIES = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8]+[8]*6+[12]*6
 
 class SessionInput(BaseModel):

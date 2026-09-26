@@ -3,7 +3,12 @@ extends RefCounted
 const FRAG=8
 static func frag(p:Dictionary) -> bool:return int(p.gadget)==FRAG or (int(p.role)==0 and int(p.gadget)==1)
 static func cluster(p:Dictionary) -> bool:return int(p.role)==0 and int(p.gadget)==1
-static func count(p:Dictionary) -> int:return 2 if frag(p) or int(p.role)==3 else 3 if int(p.role)==4 else 1
+const COVER_STOCK=[4,3,2]
+const COVER_LIMIT=[3,2,1]
+static func count(p:Dictionary) -> int:
+	if frag(p):return 2
+	if int(p.role)==3 and int(p.gadget) in [0,1,2]:return COVER_STOCK[int(p.gadget)]
+	return 3 if int(p.role)==4 else 1
 static func reset(p:Dictionary):
 	p.gadget_count=count(p);p.smoke=3 if int(p.role)==4 and int(p.gadget)==0 else 0;p.flash_count=3 if int(p.role)==4 and int(p.gadget)==1 else 0
 static func label(p:Dictionary) -> String:

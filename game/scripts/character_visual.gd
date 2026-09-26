@@ -15,6 +15,8 @@ var left_elbow:Node3D
 var socket:Node3D
 var animator:AnimationPlayer
 var current_state=""
+var armor_level=-1
+var armor_visual:Node3D
 var role=0
 var team=0
 var hit_time=0.
@@ -61,6 +63,14 @@ func build(which:int,side:int):
 	deform=rig.get_node_or_null("DeformSkeleton")
 	if not deform:deform=OperatorSkin.install(rig,key)
 	WebMaterials.apply(rig)
+	set_armor(1)
+func set_armor(level:int):
+	level=clampi(level,0,2)
+	if level==armor_level or not is_instance_valid(chest):return
+	armor_level=level
+	if is_instance_valid(armor_visual):chest.remove_child(armor_visual);armor_visual.queue_free()
+	armor_visual=null
+	if level>0:armor_visual=ArmorVisual.build(chest,level,RenderStyle.web())
 func bind_rig():
 	add_child(rig);hips=rig.get_node("Hips");chest=hips.get_node("Chest");head=chest.get_node("Head");right_arm=chest.get_node("RightArm");left_arm=chest.get_node("LeftArm");right_elbow=right_arm.get_node("Elbow");left_elbow=left_arm.get_node("Elbow");socket=chest.get_node("WeaponSocket");animator=rig.get_node("AnimationPlayer")
 func build_pose_only(which:int,side:int):
@@ -149,7 +159,7 @@ func update_pose(dt:float,move:Vector3,sprint:bool,crouch:bool,grounded:bool,pit
 	right_arm.position.y=.105+cos(cycle)*movement*.010;left_arm.position.y=.105-cos(cycle)*movement*.014
 	right_elbow.rotation=Vector3(lerpf(.92,.7+sin(cycle)*.14,visual_sprint),0,0)
 	left_elbow.rotation=Vector3(lerpf(.38,.70+cos(cycle)*.23,visual_sprint)-reach*.35,0,0)
-	socket.position=Vector3(.11,visual_crouch*.095-visual_sprint*.08+cos(cycle)*movement*.012,-.15-visual_crouch*.035+visual_sprint*.08)
+	socket.position=Vector3(.11,visual_crouch*.095-visual_sprint*.08+cos(cycle)*movement*.012,-.29-visual_crouch*.035+visual_sprint*.06)
 	socket.rotation=Vector3(-aiming*.5+visual_sprint*(.3+sin(cycle)*.10)-kick*.08,visual_sprint*.12-turn*.012,visual_sprint*(.18+sin(cycle)*.06)-reach*.18+sin(cycle)*movement*.035)
 	hit_time=maxf(0,hit_time-dt);var hit=sin(hit_time/.32*PI)*.2
 	chest.rotation+=Vector3(hit*.45,0,hit*hit_sign);head.rotation.x-=hit*.4

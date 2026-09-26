@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.2.1"
+const VERSION = "1.2.2"
 const MAPS = ["TIDAL YARD · 항구", "DRY DOCK · 물류 기지", "FOUNDRY · 주조 공장", "RESEARCH · 연구동", "MESA RELAY · 사막 관측소", "CANAL DISTRICT · 운하 지구", "TRANSIT HALL · 환승 터미널", "COURTYARD · 안뜰", "WORKSHOP · 정비소", "SWITCHBACK · 굽은 골목", "ORCHARD · 과수원", "POWER ROOM · 전력실", "FOUNTAIN · 분수 광장", "CARGO ROW · 적재 구역", "TWIN LAB · 쌍둥이 실험실", "FOUNDRY EAST · 동부 공장", "ROOFTOP · 옥상", "MARKET LOOP · 순환 시장", "QUARRY PASS · 채석 통로", "KASBAH · 성채 시장", "REACTOR · 이중 원자로", "VIADUCT · 고가 수로", "ARCHIVE · 기록 보관소", "SHIPBREAK · 해체 부두", "MONASTERY · 언덕 수도원", "FOUNDRY CORE · 용광로", "GREENHOUSE · 유리 온실", "METRO VAULT · 지하 금고", "COASTGUARD · 해안 통제소", "DATACENTER · 데이터 센터", "CITADEL · 산성", "FIELD ACADEMY · 훈련 기지"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16]
 static func maps_for_size(count:int,mode:int=-1) -> Array:

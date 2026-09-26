@@ -1,4 +1,4 @@
-name: Build and publish Internal N Crush 1.2.1
+name: Build and publish Internal N Crush 1.2.2
 on:
   push:
     paths:
@@ -89,13 +89,13 @@ jobs:
             game/validation/*.png
       - name: Verify complete equipment thumbnails and target HUD
         run: |
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_thumbnails.gd -- --only-new
+          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_thumbnails.gd -- --v122
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v121.gd -- --no-save-profile --no-update-check
+          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v122.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
         with:
-          name: review-v121
-          path: validation/v121/*.jpg
+          name: review-v122
+          path: validation/v122/*.jpg
       - name: 32-client capacity with paced startup
         env:
           GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
@@ -149,7 +149,7 @@ jobs:
           mv "web/build/$web_name.html" web/build/index.html
           mkdir -p web/build/guide
           for screen in controls touch settings lan internet; do cp "validation/v117/$screen.jpg" "web/build/guide/$screen.jpg"; done
-          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.2.1.zip", include_config=False)'
+          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.2.2.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -169,17 +169,17 @@ jobs:
         with:
           overwrite: true
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.2.1.zip
+          path: out/InternalNCrush_Windows_v1.2.2.zip
       - uses: actions/upload-artifact@v4
         with:
           overwrite: true
           name: release-files
           if-no-files-found: error
           path: |
-            out/InternalNCrush_Windows_v1.2.1.zip
-            out/InternalNCrush_Web_v1.2.1.zip
-            out/InternalNCrush_NAS_Linux_v1.2.1.zip
-            out/WEB_RELEASE_v1.2.1.json
+            out/InternalNCrush_Windows_v1.2.2.zip
+            out/InternalNCrush_Web_v1.2.2.zip
+            out/InternalNCrush_NAS_Linux_v1.2.2.zip
+            out/WEB_RELEASE_v1.2.2.json
             out/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -201,7 +201,7 @@ jobs:
         with:
           name: release-files
           path: release-files
-      - name: Create draft 1.2.1 downloads after successful tests
+      - name: Create draft 1.2.2 downloads after successful tests
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -209,15 +209,15 @@ jobs:
           test "$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq .sha)" = "$GITHUB_SHA"
           cd release-files
           sha256sum --check SHA256SUMS.txt
-          if gh release view internal-n-crush-v1.2.1 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
+          if gh release view internal-n-crush-v1.2.2 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
             test "$(cat /tmp/is-draft)" = true
-            gh release edit internal-n-crush-v1.2.1 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+            gh release edit internal-n-crush-v1.2.2 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create internal-n-crush-v1.2.1 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.2.1" --notes "Add swept knife and engineer wrench combat, allied turret repair, per-pellet impact marks, replay bullet geometry and concise illustrated controls." --repo "$GITHUB_REPOSITORY"
+            gh release create internal-n-crush-v1.2.2 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.2.2" --notes "Add swept knife and engineer wrench combat, allied turret repair, per-pellet impact marks, replay bullet geometry and concise illustrated controls." --repo "$GITHUB_REPOSITORY"
           fi
-          gh release upload internal-n-crush-v1.2.1 InternalNCrush_Windows_v1.2.1.zip InternalNCrush_Web_v1.2.1.zip InternalNCrush_NAS_Linux_v1.2.1.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.2.2 InternalNCrush_Windows_v1.2.2.zip InternalNCrush_Web_v1.2.2.zip InternalNCrush_NAS_Linux_v1.2.2.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
-          gh release upload internal-n-crush-v1.2.1 WEB_RELEASE_v1.2.1.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.2.2 WEB_RELEASE_v1.2.2.json --clobber --repo "$GITHUB_REPOSITORY"
 
-          gh release edit internal-n-crush-v1.2.1 --draft=false --latest --notes-file ../RELEASE_NOTES_V121.md --repo "$GITHUB_REPOSITORY"
-          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/tags/internal-n-crush-v1.2.1 --jq .object.sha)" = "$GITHUB_SHA"
+          gh release edit internal-n-crush-v1.2.2 --draft=false --latest --notes-file ../RELEASE_NOTES_V122.md --repo "$GITHUB_REPOSITORY"
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/tags/internal-n-crush-v1.2.2 --jq .object.sha)" = "$GITHUB_SHA"

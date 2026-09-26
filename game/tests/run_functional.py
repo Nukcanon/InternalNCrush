@@ -7,7 +7,7 @@ import sys
 
 PROJECT = Path(__file__).resolve().parents[1]
 OUT = PROJECT.parent / "validation/functional-v11"
-TESTS = ["rules", "regressions", "ai_aim", "bots", "v04", "v05", "kill_feed", "v06", "v07", "v1", "v101", "vertical_traversal", "v102", "v103", "arena_flow_v103", "network_security", "lobby_menu", "combat_v104", "presentation_v104", "v11", "v111", "abilities_v111", "spawn_exits", "v112", "v113", "turret_replacement", "silhouette_assembly", "ballistics", "cartoon_review", "web_graphics", "render_split", "motion_v115", "details_v116", "details_gameplay_v116", "melee_v117", "support_v118", "update_v119", "selection_v120", "update_v121"]
+TESTS = ["rules", "regressions", "ai_aim", "bots", "v04", "v05", "kill_feed", "v06", "v07", "v1", "v101", "vertical_traversal", "v102", "v103", "arena_flow_v103", "network_security", "lobby_menu", "combat_v104", "presentation_v104", "v11", "v111", "abilities_v111", "spawn_exits", "v112", "v113", "turret_replacement", "silhouette_assembly", "ballistics", "cartoon_review", "web_graphics", "render_split", "motion_v115", "details_v116", "details_gameplay_v116", "melee_v117", "support_v118", "update_v119", "selection_v120", "update_v121", "update_v122"]
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)

@@ -9,9 +9,9 @@ func run():
 	Catalog.load_all()
 	var w=Catalog.get_weapon("r2")
 	for zone in ["head","torso","legs"]:
-		for distance in [0.,30.,120.]:expect(is_equal_approx(CombatBalance.damage_at(w,distance,zone),100.),"MONOLITH unarmored lethal body zone")
+		for distance in [0.,30.,120.]:expect(is_equal_approx(CombatBalance.damage_at(w,distance,zone),300. if zone=="head" else 150.),"MONOLITH unarmored lethal body zone")
 	for zone in ["hands","feet"]:expect(CombatBalance.damage_at(w,30.,zone)<100.,"extremity not one-shot")
-	expect(CombatBalance.damage_at(w,180.)<100.,"long range falloff preserved")
+	expect(CombatBalance.damage_at(w,180.)<150.,"long range falloff preserved")
 	expect(w.interval==2.35 and w.mag==4 and w.reload==3.8,"heavy sniper tradeoffs preserved")
 	var male=AuthoredHuman.source(0)
 	for role in HumanModel.FEMALE_ROLES:

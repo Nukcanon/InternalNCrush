@@ -52,7 +52,8 @@ static func confirm(game:Node,id:int) -> bool:
 	var owned=[]
 	for did in game.devices:
 		if game.devices[did].owner==id and game.devices[did].kind==kind:owned.append(did)
-	if kind=="cover" and owned.size()>=2:game.feedback(id,"","엄폐물은 두 개까지 설치할 수 있습니다.");return false
+	if kind=="cover" and owned.size()>=GadgetLoadout.COVER_LIMIT[clampi(int(p.gadget),0,2)]:
+		game.feedback(id,"","엄폐물 동시 설치 한도 %d개"%GadgetLoadout.COVER_LIMIT[int(p.gadget)]);return false
 	if kind=="turret":
 		for did in owned:
 			game.event_fx.rpc("turret_break",game.devices[did].pos+Vector3.UP*.85,Vector3.ZERO,id)
@@ -66,7 +67,7 @@ static func confirm(game:Node,id:int) -> bool:
 	else:p.gadget_count-=1;p.gadget_ready=game.clock+.8
 	p.placing="";p.fire_ready=game.clock+.35;p.builds=int(p.get("builds",0))+1
 	game.event_fx.rpc("deploy",preview.pos,Vector3.ZERO,id)
-	game.feedback(id,"","포탑 설치 · 가까이에서 F로 업그레이드" if kind=="turret" else "엄폐물 설치 완료")
+	game.feedback(id,"","포탑 설치 · 가까이에서 F로 업그레이드" if kind=="turret" else "엄폐물 설치 시작")
 	return true
 
 static func nearby_turret(game:Node,id:int) -> int:

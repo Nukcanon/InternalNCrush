@@ -37,6 +37,29 @@ func run():
 	var reserved=g.audio_bank.feedback_voices.filter(func(v):return v.playing)
 	for i in range(40):g.audio_bank.play("gun_a1",Vector3.ZERO,false)
 	expect(not reserved.is_empty() and reserved[0].playing,"gunfire cannot steal reserved feedback voices")
+
+	g.audio_bank.stop_all();heard.clear()
+	g.audio_bank.play("step_stone_0",Vector3(0,0,-2),true)
+	g.audio_bank.play("explosion",Vector3(0,0,-3),true)
+	var steps=g.audio_bank.movement_voices.filter(func(v):return v.playing)
+	var blasts=g.audio_bank.blast_voices.filter(func(v):return v.playing)
+	for i in range(70):g.audio_bank.play("gun_a1",Vector3(0,0,-4),true)
+	expect(not steps.is_empty() and steps[0].playing and not blasts.is_empty() and blasts[0].playing,"gunfire cannot steal footsteps or explosion audio")
+	heard.clear();g.players[1].role=1;g.players[1].armor=0.;g.damage(1,1.,2)
+	expect("hurt_female" in heard,"female operator receives vocal hurt cue")
+	heard.clear();g.players[1].role=3;g.players[1].primary="e1";g.players[1].slot=0;g.players[1].mag.e1=3;g.players[1].reserve.e1=20;g.players[1].reload=0.
+	g.begin_reload(1);var began=g.clock
+	for i in range(1,101):g.clock=began+Catalog.get_weapon("e1").reload*i/100.;ReloadAudio.tick(g,1)
+	expect(heard.count("shell_insert")==int(g.players[1].reload_count) and heard.count("bolt")==1 and not "magazine" in heard,"shell reload sounds follow each insertion and finish with one action")
+	g.players[1].reload=0.;g.players[1].placing="";g.players[1].protect=0.;g.players[1].invulnerable=0.;g.players[1].alive=true
+	g.players[2].alive=false;g.players[2].respawn=1e9
+	var a=g.actors[1];a.position=Vector3(0,.02,0);a.velocity=Vector3.ZERO;a.input_state.crouch=false;a.input_state.z=-1.;a.input_state.sprint=false
+	heard.clear()
+	for i in range(100):g.clock+=1./60.;g.players[1].input_time=g.clock;g.server_tick(1./60.);await physics_frame
+	expect(heard.any(func(k):return k.begins_with("step_")),"walking produces audible footstep events")
+	heard.clear();a.input_state.crouch=true
+	for i in range(100):g.clock+=1./60.;g.players[1].input_time=g.clock;g.server_tick(1./60.);await physics_frame
+	expect(not heard.any(func(k):return k.begins_with("step_")),"crouch walking remains silent")
 	AudioServer.remove_bus_effect(0,AudioServer.get_bus_effect_count(0)-1)
 	g.free();await process_frame
 	print("AUDIO_FEEDBACK_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

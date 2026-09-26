@@ -459,7 +459,7 @@ func settings():
 	sensitivity_control("HUD 배경 농도",float(game.profile.hud_opacity),.1,.8,func(v):game.profile.hud_opacity=v;HudLayout.apply(self);preview.queue_redraw();game.save_profile())
 	label("기본 크기 80% · 배경 농도 38%. 낮은 농도일수록 뒤의 전장이 더 잘 보입니다. 조준점과 피격 판정에는 영향을 주지 않습니다.",17)
 	stack=tabs[3]
-	button("피격음 미리 듣기 · 둔탁한 충격",func():game.play_sound("hurt",Vector3.ZERO,false))
+	button("피격음 미리 듣기 · 신음",func():game.play_sound("hurt",Vector3.ZERO,false))
 	button("방어구 피격음 미리 듣기",func():game.play_sound("armor_hurt",Vector3.ZERO,false))
 	sound_slider("전체 음량", "volume")
 	label("총소리·발소리·전투 효과는 전체 음량에 함께 적용됩니다.",17)
@@ -638,7 +638,8 @@ func refresh_gear_detail():
 	gear_detail.text="피해 %d%s    /    %s · 분당 %d발\n탄창 %d · 예비탄 %d    /    재장전 %.1f초\n안정성 %d / 100    /    조준 속도 %d ms\n무게 %.2f kg    /    휴대성 %d / 100\n기본 퍼짐 %.2f°    /    조준 시 %.2f°\n피해 감소 시작 %.0f m"%[w.damage," × "+str(int(w.pellets)) if w.pellets>1 else "",mode,60./maxf(.01,float(w.interval)),w.mag,w.reserve,w.reload,w.get("stability",0),w.get("ads_ms",250),w.get("weight_kg",0),w.get("portability",0),w.spread,w.get("ads_spread",0),w.reach]
 	gear_detail.tooltip_text="안정성↑: 연속 사격 퍼짐 감소 · 조준 시간↓: 더 빠른 조준\n무게↑ / 휴대성↓: 이동 중 퍼짐 증가 · 퍼짐은 반각 기준"
 	gear_detail.text="머리 ×%.2f · 몸통 ×1 · 다리 ×%.2f\n조준 이동 %.2f m/s · 비조준 %.1f° / 조준 %.1f°"%[w.zone_multipliers.head,w.zone_multipliers.legs,float(w.get("ads_speed",4.4))*.5,w.spread,w.ads_spread]
-	if w.name=="MONOLITH":gear_detail.text="머리·몸통·팔·다리 100 / 손·발 60 피해\n방어구 및 120m 이후 거리 감소 적용\n4발 · 사격 간격 2.35초 · 재장전 3.8초"
+	if w.name=="MONOLITH":gear_detail.text="머리 300 · 몸통·팔·다리 150 · 손·발 90 피해\n방어구 및 120m 이후 거리 감소 적용\n4발 · 사격 간격 2.35초 · 재장전 3.8초"
+	if float(w.get("structure_damage_scale",1.))<1.:gear_detail.text+="\n포탑·엄폐물 피해 %d%%"%roundi(float(w.structure_damage_scale)*100.)
 	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 20/초\n유효 거리 15 m · 에너지 180\n클릭 유지: 연결한 아군 지속 치료 · 조준 이탈 ±100° 허용.\n벽·사거리 이탈 시 연결 해제 · 여러 LINK 중첩 불가."
 	if float(w.get("heal_per_pellet",0.))>0:gear_detail.text=str(w.get("description",""))+"\n아군은 치료, 적군은 피해 · 모바일 자동 사격 지원"
 	if w.get("rocket",false):gear_detail.text=str(w.description)+"\n속도 30m/s · 완만한 낙하 · 직격 시 강한 밀림"
@@ -650,7 +651,7 @@ func refresh_gear_detail():
 	elif preview_kind==2:
 		preview_caption.text=gear_gadget.get_item_text(gear_gadget.selected);gear_detail.text=Rules.GADGET_HELP[role]+"\n\n3 가젯 선택 · 클릭 사용 · G 즉시 사용"
 		if gear_gadget.get_selected_id()==8 or (role==0 and gear_gadget.selected==1):gear_detail.text="G 또는 3번 선택 후 클릭을 누르면 안전핀 해제.\n놓으면 투척 · 핀 해제 2.5초 후 폭발 · 계속 들면 자신도 피해.\n벽 뒤에는 폭발 피해가 전달되지 않습니다."
-		if role==3 and gear_gadget.get_selected_id() in [0,1,2]:gear_detail.text+="\n내구도 %d · 조준한 방향에 배치"%AbilityBalance.COVER_HP[gear_gadget.selected]
+		if role==3 and gear_gadget.get_selected_id() in [0,1,2]:gear_detail.text+="\n내구도 %d · 소지 %d개 · 동시 설치 %d개\n사망 후 유지 · 다음 라운드 시작 시 제거"%[AbilityBalance.COVER_HP[gear_gadget.selected],GadgetLoadout.COVER_STOCK[gear_gadget.selected],GadgetLoadout.COVER_LIMIT[gear_gadget.selected]]
 		if gear_gadget.get_selected_id()==9:gear_detail.text="해체 시간 30초 → 10초\n400 크레딧 · 기존 병과 가젯 대신 장착\n장치 앞에서 E를 계속 누르면 자동 사용합니다."
 	elif preview_kind==3:
 		preview_caption.text=["기본 복장","경량 방어구 · +25","중량 방어구 · +50"][gear_armor.selected];gear_detail.text="방어구는 체력보다 먼저 피해를 흡수합니다.\n기본 방어구 0\n경량: 이동 −6% / 조준 준비 +10%\n중량: 이동 −12% / 조준 준비 +20%\n"+("비용 %d 크레딧"%[0,300,600][gear_armor.selected] if game.options.mode==4 else "장비 선택은 무료입니다.")
@@ -659,10 +660,10 @@ func refresh_gear_detail():
 	if not game.options.skills and preview_kind==4:gear_detail.text+="\n현재 방에서는 스킬이 꺼져 있습니다."
 	stat_graph.configure(preview_kind,w,role,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id())
 	var primary=Catalog.get_weapon(weapon_ids[gear_primary.selected])
-	role_detail.text="%s  /  %s\n%s"%[Rules.CLASSES[role],primary.name,"선택한 장비는 다음 부활에 적용" if game.phase=="combat" and not game.options.get("practice",false) else "카드를 선택하고 장비 적용을 누르세요."]
+	role_detail.text="%s  /  %s\n%s"%[Rules.CLASSES[role],primary.name,"선택한 장비는 다음 부활에 적용" if game.phase=="combat" and not game.options.get("practice",false) else "장비를 선택하세요."]
 	var cost=game.loadout_cost(p,selected_loadout())
 	gear_price.text="비용 %d / 보유 %d"%[cost,p.cash] if game.options.mode==4 else "장비 선택 무료"
-	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id())
+	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id(),gear_armor.selected)
 	gear_submit.text="선택한 장비로 연습 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "다음 라운드 구매 예약"
 func toggle_pause():
 	if is_instance_valid(panel):clear_panel();game.capture_pointer();return

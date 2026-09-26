@@ -27,7 +27,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 			if GrenadeLogic.equipped(p):return GrenadeLogic.remaining(p)>0
 			if p.role==2:return false
 			if p.role==3:
-				return game.devices.values().filter(func(d):return d.kind=="cover" and int(d.owner)==id).size()<2
+				return game.devices.values().filter(func(d):return d.kind=="cover" and int(d.owner)==id).size()<GadgetLoadout.COVER_LIMIT[clampi(int(p.gadget),0,2)]
 			if p.role==4:return p.flash_count>0 if p.gadget==1 else p.smoke>0
 			if p.role==5:
 				var target=game.aim_player(id,4.,true)

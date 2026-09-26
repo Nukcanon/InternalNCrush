@@ -691,7 +691,7 @@ func server_tick(dt:float):
 			if phase=="combat" and clock>=p.respawn and not p.spectator and int(options.mode)!=4 and (int(options.mode)!=2 or (p.can_respawn if options.shared_lives else p.lives>0)):spawn(id)
 			continue
 		AimModel.recover(p,current_weapon(p),dt,clock)
-		var before_move=a.position
+		var before_move=a.position;var grounded_before=a.is_on_floor()
 		a.simulate(dt,clock,phase in ["combat","lobby","buy"])
 		MatchFlow.preparation(self,id)
 		p.gait=a.gait
@@ -699,11 +699,14 @@ func server_tick(dt:float):
 		if a.is_on_floor() and int(floor(a.gait*2))>int(p.get("step_index",0)):
 			p.step_index=int(floor(a.gait*2));p.step_variant=int(p.step_index)%4
 			var surface="water" if arena.wading(a.position) else "metal" if absf(a.position.x)>72 and absf(a.position.z)<35 else "stone"
-			step_sound.rpc(a.position,id,surface,p.step_variant,-7. if a.input_state.crouch else 2. if a.last_sprint else 0.)
+			if not a.input_state.crouch:step_sound.rpc(a.position,id,surface,p.step_variant,4. if a.last_sprint else 1.)
+		if not a.input_state.crouch and ((grounded_before and not a.is_on_floor() and a.velocity.y>1.) or (not grounded_before and a.is_on_floor())):
+			step_sound.rpc(a.position,id,"water" if arena.wading(a.position) else "stone",int(p.get("step_variant",0)),5.)
 		if phase!="combat":continue
 		p.played+=dt
 		MarkerTracker.tick(self,id,dt)
 		var held_weapon=current_weapon(p)
+		ReloadAudio.tick(self,id)
 		if p.reload>0 and clock>=p.reload:
 			var wid=p.reload_weapon;var w=C.get_weapon(wid);var need=int(w.mag)-int(p.mag.get(wid,0));var got=need if options.infinite else mini(need,int(p.reserve.get(wid,0)))
 			p.mag[wid]=int(p.mag.get(wid,0))+got
@@ -855,7 +858,7 @@ func commit_loadout(id:int,d:Dictionary):
 	p.cash-=cost
 	if p.role!=role:
 		for did in devices.keys():
-			if devices[did].owner==id:remove_device(did)
+			if devices[did].owner==id and devices[did].kind=="turret":remove_device(did)
 	if role!=int(p.role):
 		var elapsed=clock-(float(p.skill_ready)-AbilityBalance.COOLDOWNS[int(p.role)])
 		if p.skill_ready>0.:p.skill_ready=clock+maxf(0.,AbilityBalance.COOLDOWNS[role]-elapsed)
@@ -876,7 +879,9 @@ func begin_reload(id:int):
 	var wid=p.primary if p.slot==0 else p.secondary;var w=C.get_weapon(wid)
 	if w.kind!="gun":return
 	if int(p.mag.get(wid,0))<int(w.mag) and (options.infinite or int(p.reserve.get(wid,0))>0):
-		p.reload=clock+float(w.reload);p.reload_started=clock;p.reload_weapon=wid;p.burst_left=0;feedback(id,"reload","")
+		p.reload=clock+float(w.reload);p.reload_started=clock;p.reload_weapon=wid;p.burst_left=0
+		p.reload_count=mini(int(w.mag)-int(p.mag.get(wid,0)),int(w.mag) if options.infinite else int(p.reserve.get(wid,0)))
+		p.reload_cues=0;ReloadAudio.tick(self,id)
 func process_trigger(id:int):
 	var p=players[id];var a=actors[id];var held=bool(a.input_state.fire);var seq=int(a.input_state.get("trigger_seq",0))
 	var pressed=seq>int(p.get("trigger_seen",0)) or (held and not p.get("fire_prev",false))
@@ -960,7 +965,7 @@ func fire(id:int):
 		# gravity. A missed distant target must not terminate the ray at its chest.
 		var flight=Ballistics.trace(self,origin,(aim_point-origin).normalized(),reach,[a.get_rid()]) if blocked_barrel.is_empty() else {"hit":blocked_barrel,"end":blocked_barrel.position}
 		var hit:Dictionary=flight.hit;last_end=flight.end
-		for did in flight.get("passed",{}):damage_device(did,CombatBalance.damage_at(w,origin.distance_to(flight.passed[did])),id)
+		for did in flight.get("passed",{}):damage_device(did,CombatBalance.structure_damage(w,origin.distance_to(flight.passed[did])),id)
 		pellet_ends.append(last_end)
 		if hit.is_empty():continue
 		var dist=origin.distance_to(hit.position);var dmg=CombatBalance.damage_at(w,dist)
@@ -977,7 +982,7 @@ func fire(id:int):
 			dmg*=R.damage_water(arena.submerged(hit.position),arena.wading(a.position),not arena.wading(collider.position))
 			damage(collider.pid,dmg,id,head,wid,origin,hit.position)
 		elif collider is InteractiveProp:collider.hit(hit.position,(hit.position-origin).normalized(),dmg)
-		elif collider.has_meta("device"):damage_device(int(collider.get_meta("device")),dmg,id)
+		elif collider.has_meta("device"):damage_device(int(collider.get_meta("device")),CombatBalance.structure_damage(w,dist),id)
 		else:marks.append({"pos":hit.position,"normal":hit.normal})
 	if not marks.is_empty():wall_marks_batch.rpc(marks)
 	effect.rpc("shot",origin,last_end,id,clock,{"weapon":wid,"bloom":p.bloom,"spray_phase":p.spray_phase,"pellets":pellet_ends})
@@ -1027,7 +1032,7 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 			players[source].kills+=1
 			if int(options.mode)==0:scores[players[source].team]+=1
 			var reward=mini(100,600-int(players[source].round_bonus));players[source].cash=mini(8000,players[source].cash+reward);players[source].round_bonus+=reward
-			feedback(source,"confirm","처치 확인")
+			feedback(source,"confirm",str(p.nick)+" 처치")
 		for aid in p.contributors:
 			if aid!=source and players.has(aid) and clock-p.contributors[aid]<8:players[aid].assists+=1
 		var attacker=players.get(source,{})
@@ -1100,7 +1105,7 @@ func valid_placement(pos:Vector3,yaw:float=0.) -> bool:
 	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 func add_device(kind:String,pos:Vector3,id:int,hp:float) -> int:
 	var did=next_device;next_device+=1
-	devices[did]={"id":did,"kind":kind,"pos":pos,"yaw":actors[id].aim_yaw,"owner":id,"team":players[id].team,"hp":hp,"max_hp":hp,"level":1,"upgrade_ready":clock+AbilityBalance.COOLDOWNS[3],"next_fire":clock+1,"target":0,"lock":0.,"last_hit":-100.,"disabled":0.,"expires":clock+180 if kind=="cover" and int(options.mode)!=4 else 1e12}
+	devices[did]={"id":did,"kind":kind,"pos":pos,"yaw":actors[id].aim_yaw,"owner":id,"team":players[id].team,"hp":hp,"max_hp":hp,"level":1,"upgrade_ready":clock+AbilityBalance.COOLDOWNS[3],"next_fire":clock+1,"target":0,"lock":0.,"last_hit":-100.,"disabled":0.,"expires":1e12}
 	return did
 func invulnerability_target(id:int) -> int:
 	var a=actors[id];var best=cos(deg_to_rad(10.));var target=0
@@ -1213,8 +1218,8 @@ func update_fields(dt:float):
 					players[qid].flash=maxf(players[qid].flash,clock+AbilityBalance.flash_duration(distance,facing))
 			for device in devices.values():
 				if device.pos.distance_to(f.pos)<AbilityBalance.FLASH_RANGE and clear_line(f.pos+Vector3.UP,device.pos+Vector3.UP*.8):device.disabled=clock+2.2
-			effect.rpc("flash",f.pos,f.pos,int(f.owner));f.until=clock-1
-		elif f.kind=="smoke" and not f.get("deployed",true):f.deployed=true;effect.rpc("smoke",f.pos,f.pos,int(f.owner))
+			event_fx.rpc("flash",f.pos,f.pos,int(f.owner));f.until=clock-1
+		elif f.kind=="smoke" and not f.get("deployed",true):f.deployed=true;event_fx.rpc("smoke",f.pos,f.pos,int(f.owner))
 		elif f.kind=="slow":
 			for id in players:
 				if players[id].alive and players[id].team!=f.team and players[id].get("cleanse",0)<clock and actors[id].position.distance_to(f.pos)<AbilityBalance.SLOW_RADIUS and clear_line(f.pos+Vector3.UP*.35,actors[id].position+Vector3.UP*.8,[actors[id].get_rid()]):players[id].slow=clock+.2
@@ -1506,7 +1511,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	if kind=="melee_wall":play_sound("wrench_wall" if shot_state.get("wrench",false) else "knife_wall",from,owner!=local_id);return
 	if kind=="bomb_explosion":
 		combat_fx.explosion(from,true,to.x/4.)
-		play_sound("bomb_explosion",from,false)
+		play_sound("bomb_explosion",from,true)
 		if actors.has(local_id):actors[local_id].land_kick=.18
 		return
 	if kind=="shot" and players.has(owner) and not shot_state.is_empty():
@@ -1518,7 +1523,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_wall","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"deploy","skill":"skill","smoke":"smoke"}.get(kind,"")
 	if kind=="shot":sound="gun_"+(players[owner].primary if players[owner].slot==0 else players[owner].secondary) if players.has(owner) else "gun_a1"
 	if kind not in ["heal","repair"] or clock-float(heal_sound_times.get(owner,-100))>.22:
-		if not sound.is_empty():play_sound(sound,from,owner!=local_id)
+		if not sound.is_empty():play_sound(sound,from,owner!=local_id or kind in ["explosion","flash","smoke","turret_break","cover_break"])
 		if kind in ["heal","repair"]:heal_sound_times[owner]=clock
 	if kind in ["shot","heal","repair"] and arena:
 		if actors.has(owner) and players[owner].alive and players[owner].slot<2:from=actors[owner].visual_muzzle()
@@ -1536,6 +1541,9 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 @rpc("authority","call_local","reliable",2)
 func event_fx(kind:String,from:Vector3,to:Vector3,owner:int):
 	effect(kind,from,to,owner)
+@rpc("authority","call_local","reliable",2)
+func reload_sound(id:int,key:String):
+	if actors.has(id):play_sound(key,actors[id].position,id!=local_id)
 func play_sound(kind:String,pos:Vector3,spatial:bool):
 	if dedicated or demo_mode or not is_instance_valid(audio_bank):return
 	audio_bank.play(kind,pos,spatial)
@@ -1560,12 +1568,14 @@ func damage_notice(target:int,origin:Vector3,amount:float,armored:bool):
 	var direction=origin-actors[target].position
 	if is_instance_valid(ui.damage_indicator):ui.damage_indicator.register_hit(direction,amount,Time.get_ticks_msec()/1000.)
 	var now=Time.get_ticks_msec()/1000.
-	if now-last_hurt_sound>.075:play_sound("armor_hurt" if armored else "hurt",Vector3.ZERO,false);last_hurt_sound=now
+	var female=int(players[target].role) in HumanModel.FEMALE_ROLES
+	play_sound("armor_hurt_female" if armored and female else "hurt_female" if female else "armor_hurt" if armored else "hurt",Vector3.ZERO,false);last_hurt_sound=now
 
 @rpc("authority","call_local","unreliable",2)
 func flesh_hit(point:Vector3,push:Vector3,amount:float,victim:int):
 	if dedicated or not is_instance_valid(arena):return
 	combat_fx.blood_hit(point,push,amount)
+	if victim!=local_id:play_sound("body_impact",point,true)
 	if actors.has(victim) and is_instance_valid(actors[victim].character) and is_instance_valid(actors[victim].character.dynamics):actors[victim].character.dynamics.impulse(push,point)
 
 func cycle_spectator():

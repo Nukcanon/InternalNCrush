@@ -14,6 +14,14 @@ with zipfile.ZipFile(root/'tools/audio_source.zip') as archive:
    if sys.byteorder!='little':pcm.byteswap()
    values=[v/32768 for v in pcm];peak=max(map(abs,values),default=1)
    sources[name[:-4]]=[v*.8/max(.001,peak) for v in values]
+# Small recorded human/weapon foley excerpts, normalized offline to mono PCM.
+for path in sorted((root/'tools/foley').glob('*.wav')):
+ with wave.open(str(path),'rb') as f:
+  assert f.getnchannels()==1 and f.getsampwidth()==2 and f.getframerate()==rate
+  pcm=array.array('h',f.readframes(f.getnframes()))
+  if sys.byteorder!='little':pcm.byteswap()
+  values=[v/32768 for v in pcm];peak=max(map(abs,values),default=1)
+  sources[path.stem]=[v*.8/max(.001,peak) for v in values]
 def sample(name,pitch=1.,seconds=None):
  data=sources[name];count=int(len(data)/pitch)
  if seconds is not None:count=min(count,int(seconds*rate))
@@ -60,13 +68,13 @@ for index,(wid,w) in enumerate(weapons.items()):
 for variant in range(4):
  step=sample('footstep_concrete_'+str(variant),.94+variant*.025,.39)
  gear=highpass(sample('impactGeneric_light_000',1.6+variant*.06,.12),1700)
- write('step_stone_'+str(variant),mix(.42,(step,.82,0),(gear,.045,.07)),gain=-8)
+ write('step_stone_'+str(variant),mix(.42,(step,.82,0),(gear,.045,.07)),gain=-1)
  plate=sample('impactPlate_light_'+str(variant),.74,.35)
- write('step_metal_'+str(variant),mix(.47,(step,.60,0),(plate,.22,.012),(gear,.045,.05)),gain=-8)
+ write('step_metal_'+str(variant),mix(.47,(step,.60,0),(plate,.22,.012),(gear,.045,.05)),gain=-1)
  grass=sample('footstep_grass_'+str(variant),.87,.4)
  rng=random.Random(800+variant);noise=[rng.uniform(-1,1)*max(0,math.sin(i/rate/.37*math.pi))**2 for i in range(int(.37*rate))]
  splash=highpass(lowpass(noise,3200),400)
- write('step_water_'+str(variant),mix(.49,(grass,.48,0),(step,.28,0),(splash,.42,.015)),gain=-8)
+ write('step_water_'+str(variant),mix(.49,(grass,.48,0),(step,.28,0),(splash,.42,.015)),gain=-1)
 metal=sample('impactMetal_light_0',1.2,.19);soft=sample('impactSoft_medium_000',1.4,.13);glass=sample('impactGlass_light_000',1.3,.2)
 # Dry body/cloth impact: a short low-mid thump, no bright metallic click.
 rng=random.Random(706)
@@ -77,15 +85,24 @@ for i in range(int(.34*rate)):
  body.append((math.sin(2*math.pi*(115*t+2.8*(1-math.exp(-t*35))))*.66+rng.uniform(-1,1)*.34)*envelope)
 thud=lowpass(sample('impactSoft_medium_000',.58,.34),750)
 cloth=lowpass(highpass(sample('footstep_grass_0',.72,.2),180),1250)
-write('hurt',mix(.37,(body,.75,0),(thud,.85,0),(cloth,.12,.009)),gain=-1)
-write('armor_hurt',mix(.33,(body,.72,0),(thud,.6,0),(lowpass(sample('impactMetal_heavy_000',.65,.3),950),.28,.004)),gain=-2)
-write('hit',mix(.17,(metal,.45,0),(soft,.32,0)),'hit_volume',-5)
+write('body_impact',mix(.22,(body,.70,0),(thud,.75,0),(cloth,.18,.006)),gain=0)
+for suffix,voice in [('', 'hurt_male'),('_female','hurt_female')]:
+ grunt=sample(voice,1.,.60)
+ write('hurt'+suffix,mix(.62,(grunt,.95,0),(cloth,.045,.004)),gain=0)
+ write('armor_hurt'+suffix,mix(.62,(grunt,.93,0),(lowpass(sample('impactMetal_heavy_000',.95,.13),1100),.12,.004)),gain=0)
+write('hit',mix(.19,(body,.65,0),(thud,.55,0),(cloth,.12,.006)),'hit_volume',-1)
 write('confirm',mix(.32,(metal,.44,0),(glass,.26,.045)),'hit_volume',-4)
 write('ui',sample('ui_click_001',1.15,.12),'ui_volume',-10)
 write('switch',mix(.23,(metal,.3,0),(sample('ui_close_001',1.1,.16),.42,.03)),gain=-9)
-write('reload',mix(.24,(sample('ui_open_002',1.,.22),.55,0),(metal,.25,.065)),gain=-7)
-write('magazine',mix(.3,(sample('ui_drop_003',.85,.3),.5,0),(metal,.27,.045)),gain=-7)
-write('bolt',mix(.3,(metal,.8,0),(sample('impactPlate_light_1',1.6,.17),.4,.055)),gain=-7)
+# Dry sliding fabric, spring/latch and metal close; no UI notification samples.
+slide=highpass(lowpass(sample('footstep_grass_1',1.5,.16),3000),650)
+catch=highpass(sample('impactMetal_light_1',1.8,.10),650)
+write('reload',mix(.19,(slide,.3,0),(catch,.20,.08)),gain=-3)
+write('magazine',mix(.26,(slide,.55,0),(sample('impactGeneric_light_000',1.2,.13),.40,.085),(catch,.65,.13)),gain=-1)
+write('bolt',mix(.49,(sample('action_rack',2.,.49),.85,0),(catch,.25,.26)),gain=0,license='CC-BY-3.0')
+write('action_close',mix(.14,(catch,.62,0),(soft,.25,.008)),gain=-2)
+write('shell_insert',sample('shell_load',1.45,.56),gain=0,license='CC-BY-3.0')
+write('rocket_insert',mix(.38,(slide,.38,0),(lowpass(sample('impactMetal_heavy_000',.90,.23),1800),.5,.14)),gain=-1)
 write('heal',mix(.30,(sample('ui_glass_003',.95,.3),.23,0),(glass,.09,.09)),gain=-13)
 write('deploy',mix(.65,(sample('impactMetal_heavy_000',.85,.6),.53,0),(metal,.22,.10)),gain=-5)
 write('bomb_beep',[math.sin(i/rate*2*math.pi*1500)*math.sin(math.pi*i/(rate*.09))**.5 for i in range(int(rate*.09))],gain=-12)
@@ -97,10 +114,10 @@ for name in ['bomb_planted','bomb_dropped','bomb_defused']:
   if sys.byteorder!='little':pcm.byteswap()
   write(name,[v/32768 for v in pcm],category='announcer',gain=0,license='Windows SAPI generated speech; see SOUND_CREDITS.md')
 write('bomb_explosion',mix(3.6,(sample('bang_03',.62,3.2),.7,0),(sample('cannon_01',.42,3.4),.8,.035),(lowpass(sample('cannon_01',.29,3.1),180),.7,.18)),gain=0)
-write('explosion',mix(1.9,(sample('bang_03',.87,1.9),.74,0),(sample('cannon_01',.73,1.8),.55,.024)),gain=-1)
-write('flash',mix(.7,(highpass(sample('shot_01',1.3,.6),650),.55,0),(glass,.3,.025)),gain=-5)
+write('explosion',mix(2.1,(sample('bang_03',.87,1.9),.88,0),(sample('cannon_01',.68,2.),.72,.015),(lowpass(sample('cannon_01',.42,1.9),230),.65,.035)),gain=3)
+write('flash',mix(.7,(highpass(sample('shot_01',1.3,.6),650),.55,0),(glass,.3,.025)),gain=1)
 write('skill',mix(.64,(sample('ui_glass_003',.77,.6),.47,0),(sample('ui_open_002',.75,.5),.30,.06)),gain=-7)
-write('smoke',mix(.75,(sample('fw_02',1.15,.75),.34,0),(metal,.18,.05)),gain=-9)
+write('smoke',mix(.9,(highpass(sample('shot_01',1.55,.24),500),.62,0),(sample('fw_02',1.15,.85),.3,.07)),gain=0)
 # Original short whoosh + low impact for the replay portrait cut (CC0).
 rng=random.Random(707)
 sting=[]
@@ -119,8 +136,10 @@ for i in range(int(.10*rate)):
  alert.append(math.sin(2*math.pi*(1450 if t<.045 else 1850)*t)*envelope*.32)
 write('turret_detect',alert,gain=-4)
 # Original melee cues use existing licensed sources, preserving all gun/hit audio.
-write('melee_swing',mix(.23,(highpass(sample('fw_02',2.3,.23),500),.8,0)),gain=-2)
-write('melee_flesh',mix(.28,(thud,.95,0),(cloth,.36,.008)),gain=0)
+rng=random.Random(122)
+wind=[rng.uniform(-1,1)*math.sin(math.pi*i/(rate*.18))**1.5 for i in range(int(rate*.18))]
+write('melee_swing',highpass(lowpass(wind,5000),600),gain=1)
+write('melee_flesh',mix(.24,(body,.68,0),(thud,.85,0),(cloth,.2,.006)),gain=1)
 write('rocket_launch',mix(.9,(sample('cannon_01',1.15,.9),.65,0),(sample('fw_02',.7,.8),.5,.05)),gain=-2)
 write('flash_ring',[math.sin(2*math.pi*2300*i/rate)*.22*min(1.,i/(rate*.02))*min(1.,(rate*4.5-i)/(rate*.7)) for i in range(int(rate*4.5))],gain=-10)
 write('knife_wall',mix(.24,(metal,.48,0),(sample('impactPlate_light_1',1.5,.22),.32,.025)),gain=-5)

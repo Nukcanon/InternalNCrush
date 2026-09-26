@@ -93,4 +93,9 @@ func add_box_shape(pos:Vector3,size:Vector3,rot:Vector3=Vector3.ZERO):
 func push_by_character(direction:Vector3,speed:float,dt:float):
 	if not authoritative or direction.length_squared()<.01:return
 	sleeping=false
-	apply_central_impulse(direction.normalized()*clampf(speed,1.,5.)*minf(mass,8.)*dt*5.)
+	var axis=direction.normalized()
+	# Overcome static floor friction on first contact; later impulses only close
+	# the speed gap, so held movement never accelerates props without a bound.
+	var desired=clampf(speed*.72,.6,3.6)
+	var deficit=maxf(0.,desired-linear_velocity.dot(axis))
+	apply_central_impulse(axis*mass*minf(deficit,maxf(.4,dt*32.)))

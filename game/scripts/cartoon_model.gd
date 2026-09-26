@@ -33,9 +33,6 @@ static func build(role:int,team:int) -> Node3D:
 	var skin=HumanModel.SKIN_COLORS[role].lightened(.12);var ink=Color("26303d")
 	form(hips,[Vector3(-.12,.14,.11),Vector3(.10,.17,.12)],trousers)
 	form(chest,[Vector3(-.21,.145,.11),Vector3(.10,.20,.13),Vector3(.22,.10,.09)],shirt)
-	box(chest,Vector3(0,-.015,-.14),Vector3(.29,.29,.06),ink)
-	box(chest,Vector3(0,.10,-.178),Vector3(.28,.035,.012),accent)
-	for x in [-.10,0.,.10]:box(chest,Vector3(x,-.11,-.18),Vector3(.075,.12,.035),trousers)
 	form(chest,[Vector3(.20,.055,.05),Vector3(.30,.055,.05)],skin)
 	form(head,[Vector3(-.09,.055,.065),Vector3(-.04,.085,.085),Vector3(.10,.087,.088),Vector3(.18,.055,.055)],skin)
 	# Flat painted eyes/brows and one small nose, no glossy eyeballs or skin maps.

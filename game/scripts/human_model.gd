@@ -117,12 +117,9 @@ static func build(which:int,team:int) -> Node3D:
 	var hips=joint(root,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
 	loft(hips,Vector3.ZERO,[Vector4(-.15,.10,.10,0),Vector4(-.09,.168,.127,.01),Vector4(.02,.172,.13,0),Vector4(.105,.158,.115,0)],trousers)
 	loft(chest,Vector3.ZERO,[Vector4(-.23,.145,.101,0),Vector4(-.13,.156,.108,.009),Vector4(.01,.181,.125,0),Vector4(.115,.192,.126,0),Vector4(.19,.169,.097,0),Vector4(.245,.062,.055,0)],shirt,24)
-	M.box(chest,Vector3(0,-.005,-.164),Vector3(.295,.30,.043),vest,Vector3.ZERO,.62)
-	M.box(chest,Vector3(0,-.005,.124),Vector3(.29,.30,.035),vest,Vector3.ZERO,.62)
 	loft(chest,Vector3(0,.248,0),[Vector4(-.025,.073,.063,0),Vector4(.009,.066,.056,0)],shirt.darkened(.12),28)
 
 	for side in [-1,1]:
-		M.box(chest,Vector3(side*.132,.055,-.177),Vector3(.041,.28,.018),vest.lightened(.10),Vector3(-.12,0,side*-.10),.4)
 		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.207,.105,0))
 		oval(arm,Vector3(-side*.028,-.025,0),Vector3(.119,.15,.131),shirt)
 		loft(arm,Vector3.ZERO,[Vector4(-.285,.046,.048,0),Vector4(-.20,.058,.058,0),Vector4(-.12,.061,.062,0),Vector4(-.045,.065,.068,0),Vector4(.016,.05,.056,0)],shirt)
@@ -145,9 +142,6 @@ static func build(which:int,team:int) -> Node3D:
 		for k in range(3):cord(foot,Vector3(-.038,.078,-.035-k*.025),Vector3(.038,.078,-.035-k*.025),.004,Color("9c947b"))
 	loft(hips,Vector3.ZERO,[Vector4(.066,.175,.137,0),Vector4(.103,.165,.124,0)],dark)
 	M.box(hips,Vector3(0,.083,-.13),Vector3(.047,.03,.018),Color("9b9d89"),Vector3.ZERO,.6)
-	for x in [-.12,0,.12]:
-		M.box(chest,Vector3(x,-.112,-.194),Vector3(.09,.14,.038),vest.darkened(.10),Vector3.ZERO,.32)
-		cord(chest,Vector3(x-.035,-.045,-.211),Vector3(x+.035,-.045,-.211),.006,vest.lightened(.25))
 	loft(chest,Vector3(0,.256,0),[Vector4(-.025,.059,.056,0),Vector4(.07,.055,.054,0)],skin)
 	var head=joint(chest,"Head",Vector3(0,.36,0));face(head,which,skin,hair)
 	if which in FEMALE_ROLES:

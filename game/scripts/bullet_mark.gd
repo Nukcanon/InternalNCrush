@@ -12,7 +12,24 @@ static func make(web:bool) -> MeshInstance3D:
 		shader.code=CODE;material.shader=shader;material.set_shader_parameter("fine_detail",not web);material.set_shader_parameter("seed",float(variant)*7.31);materials[key]=material
 	var mark=MeshInstance3D.new();mark.mesh=meshes[web];mark.material_override=materials[key]
 	mark.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if not web:add_relief(mark,variant)
 	return mark
+static func add_relief(mark:MeshInstance3D,variant:int):
+	var key="relief"+str(variant)
+	if not meshes.has(key):
+		var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		# Shallow chipped rim: actual lit facets around the opaque cavity.
+		for i in range(18):
+			var a=i*TAU/18.;var b=(i+1)*TAU/18.
+			var ra=.044+sin(i*7.7+variant)*.008;var rb=.044+sin((i+1)*7.7+variant)*.008
+			var inner_a=Vector3(cos(a)*.023,.001,sin(a)*.023);var inner_b=Vector3(cos(b)*.023,.001,sin(b)*.023)
+			var outer_a=Vector3(cos(a)*ra,.004+absf(sin(i*4.1))*.004,sin(a)*ra);var outer_b=Vector3(cos(b)*rb,.004+absf(sin((i+1)*4.1))*.004,sin(b)*rb)
+			for v in [inner_a,outer_b,outer_a,inner_a,inner_b,outer_b]:st.add_vertex(v)
+		st.generate_normals();meshes[key]=st.commit()
+	var rim=MeshInstance3D.new();rim.mesh=meshes[key];mark.add_child(rim)
+	if not materials.has("rim"):
+		var mat=StandardMaterial3D.new();mat.albedo_color=Color("766e5f");mat.roughness=.93;mat.cull_mode=BaseMaterial3D.CULL_DISABLED;materials.rim=mat
+	rim.material_override=materials.rim;rim.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 const CODE="""
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;

@@ -205,10 +205,13 @@ func simulate(dt:float,now:float,can_move:bool):
 			if amount>0.:game.damage(pid,amount,pid,false,"fall")
 		falling=false
 	if game.server and can_move:
+		var pushed={}
 		for i in range(get_slide_collision_count()):
 			var collision=get_slide_collision(i);var body=collision.get_collider()
-			if body is InteractiveProp and body.mass<=15.:
+			if body is InteractiveProp and body.mass<=15. and not pushed.has(body.get_instance_id()):
 				var push=-collision.get_normal();push.y=0.
+				if push.length_squared()<.1 or target_velocity.dot(push)<=0.:continue
+				pushed[body.get_instance_id()]=true
 				body.push_by_character(push,target_velocity.length(),dt);velocity.x*=.82;velocity.z*=.82
 	update_spread(dt,now)
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
@@ -292,6 +295,7 @@ func headless_pose(p:Dictionary):
 	if not is_instance_valid(weapon) or weapon.spec.name!=w.name:
 		if is_instance_valid(weapon):character.socket.remove_child(weapon);weapon.free()
 		weapon=Weapon.new();character.socket.add_child(weapon);weapon.scale=Vector3.ONE*.85;weapon.build_pose(w)
+	weapon.reload_round_count=int(p.get("reload_count",3))
 	weapon.animate_reload(progress,0.,game.clock-float(p.get("shot_time",-100.)))
 	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
 	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/.72,0.,1.))
@@ -329,11 +333,12 @@ func visual(dt:float,p:Dictionary,now:float):
 	var phase=gait if local or game.server else net_gait
 	bob=phase*TAU
 	var yaw_delta=wrapf(aim_yaw-previous_yaw,-PI,PI);previous_yaw=aim_yaw;turn_sway=lerpf(turn_sway,clampf(yaw_delta/maxf(dt,.001),-4,4),1.-exp(-dt*10))
+	character.set_armor(clampi(int(p.armor_max)/25,0,2))
 	character.update_pose(dt,moving_velocity,sprint,bool(input_state.crouch),grounded,aim_pitch,progress,recoil,phase,turn_sway)
 	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/.72,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	if is_instance_valid(world_weapon):
-		world_weapon.visible=p.slot<2 and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if is_instance_valid(gadget_world):
 		gadget_world.visible=(p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
@@ -357,11 +362,6 @@ func visual(dt:float,p:Dictionary,now:float):
 		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
 	var reloading=p.reload>now
-	var stage=0 if progress<.3 else 1 if progress<.76 else 2
-	if reloading and stage!=reload_stage:
-		reload_stage=stage
-		if stage>0:game.play_sound("magazine" if stage==1 else "bolt",Vector3.ZERO,false)
-	elif not reloading:reload_stage=-1
 	var ads=input_state.ads and p.slot<2 and not reloading and not MeleeCombat.shown(p,now)
 	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001*(1.+float(p.armor_max)/250.)));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
 	var scoped=ads and float(w.zoom)<=38 and ads_blend>.9
@@ -394,6 +394,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	if is_instance_valid(gadget_world):
 		var payload=gadget_world.get_node_or_null("Payload")
 		if payload:payload.visible=not throwing
+	view_weapon.reload_round_count=int(p.get("reload_count",3))
 	view_weapon.visible=p.slot<2 and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=(p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))

@@ -218,7 +218,7 @@
   "step_stone_0": {
     "file": "res://assets/audio/step_stone_0.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "8a1dbb31ae63ed72a2856096dd32d67a7845d34313dd66468a0c81322a03b991",
     "license": "CC0-1.0",
     "duration": 0.42
@@ -226,7 +226,7 @@
   "step_metal_0": {
     "file": "res://assets/audio/step_metal_0.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "6a025645fefa3a94b070eb63f936657f17332d61facd1c5c660b5b020e881ecc",
     "license": "CC0-1.0",
     "duration": 0.47
@@ -234,7 +234,7 @@
   "step_water_0": {
     "file": "res://assets/audio/step_water_0.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "294bc3def0e20318a0f292ec44eb575e4a1ce3324f40786e9aa4e442bd3c1feb",
     "license": "CC0-1.0",
     "duration": 0.49
@@ -242,7 +242,7 @@
   "step_stone_1": {
     "file": "res://assets/audio/step_stone_1.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "2d21cabf9399d3519bfe0c42d3bd8860b82b3afd34fff798ce806efbff2bc63d",
     "license": "CC0-1.0",
     "duration": 0.42
@@ -250,7 +250,7 @@
   "step_metal_1": {
     "file": "res://assets/audio/step_metal_1.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "e85bd87008816bab7f3b062b0a8a92e4629311c8a173300352b8450ef1be8162",
     "license": "CC0-1.0",
     "duration": 0.47
@@ -258,7 +258,7 @@
   "step_water_1": {
     "file": "res://assets/audio/step_water_1.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "eee5770ec3009935362af939cab441c9c58b55ae5ef29ea049a60d97ac138a14",
     "license": "CC0-1.0",
     "duration": 0.49
@@ -266,7 +266,7 @@
   "step_stone_2": {
     "file": "res://assets/audio/step_stone_2.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "30b3c3ed867a8595822ae43e0c1a8ba8e562cd7f93920bd7790a67ae2c019766",
     "license": "CC0-1.0",
     "duration": 0.42
@@ -274,7 +274,7 @@
   "step_metal_2": {
     "file": "res://assets/audio/step_metal_2.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "7e20f8ef6ad4d5c9c67109a42b48562a7e247c2919b972f4eec4dd7cfa94b208",
     "license": "CC0-1.0",
     "duration": 0.47
@@ -282,7 +282,7 @@
   "step_water_2": {
     "file": "res://assets/audio/step_water_2.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "bd0fc45afe9401c20f505b17b2e9298c76bd1e250fe86e625658a591c25ed098",
     "license": "CC0-1.0",
     "duration": 0.49
@@ -290,7 +290,7 @@
   "step_stone_3": {
     "file": "res://assets/audio/step_stone_3.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "efd98d5c06107b07f8cb02bbb9894abaa2719a3e5efae3663de8c5092dbe4746",
     "license": "CC0-1.0",
     "duration": 0.42
@@ -298,7 +298,7 @@
   "step_metal_3": {
     "file": "res://assets/audio/step_metal_3.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "02006372a3da217720505d181aefd99b0f8f96426e1a47f47a2c657fdedd87ea",
     "license": "CC0-1.0",
     "duration": 0.47
@@ -306,34 +306,58 @@
   "step_water_3": {
     "file": "res://assets/audio/step_water_3.wav",
     "category": "combat",
-    "gain_db": -8,
+    "gain_db": -1,
     "sha256": "5d20c4e82947395538b4858922d5280d317207684bb70bda40cc0517f038b927",
     "license": "CC0-1.0",
     "duration": 0.49
   },
+  "body_impact": {
+    "file": "res://assets/audio/body_impact.wav",
+    "category": "combat",
+    "gain_db": 0,
+    "sha256": "6c2589194ed1bd96749bb8ce554e9612d2458ba2da146ac6a84aca7f14983ebf",
+    "license": "CC0-1.0",
+    "duration": 0.22
+  },
   "hurt": {
     "file": "res://assets/audio/hurt.wav",
     "category": "combat",
-    "gain_db": -1,
-    "sha256": "094aca7d80f3a5c05de57ec984f555bcf3dec90b26a2aa301803b61c21584fcb",
+    "gain_db": 0,
+    "sha256": "af27d8d41d2fe3d11b5bf792957227c3ef90938cd4d32c84b87c4abec280393c",
     "license": "CC0-1.0",
-    "duration": 0.37
+    "duration": 0.62
   },
   "armor_hurt": {
     "file": "res://assets/audio/armor_hurt.wav",
     "category": "combat",
-    "gain_db": -2,
-    "sha256": "127c1262ab2c5a29ddf3f7bb0cb218b2cbf5fb964e846f26314074aaeb8486b4",
+    "gain_db": 0,
+    "sha256": "aad5712793461636df1a33255b212d1a62056f9cdf8e515068ab46536bf20825",
     "license": "CC0-1.0",
-    "duration": 0.33
+    "duration": 0.62
+  },
+  "hurt_female": {
+    "file": "res://assets/audio/hurt_female.wav",
+    "category": "combat",
+    "gain_db": 0,
+    "sha256": "a66fbdc98e550a4748b09df92a9586beef2f8c6774de34e89bba1eedb2ab4b51",
+    "license": "CC0-1.0",
+    "duration": 0.62
+  },
+  "armor_hurt_female": {
+    "file": "res://assets/audio/armor_hurt_female.wav",
+    "category": "combat",
+    "gain_db": 0,
+    "sha256": "a09f22c57e04b095851fcb25dc3ccb09bc4ea6357000c9cf11c710cce3f5ab45",
+    "license": "CC0-1.0",
+    "duration": 0.62
   },
   "hit": {
     "file": "res://assets/audio/hit.wav",
     "category": "hit_volume",
-    "gain_db": -5,
-    "sha256": "c1a396f739504e344566700eeef4915bf9f76f6d1d8c9bd8bb951262e2149b06",
+    "gain_db": -1,
+    "sha256": "c617453e3d49cb161242e9b24f165dd8b787ef7fe2a61efbd7c5dd68f95ba31b",
     "license": "CC0-1.0",
-    "duration": 0.17
+    "duration": 0.19
   },
   "confirm": {
     "file": "res://assets/audio/confirm.wav",
@@ -362,26 +386,50 @@
   "reload": {
     "file": "res://assets/audio/reload.wav",
     "category": "combat",
-    "gain_db": -7,
-    "sha256": "f769339d3c904044e93a85a798cc272eeb743a8138f15bbb9b5daa4c2554cb64",
+    "gain_db": -3,
+    "sha256": "c50b4205332f90086c23e4b840ccc86ee649c2643494f2aaaa73f5765ce5d81d",
     "license": "CC0-1.0",
-    "duration": 0.24
+    "duration": 0.19
   },
   "magazine": {
     "file": "res://assets/audio/magazine.wav",
     "category": "combat",
-    "gain_db": -7,
-    "sha256": "a3f13ca3ea8a4eb6d1be700cd40156da704345636182c9f381f0255672bb0ab0",
+    "gain_db": -1,
+    "sha256": "8c93d41ba2a4bbf1784a1972184072943ed2a6d86cc58e65d884b119a9bf7a5b",
     "license": "CC0-1.0",
-    "duration": 0.3
+    "duration": 0.26
   },
   "bolt": {
     "file": "res://assets/audio/bolt.wav",
     "category": "combat",
-    "gain_db": -7,
-    "sha256": "751d1fd4a45e605c93e0e3b6112f0fd4a36df40d000ca327d28c34124c46d627",
+    "gain_db": 0,
+    "sha256": "23f62500718c9eee9567919d40c7260c486e171854b0bc4cc0e457e79712e52f",
+    "license": "CC-BY-3.0",
+    "duration": 0.49
+  },
+  "action_close": {
+    "file": "res://assets/audio/action_close.wav",
+    "category": "combat",
+    "gain_db": -2,
+    "sha256": "24dbf062bf310c8f26177b7e68cd0829a7a253aa390ad094f5025e3abce45c07",
     "license": "CC0-1.0",
-    "duration": 0.3
+    "duration": 0.14
+  },
+  "shell_insert": {
+    "file": "res://assets/audio/shell_insert.wav",
+    "category": "combat",
+    "gain_db": 0,
+    "sha256": "823c7baa252529362484a6451f86a8d34aa614c93dfbfb27cc847f4f3307aef9",
+    "license": "CC-BY-3.0",
+    "duration": 0.56
+  },
+  "rocket_insert": {
+    "file": "res://assets/audio/rocket_insert.wav",
+    "category": "combat",
+    "gain_db": -1,
+    "sha256": "c2eabc8e07b3cb98814653c46db5b41697a5e2e55a64b8d435b8b45438f7aacf",
+    "license": "CC0-1.0",
+    "duration": 0.38
   },
   "heal": {
     "file": "res://assets/audio/heal.wav",
@@ -450,15 +498,15 @@
   "explosion": {
     "file": "res://assets/audio/explosion.wav",
     "category": "combat",
-    "gain_db": -1,
-    "sha256": "3bb90a569575ed3e2cb47a798b404b59d78fb796f9930c68443fa93314e026a2",
+    "gain_db": 3,
+    "sha256": "7ee8410a6e77f89cc26d037dc97910b855181fcf91d08665d17e5a7317dc4234",
     "license": "CC0-1.0",
-    "duration": 1.9
+    "duration": 2.1
   },
   "flash": {
     "file": "res://assets/audio/flash.wav",
     "category": "combat",
-    "gain_db": -5,
+    "gain_db": 1,
     "sha256": "1e33925e493f19ec23f804dd54040ba43f2c3375e26ae312c26018c35a7cfb9d",
     "license": "CC0-1.0",
     "duration": 0.7
@@ -474,10 +522,10 @@
   "smoke": {
     "file": "res://assets/audio/smoke.wav",
     "category": "combat",
-    "gain_db": -9,
-    "sha256": "7d2a3b9c9583a98014f3ee4aa37df5f253982ece6f378e06d6a4b2073f14e331",
+    "gain_db": 0,
+    "sha256": "19e17ce144acee4095274d98c297f1e46562fb78913e925f72715f75f3e1af83",
     "license": "CC0-1.0",
-    "duration": 0.75
+    "duration": 0.9
   },
   "kill_sting": {
     "file": "res://assets/audio/kill_sting.wav",
@@ -498,18 +546,18 @@
   "melee_swing": {
     "file": "res://assets/audio/melee_swing.wav",
     "category": "combat",
-    "gain_db": -2,
-    "sha256": "4dc52fc8b4e58715c46beb7590bd13ec375a5a6eb1325689a8011dd9e34a4863",
+    "gain_db": 1,
+    "sha256": "4a25f84dd0fb4c15b1311bbd94f591045f8fa472ba0626bbe8c10174686b31eb",
     "license": "CC0-1.0",
-    "duration": 0.23
+    "duration": 0.18
   },
   "melee_flesh": {
     "file": "res://assets/audio/melee_flesh.wav",
     "category": "combat",
-    "gain_db": 0,
-    "sha256": "2e2f98a4f64f38bed79a94a3b04460e2f0df8eeef6663365a786b1f92dc19853",
+    "gain_db": 1,
+    "sha256": "666cd88139776721f01e54dbe00adea8f38d274d4c660bc796921e87ba28dd77",
     "license": "CC0-1.0",
-    "duration": 0.28
+    "duration": 0.24
   },
   "rocket_launch": {
     "file": "res://assets/audio/rocket_launch.wav",
