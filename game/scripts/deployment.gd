@@ -70,4 +70,19 @@ static func confirm(game:Node,id:int) -> bool:
 	return true
 
 static func nearby_turret(game:Node,id:int) -> int:
-	return TurretSelection.target(game,id)
+	var selected=TurretSelection.target(game,id)
+	if selected:return selected
+	# Preserve the existing blocked/cooldown state beside an owned turret.
+	# It is never outlined and upgrade() rejects it; ready allied targets above
+	# still take priority. Never fall back to an unseen upgradeable turret.
+	if not game.actors.has(id):return 0
+	var a=game.actors[id]
+	for did in game.devices:
+		var d=game.devices[did]
+		if d.kind!="turret" or int(d.owner)!=id or a.position.distance_to(d.pos)>=TurretSelection.RANGE:continue
+		var blocked=int(d.level)>=4 or Construction.active(game,d) or TurretSelection.remaining(game,id)>0. or float(d.get("upgrade_ready",0))>game.clock
+		if not blocked:continue
+		var exclude=[a.get_rid()]
+		if game.device_nodes.has(did):exclude.append(game.device_nodes[did].get_rid())
+		if game.clear_line(a.eye(),d.pos+Vector3.UP*.6,exclude):return int(did)
+	return 0

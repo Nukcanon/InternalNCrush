@@ -23,6 +23,7 @@ func run():
 	expect(g.ui.upgrade_hint.position.y>430 and g.ui.upgrade_hint.position.y<570,"hint leaves reticle and lower equipment unobstructed")
 	p.skill_ready=101.;g.update_world_visuals(0.);g.ui.refresh()
 	expect(TurretSelection.target(g,1)==0 and not g.ui.upgrade_hint.visible,"cooldown hides target and caption")
+	expect(AbilityBalance.skill_state(g,1).label=="포탑 강화","existing nearby cooldown skill label retained without actionable prompt")
 	expect(not g.device_nodes[2].get_meta("upgrade_selected",false),"cooldown clears outline immediately")
 	p.skill_ready=0.;g.devices[2].upgrade_ready=101.
 	expect(TurretSelection.target(g,1)==1,"unready allied device excluded in favor of ready own turret")
@@ -32,11 +33,16 @@ func run():
 	expect(TurretSelection.target(g,1)==1,"construction cannot be selected")
 	g.devices[2].building_until=0.;g.devices[2].level=4
 	expect(TurretSelection.target(g,1)==1,"max level cannot be selected")
+	g.devices[1].level=4
+	expect(TurretSelection.target(g,1)==0 and not AbilityBalance.skill_state(g,1).enabled,"only max-level turrets: no target and existing disabled skill state retained")
+	g.use_skill(1);expect(p.placing=="" and g.devices[1].level==4,"blocked max-level F action cannot deploy or upgrade unexpectedly")
+	g.devices[1].level=1
 	g.devices[2].level=1;g.devices[2].pos=Vector3(0,0,-5.1)
 	expect(TurretSelection.target(g,1)==1,"five metre interaction range enforced")
 	g.devices[2].pos=Vector3(0,0,3)
 	expect(TurretSelection.target(g,1)==1,"turret behind player cannot become an invisible selection")
 	g.devices[2].pos=Vector3(0,0,-3)
+	a.reset_view(PI);expect(Deployment.nearby_turret(g,1)==0,"F cannot upgrade a ready turret hidden behind the player");a.reset_view(0.)
 	var wall=g.arena.box(Vector3(0,1,-1.5),Vector3(.5,3,.2),Color.GRAY)
 	await physics_frame;await physics_frame
 	expect(TurretSelection.target(g,1)==1,"wall occludes central turret without hiding clear off-axis alternative")
