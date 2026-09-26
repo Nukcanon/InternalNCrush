@@ -62,6 +62,4 @@ static func build(role:int,team:int) -> Node3D:
 	if role==4:box(chest,Vector3(0,0,.16),Vector3(.27,.30,.13),Color("798260"))
 	if role==5:
 		box(chest,Vector3(0,0,.16),Vector3(.28,.29,.13),Color("e8dcc2"))
-		box(chest,Vector3(0,.015,-.18),Vector3(.10,.025,.02),Color("f17669"))
-		box(chest,Vector3(0,.015,-.183),Vector3(.025,.10,.02),Color("f17669"))
 	return rig

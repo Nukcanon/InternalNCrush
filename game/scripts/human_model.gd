@@ -157,7 +157,6 @@ static func build(which:int,team:int) -> Node3D:
 	if which==4:oval(chest,Vector3(-.10,-.1,.167),Vector3(.26,.31,.16),Color("797970"))
 	if which==5:
 		oval(chest,Vector3(0,-.04,.17),Vector3(.32,.36,.18),Color("bbb8a0"))
-		M.box(chest,Vector3(0,.06,-.192),Vector3(.027,.10,.01),Color("c87360"));M.box(chest,Vector3(0,.06,-.197),Vector3(.095,.028,.01),Color("c87360"))
 	if which in [0,4]:
 		oval(chest,Vector3(.16,.06,.133),Vector3(.09,.16,.085),dark)
 		cord(chest,Vector3(.16,.13,.14),Vector3(.16,.29,.14),.004,dark)

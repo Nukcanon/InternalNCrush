@@ -31,6 +31,11 @@ func run():
 	expect(detailed.get_child_count()>simple.get_child_count(),"native crater has actual relief")
 	var scratch=MeleeMark.make(false,false);holder.add_child(scratch);expect(scratch.get_child_count()>0,"native slash relief")
 	holder.free()
+	var medic=CharacterVisual.new();root.add_child(medic);medic.build(5,0)
+	medic.set_armor(0);var shirt_patch=medic.medical_patch.position.z
+	medic.set_armor(2);expect(medic.medical_patch.position.z<shirt_patch-.07,"medic patch follows armor depth instead of hovering over shirt")
+	medic.free()
+
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(80,80);g.arena.has_water=false;g.arena.box(Vector3(0,-.5,0),Vector3(160,1,160),Color.GRAY)
 	g.add_player(1,"Builder","builder");g.add_player(2,"TargetNick","target");g.phase="combat";g.clock=100.

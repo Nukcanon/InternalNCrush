@@ -17,6 +17,7 @@ var animator:AnimationPlayer
 var current_state=""
 var armor_level=-1
 var armor_visual:Node3D
+var medical_patch:Node3D
 var role=0
 var team=0
 var hit_time=0.
@@ -71,6 +72,14 @@ func set_armor(level:int):
 	if is_instance_valid(armor_visual):chest.remove_child(armor_visual);armor_visual.queue_free()
 	armor_visual=null
 	if level>0:armor_visual=ArmorVisual.build(chest,level,RenderStyle.web())
+	if is_instance_valid(medical_patch):chest.remove_child(medical_patch);medical_patch.queue_free()
+	medical_patch=null
+	if role==5:
+		medical_patch=Node3D.new();medical_patch.name="MedicalPatch";chest.add_child(medical_patch)
+		medical_patch.position=Vector3(0,.095,[-.136,-.211,-.220][level])
+		var red=Color("e08773")
+		M.box(medical_patch,Vector3.ZERO,Vector3(.09,.022,.006),red,Vector3.ZERO,.05)
+		M.box(medical_patch,Vector3(0,0,-.001),Vector3(.022,.09,.006),red,Vector3.ZERO,.05)
 func bind_rig():
 	add_child(rig);hips=rig.get_node("Hips");chest=hips.get_node("Chest");head=chest.get_node("Head");right_arm=chest.get_node("RightArm");left_arm=chest.get_node("LeftArm");right_elbow=right_arm.get_node("Elbow");left_elbow=left_arm.get_node("Elbow");socket=chest.get_node("WeaponSocket");animator=rig.get_node("AnimationPlayer")
 func build_pose_only(which:int,side:int):
