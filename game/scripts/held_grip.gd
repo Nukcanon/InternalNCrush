@@ -11,8 +11,10 @@ func build(role:int,radius:float=.025):
 		var y=.036-finger*.024
 		var r=radius+.010
 		var points=[]
-		for i in range(9):
-			var angle=lerpf(.35,4.8,i/8.)
+		var finger_length=[.082,.088,.081,.065][finger]
+		var sweep=minf(2.7,finger_length/r)
+		for i in range(4):
+			var angle=lerpf(.15,.15+sweep,i/3.)
 			points.append(Vector3(cos(angle)*r,y,sin(angle)*r))
 		for i in range(points.size()-1):segment(points[i],points[i+1],.011 if finger<3 else .0095,skin)
 		for point in points:MeshFactory.sphere(self,point,Vector3.ONE*(.022 if finger<3 else .019),skin)

@@ -162,6 +162,8 @@ func simulate(dt:float,now:float,can_move:bool):
 	if game.players.has(pid):
 		var p=game.players[pid]
 		var weapon=game.current_weapon(p)
+		speed*=[1.,.94,.88][clampi(int(p.armor_max)/25,0,2)]
+		if p.get("placing","")=="cover":speed*=[.9,.72,.55][clampi(int(p.gadget),0,2)]
 		if input_state.ads and p.slot<2:speed=minf(speed,float(weapon.get("ads_speed",4.4))*.5)
 		elif p.slot<2:speed*=float(weapon.get("move_speed_scale",1.))
 		if p.get("slow",0)>now:speed*=.35
@@ -186,7 +188,8 @@ func simulate(dt:float,now:float,can_move:bool):
 	grounded_jump=bool(input_state.jump)
 	was_grounded=is_on_floor()
 	var before=global_position
-	if can_move and game.players.get(pid,{}).get("blast_until",0)<=now:try_low_step(dt)
+	if can_move and game.players.get(pid,{}).get("blast_until",0)<=now:
+		if not try_mantle():try_low_step(dt)
 	move_and_slide()
 	# Collision recovery can nudge a stationary spawn sideways. That is not a
 	# walking step, especially while movement is disabled during round setup.
@@ -211,6 +214,23 @@ func simulate(dt:float,now:float,can_move:bool):
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
 	global_position.x=clampf(global_position.x,-bound.x+2,bound.x-2);global_position.z=clampf(global_position.z,-bound.y+2,bound.y-2)
 	if global_position.y< (-12. if game.arena and game.arena.vertical_map else -4.):global_position.y=.2;velocity.y=0
+func try_mantle() -> bool:
+	if not input_state.jump or float(input_state.z)>-.5 or velocity.y< -3. or input_state.crouch:return false
+	var forward=Basis(Vector3.UP,aim_yaw)*Vector3.FORWARD
+	var motion=forward*(float(shape.shape.radius)+.38)
+	var obstacle=KinematicCollision3D.new()
+	if not test_move(global_transform,motion,obstacle) or obstacle.get_collider() is RigidBody3D or absf(obstacle.get_normal().y)>.3:return false
+	var lift=1.35 if is_on_floor() else .8
+	if test_move(global_transform,Vector3.UP*lift):return false
+	var raised=global_transform;raised.origin.y+=lift
+	if test_move(raised,motion):return false
+	raised.origin+=motion
+	var landing=KinematicCollision3D.new()
+	if not test_move(raised,Vector3.DOWN*lift,landing) or landing.get_normal().y<cos(floor_max_angle) or landing.get_collider() is RigidBody3D:return false
+	var rise=lift+landing.get_travel().y
+	if rise<.1 or rise>lift:return false
+	global_position=raised.origin+landing.get_travel()+Vector3.UP*.006
+	velocity.y=0.;land_kick=.08;return true
 func try_low_step(dt:float) -> bool:
 	# Only a grounded walk may step: never climb in mid-air or cancel a jump.
 	if not is_on_floor() or velocity.y>0. or input_state.jump:return false
@@ -237,7 +257,7 @@ func try_low_step(dt:float) -> bool:
 func update_spread(dt:float,now:float):
 	if not game.players.has(pid):return
 	var p=game.players[pid];var w=game.current_weapon(p)
-	aim_progress=move_toward(aim_progress,1. if input_state.ads and p.slot<2 and p.reload<=now else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001))
+	aim_progress=move_toward(aim_progress,1. if input_state.ads and p.slot<2 and p.reload<=now else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001*(1.+float(p.armor_max)/250.)))
 	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),GadgetLoadout.mounted(p,bool(input_state.crouch)),velocity.y,aim_progress)
 	if p.get("slide_until",0)>now:target+=2.3
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 13.)))
@@ -283,14 +303,14 @@ func visual(dt:float,p:Dictionary,now:float):
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
 	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
-	if p.slot in [2,3] or p.get("cooking",0)>0:
-		var signature=str([p.role,p.gadget,p.slot])
+	if p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="":
+		var signature=str([p.role,p.gadget,p.slot,p.get("placing","")])
 		if signature!=item_signature:
 			item_signature=signature
 			for child in item_model.get_children():item_model.remove_child(child);child.queue_free()
-			var held=GadgetVisual.new();item_model.add_child(held);held.build(int(p.role),int(p.gadget),true);item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
+			var held=GadgetVisual.new();item_model.add_child(held);held.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
 			if is_instance_valid(gadget_world):gadget_world.queue_free()
-			gadget_world=GadgetVisual.new();character.socket.add_child(gadget_world);gadget_world.build(int(p.role),int(p.gadget),false)
+			gadget_world=GadgetVisual.new();character.socket.add_child(gadget_world);gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
 	var wid=p.primary if p.slot==0 else p.secondary
 	if shown_weapon!=wid:shown_weapon=wid;build_gun(wid)
 	var w=Catalog.get_weapon(wid);var age=now-float(p.get("shot_time",-100.))
@@ -313,15 +333,20 @@ func visual(dt:float,p:Dictionary,now:float):
 	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/.72,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	if is_instance_valid(world_weapon):
-		world_weapon.visible=p.slot<2 and p.get("cooking",0)==0;world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.visible=p.slot<2 and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if is_instance_valid(gadget_world):
-		gadget_world.visible=(p.slot in [2,3] or p.get("cooking",0)>0) and not MeleeCombat.shown(p,now)
-		if gadget_world.visible:character.solve_arm(character.right_arm,character.right_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.right_socket)),Vector3(.75,-.8,.25),dt,1.);character.sync_deform()
+		gadget_world.visible=(p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
+		if gadget_world.visible:
+			character.solve_arm(character.right_arm,character.right_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.right_socket)),Vector3(.75,-.8,.25),dt,1.)
+			if gadget_world.two_handed:character.solve_arm(character.left_arm,character.left_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.left_socket)),Vector3(-.75,-.8,.25),dt,1.)
+			character.sync_deform()
+	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	update_melee(p,now)
 	if is_instance_valid(world_weapon) and MeleeCombat.shown(p,now):world_weapon.hide()
 	if not local:
 		TargetReveal.apply(self,p)
+		MedicSelection.apply(self)
 		if not game.server:global_position=global_position.lerp(target_pos,minf(1,dt*14));rotation.y=lerp_angle(rotation.y,aim_yaw,minf(1,dt*15))
 		shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
 		var viewer=game.players.get(game.local_id,{})
@@ -338,11 +363,11 @@ func visual(dt:float,p:Dictionary,now:float):
 		if stage>0:game.play_sound("magazine" if stage==1 else "bolt",Vector3.ZERO,false)
 	elif not reloading:reload_stage=-1
 	var ads=input_state.ads and p.slot<2 and not reloading and not MeleeCombat.shown(p,now)
-	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
+	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001*(1.+float(p.armor_max)/250.)));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
 	var scoped=ads and float(w.zoom)<=38 and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
 	camera.fov=lerpf(88. if sprint else 82.,SniperScope.fov(game.profile,w),ads_blend)
-	var base=Vector3(.255,-.255,-.46).lerp(Vector3(0,-.14,-.5),ads_blend)
+	var base=Vector3(.255,-.255,-.46).lerp(Vector3(.25,-.21,-.50) if w.get("rocket",false) else Vector3(0,-.14,-.5),ads_blend)
 	base+=Vector3(-.025,.095,-.025)*crouch_blend*(1.-ads_blend)
 	var motion=move_blend*(1.-ads_blend*.93)*(1.-crouch_blend*.35)
 	base.y+=sin(now*1.9)*.002*(1.-move_blend)*(1.-ads_blend)
@@ -352,14 +377,24 @@ func visual(dt:float,p:Dictionary,now:float):
 	if reloading:
 		base+=Vector3(.035,.015,.085)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
 	if p.get("cooking",0)>0:base+=Vector3(-.08,.07,.05);rotation_target+=Vector3(.25,.15,-.22)
-	if float(p.get("throw_until",-100.))>now:base.z-=sin((.45-float(p.throw_until)+now)/.45*PI)*.32
+	if float(p.get("throw_until",-100.))>now:
+		var throw_phase=1.-(float(p.throw_until)-now)/.28
+		base.z-=sin(throw_phase*PI)*.48;rotation_target.x-=sin(throw_phase*PI)*.9
+		item_model.visible=false
 	var swap=clampf((float(p.get("switch_until",0))-now)/.32,0,1);base.y-=swap*.32;rotation_target.z-=swap*.3
 	base.x-=turn_sway*.004*(1.-ads_blend*.85)
 	base.z+=recoil*(.105 if w.slot==1 else .155)*lerpf(1.,.38,ads_blend);base.y+=recoil*.025*(1.-ads_blend);base.y-=land_kick*.6
 	base.x*=handedness;rotation_target.y*=handedness;rotation_target.z*=handedness
 	gun.position=gun.position.lerp(base,1.-exp(-dt*20));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22))
 	var cooking=p.get("cooking",0)>0
-	view_weapon.visible=p.slot<2 and not scoped and not cooking and not MeleeCombat.shown(p,now);item_model.visible=(p.slot>=2 or cooking) and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
+	var throwing=p.get("throw_until",0)>now
+	for held_item in item_model.get_children():
+		var payload=held_item.get_node_or_null("Payload")
+		if payload:payload.visible=not throwing
+	if is_instance_valid(gadget_world):
+		var payload=gadget_world.get_node_or_null("Payload")
+		if payload:payload.visible=not throwing
+	view_weapon.visible=p.slot<2 and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=(p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))
 

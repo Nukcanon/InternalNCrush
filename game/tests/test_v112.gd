@@ -59,7 +59,7 @@ func run():
 	game.actors[1].position+=Vector3.RIGHT*6;expect(BombLogic.action(game,1).is_empty(),"defuse prompt disappears outside actual range")
 	game.players[1].skill_ready=game.clock+40.;game.players[1].gadget_ready=game.clock+10.
 	game.spawn(1)
-	expect(game.players[1].skill_ready<=game.clock and game.players[1].gadget_ready<=game.clock,"respawn resets ability cooldowns")
+	expect(game.players[1].skill_ready==game.clock+40. and game.players[1].gadget_ready<=game.clock,"respawn retains skill cooldown")
 	var arc={"pos":Vector3.ZERO,"yaw":0.,"level":1}
 	expect(TurretLogic.in_arc(arc,Vector3(20,60,-20)) and TurretLogic.in_arc(arc,Vector3(-20,-60,-20)),"100 degree horizontal arc ignores elevation")
 	expect(not TurretLogic.in_arc(arc,Vector3(30,0,-20)),"outside 100 degree arc is rejected")

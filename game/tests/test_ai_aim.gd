@@ -56,12 +56,13 @@ func run():
 	p=reset_bot(2,"h1");p.hp=40;b.visible_target=true;b.utilities()
 	expect(GadgetLoadout.mounted(p,bool(a.input_state.crouch)) and p.shield>g.clock,"heavy bot mounts and shields under pressure")
 	p=reset_bot(3,"e1");p.secondary="repair";b.goal=a.position;b.utilities();await physics_frame
-	expect(g.devices.size()==1 and p.skill_ready==g.clock+35,"engineer bot places one turret with 35-second charge")
+	expect(g.devices.size()==1 and p.skill_ready==g.clock+30,"engineer bot places one turret with 30-second charge")
 	var did=g.devices.keys()[0];g.update_world_visuals(.1);await physics_frame
-	p.skill_ready=0.;g.devices[did].upgrade_ready=g.clock;b.utilities();expect(g.devices[did].level==2 and g.devices.size()==1,"engineer bot upgrades existing turret")
-	p.skill_ready=g.clock+35;b.visible_target=true;p.gadget_ready=0.;b.utilities();g.update_world_visuals(.1);await physics_frame
+	g.clock+=5.1;p.skill_ready=0.;g.devices[did].upgrade_ready=g.clock;b.utilities();expect(g.devices[did].level==2 and g.devices.size()==1,"engineer bot upgrades existing turret")
+	p.skill_ready=g.clock+30;b.visible_target=true;p.gadget_ready=0.;b.utilities();g.update_world_visuals(.1);await physics_frame
 	expect(g.devices.size()==2,"engineer bot places cover beside turret")
 	a.position+=Vector3(0,0,-.8);await physics_frame
+	g.clock+=6.;g.update_world_visuals(.016);await physics_frame
 	g.devices[did].hp=80.;g.devices[did].last_hit=0.;b.visible_target=false;b.choose_action();align(g.devices[did].pos+Vector3.UP*.85);b.support_action();p.switch_until=0.;p.fire_ready=0.;g.fire(-1)
 	expect(b.action=="repair" and g.devices[did].hp>80,"engineer repairs damaged friendly device")
 	g.bot_navigation.refresh(g.devices,g.clock+1);var route=g.bot_navigation.route(a.position,a.position+Vector3(0,0,-12));var avoids=true
@@ -71,8 +72,9 @@ func run():
 	for device in g.devices.keys():g.remove_device(device)
 	await physics_frame
 	p=reset_bot(4,"c1");b.visible_target=true;b.last_known=a.position+Vector3(0,0,-35);q.team=1;g.actors[-2].position=a.position+Vector3(0,0,-30);p.flash_count=0;g.options.skills=false;b.utilities()
-	expect(g.fields.any(func(f):return f.kind=="smoke") and p.smoke==1,"control bot deploys smoke with skills off")
-	p.gadget_ready=0.;p.gadget=1;p.flash_count=1;p.hp=100;g.actors[-2].position=a.position+Vector3(0,0,-20);g.options.skills=true;await physics_frame;b.utilities();g.clock+=.36;g.update_fields(.36)
+	expect(g.grenades.any(func(f):return f.get("kind","")=="smoke" and not f.held) and p.smoke==1,"control bot deploys smoke with skills off")
+	p.gadget_ready=0.;p.gadget=1;p.flash_count=1;p.hp=100;g.actors[-2].position=a.position+Vector3(0,0,-20);g.options.skills=true;await physics_frame;b.utilities();
+	for frame in range(156):g.clock+=1./60.;GrenadeLogic.tick(g,1./60.);g.update_fields(1./60.)
 	expect(p.flash_count==0 and q.flash>g.clock and g.fields.any(func(f):return f.kind=="slow"),"control bot uses flash and slow field")
 	g.fields.clear();p=reset_bot(5,"m1");p.hp=50;p.mark=g.clock+3;b.utilities()
 	expect(p.hp>50 and p.mark==0 and p.skill_ready>g.clock,"medic bot treats itself and clears status")

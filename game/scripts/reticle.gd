@@ -6,6 +6,10 @@ func _draw():
 	var p=game.players[game.local_id]
 	if not p.alive or p.flash>game.clock:return
 	var a=game.actors[game.local_id];var center=size*.5
+	if p.get("cooking",0)>0:
+		var seconds=maxf(0.,GrenadeLogic.FUSE-game.clock+float(p.grenade_started));var text="%.1f"%seconds
+		var font=get_theme_default_font();draw_string_outline(font,center+Vector2(-70,-35),text,HORIZONTAL_ALIGNMENT_CENTER,140,38,4,Color.BLACK)
+		draw_string(font,center+Vector2(-70,-35),text,HORIZONTAL_ALIGNMENT_CENTER,140,38,Color.WHITE)
 	var color=Color("d6fff4");var ads=a.input_state.ads and p.slot<2
 	var scoped=ads and float(game.current_weapon(p).zoom)<=38 and p.reload<=game.clock and a.ads_blend>.9
 	if scoped:

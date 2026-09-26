@@ -16,7 +16,7 @@ func run():
 	g.use_skill(1);expect(g.devices.is_empty() and p.placing=="turret" and p.skill_ready==0.,"placement preview spends no charge and creates no device")
 	expect(Deployment.confirm(g,1) and g.devices.size()==1 and p.builds==1,"click confirmation validates floor and awards one build")
 	var did=g.devices.keys()[0];var turret=g.devices[did]
-	for level in range(2,5):turret.upgrade_ready=0.;p.skill_ready=0.;TurretLogic.upgrade(g,1,did);expect(turret.level==level,"nearby turret upgrade level %d"%level)
+	for level in range(2,5):turret.building_until=0.;turret.upgrade_ready=0.;p.skill_ready=0.;TurretLogic.upgrade(g,1,did);expect(turret.level==level,"nearby turret upgrade level %d"%level)
 	TurretLogic.upgrade(g,1,did);expect(turret.level==4,"turret upgrades stop at level four")
 	turret.disabled=0.;turret.next_fire=1000.;turret.rocket_ready=0.;turret.target=2;turret.lock=0.;turret.next_scan=1000.
 	TurretLogic.track(turret,(b.eye()-Vector3.UP*.35-TurretLogic.origin(turret)).normalized(),1.)
@@ -34,9 +34,9 @@ func run():
 	p.role=0;p.skill_ready=0.;g.use_skill(1);expect(p.dash==105. and p.dash_recovery==108.,"movement skill has five fast seconds and three recovery seconds")
 	p.role=1;p.skill_ready=0.;g.use_skill(1);expect(q.mark==104. and p.skill_ready==140.,"scan marks for four seconds with forty-second cooldown")
 	p.role=2;p.skill_ready=0.;g.use_skill(1);expect(p.shield==106.,"heavy protection lasts six seconds")
-	p.role=4;p.skill_ready=0.;g.use_skill(1);expect(g.fields.back().kind=="slow" and AbilityBalance.SLOW_RADIUS==11.,"slow field has expanded eleven-metre radius")
+	p.role=4;p.skill_ready=0.;g.use_skill(1);expect(g.fields.back().kind=="slow" and AbilityBalance.SLOW_RADIUS==15.,"slow field has expanded fifteen-metre radius")
 	p.role=5;p.skill_ready=0.;g.use_skill(1);expect(p.invul_select>g.clock and p.skill_ready==0.,"medic can select a target without consuming its skill")
-	g.use_skill(1);expect(p.invulnerable==104. and p.skill_ready==145.,"double activation grants self invulnerability")
+	g.grant_invulnerability(1,0);expect(p.invulnerable==106. and p.skill_ready==145.,"empty click grants self invulnerability")
 	var health=p.hp;g.damage(1,999.,2,false,"fall");expect(p.hp==health,"invulnerability also blocks fall damage")
 	p.invulnerable=0.;p.shield=0.;p.armor=50.;p.hp=100.;g.damage(1,40.,1,false,"fall");expect(p.hp==60. and p.armor==50.,"fall damage bypasses armour")
 	g.leave_game();g.free();await process_frame

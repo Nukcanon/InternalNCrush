@@ -8,8 +8,9 @@ var dragging=false
 var skill_symbol:SkillIcon
 var frame_width=1.3
 var frame_height=1.3
+var preview_kind=0
 func _ready():
-	stretch=true;size_flags_horizontal=Control.SIZE_EXPAND_FILL;size_flags_vertical=Control.SIZE_EXPAND_FILL;custom_minimum_size=Vector2(330,270)
+	stretch=true;size_flags_horizontal=Control.SIZE_EXPAND_FILL;size_flags_vertical=Control.SIZE_EXPAND_FILL;custom_minimum_size=Vector2(330,160)
 	viewport=SubViewport.new();viewport.size=Vector2i(440,330);viewport.transparent_bg=true;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_WHEN_VISIBLE;viewport.msaa_3d=Viewport.MSAA_2X;add_child(viewport)
 	GraphicsOptions.apply_viewport(viewport)
 	stage=Node3D.new();viewport.add_child(stage)
@@ -19,8 +20,11 @@ func _ready():
 	resized.connect(fit_frame)
 func fit_frame():
 	if is_instance_valid(camera):camera.size=maxf(frame_height,frame_width/maxf(.3,size.x/maxf(1.,size.y)))
+	if is_instance_valid(skill_symbol):
+		skill_symbol.size=Vector2(76,76);skill_symbol.position=(size-skill_symbol.size)*.5
 func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 	if not is_instance_valid(stage):return
+	preview_kind=kind
 	if is_instance_valid(model):stage.remove_child(model);model.queue_free()
 	model=Node3D.new();stage.add_child(model)
 	if is_instance_valid(skill_symbol):skill_symbol.hide()
@@ -40,12 +44,30 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 		for x in [-.12,0,.12]:HumanModel.oval(model,Vector3(x,.10,-.15),Vector3(.10,.15,.06),Color("6e7d63"))
 		camera.position=Vector3(.5,.6,-3);camera.look_at(Vector3(0,.15,0));camera.size=1.0
 	elif kind==4:
-		if not is_instance_valid(skill_symbol):skill_symbol=SkillIcon.new();add_child(skill_symbol);skill_symbol.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		if not is_instance_valid(skill_symbol):skill_symbol=SkillIcon.new();add_child(skill_symbol);skill_symbol.size=Vector2(76,76)
 		skill_symbol.role=role;skill_symbol.show();skill_symbol.queue_redraw()
 
 	else:
 		gadget_model(model,role,gadget);camera.position=Vector3(1,.9,-3);camera.look_at(Vector3(0,.2,0));camera.size=1.3
-	frame_height=camera.size;frame_width=camera.size*1.35;fit_frame()
+	if kind in [1,2,3]:
+		var bounds=AABB();var first=true
+		for mesh in model.find_children("*","MeshInstance3D",true,false):
+			var part=model.global_transform.affine_inverse()*mesh.global_transform*mesh.get_aabb()
+			bounds=part if first else bounds.merge(part);first=false
+		var center=bounds.get_center()
+		for child in model.get_children():
+			if child is Node3D:child.position-=center
+		var diameter=Vector2(bounds.size.x,bounds.size.z).length()
+		var margin=1.85 if kind==1 else 1.25
+		frame_width=maxf(.3,diameter)*margin
+		frame_height=maxf(.22,bounds.size.y+diameter*.13)*margin
+		custom_minimum_size.y=clampf(440.*frame_height/frame_width,130.,280.)
+		camera.position=Vector3(0,.35,-3);camera.look_at(Vector3.ZERO)
+	elif kind==4:
+		custom_minimum_size.y=100.;frame_height=1.;frame_width=1.
+	else:
+		custom_minimum_size.y=230.;frame_height=camera.size;frame_width=camera.size*1.35
+	fit_frame()
 func _gui_input(event):
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:dragging=event.pressed
 	if event is InputEventMouseMotion and dragging and model:model.rotation.y+=event.relative.x*.013
@@ -63,8 +85,15 @@ static func gadget_model(parent:Node3D,role:int,variant:int):
 			m.box(parent,Vector3(0,.25,0),Vector3(.43,.55,.09),Color("7294ae"),Vector3.ZERO,.55);m.box(parent,Vector3(0,.26,-.055),Vector3(.27,.35,.025),dark,Vector3.ZERO,.4)
 		1:m.cylinder(parent,Vector3(0,.12,0),.18,.2,dark);m.cylinder(parent,Vector3(0,.24,0),.14,.04,accent);m.cylinder(parent,Vector3(.08,.4,0),.016,.36,light)
 		2:
-			for x in [-.22,.22]:m.cylinder(parent,Vector3(x,.16,0),.025,.4,light,Vector3(0,0,sign(x)*-.55))
-			m.box(parent,Vector3(0,.35,0),Vector3(.3,.1,.14),dark)
+			m.box(parent,Vector3(0,.35,0),Vector3(.26,.08,.17),dark,Vector3.ZERO,.35)
+			m.box(parent,Vector3(0,.402,0),Vector3(.18,.025,.11),light)
+			for side in [-1,1]:
+				m.cylinder(parent,Vector3(side*.10,.33,0),.049,.065,light,Vector3(0,0,PI/2))
+				m.cylinder(parent,Vector3(side*.136,.33,0),.021,.008,dark,Vector3(0,0,PI/2))
+				m.cylinder(parent,Vector3(side*.18,.20,0),.025,.27,dark,Vector3(0,0,side*-.45))
+				m.cylinder(parent,Vector3(side*.235,.09,0),.018,.15,light,Vector3(0,0,side*-.45))
+				for y in [.13,.16,.19]:m.cylinder(parent,Vector3(side*(.27-y*.45),y,0),.028,.012,accent,Vector3(0,0,side*-.45))
+				m.box(parent,Vector3(side*.265,.016,0),Vector3(.10,.032,.12),Color("202a30"),Vector3.ZERO,.4)
 		3:
 			var cover=Node3D.new();parent.add_child(cover);CombatFX.device(cover,"cover",0);cover.scale=Vector3.ONE*.32
 		4:

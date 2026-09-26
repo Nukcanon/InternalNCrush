@@ -8,6 +8,9 @@ var positions={}
 var input_transform=Transform2D.IDENTITY
 var buttons={}
 var movement=Vector2.ZERO
+var swipe_neutral=true
+var swipe_direction=Vector2.ZERO
+var swipe_stamp=-2000
 var held={}
 var stick_center=Vector2(165,500)
 var stick_point=Vector2(165,500)
@@ -34,7 +37,7 @@ func _ready():
 	buttons={
 		"fire":Rect2(1100,400,130,130),"melee":Rect2(980,498,96,52),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
 		"jump":Rect2(1150,565,104,82),"crouch":Rect2(1150,660-10,104,60),
-		"sprint":Rect2(75,350,105,78),"slide":Rect2(200,350,105,78),
+		"sprint":Rect2(100,350,180,78),
 		"skill":Rect2(409,542,105,76),"gadget":Rect2(528,542,105,76),"use":Rect2(647,542,105,76),"medical":Rect2(766,542,105,76),
 		"gear":Rect2(430,452,170,70),"auto_fire":Rect2(75,260,230,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
 	for i in range(4):buttons["slot"+str(i)]=Rect2(392+i*126,635,118,70)
@@ -108,7 +111,7 @@ func _input(event):
 			if fingers.has(event.index):
 				var action=fingers[event.index];fingers.erase(event.index)
 				if action not in fingers.values():press(action,false)
-			if event.index==stick_id:stick_id=-1;movement=Vector2.ZERO
+			if event.index==stick_id:stick_id=-1;movement=Vector2.ZERO;swipe_neutral=true
 			if event.index==look_id:look_id=-1
 		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
@@ -121,7 +124,7 @@ func _input(event):
 			input_transform=inverse;positions.clear();positions[event.index]=point;delta=Vector2.ZERO
 		if not delta.is_finite() or delta.length()>240.:delta=Vector2.ZERO
 		if event.index==stick_id:
-			stick_point=inverse*event.position;movement=(stick_point-stick_center).limit_length(90)/90.
+			stick_point=inverse*event.position;movement=(stick_point-stick_center).limit_length(90)/90.;track_swipe()
 		elif event.index==look_id or fingers.get(event.index,"")=="fire":
 			var actor=game.actors.get(game.local_id)
 			if actor:
@@ -130,6 +133,14 @@ func _input(event):
 				if game.players[game.local_id].alive:actor.input_state.yaw-=delta.x*sensitivity;actor.input_state.pitch=clampf(actor.input_state.pitch-delta.y*sensitivity,-1.45,1.45)
 				else:game.spectator_yaw-=delta.x*sensitivity;game.spectator_pitch=clampf(game.spectator_pitch-delta.y*sensitivity,-1.2,1.2)
 		get_viewport().set_input_as_handled()
+func track_swipe():
+	if movement.length()<.25:swipe_neutral=true;return
+	if movement.length()<.65 or not swipe_neutral:return
+	swipe_neutral=false
+	var stamp=Time.get_ticks_msec();var direction=movement.normalized()
+	if stamp-swipe_stamp<=1000 and direction.dot(swipe_direction)>.82:
+		held.crouch=false;game.command("slide",{"x":direction.x,"z":direction.y});swipe_stamp=-2000
+	else:swipe_stamp=stamp;swipe_direction=direction
 func apply_input(actor:Actor,on:bool):
 	actor.input_state.x=movement.x if on else 0.;actor.input_state.z=movement.y if on else 0.
 	for key in ["crouch","jump","use","ads","fire"]:actor.input_state[key]=on and held.get(key,false)

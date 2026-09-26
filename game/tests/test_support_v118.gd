@@ -52,9 +52,9 @@ func run():
 	p.gadget=8;expect(not GadgetLoadout.mounted(p,true),"frag replaces bipod")
 	p.primary="h4";p.mag.h4=1;p.reserve.h4=2;p.fire_ready=0.;p.reload=0.;p.melee_started=-100.;g.fire(1)
 	expect(p.mag.h4==0 and p.reload>g.clock and g.rockets.size()==1,"rocket single round and automatic reload")
-	g.rockets.clear();p.team=1;q.team=0;q.hp=100.;q.armor=0.;q.protect=0.;q.invulnerable=0.;b.velocity=Vector3.ZERO
+	g.rockets.clear();p.team=1;q.team=0;q.hp=200.;q.armor=0.;q.protect=0.;q.invulnerable=0.;b.velocity=Vector3.ZERO
 	RocketCombat.explode(g,{"owner":1,"origin":Vector3.ZERO,"velocity":Vector3(0,0,-30)}, {"position":b.eye()-Vector3.UP*.3,"normal":Vector3.BACK,"collider":b})
-	expect(q.hp>=29. and q.hp<=31.,"rocket direct plus maximum splash is about 70")
+	expect(q.hp>=94. and q.hp<=96.,"rocket direct plus maximum splash is about 105")
 	expect(b.velocity.z< -7. and b.velocity.y>5. and q.blast_until>g.clock,"living direct target knocked back in arc")
 	p.role=5;p.primary="m2";p.slot=0;p.team=0;p.fire_ready=0.;p.heal_ready=0.;p.reload=0.;p.alive=true;q.hp=10.;q.team=0;e.hp=10.;e.team=1
 	a.position=Vector3.ZERO;a.aim_yaw=0.;a.aim_pitch=0.;a.last_sprint=false;a.sprint_release=0.;b.position=Vector3(0,0,-3);g.actors[3].position=Vector3(-2,0,-3)

@@ -270,8 +270,11 @@ func sync_grenades(items:Array,now:float):
 	for item in items:
 		live[item.id]=true
 		if not grenade_nodes.has(item.id):
-			var node=Node3D.new();add_child(node);EquipmentPreview.grenade_model(node);M.merge_children(node);grenade_nodes[item.id]=node
-		var node=grenade_nodes[item.id];node.position=item.pos-Vector3.UP*.17;node.rotation=Vector3.ZERO if item.held else Vector3(now*4.,now*3.,now*2.)
+			var node=Node3D.new();add_child(node)
+			if item.get("kind","frag")=="frag":EquipmentPreview.grenade_model(node)
+			else:EquipmentPreview.gadget_model(node,4,1 if item.kind=="flash" else 0)
+			M.merge_children(node);node.scale=Vector3.ONE*.45;grenade_nodes[item.id]=node
+		var node=grenade_nodes[item.id];node.position=item.pos-Vector3.UP*.08;node.rotation=Vector3.ZERO if item.held else Vector3(item.get("rotation",Vector3.ZERO))
 	for id in grenade_nodes.keys():
 		if not live.has(id):grenade_nodes[id].queue_free();grenade_nodes.erase(id)
 func sync_status(game:Node,now:float):

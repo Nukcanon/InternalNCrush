@@ -55,10 +55,10 @@ func run():
 	key.physical_keycode=KEY_E;expect(InputMap.event_is_action(key,"use"),"E keeps interaction")
 	arm("a1");a.position=Vector3(25,0,60);a.reset_view(0);a.input_state.z=-1;g.options.mode=0
 	for step in range(40):a.simulate(.016,g.clock,true)
-	expect(is_equal_approx(absf(a.velocity.z),Rules.WALK_SPEED*Catalog.get_weapon("a1").move_speed_scale),"movement includes weapon mobility")
+	expect(is_equal_approx(absf(a.velocity.z),Rules.WALK_SPEED*Catalog.get_weapon("a1").move_speed_scale*.88),"movement includes weapon mobility")
 	a.input_state.sprint=true
 	for step in range(40):a.simulate(.016,g.clock,true)
-	expect(is_equal_approx(absf(a.velocity.z),Rules.RUN_SPEED*Catalog.get_weapon("a1").move_speed_scale),"sprint includes weapon mobility")
+	expect(is_equal_approx(absf(a.velocity.z),Rules.RUN_SPEED*Catalog.get_weapon("a1").move_speed_scale*.88),"sprint includes weapon mobility")
 	a.position=Vector3(120,-6,110);a.input_state.z=0;a.simulate(.016,g.clock,true)
 	expect(absf(a.position.x)<=98 and absf(a.position.z)<=88 and a.position.y>=0,"out of map fallback restores playable bounds")
 	a.position=Vector3(25,0,60);a.reset_view(0);await physics_frame;await physics_frame

@@ -19,6 +19,7 @@ var hand_origin=Vector3.ZERO
 var trigger_origin=Vector3.ZERO
 var trigger_origin_set=false
 var reload_round:Node3D
+var rocket_grip:HeldGrip
 var grip_boxes:Array=[]
 var length=.7
 var reload_style="rifle"
@@ -114,7 +115,9 @@ func build(w:Dictionary,hands=true,use_cache=true):
 		block(self,Vector3(0,-.022,-.10),Vector3(.078,.085,.25),metal)
 		block(action_part,Vector3(0,.024,.026),Vector3(.081,.074,length*.8),edge)
 		block(self,Vector3(0,-.13,.025),Vector3(.073,.18,.088),metal,-.19)
-		block(self,Vector3(0,-.1,-.064),Vector3(.084,.018,.082),light)
+		block(self,Vector3(0,-.118,-.066),Vector3(.067,.014,.105),metal)
+		block(self,Vector3(0,-.078,-.112),Vector3(.064,.08,.014),metal)
+		block(self,Vector3(0,-.083,-.050),Vector3(.012,.046,.016),light,-.2)
 		tube(barrel_group,Vector3(0,.022,-length*.7),.021,.14,metal)
 		magazine.position=Vector3(0,-.19,.046);magazine_shape("pistol")
 		if model=="CHIME":
@@ -147,10 +150,10 @@ func build(w:Dictionary,hands=true,use_cache=true):
 		block(self,Vector3(0,-.10,.01),Vector3(.075,.18,.10),metal,-.12)
 		block(self,Vector3(0,.0,-.12),Vector3(.18,.09,.30),edge)
 		block(self,Vector3(0,.058,-.10),Vector3(.13,.025,.16),accent,-.15)
-		M.cylinder(self,Vector3(.10,.13,-.22),.009,.23,metal)
-		M.sphere(self,Vector3(.10,.25,-.22),Vector3.ONE*.025,accent)
-		M.cylinder(self,Vector3(0,.105,.0),.018,.08,metal)
-		M.sphere(self,Vector3(0,.15,0),Vector3(.05,.025,.05),Color("d59048"))
+		M.cylinder(self,Vector3(.08,.125,-.22),.009,.23,metal)
+		M.sphere(self,Vector3(.08,.24,-.22),Vector3.ONE*.025,accent)
+		M.cylinder(self,Vector3(0,.081,.0),.018,.10,metal)
+		M.sphere(self,Vector3(0,.139,0),Vector3(.05,.025,.05),Color("d59048"))
 	elif w.kind in ["heal","repair"]:
 		length=.43 if w.kind=="heal" else .29
 		shell(self,Vector3(0,0,-.12),Vector3(.15,.17,.34),Color("d1dad2"))
@@ -161,7 +164,7 @@ func build(w:Dictionary,hands=true,use_cache=true):
 			for x in [-.054,.054]:tube(barrel_group,Vector3(x,.025,-.365),.025,.11,light)
 			M.box(self,Vector3(.139,.02,-.12),Vector3(.008,.10,.028),Color.WHITE);M.box(self,Vector3(.140,.02,-.12),Vector3(.008,.028,.10),Color.WHITE)
 		else:
-			for x in [-.06,.06]:block(barrel_group,Vector3(x,0,-.32),Vector3(.025,.04,.16),light)
+			for x in [-.06,.06]:block(barrel_group,Vector3(x,0,-.30),Vector3(.025,.04,.18),light)
 			magazine.position=Vector3(0,-.13,-.15);block(magazine,Vector3.ZERO,Vector3(.12,.095,.18),accent)
 	else:
 		length=LENGTHS.get(model,.65)
@@ -271,9 +274,10 @@ func add_surface_details(pistol:bool,role:int):
 		block(self,Vector3(side*sign_x,-.016,-.028),Vector3(.012,.01,.039),edge,.25)
 	block(self,Vector3(side+.009,.019,-.19),Vector3(.013,.036,.089),Color("111b22"))
 	block(action_part,Vector3(side+.006,0,-.025),Vector3(.012,.023,.051),light)
-	for x in [-.030,.030]:block(self,Vector3(x,-.108,-.068+trigger_shift),Vector3(.009,.055,.10),metal,.12)
-	block(self,Vector3(0,-.136,-.055+trigger_shift),Vector3(.066,.01,.08),metal)
-	block(self,Vector3(0,-.11,-.06+trigger_shift),Vector3(.01,.04,.015),light,-.3)
+	if not pistol:
+		for x in [-.030,.030]:block(self,Vector3(x,-.108,-.068+trigger_shift),Vector3(.009,.055,.10),metal,.12)
+		block(self,Vector3(0,-.136,-.055+trigger_shift),Vector3(.066,.01,.08),metal)
+		block(self,Vector3(0,-.11,-.06+trigger_shift),Vector3(.01,.04,.015),light,-.3)
 	tube(barrel_group,Vector3(0,.025,-length-.002),.026 if pistol else .028,.006,Color("10191e"))
 	if not pistol:
 		var guard_z=-length*.6
@@ -306,6 +310,7 @@ func calibrate_grips(visible_round=true):
 		reload_round=Node3D.new();reload_round.name="ReloadRound";add_child(reload_round)
 		if reload_style=="rocket":
 			tube(reload_round,Vector3.ZERO,.06,.36,Color("6e805b"))
+			tube(reload_round,Vector3(0,0,.225),.023,.13,Color("45513c"))
 			M.cylinder(reload_round,Vector3(0,0,-.23),.06,.10,Color("bdab76"),Vector3(PI/2,0,0),.008,12)
 			for x in [-1,1]:block(reload_round,Vector3(x*.066,0,.13),Vector3(.035,.008,.09),edge)
 		elif reload_style=="revolver":
@@ -329,6 +334,7 @@ func update_hands(t:float,recoil:float,shot_age:float):
 	support_rig.pose(release,0.);firing_rig.pose(sin(clampf((t-.70)/.30,0.,1.)*PI)*.55 if t>=.70 and reload_style=="bolt" else 0.,maxf(0.,1.-shot_age/.12))
 	var support_elbow=Vector3(-.30,-.28,.12).lerp(Vector3(-.24,-.34,.22),release*.5)
 	var firing_elbow=Vector3(.27,-.27,.29)
+	if reload_style=="rocket":support_elbow.z-=position.z;firing_elbow.z-=position.z
 	var support_wrist=WeaponHand.align_wrist(support_rig,left_hand.position,support_elbow,Vector3(1.,.08,.12) if int(spec.slot)==1 else Vector3(.8,.65,.08))
 	var firing_wrist=WeaponHand.align_wrist(firing_rig,right_hand.position,firing_elbow,Vector3(-1.,.1,.15))
 	WeaponHand.fit_forearm(support_arm,support_elbow,support_wrist)
@@ -336,6 +342,16 @@ func update_hands(t:float,recoil:float,shot_age:float):
 	var boxes=grip_boxes+[magazine_contact_box()]
 	support_rig.constrain_contacts(left_hand.transform*support_rig.transform,boxes)
 	firing_rig.constrain_contacts(right_hand.transform*firing_rig.transform,boxes)
+	if reload_style=="rocket":
+		var gripping=t>.12 and t<.74 and is_instance_valid(reload_round)
+		support_rig.visible=not gripping
+		if gripping and not is_instance_valid(rocket_grip):
+			rocket_grip=HeldGrip.new();add_child(rocket_grip);rocket_grip.build(int(spec.role),.024);rocket_grip.rotation.x=PI/2;rocket_grip.scale.x=-1.
+		if is_instance_valid(rocket_grip):
+			rocket_grip.visible=gripping
+			if gripping:
+				rocket_grip.position=reload_round.position+Vector3(0,0,.225);rocket_grip.position.z=maxf(.24,rocket_grip.position.z)
+				WeaponHand.fit_forearm(support_arm,Vector3(-.30,-.28,.12-position.z),rocket_grip.transform*rocket_grip.wrist)
 func animate_reload(t:float,recoil:float,shot_age=10.):
 	if not trigger_origin_set:trigger_origin=right_hand.position;trigger_origin_set=true
 	right_hand.position=trigger_origin
@@ -350,14 +366,15 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 		if spec.name in ["SCOUT","MONOLITH"]:action_part.position.z+=maxf(0,sin(clampf((shot_age-.15)/.55,0,1)*PI))*.08
 		update_hands(t,recoil,shot_age)
 		return
-	if reload_style=="rocket":position.z=-.18*smoothstep(.03,.20,t)*(1.-smoothstep(.76,.96,t))
+	if reload_style=="rocket":position.z=-.40*smoothstep(.03,.20,t)*(1.-smoothstep(.76,.96,t))
 	var u=clampf(t/.70,0,1);var contact=smoothstep(.02,.18,u)*(1.-smoothstep(.78,.98,u));var remove=smoothstep(.15,.4,u)*(1.-smoothstep(.52,.76,u));var latch=sin(clampf((u-.78)/.22,0,1)*PI)
 	match reload_style:
 		"rocket":
 			# Rear-load through the open breech, within the support arm reach.
 			var take=smoothstep(.05,.25,t);var insert=smoothstep(.32,.72,t);var release=smoothstep(.74,.94,t)
 			var round_pos=Vector3(-.23,-.24,.20).lerp(Vector3(0,.065,.35),take).lerp(Vector3(0,.065,-.10),insert)
-			left_hand.position=hand_origin.lerp(round_pos+Vector3(-.085,-.01,.035),take*(1.-release))
+			left_hand.position=hand_origin.lerp(round_pos+Vector3(-.065,-.015,.30),take)
+			if t>=.72:left_hand.position=Vector3(-.25,-.13,.26).lerp(hand_origin,smoothstep(.82,.98,t))
 			if is_instance_valid(reload_round):reload_round.position=round_pos;reload_round.visible=t>.08 and t<.74
 		"revolver":
 			var opened=smoothstep(.0,.18,t)*(1.-smoothstep(.76,.94,t))

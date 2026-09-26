@@ -58,7 +58,10 @@ static func confirm(game:Node,id:int) -> bool:
 			game.event_fx.rpc("turret_break",game.devices[did].pos+Vector3.UP*.85,Vector3.ZERO,id)
 			game.remove_device(did)
 	var did=game.add_device(kind,preview.pos,id,AbilityBalance.turret_hp(1) if kind=="turret" else AbilityBalance.COVER_HP[int(p.gadget)])
-	game.devices[did].disabled=game.clock+1.5
+	var build_seconds=5. if kind=="turret" else [2.,3.5,5.][clampi(int(p.gadget),0,2)]
+	game.devices[did].disabled=game.clock+build_seconds
+	game.devices[did].building_started=game.clock;game.devices[did].building_until=game.clock+build_seconds
+	game.devices[did].build_growth=game.devices[did].max_hp*.5;game.devices[did].build_progress=0.;game.devices[did].hp=game.devices[did].max_hp*.5
 	if kind=="turret":p.skill_ready=game.clock+AbilityBalance.COOLDOWNS[3]
 	else:p.gadget_count-=1;p.gadget_ready=game.clock+.8
 	p.placing="";p.fire_ready=game.clock+.35;p.builds=int(p.get("builds",0))+1

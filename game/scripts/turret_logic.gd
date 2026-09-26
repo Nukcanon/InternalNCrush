@@ -29,10 +29,13 @@ static func visible_point(game:Node,d:Dictionary,id:int,exclude:Array) -> Vector
 	return Vector3.INF
 static func upgrade(game:Node,id:int,did:int):
 	var p=game.players[id];var d=game.devices[did]
+	if Construction.active(game,d):game.feedback(id,"","설치·업그레이드 완료 후 사용할 수 있습니다.");return
 	if d.level>=4:game.feedback(id,"","최대 단계 · 기관총 + 미사일");return
 	var ready=maxf(float(d.get("upgrade_ready",0)),float(p.skill_ready))
 	if game.clock<ready:game.feedback(id,"","업그레이드 준비 중 · %d초"%ceili(ready-game.clock));return
-	d.level+=1;d.max_hp=AbilityBalance.turret_hp(d.level);d.hp=minf(d.max_hp,d.hp+45.);d.disabled=game.clock+1.5
+	Construction.advance(game,d)
+	var previous_max=float(d.max_hp)
+	d.level+=1;d.max_hp=AbilityBalance.turret_hp(d.level);d.build_growth=(d.max_hp-previous_max)*.5;d.hp+=d.build_growth;d.build_progress=0.;d.disabled=game.clock+3.;d.building_started=game.clock;d.building_until=game.clock+3.;d.upgrading=true
 	d.upgrade_ready=game.clock+AbilityBalance.COOLDOWNS[3];p.skill_ready=d.upgrade_ready
 	game.feedback(id,"heal","포탑 %d단계 · %s"%[d.level,["기관단총","돌격소총","기관총","기관총 + 미사일"][d.level-1]])
 	p.placing=""
@@ -53,7 +56,7 @@ static func track(d:Dictionary,direction:Vector3,dt:float) -> bool:
 static func tick(game:Node,dt:float):
 	for did in game.devices.keys():
 		if not game.devices.has(did):continue
-		var d=game.devices[did]
+		var d=game.devices[did];Construction.advance(game,d)
 		if game.clock>d.expires:game.remove_device(did);continue
 		if d.kind!="turret" or game.clock<d.disabled or game.phase!="combat":continue
 		var owner=game.players.get(d.owner,{})
@@ -105,6 +108,7 @@ static func tick(game:Node,dt:float):
 			var hit:Dictionary=flight.hit;var end:Vector3=flight.end
 			var amount=DAMAGE[d.level-1]
 			if remote:amount=remote_damage(amount,muzzle.distance_to(end))
+			for passed_id in flight.get("passed",{}):game.damage_device(passed_id,amount,int(d.owner))
 			if not hit.is_empty():
 				if hit.collider is Actor:game.damage(hit.collider.pid,amount,int(d.owner),false,"turret",muzzle,hit.position)
 				elif hit.collider is InteractiveProp:hit.collider.hit(hit.position,direction,amount)
@@ -120,6 +124,7 @@ static func tick_rockets(game:Node,dt:float):
 		var from:Vector3=rocket.pos;var to=from+rocket.velocity*dt;var exclude=[]
 		if game.device_nodes.has(int(rocket.device)):exclude.append(game.device_nodes[int(rocket.device)].get_rid())
 		var hit=game.ray(from,to,exclude)
+		Construction.projectile(game,rocket,from,hit.get("position",to),30.)
 		if not hit.is_empty():
 			rocket.pos=hit.position;rocket.until=0.
 			for id in game.players:
@@ -127,6 +132,9 @@ static func tick_rockets(game:Node,dt:float):
 				var point=game.actors[id].eye()-Vector3.UP*.3;var distance=point.distance_to(hit.position)
 				if hit.collider==game.actors[id]:game.damage(id,30.,rocket.owner,false,"turret_missile",rocket.origin,hit.position)
 				elif distance<2.4 and game.clear_line(hit.position+hit.normal*.08,point,exclude+[game.actors[id].get_rid()]):game.damage(id,30.*clampf(1.-distance/2.4,.2,1.),rocket.owner,false,"turret_missile",rocket.origin,point)
+			for struck in game.devices.keys():
+				var device=game.devices[struck];var point=device.pos+Vector3.UP*.6;var distance=point.distance_to(hit.position)
+				if distance<2.4 and game.clear_line(hit.position+hit.normal*.08,point,[game.device_nodes[struck].get_rid()] if game.device_nodes.has(struck) else []):game.damage_device(struck,30.*clampf(1.-distance/2.4,.2,1.),int(rocket.owner))
 			game.event_fx.rpc("explosion",hit.position,Vector3.ZERO,rocket.owner)
 		else:rocket.pos=to
 	game.rockets=game.rockets.filter(func(r):return r.until>game.clock)

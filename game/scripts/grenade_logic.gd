@@ -1,21 +1,24 @@
 extends RefCounted
 class_name GrenadeLogic
-const FUSE=3.0
+const FUSE=2.5
 const RADIUS=8.
 const DAMAGE=120.0
-static func equipped(p:Dictionary) -> bool:return GadgetLoadout.frag(p)
+static func equipped(p:Dictionary) -> bool:return GadgetLoadout.frag(p) or (int(p.role)==4 and int(p.gadget) in [0,1])
 static func begin(g:Node,id:int,source:String="key") -> bool:
 	var p=g.players[id]
 	if not equipped(p) or not g.options.classes or g.phase!="combat" or not g.can_attack(p) or p.gadget_count<=0 or g.clock<p.gadget_ready or p.get("cooking",0)>0:return false
 	var serial=g.next_grenade;g.next_grenade+=1;p.cooking=serial;p.cook_input=source;p.gadget_count-=1;p.gadget_ready=g.clock+.5;p.grenade_started=g.clock
-	g.grenades.append({"id":serial,"owner":id,"pos":g.actors[id].muzzle_world(),"velocity":Vector3.ZERO,"until":g.clock+FUSE,"held":true,"released":-100.,"cluster":GadgetLoadout.cluster(p)})
-	g.feedback(id,"bolt","수류탄 안전핀 해제 · 3초 · 놓으면 투척")
+	g.grenades.append({"id":serial,"owner":id,"pos":g.actors[id].muzzle_world(),"velocity":Vector3.ZERO,"until":g.clock+FUSE,"held":true,"released":-100.,"cluster":GadgetLoadout.cluster(p),"kind":"flash" if p.role==4 and p.gadget==1 else "smoke" if p.role==4 and p.gadget==0 else "frag","rotation":Vector3.ZERO})
+	if p.role==4:
+		if p.gadget==1:p.flash_count=maxi(0,int(p.flash_count)-1)
+		else:p.smoke=maxi(0,int(p.smoke)-1)
+	g.feedback(id,"bolt","안전핀 해제 · 2.5초 · 놓으면 투척")
 	return true
 static func release(g:Node,id:int):
 	if not g.players.has(id):return
 	var p=g.players[id];var serial=int(p.get("cooking",0))
 	if serial==0:return
-	p.cooking=0;p.throw_until=g.clock+.45
+	p.cooking=0;p.throw_until=g.clock+.28
 	for item in g.grenades:
 		if item.id!=serial:continue
 		var a=g.actors[id];item.held=false;item.released=g.clock;item.pos=a.muzzle_world();item.velocity=a.direction()*15.+Vector3.UP*3.+a.velocity*.35
@@ -37,11 +40,18 @@ static func tick(g:Node,dt:float):
 				var hit=g.ray(item.pos,end+item.velocity.normalized()*.09,excluded)
 				if hit.is_empty():item.pos=end
 				else:
-					item.pos=hit.position+hit.normal*.095;item.velocity=item.velocity.bounce(hit.normal)*.46
-					if hit.normal.y>.6:item.velocity.x*=.78;item.velocity.z*=.78
+					item.pos=hit.position+hit.normal*.095
+					var normal_speed=item.velocity.dot(hit.normal)
+					var tangent=item.velocity-hit.normal*normal_speed
+					item.velocity=tangent*exp(-step*1.1)-hit.normal*normal_speed*.35
+					if hit.normal.y>.6 and absf(item.velocity.y)<.6:item.velocity.y=0.
+				item.rotation=Vector3(item.get("rotation",Vector3.ZERO))+Vector3(item.velocity.z,1.,-item.velocity.x)*step*5.
 		if g.clock>=float(item.until):
 			if g.players.has(id):g.players[id].cooking=0
-			explode(g,item.pos,id,bool(item.get("cluster",false)));g.grenades.erase(item)
+			if item.get("kind","frag")=="frag":explode(g,item.pos,id,bool(item.get("cluster",false)))
+			else:
+				g.fields.append({"kind":"flash_pending" if item.kind=="flash" else "smoke","pos":item.pos,"starts":g.clock,"until":g.clock+(1. if item.kind=="flash" else AbilityBalance.SMOKE_DURATION),"team":g.players.get(id,{}).get("team",0),"owner":id,"deployed":false})
+			g.grenades.erase(item)
 static func explode(g:Node,pos:Vector3,owner:int,cluster:bool=false):
 	var radius=10. if cluster else RADIUS;var power=145. if cluster else DAMAGE
 	if cluster:g.fields.append({"kind":"smoke","pos":pos,"starts":g.clock,"until":g.clock+3.,"team":g.players.get(owner,{}).get("team",0),"owner":owner,"deployed":false})

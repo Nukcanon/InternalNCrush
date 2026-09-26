@@ -324,8 +324,8 @@ func throw_pose(started:float,held:bool,until:float,now:float):
 		left_arm.rotation=Vector3(1.5,.35,.18);left_elbow.rotation.x=.55
 		chest.rotation.y-=.08;head.rotation.x-=.04
 	elif until>now:
-		var phase=clampf(1.-(until-now)/.45,0.,1.)
-		right_arm.rotation=Vector3(lerpf(2.1,.25,phase),-.15,-.20);right_elbow.rotation.x=lerpf(.9,.15,phase)
+		var phase=clampf(1.-(until-now)/.28,0.,1.)
+		right_arm.rotation=Vector3(lerpf(2.5,-.2,phase),-.15,-.20);right_elbow.rotation.x=lerpf(.9,.15,phase)
 		chest.rotation.y+=sin(phase*PI)*.15
 	sync_deform()
 

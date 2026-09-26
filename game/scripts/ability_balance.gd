@@ -1,10 +1,10 @@
 extends RefCounted
 class_name AbilityBalance
-const COOLDOWNS=[24.,40.,30.,35.,30.,45.]
-const DURATIONS=[5.,4.,6.,180.,8.,4.]
+const COOLDOWNS=[24.,40.,30.,30.,30.,45.]
+const DURATIONS=[5.,4.,6.,180.,8.,6.]
 const COVER_HP=[180,300,420]
 const SCAN_RANGE=35.
-const SLOW_RADIUS=11.
+const SLOW_RADIUS=15.
 const SMOKE_DURATION=10.
 const FLASH_RANGE=18.
 const FLASH_MAX=4.5

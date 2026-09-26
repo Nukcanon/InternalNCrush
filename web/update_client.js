@@ -41,3 +41,17 @@
   setInterval(() => { if (!document.hidden) check(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
 })();
+
+// Do not let modified gameplay clicks trigger browser menus, drag or navigation.
+(() => {
+  const canvas = document.getElementById('canvas');
+  if (!canvas) return;
+  for (const type of ['mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'dragstart']) {
+    canvas.addEventListener(type, event => event.preventDefault(), { passive: false });
+  }
+  canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
+  document.addEventListener('keydown', event => {
+    if (document.pointerLockElement !== canvas && document.activeElement !== canvas) return;
+    if ((event.ctrlKey || event.metaKey) && ['w', 's', 'a', 'd'].includes(event.key.toLowerCase())) event.preventDefault();
+  }, { capture: true });
+})();

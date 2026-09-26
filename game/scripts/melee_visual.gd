@@ -51,11 +51,11 @@ func build(wrench:bool,role:int,first_person:bool):
 func pose(age:float):
 	var turn=0.;var extension=0.
 	if age>=0. and age<MeleeCombat.DURATION:
-		if age<MeleeCombat.CONTACT_START:turn=lerpf(0.,-1.28,smoothstep(0.,MeleeCombat.CONTACT_START,age))
-		elif age<=MeleeCombat.CONTACT_END:turn=lerpf(-1.28,1.28,(age-MeleeCombat.CONTACT_START)/(MeleeCombat.CONTACT_END-MeleeCombat.CONTACT_START))
-		else:turn=lerpf(1.28,0.,smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age))
-		extension=sin(clampf(age/.32,0.,1.)*PI)
-	pivot.position=Vector3(-sin(turn)*.32,.015+extension*.035,-.09-extension*.22)
+		if age<MeleeCombat.CONTACT_START:turn=lerpf(0.,-1.55,smoothstep(0.,MeleeCombat.CONTACT_START,age))
+		elif age<=MeleeCombat.CONTACT_END:turn=lerpf(-1.55,1.55,(age-MeleeCombat.CONTACT_START)/(MeleeCombat.CONTACT_END-MeleeCombat.CONTACT_START))
+		else:turn=lerpf(1.55,0.,smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age))
+		extension=sin(clampf(age/.23,0.,1.)*PI)
+	pivot.position=Vector3(-sin(turn)*.42,.015+extension*.035,-.09-extension*.22)
 	pivot.rotation=Vector3(-.35-extension*.35,turn,-.25-turn*.5)
 	if is_instance_valid(hand):
 		var elbow=Vector3(.30,-.30,.29)

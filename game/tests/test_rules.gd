@@ -25,11 +25,11 @@ func run():
 	await physics_frame;await physics_frame
 	g.use_skill(1);expect(g.devices.is_empty(),"engineer previews before confirming");Deployment.confirm(g,1);expect(g.devices.size()==1,"engineer turret placement")
 	if g.devices.size()>0:
-		var did=g.devices.keys()[0];expect(g.players[1].skill_ready==135,"35-second turret charge")
+		var did=g.devices.keys()[0];expect(g.players[1].skill_ready==130,"30-second turret charge")
 		g.update_world_visuals(.1);await physics_frame;await physics_frame
 		g.clock=136;g.actors[1].aim_pitch=.05
 		g.use_skill(1);expect(g.devices.size()==1 and g.devices[did].level==2,"aimed turret upgrade preserves singleton")
-		expect(g.players[1].skill_ready==171.,"upgrade starts a fresh 35-second charge")
+		expect(g.players[1].skill_ready==166.,"upgrade starts a fresh 30-second charge")
 		var ready_before_destruction=g.players[1].skill_ready
 		g.remove_device(did);expect(g.players[1].skill_ready==ready_before_destruction,"destruction does not refund charge")
 	g.players[1].alive=false;g.phase="buy";g.options.mode=4;g.players[1].cash=800;g.players[1].armor=0;g.players[1].primary="pistol";g.players[1].owned_primary=false

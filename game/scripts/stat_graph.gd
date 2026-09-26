@@ -15,7 +15,7 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 	elif kind==1 and w.kind=="remote":
 		rows=[["포탑 탄환 DPS",38.,60.,"23 → 38"],["탄환 감쇠 시작",12.,60.,"12 m"],["48m 탄환 피해",10.,100.,"10%"],["최대 단계 미사일",30.,100.,"30 / 2초"]]
 	elif kind==1:
-		rows=[["회복 / 초" if w.kind=="heal" else "수리 / 초",25. if w.kind=="heal" else 80.,100.,"25" if w.kind=="heal" else "최대 80 HP"],["작동 거리",w.reach,20.,"%d m"%w.reach],["에너지",w.mag,180.,str(w.mag)]]
+		rows=[["회복 / 초" if w.kind=="heal" else "수리 / 초",25. if w.kind=="heal" else 30.,100.,"25" if w.kind=="heal" else "30"],["작동 거리",w.reach,20.,"%d m"%w.reach],["에너지",w.mag,180.,str(w.mag)]]
 	elif kind==2 and variant==9:
 		rows=[["해체 시간",10.,30.,"10초 / 기본 30초"],["구매 비용",400.,1000.,"400 크레딧"]]
 	elif kind==2 and (variant==8 or (role==0 and variant==1)):
@@ -32,7 +32,7 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 	elif kind==4:
 		var cooldown=AbilityBalance.COOLDOWNS[role]
 		rows=[["재사용 대기",cooldown,40.,"%d초"%cooldown],["효과 시간",AbilityBalance.DURATIONS[role],180. if role==3 else 10.,"설치형" if role==3 else "%.2f초"%AbilityBalance.DURATIONS[role]]]
-		if role==3:rows.append_array([["포탑 내구도",180.,300.,"180 → 300"],["초당 탄환 피해",38.,60.,"23 → 38"],["탐지 거리",55.,106.,"맵별 55 → 106 m"]])
+		if role==3:rows.append_array([["포탑 내구도",180.,300.,"180 → 300"],["초당 탄환 피해",38.,60.,"23 → 38"],["사격 방식",1.,1.,"자동 사격"]])
 	else:visible=false
 	custom_minimum_size=Vector2(430,rows.size()*19+(67 if not weapon.is_empty() else 6));queue_redraw()
 func _draw():
