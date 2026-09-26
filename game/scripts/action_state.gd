@@ -24,7 +24,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 			if p.get("cooking",0)>0:return true
 			if p.gadget_count<=0 or p.gadget_ready>now:return false
 			if p.role==0 and not GrenadeLogic.equipped(p):return p.armor<50
-			if GrenadeLogic.equipped(p):return true
+			if GrenadeLogic.equipped(p):return GrenadeLogic.remaining(p)>0
 			if p.role==2:return false
 			if p.role==3:
 				return game.devices.values().filter(func(d):return d.kind=="cover" and int(d.owner)==id).size()<2

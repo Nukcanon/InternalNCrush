@@ -2,6 +2,7 @@ extends SceneTree
 var checks=0
 var failures=0
 class TraceWorld extends Node:
+	var devices={}
 	var calls=0
 	var barrier=INF
 	func ray(start:Vector3,end:Vector3,_exclude:Array=[]) -> Dictionary:
