@@ -32,7 +32,7 @@ static func detect_supported() -> bool:
 func _ready():
 	enabled=supported();mouse_filter=Control.MOUSE_FILTER_IGNORE;set_process_input(enabled);visible=false
 	buttons={
-		"fire":Rect2(1100,400,130,130),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
+		"fire":Rect2(1100,400,130,130),"melee":Rect2(1100,320,130,66),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
 		"jump":Rect2(1150,565,104,82),"crouch":Rect2(1150,660-10,104,60),
 		"sprint":Rect2(75,350,105,78),"slide":Rect2(200,350,105,78),
 		"skill":Rect2(409,542,105,76),"gadget":Rect2(528,542,105,76),"use":Rect2(647,542,105,76),"medical":Rect2(766,542,105,76),
@@ -84,7 +84,7 @@ func press(action:String,on:bool):
 			if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish();return
 			if not game.players[game.local_id].alive:game.cycle_spectator();return
 			game.trigger_seq+=1;game.actors[game.local_id].input_state.trigger_seq=game.trigger_seq
-		"reload","skill":game.command(action,{})
+		"reload","skill","melee":game.command(action,{})
 		"slide":
 			held.crouch=false;game.command("slide",{"forward":true})
 		"gear":game.ui.gear()
@@ -146,7 +146,7 @@ func apply_input(actor:Actor,on:bool):
 func _draw():
 	if not visible:return
 	var font=game.ui.theme.default_font
-	var labels={"fire":"발사","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기 ON" if held.get("sprint",false) else "달리기 OFF","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"보조 발사","gear":"병과 / 장비","gadget_mode":"연막 / 섬광","bomb":"폭탄 해체" if game.bomb.get("planted",false) else "폭탄 설치","auto_fire":"자동 발사 ON" if game.profile.get("touch_auto_fire",false) else "자동 발사 OFF","menu":"메뉴","score":"기록"}
+	var labels={"fire":"발사","melee":"근접","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기 ON" if held.get("sprint",false) else "달리기 OFF","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"보조 발사","gear":"병과 / 장비","gadget_mode":"연막 / 섬광","bomb":"폭탄 해체" if game.bomb.get("planted",false) else "폭탄 설치","auto_fire":"자동 발사 ON" if game.profile.get("touch_auto_fire",false) else "자동 발사 OFF","menu":"메뉴","score":"기록"}
 	var p=game.players.get(game.local_id,{})
 	labels.zoom_in="배율 +";labels.zoom_out="배율 −"
 	for action in buttons:

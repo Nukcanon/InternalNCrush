@@ -683,9 +683,9 @@ func show_hud():
 	info=hud_label("",Vector2(305,686),16)
 	skill_label=hud_label("",Vector2(313,590),16)
 	slots=[];slot_panels=[]
-	for i in range(4):
-		var plate=hud_plate(Vector2(305+i*132,622),Vector2(125,54));slot_panels.append(plate)
-		var l=hud_label("",Vector2(346+i*132,632),12);l.size=Vector2(76,30);l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;slots.append(l)
+	for i in range(5):
+		var plate=hud_plate(Vector2(305+i*106,622),Vector2(100,54));slot_panels.append(plate)
+		var l=hud_label("",Vector2(339+i*106,632),12);l.size=Vector2(62,30);l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;slots.append(l)
 	skill_label.hide();info.hide()
 	var symbols=HudSymbols.new();symbols.game=game;symbols.ui=self;symbols.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.add_child(symbols)
 	crosshair=hud_label("",Vector2(0,0),1)
@@ -753,16 +753,18 @@ func refresh():
 	ammo.add_theme_font_size_override("font_size",16 if p.slot>=2 or p.get("cooking",0)>0 else 26 if p.reload>game.clock else 30)
 	ammo.visible=p.slot>=2 or p.get("cooking",0)>0 or p.reload>game.clock
 	skill_label.text="F  "+Rules.SKILLS[p.role]+"  ·  "+skill if game.options.skills and game.options.classes else "특수 스킬 OFF"
-	if p.primary=="m2":skill_label.text+="     Q 회복 %d  ·  2초 간격"%p.heal_mag
+	if p.primary=="m2":skill_label.text+="     C 회복 %d  ·  2초 간격"%p.heal_mag
 	if p.get("mounted",0)>game.clock:skill_label.text+="     거치대 %.0f초"%(p.mounted-game.clock)
 	if p.shield>game.clock:skill_label.text+="     방호 활성"
 	var labels=["1  "+Catalog.get_weapon(p.primary).name,"2  "+Catalog.get_weapon(p.secondary).name,"3  "+("해체 키트" if p.gadget==9 else "파편 수류탄" if GrenadeLogic.equipped(p) else Rules.GADGETS[p.role] if p.role!=4 else "연막탄")+" ×"+str(p.gadget_count if p.role!=4 else p.smoke),"4  "+("섬광탄 ×"+str(p.flash_count) if p.role==4 else "—")]
-	for i in range(4):
+	labels.append("5  "+MeleeCombat.label(p))
+	if MeleeCombat.shown(p,game.clock):weapon_title.text=MeleeCombat.label(p);ammo.text="Q 근접 · 1.4초 간격" if not TouchControls.supported() else "근접 · 1.4초 간격";ammo.show()
+	for i in range(5):
 		slots[i].text=labels[i].substr(3);slots[i].modulate=Color("6eebc7") if p.slot==i else Color("b6cbd4")
 		var usable=ActionState.equipment_ready(game,game.local_id,i)
 		slot_panels[i].self_modulate=(Color("75cebb") if p.slot==i else Color.WHITE) if usable else Color("737373")
 		if not usable:slots[i].modulate=Color("888888")
-		if i>=2 and not game.options.classes:slots[i].text=str(i+1)+"  사용 안 함"
+		if i in [2,3] and not game.options.classes:slots[i].text=str(i+1)+"  사용 안 함"
 	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 설정"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
 	if not p.get("pending_loadout",{}).is_empty():info.text+="   ·   다음 부활 장비 예약됨"

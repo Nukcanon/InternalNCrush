@@ -42,7 +42,7 @@ func _draw():
 	var state=AbilityBalance.skill_state(game,game.local_id)
 	badge(int(p.role),Vector2(914,608),float(state.remaining),float(state.duration),bool(state.enabled),float(game.profile.get("hud_opacity",.38)))
 	keycap("F",Vector2(901,654));draw_string(font,Vector2(840,694),state.label,HORIZONTAL_ALIGNMENT_CENTER,150,13,WHITE)
-	for i in range(4):keycap(str(i+1),Vector2(314+i*132,635))
+	for i in range(5):keycap(str(i+1),Vector2(310+i*106,635))
 	var x=309.
 	for hint in [["B","병과/장비"],["E",BombLogic.use_label(game,game.local_id)],["TAB","기록"],["ESC","메뉴"]]:
 		var width=38. if hint[0].length()>1 else 25.;keycap(hint[0],Vector2(x,689),width);draw_string(font,Vector2(x+width+6,707),hint[1],HORIZONTAL_ALIGNMENT_LEFT,-1,13,WHITE);x+=width+(74. if hint[1].length()>3 else 47.)
@@ -50,7 +50,7 @@ func _draw():
 	var details=[]
 	if MarkerTracker.equipped(p) and float(p.get("marker_progress",0))>0.:details.append("표식 추적 %d%%"%int(p.marker_progress/MarkerTracker.DWELL_SECONDS*100.))
 	if SniperScope.active(game):details.append("저격 %d×"%SniperScope.magnification(game.profile,game.current_weapon(p)))
-	if p.primary=="m2":details.append("Q  회복탄 %d"%p.heal_mag)
+	if p.primary=="m2":details.append("C  회복탄 %d"%p.heal_mag)
 	if p.get("mounted",0)>game.clock:details.append("거치 %.0f초"%(p.mounted-game.clock))
 	if p.shield>game.clock:details.append("방호 활성")
 	if game.options.mode==4:details.append("%d 크레딧"%p.cash)

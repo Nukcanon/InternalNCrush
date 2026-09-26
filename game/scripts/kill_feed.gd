@@ -30,7 +30,8 @@ func refresh(events:Array,local_id:int,now:int):
 		panel.add_theme_stylebox_override("panel",style)
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",5);row.mouse_filter=Control.MOUSE_FILTER_IGNORE;panel.add_child(row)
 		name_label(row,str(event.attacker_name),int(event.attacker_team),HORIZONTAL_ALIGNMENT_RIGHT)
-		var glyph=WeaponGlyph.new();glyph.weapon=str(event.weapon);glyph.tooltip_text=Catalog.get_weapon(event.weapon).get("name",event.weapon) if Catalog.weapons.has(event.weapon) else "포탑" if event.weapon=="turret" else "환경";row.add_child(glyph)
+		var glyph=WeaponGlyph.new();glyph.weapon=str(event.weapon);glyph.tooltip_text=Catalog.get_weapon(event.weapon).get("name",event.weapon) if Catalog.weapons.has(event.weapon) else "칼" if event.weapon=="knife" else "렌치" if event.weapon=="wrench" else "포탑" if event.weapon=="turret" else "환경";row.add_child(glyph)
 		name_label(row,str(event.victim_name),int(event.victim_team),HORIZONTAL_ALIGNMENT_LEFT)
 func name_label(parent:Node,value:String,team:int,alignment:int):
 	var label=Label.new();label.text=compact_name(value);label.tooltip_text=value;label.horizontal_alignment=alignment;label.size_flags_horizontal=Control.SIZE_EXPAND_FILL;label.custom_minimum_size.x=145;label.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;label.add_theme_font_size_override("font_size",17);label.add_theme_color_override("font_color",team_color(team));label.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(label)
+

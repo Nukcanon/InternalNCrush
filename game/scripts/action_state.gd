@@ -11,8 +11,9 @@ static func available(game:Node,id:int,action:String) -> bool:
 	var now=float(game.clock);var w=game.current_weapon(p)
 	if action.begins_with("slot"):
 		var slot=int(action.trim_prefix("slot"))
-		return slot<2 or (game.options.classes and (slot==2 or p.role==4))
+		return slot==MeleeCombat.SLOT or slot<2 or (game.options.classes and (slot==2 or p.role==4))
 	match action:
+		"melee":return MeleeCombat.ready(game,p)
 		"skill":
 			if p.get("placing","")=="turret":return combat
 			var state=AbilityBalance.skill_state(game,id)
@@ -40,6 +41,8 @@ static func available(game:Node,id:int,action:String) -> bool:
 			if not combat:return false
 			if p.get("placing","")!="":return Deployment.candidate(game,id,p.placing).valid
 			if p.get("invul_select",0)>now:return true
+			if p.slot==MeleeCombat.SLOT:return MeleeCombat.ready(game,p)
+			if MeleeCombat.active(p,now):return false
 			if p.slot>=2:return available(game,id,"gadget")
 			return p.reload<=0 and p.get("cooking",0)<=0 and (w.kind!="gun" or int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0)
 		"medical":return combat and p.role==5 and p.primary=="m2" and p.slot==0 and p.heal_ready<=now and p.reload<=0 and p.heal_mag>0
@@ -52,6 +55,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 
 static func equipment_ready(game:Node,id:int,slot:int) -> bool:
 	if not available(game,id,"slot"+str(slot)):return false
+	if slot==MeleeCombat.SLOT:return MeleeCombat.ready(game,game.players[id])
 	if slot<2:return true
 	var p=game.players[id]
 	if p.gadget==9:return game.phase=="combat" # Passive kit, used by interaction.

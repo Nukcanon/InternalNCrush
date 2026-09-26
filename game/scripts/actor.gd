@@ -18,6 +18,9 @@ var world_weapon:WeaponVisual
 var render_root:Node3D
 var character:CharacterVisual
 var protected_visual:MeshInstance3D
+var melee_view:MeleeVisual
+var melee_world:MeleeVisual
+var melee_role=-1
 var item_signature=""
 var reload_stage=-1
 var body_height=1.8
@@ -234,6 +237,22 @@ func update_spread(dt:float,now:float):
 	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),p.get("mounted",0)>now,velocity.y,aim_progress)
 	if p.get("slide_until",0)>now:target+=2.3
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 13.)))
+func update_melee(p:Dictionary,now:float):
+	var shown=MeleeCombat.shown(p,now)
+	if shown and (not is_instance_valid(melee_world) or melee_role!=int(p.role)):
+		if is_instance_valid(melee_world):melee_world.queue_free()
+		if is_instance_valid(melee_view):melee_view.queue_free()
+		melee_role=int(p.role)
+		melee_world=MeleeVisual.new();character.socket.add_child(melee_world);melee_world.build(MeleeCombat.wrench(p),melee_role,false)
+		if local:
+			melee_view=MeleeVisual.new();gun.add_child(melee_view);melee_view.build(MeleeCombat.wrench(p),melee_role,true)
+	if is_instance_valid(melee_world):
+		melee_world.visible=shown;melee_world.pose(now-float(p.get("melee_started",-100.)))
+		if shown:
+			character.solve_arm(character.right_arm,character.right_elbow,character.chest.to_local(melee_world.palm.global_position),Vector3(.75,-.8,.25),1./60.,1.)
+			character.left_arm.rotation=Vector3(.15,.05,.12);character.left_elbow.rotation=Vector3(.35,0,0);character.sync_deform()
+	if is_instance_valid(melee_view):melee_view.visible=shown;melee_view.pose(now-float(p.get("melee_started",-100.)))
+
 func headless_pose(p:Dictionary):
 	# The same small joint hierarchy drives authoritative hit volumes without meshes.
 	set_team(int(p.team))
@@ -253,13 +272,14 @@ func headless_pose(p:Dictionary):
 	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
 	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/.72,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),game.clock)
+	update_melee(p,game.clock)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
 	if not p.alive:tag.hide();return
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
 	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
-	if p.slot>=2 or p.get("cooking",0)>0:
+	if p.slot in [2,3] or p.get("cooking",0)>0:
 		var signature=str([p.role,p.gadget,p.slot])
 		if signature!=item_signature:
 			item_signature=signature
@@ -289,6 +309,8 @@ func visual(dt:float,p:Dictionary,now:float):
 	if is_instance_valid(world_weapon):
 		world_weapon.visible=p.slot<2 and p.get("cooking",0)==0;world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
+	update_melee(p,now)
+	if is_instance_valid(world_weapon) and MeleeCombat.shown(p,now):world_weapon.hide()
 	if not local:
 		TargetReveal.apply(self,p)
 		if not game.server:global_position=global_position.lerp(target_pos,minf(1,dt*14));rotation.y=lerp_angle(rotation.y,aim_yaw,minf(1,dt*15))
@@ -324,7 +346,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	base.x*=handedness;rotation_target.y*=handedness;rotation_target.z*=handedness
 	gun.position=gun.position.lerp(base,1.-exp(-dt*20));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22))
 	var cooking=p.get("cooking",0)>0
-	view_weapon.visible=p.slot<2 and not scoped and not cooking;item_model.visible=p.slot>=2 or cooking;view_weapon.animate_reload(progress,recoil,age)
+	view_weapon.visible=p.slot<2 and not scoped and not cooking and not MeleeCombat.shown(p,now);item_model.visible=(p.slot>=2 or cooking) and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))
 

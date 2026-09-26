@@ -1,4 +1,4 @@
-name: Build and publish Internal N Crush 1.1.6
+name: Build and publish Internal N Crush 1.1.7
 on:
   push:
     paths:
@@ -61,14 +61,16 @@ jobs:
           set -euo pipefail
           timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_details_v116.gd
           timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_details_gameplay_v116.gd -- --no-save-profile --no-update-check
-      - name: Render all revised weapon grips and movement poses
-        run: timeout 300 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_details_v116.gd -- --no-save-profile --no-update-check
+      - name: Validate melee, pellet impacts and touch controls
+        run: timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_melee_v117.gd -- --no-save-profile --no-update-check
+      - name: Capture requested guide screens, melee grips and replay projectile
+        run: timeout 240 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v117.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           overwrite: true
-          name: details-v116
-          path: validation/details-v116/*
+          name: review-v117
+          path: validation/v117/*
       - name: Verify audible combat and deployment feedback
         run: timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/test_audio_feedback.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
@@ -129,7 +131,7 @@ jobs:
           web_name="game-${GITHUB_SHA:0:12}"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
           mv "web/build/$web_name.html" web/build/index.html
-          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.1.6.zip", include_config=False)'
+          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.1.7.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -149,17 +151,17 @@ jobs:
         with:
           overwrite: true
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.1.6.zip
+          path: out/InternalNCrush_Windows_v1.1.7.zip
       - uses: actions/upload-artifact@v4
         with:
           overwrite: true
           name: release-files
           if-no-files-found: error
           path: |
-            out/InternalNCrush_Windows_v1.1.6.zip
-            out/InternalNCrush_Web_v1.1.6.zip
-            out/InternalNCrush_NAS_Linux_v1.1.6.zip
-            out/WEB_RELEASE_v1.1.6.json
+            out/InternalNCrush_Windows_v1.1.7.zip
+            out/InternalNCrush_Web_v1.1.7.zip
+            out/InternalNCrush_NAS_Linux_v1.1.7.zip
+            out/WEB_RELEASE_v1.1.7.json
             out/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -180,19 +182,20 @@ jobs:
         with:
           name: release-files
           path: release-files
-      - name: Create draft 1.1.6 downloads after successful tests
+      - name: Create draft 1.1.7 downloads after successful tests
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           cd release-files
           sha256sum --check SHA256SUMS.txt
-          if gh release view internal-n-crush-v1.1.6 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
+          if gh release view internal-n-crush-v1.1.7 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
             test "$(cat /tmp/is-draft)" = true
-            gh release edit internal-n-crush-v1.1.6 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+            gh release edit internal-n-crush-v1.1.7 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create internal-n-crush-v1.1.6 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.1.6" --notes "Refine weapon grips and reloads, crouch/jump motion, turret acquisition, checkbox contrast, mobile layout and aim assistance; preserve existing menu photographs." --repo "$GITHUB_REPOSITORY"
+            gh release create internal-n-crush-v1.1.7 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.1.7" --notes "Add swept knife and engineer wrench combat, allied turret repair, per-pellet impact marks, replay bullet geometry and concise illustrated controls." --repo "$GITHUB_REPOSITORY"
           fi
-          gh release upload internal-n-crush-v1.1.6 InternalNCrush_Windows_v1.1.6.zip InternalNCrush_Web_v1.1.6.zip InternalNCrush_NAS_Linux_v1.1.6.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.1.7 InternalNCrush_Windows_v1.1.7.zip InternalNCrush_Web_v1.1.7.zip InternalNCrush_NAS_Linux_v1.1.7.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
-          gh release upload internal-n-crush-v1.1.6 WEB_RELEASE_v1.1.6.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.1.7 WEB_RELEASE_v1.1.7.json --clobber --repo "$GITHUB_REPOSITORY"
+

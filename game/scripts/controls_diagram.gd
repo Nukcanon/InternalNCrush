@@ -16,7 +16,7 @@ func _draw():
 	if font==null:return
 	key_rects.clear()
 	var rows=[["Esc","1","2","3","4","5","6","7","8","9","0"],["Tab","Q","W","E","R","T","Y","U","I","O","P"],["Caps","A","S","D","F","G","H","J","K","L"],["Shift","Z","X","C","V","B","N","M"]]
-	var active=["Esc","1","2","3","4","Tab","Q","W","E","R","Ctrl","A","S","D","F","G","Shift","V","B"]
+	var active=["Esc","1","2","3","4","5","C","Tab","Q","W","E","R","Ctrl","A","S","D","F","G","Shift","V","B"]
 	for row in range(rows.size()):
 		var x=18.
 		for key in rows[row]:
@@ -24,7 +24,7 @@ func _draw():
 			keycap(key,Vector2(x,100+row*43),width,key in active);x+=width+5
 	keycap("Ctrl",Vector2(18,272),66,true)
 	keycap("Space",Vector2(172,272),244,true)
-	callout("Esc","메뉴",Vector2(18,44),true);callout("1","1–4 장비 선택",Vector2(135,73),true);callout("R","R 재장전",Vector2(318,44),true);callout("B","B 병과/장비",Vector2(488,335),false);callout("B","B 병과/장비",Vector2(488,335),false);callout("B","B 병과/장비",Vector2(488,335),false)
+	callout("Esc","메뉴",Vector2(18,44),true);callout("1","1–5 장비 · Q 근접",Vector2(135,73),true);callout("R","R 재장전",Vector2(318,44),true);callout("B","B 병과/장비",Vector2(488,335),false);callout("B","B 병과/장비",Vector2(488,335),false);callout("B","B 병과/장비",Vector2(488,335),false)
 	callout("W","WASD 이동",Vector2(365,330),false);callout("Shift","Shift 달리기 · 두 번 눌러 슬라이딩",Vector2(18,371),false);callout("Ctrl","Ctrl 앉기",Vector2(18,333),false);callout("Space","Space 점프",Vector2(290,389),false)
 	var mouse=Rect2(673,130,129,191);var style=StyleBoxFlat.new();style.bg_color=Color("233a4a");style.border_color=Color("7b96a6");style.set_border_width_all(2);style.set_corner_radius_all(46);draw_style_box(style,mouse)
 	draw_line(Vector2(737,130),Vector2(737,231),color,2);draw_line(Vector2(675,229),Vector2(800,229),color,2)
@@ -32,3 +32,4 @@ func _draw():
 	draw_polyline(PackedVector2Array([Vector2(703,173),Vector2(636,173),Vector2(636,100)]),color,1.5,true);draw_string(font,Vector2(590,88),"왼쪽 · 발사",HORIZONTAL_ALIGNMENT_LEFT,-1,18)
 	draw_polyline(PackedVector2Array([Vector2(771,173),Vector2(842,173),Vector2(842,100)]),color,1.5,true);draw_string(font,Vector2(745,88),"오른쪽 · 정조준",HORIZONTAL_ALIGNMENT_LEFT,-1,18)
 	draw_line(Vector2(737,324),Vector2(737,350),color,1.5);draw_string(font,Vector2(640,376),"마우스 이동 · 시점",HORIZONTAL_ALIGNMENT_LEFT,-1,18)
+

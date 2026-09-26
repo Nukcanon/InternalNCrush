@@ -118,6 +118,10 @@ for i in range(int(.10*rate)):
  envelope=max(0.,math.sin(min(1.,max(0.,local)/.04)*math.pi)) if (t<.04 or t>=.055) else 0.
  alert.append(math.sin(2*math.pi*(1450 if t<.045 else 1850)*t)*envelope*.32)
 write('turret_detect',alert,gain=-4)
+# Original melee cues use existing licensed sources, preserving all gun/hit audio.
+write('melee_swing',mix(.32,(highpass(sample('fw_02',1.8,.32),700),.32,0)),gain=-8)
+write('knife_wall',mix(.24,(metal,.48,0),(sample('impactPlate_light_1',1.5,.22),.32,.025)),gain=-5)
+write('wrench_wall',mix(.30,(sample('impactMetal_heavy_000',1.05,.30),.62,0),(metal,.20,.04)),gain=-4)
 (root/'assets/audio_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print('AUDIO_BUILT',len(manifest),'sample-based clips;',sum(k.startswith('gun_') for k in manifest),'distinct weapon mixes')
 

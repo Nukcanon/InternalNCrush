@@ -35,7 +35,9 @@ var shot_history:Array=[]
 var playback_shots:Array=[]
 var shot_cursor=0
 var kick=0.
-var bullet:MeshInstance3D
+var bullet:Node3D
+var melee_view:MeleeVisual
+var melee_world:MeleeVisual
 var bullet_trail:MeshInstance3D
 var fatal_frame={}
 var fall_started=false
@@ -67,8 +69,8 @@ func prepare():
 	stage=Node3D.new();stage.name="ReplayActors";game.add_child(stage);stage.visible=false;stage.process_mode=Node.PROCESS_MODE_DISABLED
 	fx=CombatFX.new();stage.add_child(fx)
 	camera=Camera3D.new();camera.fov=82.;camera.near=.04;camera.far=300.;stage.add_child(camera)
-	bullet=MeshFactory.sphere(stage,Vector3.ZERO,Vector3.ONE*.07,Color("ffe4a1"))
-	var material=StandardMaterial3D.new();material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;material.albedo_color=Color("ffcc69");material.emission_enabled=true;material.emission=Color("ffba50");material.emission_energy_multiplier=2.;bullet.material_override=material
+	bullet=ReplayProjectile.make(stage)
+	var material=StandardMaterial3D.new();material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;material.albedo_color=Color("ffcc69");material.emission_enabled=true;material.emission=Color("ffba50");material.emission_energy_multiplier=2.
 	bullet_trail=MeshInstance3D.new();var mesh=CylinderMesh.new();mesh.top_radius=.012;mesh.bottom_radius=.028;mesh.height=1.;mesh.radial_segments=8;bullet_trail.mesh=mesh;bullet_trail.material_override=material;stage.add_child(bullet_trail)
 	bullet.hide();bullet_trail.hide()
 	overlay=CanvasLayer.new();overlay.layer=30;add_child(overlay);overlay.hide()
@@ -124,7 +126,7 @@ func capture(dt:float):
 	for id in game.players:
 		if not game.actors.has(id):continue
 		var p=game.players[id];var a=game.actors[id]
-		actors[id]={"pos":a.position,"yaw":a.aim_yaw,"pitch":a.aim_pitch,"role":a.shown_role if a.shown_role>=0 else p.role,"team":p.team,"weapon":p.primary if p.slot==0 else p.secondary,"hand":p.get("hand",1),"alive":p.alive,"grounded":a.is_on_floor() if game.server or a.local else a.net_grounded,"crouch":a.input_state.crouch,"sprint":a.last_sprint if game.server or a.local else a.net_sprint,"velocity":a.velocity if game.server or a.local else a.net_velocity,"gait":a.gait if game.server or a.local else a.net_gait}
+		actors[id]={"pos":a.position,"yaw":a.aim_yaw,"pitch":a.aim_pitch,"slot":p.slot,"melee_started":p.get("melee_started",-100.),"role":a.shown_role if a.shown_role>=0 else p.role,"team":p.team,"weapon":p.primary if p.slot==0 else p.secondary,"hand":p.get("hand",1),"alive":p.alive,"grounded":a.is_on_floor() if game.server or a.local else a.net_grounded,"crouch":a.input_state.crouch,"sprint":a.last_sprint if game.server or a.local else a.net_sprint,"velocity":a.velocity if game.server or a.local else a.net_velocity,"gait":a.gait if game.server or a.local else a.net_gait}
 	history.append({"time":Time.get_ticks_msec()/1000.,"actors":actors,"devices":game.devices.duplicate(true),"props":game.arena.prop_states() if game.arena else []})
 	while history.size()>MAX_FRAMES:history.pop_front()
 func request(kill:Dictionary):
@@ -182,13 +184,13 @@ func _process(dt):
 		if int(shot.owner)==killer:kick=1.
 	kick=move_toward(kick,0,dt*5.5)
 	if elapsed<FIRST_PERSON_SECONDS+DEATH_SECONDS:
-		attacker.hide();camera.fov=82.;gun.visible=event.weapon not in ["turret","turret_missile"]
+		attacker.hide();camera.fov=82.;gun.visible=event.weapon not in ["turret","turret_missile","knife","wrench"]
 		camera.position=attacker.position+Vector3.UP*(1.30 if state.crouch else 1.62)*HumanModel.HEIGHTS[int(state.role)]/1.8
 		camera.rotation=Vector3(lerpf(state.pitch,right.actors.get(killer,state).pitch,blend),attacker.rotation.y,0)
 		if event.weapon in ["turret","turret_missile"]:
 			camera.position=event.origin+(event.hit_point-event.origin).normalized()*.25+Vector3.UP*.10;camera.look_at(event.hit_point);gun.hide()
 		gun.scale.x=float(state.get("hand",1));gun.rotation=Vector3(kick*.24,0,0);gun.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46+kick*.11);gun.animate_reload(-1.,kick,0. if kick>.75 else 10.)
-		if elapsed>=RUNUP_SECONDS:
+		if elapsed>=RUNUP_SECONDS and event.weapon not in ["knife","wrench"]:
 			camera.look_at(event.hit_point);camera.fov=70.
 			if elapsed<FIRST_PERSON_SECONDS:
 				if not fatal_sound_played:fatal_sound_played=true;game.play_sound("gun_"+str(event.weapon) if Catalog.weapons.has(event.weapon) else "gun_h1",Vector3.ZERO,false)
@@ -196,7 +198,8 @@ func _process(dt):
 				var t=clampf((elapsed-RUNUP_SECONDS)/BULLET_SECONDS,0,1);var start:Vector3=event.origin;var end:Vector3=event.hit_point;var direction=(end-start).normalized()
 				bullet.show();bullet_trail.show();bullet.position=Ballistics.between(start,end,smoothstep(0.,1.,t)) if Catalog.weapons.has(event.weapon) or event.weapon=="turret" else start.lerp(end,smoothstep(0.,1.,t))
 				follow_bullet(smoothstep(0.,1.,t))
-				var length=minf(1.4,start.distance_to(bullet.position));bullet_trail.position=bullet.position-direction*length*.5;bullet_trail.scale.y=maxf(.001,length);bullet_trail.quaternion=Quaternion(Vector3.UP,direction)
+				bullet.quaternion=Quaternion(Vector3.UP,direction)
+				var length=minf(1.4,start.distance_to(bullet.position));bullet_trail.position=bullet.position-direction*(.023+length*.5);bullet_trail.scale.y=maxf(.001,length);bullet_trail.quaternion=Quaternion(Vector3.UP,direction)
 			else:
 				bullet.hide();bullet_trail.hide();title.text="킬 리플레이 · 사망 순간"
 				follow_bullet(1.)
@@ -208,6 +211,16 @@ func _process(dt):
 		var desired=focus+Basis(Vector3.UP,attacker.rotation.y)*Vector3(.45,.16,-lerpf(3.2,1.35,1.-pow(1.-t,3)))
 		var hit=game.ray(focus,desired,[],1);camera.position=hit.position+hit.normal*.15 if not hit.is_empty() else desired
 		camera.look_at(focus);camera.rotation.z=sin(t*PI)*-.035;camera.fov=lerpf(68.,55.,1.-pow(1.-t,3))
+	if event.weapon in ["knife","wrench"] and is_instance_valid(melee_view):
+		var age=elapsed-RUNUP_SECONDS+.20
+		melee_view.visible=elapsed<FIRST_PERSON_SECONDS;melee_world.visible=elapsed>=FIRST_PERSON_SECONDS+DEATH_SECONDS
+		melee_view.pose(age);melee_view.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46);melee_view.scale.x=float(state.get("hand",1))
+		melee_world.pose(-1.)
+		if elapsed>=RUNUP_SECONDS and elapsed<FIRST_PERSON_SECONDS:
+			title.text="킬 리플레이 · 근접 공격"
+			if not fatal_sound_played:fatal_sound_played=true;game.play_sound("melee_swing",Vector3.ZERO,false)
+		for child in models[killer].get_node("Body").socket.get_children():
+			if child is WeaponVisual:child.hide()
 	progress.value=elapsed/TOTAL_SECONDS*100
 func begin(kill:Dictionary):
 	var started=Time.get_ticks_usec()
@@ -222,13 +235,17 @@ func begin(kill:Dictionary):
 	var weapon=fatal_frame.actors[killer].weapon
 	if not first_person_guns.has(weapon):return
 	gun=first_person_guns[weapon]
+	if kill.weapon in ["knife","wrench"]:
+		var role=int(fatal_frame.actors[killer].role)
+		melee_view=MeleeVisual.new();camera.add_child(melee_view);melee_view.build(kill.weapon=="wrench",role,true)
+		melee_world=MeleeVisual.new();models[killer].get_node("Body").socket.add_child(melee_world);melee_world.build(kill.weapon=="wrench",role,false)
 	event.hit_point=event.get("hit_point",event.get("victim_pos",Vector3.ZERO)+Vector3.UP*1.2)
 	active=true;elapsed=0.;punch_played=false;fall_started=false;fatal_sound_played=false;kick=0.;shot_cursor=0
 	var beginning=maxf(float(frames[0].time),float(fatal_frame.time)-RUNUP_SECONDS)
 	playback_shots=shot_history.filter(func(shot):return shot.time>=beginning and shot.time<fatal_frame.time-.035)
 	stage.process_mode=Node.PROCESS_MODE_INHERIT;stage.show();overlay.show();camera.current=true;bullet.hide();bullet_trail.hide();nickname.hide();hide_live(true)
 	title.text="킬 리플레이 · 공격자 1인칭"
-	var weapon_name=Catalog.get_weapon(kill.weapon).name if Catalog.weapons.has(kill.weapon) else "자동 포탑"
+	var weapon_name="칼" if kill.weapon=="knife" else "렌치" if kill.weapon=="wrench" else Catalog.get_weapon(kill.weapon).name if Catalog.weapons.has(kill.weapon) else "자동 포탑"
 	detail.text="%s  ·  %s%s  ·  기록 기반 재구성  ·  SPACE 건너뛰기"%[kill.attacker_name,weapon_name," / 정밀 명중" if kill.get("critical",false) else ""]
 	begin_usec=Time.get_ticks_usec()-started
 func hide_live(hidden:bool):
@@ -243,6 +260,8 @@ func hide_live(hidden:bool):
 	for node in game.device_nodes.values():node.visible=not hidden
 	for node in game.drop_nodes.values():node.visible=not hidden
 func finish():
+	if is_instance_valid(melee_view):melee_view.queue_free();melee_view=null
+	if is_instance_valid(melee_world):melee_world.queue_free();melee_world=null
 	var was_active=active;active=false;frames.clear()
 	if is_instance_valid(stage):stage.hide();stage.process_mode=Node.PROCESS_MODE_DISABLED;camera.current=false;fx.clear()
 	if is_instance_valid(overlay):overlay.hide()
