@@ -28,6 +28,7 @@ static func visible_point(game:Node,d:Dictionary,id:int,exclude:Array) -> Vector
 		if not game.in_smoke_line(from,point) and game.clear_line(from,point,exclude+[actor.get_rid()]):return point
 	return Vector3.INF
 static func upgrade(game:Node,id:int,did:int):
+	if not TurretSelection.eligible(game,id,did):return
 	var p=game.players[id];var d=game.devices[did]
 	if Construction.active(game,d):game.feedback(id,"","설치·업그레이드 완료 후 사용할 수 있습니다.");return
 	if d.level>=4:game.feedback(id,"","최대 단계 · 기관총 + 미사일");return

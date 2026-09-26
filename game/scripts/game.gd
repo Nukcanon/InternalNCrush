@@ -1429,6 +1429,7 @@ func receive_state(s:Dictionary):
 		elif phase in ["buy","combat"]:ui.show_hud();capture_pointer()
 func update_world_visuals(dt:float):
 	if arena==null:return
+	var upgrade_target=TurretSelection.target(self,local_id)
 	for did in devices:
 		var d=devices[did]
 		if not device_nodes.has(did):
@@ -1451,6 +1452,7 @@ func update_world_visuals(dt:float):
 		DeploymentSilhouette.apply(node,d,local_id)
 		Construction.visual(self,node,d)
 		Construction.labels(self,node,d)
+		TurretSelection.apply(self,node,d,int(did)==upgrade_target)
 	for did in device_nodes.keys():
 		if not devices.has(did):device_nodes[did].queue_free();device_nodes.erase(did)
 	for s in arena.supplies:

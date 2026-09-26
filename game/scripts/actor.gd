@@ -353,7 +353,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		var allied=not viewer.is_empty() and not game.enemies(viewer,p)
 		tag.visible=allied
 		health_tag.visible=allied and int(viewer.get("role",-1))==5
-		health_tag.position.y=body_height+.42;health_tag.text="%d HP"%ceili(p.hp);health_tag.modulate=Color("ff3434").lerp(Color("68ef9c"),clampf(float(p.hp)/100.,0.,1.))
+		AllyHealthLabels.layout(self);health_tag.text="%d HP"%ceili(p.hp);health_tag.modulate=Color("ff3434").lerp(Color("68ef9c"),clampf(float(p.hp)/100.,0.,1.))
 		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
 	var reloading=p.reload>now

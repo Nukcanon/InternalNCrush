@@ -70,11 +70,4 @@ static func confirm(game:Node,id:int) -> bool:
 	return true
 
 static func nearby_turret(game:Node,id:int) -> int:
-	var best=5.;var found=0
-	for did in game.devices:
-		var d=game.devices[did]
-		if d.kind!="turret" or int(d.owner)!=id:continue
-		var distance=game.actors[id].position.distance_to(d.pos)
-		if distance<best and game.clear_line(game.actors[id].eye(),d.pos+Vector3.UP*.6,[game.actors[id].get_rid(),game.device_nodes[did].get_rid()] if game.device_nodes.has(did) else [game.actors[id].get_rid()]):best=distance;found=did
-	return found
-
+	return TurretSelection.target(game,id)

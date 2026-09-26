@@ -4,6 +4,7 @@ static var outline:ShaderMaterial
 static var frame=-1
 static var target=0
 static func apply(actor:Node):
+	if not is_instance_valid(actor.character):return
 	var g=actor.game
 	if frame!=Engine.get_process_frames():
 		frame=Engine.get_process_frames();target=0
@@ -13,7 +14,7 @@ static func apply(actor:Node):
 	if not selected and not actor.character.get_meta("medic_selected",false):return
 	if outline==null:
 		outline=ShaderMaterial.new();var shader=Shader.new()
-		shader.code="shader_type spatial; render_mode unshaded, cull_front, depth_draw_never; void vertex(){VERTEX+=NORMAL*0.028;} void fragment(){ALBEDO=vec3(1.0);}"
+		shader.code="shader_type spatial; render_mode unshaded, cull_front, depth_draw_never; void vertex(){VERTEX+=NORMAL*0.045;} void fragment(){ALBEDO=vec3(1.0);}"
 		outline.shader=shader
 	for mesh in actor.character.find_children("*","MeshInstance3D",true,false):
 		if mesh.name=="ContinuousBody":mesh.material_overlay=outline if selected else null

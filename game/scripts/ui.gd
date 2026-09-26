@@ -29,6 +29,7 @@ var status:Label
 var stats:Label
 var health:Label
 var ammo:Label
+var upgrade_hint:Label
 var banner:Label
 var crosshair:Label
 var info:Label
@@ -648,7 +649,7 @@ func refresh_gear_detail():
 		gear_detail.text=["소총으로 전선을 유지하는 돌격수.","스코프 사격과 표식으로 시야를 확보하는 정찰수.","기관총과 방호로 거점을 지키는 중화기병.","샷건과 엄폐물, 자동 포탑을 운용하는 공병.","기관단총과 연막·섬광으로 경로를 통제하는 지원병.","회복 도구와 의료 카빈으로 팀을 지원하는 메딕."][role]+"\n\n"+Rules.GADGET_HELP[role]+"\n"+Rules.SKILL_HELP[role]
 	elif preview_kind==2:
 		preview_caption.text=gear_gadget.get_item_text(gear_gadget.selected);gear_detail.text=Rules.GADGET_HELP[role]+"\n\n3 가젯 선택 · 클릭 사용 · G 즉시 사용"
-		if gear_gadget.get_selected_id()==8 or (role==0 and gear_gadget.selected==1):gear_detail.text="G 또는 3번 선택 후 클릭을 누르면 안전핀 해제.\n놓으면 투척 · 3초 후 폭발 · 계속 들면 자신도 피해.\n벽 뒤에는 폭발 피해가 전달되지 않습니다."
+		if gear_gadget.get_selected_id()==8 or (role==0 and gear_gadget.selected==1):gear_detail.text="G 또는 3번 선택 후 클릭을 누르면 안전핀 해제.\n놓으면 투척 · 핀 해제 2.5초 후 폭발 · 계속 들면 자신도 피해.\n벽 뒤에는 폭발 피해가 전달되지 않습니다."
 		if role==3 and gear_gadget.get_selected_id() in [0,1,2]:gear_detail.text+="\n내구도 %d · 조준한 방향에 배치"%AbilityBalance.COVER_HP[gear_gadget.selected]
 		if gear_gadget.get_selected_id()==9:gear_detail.text="해체 시간 30초 → 10초\n400 크레딧 · 기존 병과 가젯 대신 장착\n장치 앞에서 E를 계속 누르면 자동 사용합니다."
 	elif preview_kind==3:
@@ -700,13 +701,14 @@ func show_hud():
 	interaction_hint=hud_label("",Vector2(440,449),18);interaction_hint.size=Vector2(400,36);interaction_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	bomb_hint=hud_label("",Vector2(790,490),27)
 	bomb_hint.size=Vector2(450,76);bomb_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;bomb_hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;bomb_hint.add_theme_color_override("font_color",Color("ffda8a"));bomb_hint.hide()
+	upgrade_hint=hud_label("",Vector2(320,505),20);upgrade_hint.size=Vector2(640,36);upgrade_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;upgrade_hint.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;upgrade_hint.add_theme_color_override("font_outline_color",Color.BLACK);upgrade_hint.add_theme_constant_override("outline_size",6);upgrade_hint.hide()
 	banner=hud_label("",Vector2(34,96),17)
 	info=hud_label("",Vector2(305,686),16)
 	skill_label=hud_label("",Vector2(313,590),16)
 	slots=[];slot_panels=[]
 	for i in range(5):
 		var plate=hud_plate(Vector2(305+i*106,622),Vector2(100,54));slot_panels.append(plate)
-		var l=hud_label("",Vector2(339+i*106,632),12);l.size=Vector2(62,30);l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;slots.append(l)
+		var l=hud_label("",Vector2(309+i*106,651),12);l.size=Vector2(92,22);l.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;slots.append(l)
 	skill_label.hide();info.hide()
 	var symbols=HudSymbols.new();symbols.game=game;symbols.ui=self;symbols.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.add_child(symbols)
 	crosshair=hud_label("",Vector2(0,0),1)
@@ -742,11 +744,10 @@ func refresh():
 	var door=InteractiveDoor.target(game,game.local_id) if p.alive and bomb_action.is_empty() else null
 	interaction_hint.text="[ E ]  문 닫기" if door and door.opened else "[ E ]  문 열기" if door else ""
 	interaction_hint.visible=door!=null
-	if p.role==3:
-		var turret=Deployment.nearby_turret(game,game.local_id)
-		if turret:
-			var d=game.devices[turret];interaction_hint.visible=true
-			interaction_hint.text="[ F ] 포탑 업그레이드 %d → %d"%[d.level,d.level+1] if d.level<4 else "포탑 최대 단계"
+	var upgrade_target=TurretSelection.target(game,game.local_id)
+	upgrade_hint.text=TurretSelection.caption(game,game.local_id,upgrade_target,TouchControls.supported())
+	upgrade_hint.visible=upgrade_target!=0
+	upgrade_hint.position.y=455 if TouchControls.supported() else 505
 	if p.get("placing","")!="":interaction_hint.text=("발사 버튼: 설치 확정 · 스킬/가젯: 취소" if TouchControls.supported() else "클릭 설치 · 같은 설치 키로 취소 · 빨강: 설치 불가");interaction_hint.visible=true
 	if p.get("invul_select",0)>game.clock:interaction_hint.text="아군 클릭: 함께 6초 무적 · 빈 곳 클릭: 자신만";interaction_hint.visible=true
 	if p.get("mark",0)>game.clock:interaction_hint.text="위치 노출 · %.1f초"%(p.mark-game.clock);interaction_hint.visible=true
@@ -785,11 +786,11 @@ func refresh():
 		var usable=ActionState.equipment_ready(game,game.local_id,i)
 		slot_panels[i].self_modulate=(Color("75cebb") if p.slot==i else Color.WHITE) if usable else Color("737373")
 		if not usable:slots[i].modulate=Color("888888")
-		if i in [2,3] and not game.options.classes:slots[i].text=str(i+1)+"  사용 안 함"
+		if i in [2,3] and not game.options.classes:slots[i].text="사용 안 함"
 	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 설정"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
 	if not p.get("pending_loadout",{}).is_empty():info.text+="   ·   다음 부활 장비 예약됨"
-	if MarkerTracker.equipped(p):slots[2].text="3  표식기 · 자동"
+	if MarkerTracker.equipped(p):slots[2].text="표식기 · 자동"
 	if not p.alive:info.text="마우스: 관전 시점   ·   클릭: 관전 대상 변경   ·   B 다음 병과/장비"
 	reticle.queue_redraw()
 	flash_overlay.color.a=clampf((p.flash-game.clock)/.7,0,1.)

@@ -32,6 +32,7 @@ void fragment() {
 	material.set_shader_parameter("bounds_min",bounds.position);material.set_shader_parameter("bounds_max",bounds.end)
 	materials[key]=material;return material
 static func apply(node:Node3D,device:Dictionary,local_id:int):
+	if node.get_meta("upgrade_selected",false):return
 	var owned=local_id>0 and int(device.owner)==local_id
 	var key="%s:%s:%s"%[owned,device.team,device.get("level",1)]
 	var changed=node.get_meta("silhouette_state","")!=key

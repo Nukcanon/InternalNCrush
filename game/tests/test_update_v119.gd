@@ -65,7 +65,7 @@ func run():
 	g.clock+=5.1;g.update_world_visuals(.016);await physics_frame
 	if g.devices.has(cover):expect(g.device_nodes[cover].collision_layer==4,"completed cover becomes solid")
 	for key in g.devices.keys():g.remove_device(key)
-	p.skill_ready=0.;var tower=g.add_device("turret",Vector3(10,0,0),1,180.);g.devices[tower].upgrade_ready=0.
+	p.skill_ready=0.;p.alive=true;p.protect=0.;a.position=Vector3(10,0,2);var tower=g.add_device("turret",Vector3(10,0,0),1,180.);g.devices[tower].upgrade_ready=0.
 	TurretLogic.upgrade(g,1,tower)
 	expect(is_equal_approx(g.devices[tower].building_until-g.clock,3.) and is_equal_approx(p.skill_ready-g.clock,30.),"upgrade starts three-second build and thirty-second charge together")
 	var level=g.devices[tower].level;p.skill_ready=0.;g.devices[tower].upgrade_ready=0.;TurretLogic.upgrade(g,1,tower)
