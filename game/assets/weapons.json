@@ -1488,6 +1488,6 @@
     "spray_direction": 1,
     "pattern_recovery": 32.51,
     "rocket": true,
-    "description": "직격 60 + 반경 9m 폭발 15–45 · 한 발 장전 1.8초"
+    "description": "직격 총피해 60 / 폭발 15–45 · 반경 9m · 한 발 장전 1.8초"
   }
 }

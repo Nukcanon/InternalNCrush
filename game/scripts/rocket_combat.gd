@@ -31,16 +31,17 @@ static func explode(g:Node,rocket:Dictionary,hit:Dictionary):
 		if not direct and (distance>RADIUS or not g.clear_line(pos,point,[actor.get_rid()])):continue
 		var splash=lerpf(45.,15.,clampf(distance/RADIUS,0.,1.))
 		var can_push=p.protect<=g.clock and p.get("invulnerable",0)<=g.clock and (id==owner or not g.players.has(owner) or g.enemies(g.players[owner],p) or g.options.friendly)
-		g.damage(id,(60. if direct else 0.)+splash,owner,false,"h4",rocket.origin if direct else pos,hit.position if direct else point)
+		g.damage(id,(60. if direct else splash),owner,false,"h4",rocket.origin if direct else pos,hit.position if direct else point)
 		if can_push and p.alive:
 			var away=Vector3(rocket.velocity.x,0,rocket.velocity.z).normalized() if direct else Vector3(point.x-pos.x,0,point.z-pos.z).normalized()
 			if away.length_squared()<.01:away=Vector3.FORWARD
 			g.blast_push.rpc(id,away*(8. if direct else lerpf(3.2,.8,distance/RADIUS))+Vector3.UP*(5.5 if direct else 1.6),.65 if direct else .25)
 	for did in g.devices.keys():
+		if rocket.get("construction_hits",{}).has(did):continue # A pass-through direct hit already dealt this rocket's damage.
 		var d=g.devices[did];var point=d.pos+Vector3.UP*.8;var distance=point.distance_to(pos)
 		var direct=hit.collider.has_meta("device") and int(hit.collider.get_meta("device"))==int(did)
 		var exclude=[g.device_nodes[did].get_rid()] if g.device_nodes.has(did) else []
-		if direct or (distance<=RADIUS and g.clear_line(pos,point,exclude)):g.damage_device(did,(60. if direct else 0.)+lerpf(45.,15.,clampf(distance/RADIUS,0.,1.)),owner)
+		if direct or (distance<=RADIUS and g.clear_line(pos,point,exclude)):g.damage_device(did,(60. if direct else lerpf(45.,15.,clampf(distance/RADIUS,0.,1.))),owner)
 	for prop in g.arena.props.values():
 		var delta=prop.global_position-pos
 		if delta.length()<RADIUS and g.clear_line(pos,prop.global_position,[prop.get_rid()]):prop.hit(prop.global_position,delta.normalized(),30.)

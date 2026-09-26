@@ -81,6 +81,11 @@ func run():
 	expect(a.try_mantle() and a.position.y>1.15,"forward jump can climb a cover-height ledge")
 	ledge.free();await physics_frame
 	expect(AbilityBalance.scan_range(Vector2(10,10))==35. and AbilityBalance.scan_range(Vector2(500,500))==60. and AbilityBalance.scan_range(Vector2(60,70))>35.,"sensor scales with map size inside 35 to 60 metres")
+	p.team=1;q.team=0;q.protect=0.;q.invulnerable=0.;q.armor=0.;q.alive=true
+	for offset in [Vector3(0,1.7,0),Vector3(0,.8,0),Vector3(0,.25,0)]:
+		q.hp=100.;q.alive=true
+		RocketCombat.explode(g,{"owner":1,"origin":Vector3.ZERO,"velocity":Vector3(0,0,-30)}, {"position":b.position+offset,"normal":Vector3.BACK,"collider":b})
+		expect(is_equal_approx(q.hp,40.),"rocket direct damage sixty independent of body part")
 	var preview=EquipmentPreview.new();root.add_child(preview);preview.size=Vector2(440,160)
 	for wid in Catalog.weapons:
 		preview.display(1,int(Catalog.get_weapon(wid).role),0,wid)

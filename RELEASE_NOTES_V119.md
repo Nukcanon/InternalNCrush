@@ -4,7 +4,7 @@
 - FIX remote repair tool: 30 HP/s at 10m. Connected pistol guards and tool controls.
 - Proportionate held-item fingers; two-handed cover and turret carrying; detailed bipod.
 - Directional WASD double tap and mobile neutral-return double swipe slide; mobile slide button removed.
-- Rocket: direct 60, splash 15–45 within 9m, reduced gravity, unobstructed aiming and rear reload contact.
+- Rocket: direct 60 total (no duplicate splash), splash 15–45 within 9m; no body-part multipliers for rockets or grenades, reduced gravity, unobstructed aiming and rear reload contact.
 - Faster, wider first/third-person melee swings; collision-checked forward-jump mantling.
 - Skill recharge survives death and transfers elapsed charge across class changes; turret cooldown 30s.
 - Medic: initial 30s charge, F then click for six-second self/ally invulnerability with aim tolerance and white selection outline. Slow field radius 15m. Renamed 하드비트센서 scales between 35 and 60m by map size.
