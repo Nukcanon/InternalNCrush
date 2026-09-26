@@ -12,7 +12,10 @@ func run():
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)
 		if w.kind!="gun":continue
-		expect(CombatBalance.firing_dps(w)>CombatBalance.sustained_dps(w) and CombatBalance.sustained_dps(w)>0.,id+" reload reduces sustained DPS")
+		if int(w.mag)==1 and float(w.reload)<=float(w.interval):
+			expect(is_equal_approx(CombatBalance.firing_dps(w),CombatBalance.sustained_dps(w)),id+" single-shot reload fits the firing interval")
+		else:
+			expect(CombatBalance.firing_dps(w)>CombatBalance.sustained_dps(w) and CombatBalance.sustained_dps(w)>0.,id+" reload reduces sustained DPS")
 		var a=AimModel.spread(w,0.,false,false,false,true,0.);var b=AimModel.spread(w,3.7,false,false,false,true,0.);var c=AimModel.spread(w,7.4,false,false,false,true,0.)
 		expect(is_equal_approx(b-a,(c-a)*.5),id+" speed-proportional spread")
 		var spray=AimModel.spray_offset(w,ceili(w.spray_build_seconds/w.interval));signatures[str(spray)]=true
