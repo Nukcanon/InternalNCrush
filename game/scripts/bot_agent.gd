@@ -138,7 +138,7 @@ func choose_action():
 		var best=40.
 		for other in game.players:
 			var q=game.players[other]
-			if other==id or not q.alive or game.enemies(p,q) or q.hp>=85:continue
+			if other==id or not q.alive or game.enemies(p,q) or q.hp>=Rules.max_hp(q)*.85:continue
 			var distance=a.position.distance_to(game.actors[other].position)
 			if distance<best and game.clear_line(a.eye(),game.actors[other].eye(),[a.get_rid(),game.actors[other].get_rid()]):best=distance;ally=other
 		if ally!=0 and (not visible_target or p.hp>35):action="heal";set_goal(game.actors[ally].position);return

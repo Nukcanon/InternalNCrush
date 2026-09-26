@@ -17,11 +17,11 @@ func run():
 	a.aim_yaw=0.;a.aim_pitch=0.;a.input_state.yaw=0.;a.input_state.pitch=0.;a.input_state.fire=true;a.last_sprint=false;a.sprint_release=0.
 	await physics_frame;await physics_frame
 	for i in range(60):g.clock+=1./60.;MedicLink.tick(g,1,1./60.)
-	expect(is_equal_approx(q.hp,35.),"LINK heals 25 per second at 12 metres")
+	expect(is_equal_approx(q.hp,30.),"LINK heals 20 per second at 12 metres")
 	expect(int(p.link_target)==2,"initial acquisition links teammate")
 	a.aim_yaw=deg_to_rad(99.);a.input_state.yaw=a.aim_yaw
 	expect(MedicLink.valid(g,1,2),"link retains 99 degree yaw")
-	g.clock+=.1;MedicLink.tick(g,1,.1);expect(q.hp>35.,"off-crosshair link still heals")
+	g.clock+=.1;MedicLink.tick(g,1,.1);expect(q.hp>30.,"off-crosshair link still heals")
 	a.aim_yaw=deg_to_rad(101.);expect(not MedicLink.valid(g,1,2),"101 degree yaw breaks link")
 	a.aim_yaw=0.;a.input_state.yaw=0.;b.position.z=-15.1;expect(not MedicLink.valid(g,1,2),"range over 15 breaks link");b.position.z=-12
 	a.input_state.fire=false;MedicLink.tick(g,1,.1);expect(p.link_target==0,"release click clears link")

@@ -398,7 +398,7 @@ func add_player(id:int,nick:String,token:String):
 	t=randi()%2 if counts[0]==counts[1] else 0 if counts[0]<counts[1] else 1
 	var role=0 if id>0 or not options.classes else absi(id)%6
 	if role==5 and medic_count(t)>=R.medic_cap(counts[t]+1):role=0
-	var p={"id":id,"nick":nick,"token":token,"team":t,"role":role,"primary":C.first(role),"secondary":R.SECONDARIES[role],"slot":0,"hp":100.,"armor":0.,"armor_max":0,"alive":false,"kills":0,"deaths":0,"assists":0,"objective":0,"healed":0.,"builds":0,"played":0.,"cash":800,"lives":int(options.lives),"respawn":0.,"mag":{},"reserve":{},"reload":0.,"reload_weapon":"","fire_ready":0.,"heal_ready":0.,"heal_mag":3,"heal_reserve":3,"energy":180.,"repair_energy":100.,"skill_ready":clock+30. if role==5 else 0.,"initial_skill_until":clock+30.,"gadget_count":1,"gadget":0,"protect":0.,"shield":0.,"slow":0.,"dash":0.,"mark":0.,"flash":0.,"last_hit":-20.,"contributors":{},"input_time":clock,"gadget_ready":0.,"last_pos":Vector3.ZERO,"spectator":false,"round_bonus":0,"can_respawn":true,"smoke":2,"flash_count":1}
+	var p={"id":id,"nick":nick,"token":token,"team":t,"role":role,"primary":C.first(role),"secondary":R.SECONDARIES[role],"slot":0,"hp":R.CLASS_HP[role],"armor":0.,"armor_max":0,"alive":false,"kills":0,"deaths":0,"assists":0,"objective":0,"healed":0.,"builds":0,"played":0.,"cash":800,"lives":int(options.lives),"respawn":0.,"mag":{},"reserve":{},"reload":0.,"reload_weapon":"","fire_ready":0.,"heal_ready":0.,"heal_mag":3,"heal_reserve":3,"energy":180.,"repair_energy":100.,"skill_ready":clock+30. if role==5 else 0.,"initial_skill_until":clock+30.,"gadget_count":1,"gadget":0,"protect":0.,"shield":0.,"slow":0.,"dash":0.,"mark":0.,"flash":0.,"last_hit":-20.,"contributors":{},"input_time":clock,"gadget_ready":0.,"last_pos":Vector3.ZERO,"spectator":false,"round_bonus":0,"can_respawn":true,"smoke":2,"flash_count":1}
 	if reconnects.has(token):
 		p=reconnects[token].duplicate(true);p.id=id;p.nick=nick;p.alive=false;p.respawn=clock+3;reconnects.erase(token)
 	elif phase!="lobby":
@@ -428,7 +428,7 @@ func spawn(id:int):
 	if not p.get("pending_loadout",{}).is_empty():
 		var requested=p.pending_loadout.duplicate();p.pending_loadout={};commit_loadout(id,requested)
 	var best=choose_spawn(id)
-	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.cooking=0;p.slide_until=0.;p.hp=100.;p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;GadgetLoadout.reset(p);p.last_hit=clock;p.contributors={};p.spectator=false
+	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.cooking=0;p.slide_until=0.;p.hp=R.max_hp(p);p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;GadgetLoadout.reset(p);p.last_hit=clock;p.contributors={};p.spectator=false
 	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.;p.reveal_to={}
 	p.hand=-1 if randf()<.12 else 1
 	a.reset_view((0. if p.team==MatchFlow.attackers(self) else PI) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else 0. if options.get("practice",false) and id==1 else 0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
@@ -455,7 +455,7 @@ func choose_spawn(id:int) -> Vector3:
 	return best
 func can_attack(p:Dictionary) -> bool:return not (int(options.mode)==4 and phase=="buy") and p.alive and float(p.get("protect",0))<=clock
 func passive_regen(p:Dictionary,dt:float):
-	if options.autoheal and p.alive and clock-maxf(p.last_hit,float(p.get("shot_time",-100.)))>=R.REGEN_DELAY:p.hp=minf(100.,p.hp+R.REGEN_RATE*dt)
+	if options.autoheal and p.alive and clock-maxf(p.last_hit,float(p.get("shot_time",-100.)))>=R.REGEN_DELAY:p.hp=minf(R.max_hp(p),p.hp+R.REGEN_RATE*dt)
 func kick_player(requester:int,target:int,by_vote=false) -> bool:
 	if not server or (requester!=1 and not by_vote) or target==1 or not players.has(target):return false
 	var name=players[target].nick;var token=players[target].token
@@ -630,6 +630,7 @@ func collect_input():
 	var a=actors[local_id];var on=(touch.active() if is_instance_valid(touch) else pointer_input_active()) and players[local_id].alive and not (is_instance_valid(kill_replay) and kill_replay.active)
 	a.input_state.x=Input.get_axis("left","right") if on else 0.;a.input_state.z=Input.get_axis("forward","back") if on else 0.
 	for k in ["sprint","crouch","jump","use"]:a.input_state[k]=on and Input.is_action_pressed(k)
+	a.input_state.melee=on and Input.is_action_pressed("melee")
 	a.input_state.ads=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT);a.input_state.fire=on and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT);a.input_state.alt=on and Input.is_action_pressed("medical")
 	if is_instance_valid(touch):touch.apply_input(a,on)
 	var w=current_weapon(players[local_id])
@@ -685,7 +686,7 @@ func server_tick(dt:float):
 			if options.get("practice",false):PracticeSession.input(self,id)
 			else:bot_input(id,dt)
 		elif clock-p.input_time> .5:
-			a.input_state.x=0.;a.input_state.z=0.;a.input_state.fire=false;a.input_state.alt=false;a.input_state.use=false
+			a.input_state.x=0.;a.input_state.z=0.;a.input_state.fire=false;a.input_state.melee=false;a.input_state.alt=false;a.input_state.use=false
 		if not p.alive:
 			if phase=="combat" and clock>=p.respawn and not p.spectator and int(options.mode)!=4 and (int(options.mode)!=2 or (p.can_respawn if options.shared_lives else p.lives>0)):spawn(id)
 			continue
@@ -880,6 +881,8 @@ func process_trigger(id:int):
 	var pressed=seq>int(p.get("trigger_seen",0)) or (held and not p.get("fire_prev",false))
 	p.trigger_seen=maxi(seq,int(p.get("trigger_seen",0)));p.fire_prev=held
 	if MeleeCombat.active(p,clock):return
+	if bool(a.input_state.get("melee",false)):
+		MeleeCombat.begin(self,id);return
 	if p.slot==MeleeCombat.SLOT:
 		if held or pressed:MeleeCombat.begin(self,id)
 		return
@@ -1051,7 +1054,7 @@ func aim_player(id:int,range_m:float,ally:bool) -> int:
 	return tid if enemies(players[id],players[tid])!=ally else 0
 func heal_target(id:int,tid:int,amount:float,weapon_heal:bool=false,visual:bool=true):
 	if tid==0:return
-	var p=players[id];var q=players[tid];var healed=minf(100-q.hp,amount*(1. if weapon_heal else .5 if clock-q.last_hit<2 else 1.))
+	var p=players[id];var q=players[tid];var healed=minf(maxf(0.,R.max_hp(q)-q.hp),amount*(1. if weapon_heal else .5 if clock-q.last_hit<2 else 1.))
 	if q.get("healing_until",0)>clock and q.get("healer",id)!=id:return
 	q.hp+=healed;q.healing_until=clock+.12;q.healer=id;p.healed+=healed
 	if healed>0 and visual:effect.rpc("heal",actors[id].muzzle_world(),actors[tid].position+Vector3.UP*(.90 if actors[tid].input_state.crouch else 1.15)*actors[tid].body_height/1.8,id,-100.,{"target":tid})
@@ -1183,7 +1186,7 @@ func use_gadget(id:int):
 		5:
 			var tid=aim_player(id,4,true)
 			if tid==0:tid=id
-			if players[tid].hp>=100:feedback(id,"","체력이 이미 가득 찼습니다.");return
+			if players[tid].hp>=R.max_hp(players[tid]):feedback(id,"","체력이 이미 가득 찼습니다.");return
 			heal_target(id,tid,25)
 	p.gadget_count-=1;p.gadget_ready=clock+.8;p.fire_ready=maxf(p.fire_ready,clock+.4)
 	if p.role!=4:event_fx.rpc("deploy",a.position,Vector3.ZERO,id)

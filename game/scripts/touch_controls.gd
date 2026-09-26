@@ -35,11 +35,11 @@ static func detect_supported() -> bool:
 func _ready():
 	enabled=supported();mouse_filter=Control.MOUSE_FILTER_IGNORE;set_process_input(enabled);visible=false
 	buttons={
-		"fire":Rect2(1100,400,130,130),"melee":Rect2(980,498,96,52),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
+		"fire":Rect2(1100,400,130,130),"melee":Rect2(880,410,96,82),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
 		"jump":Rect2(1150,565,104,82),"crouch":Rect2(1150,660-10,104,60),
 		"sprint":Rect2(100,350,180,78),
 		"skill":Rect2(409,542,105,76),"gadget":Rect2(528,542,105,76),"use":Rect2(647,542,105,76),"medical":Rect2(766,542,105,76),
-		"gear":Rect2(430,452,170,70),"auto_fire":Rect2(75,260,230,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
+		"gear":Rect2(790,15,170,65),"auto_fire":Rect2(75,260,230,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
 	for i in range(4):buttons["slot"+str(i)]=Rect2(392+i*126,635,118,70)
 func active() -> bool:
 	return enabled and is_instance_valid(game.ui) and not is_instance_valid(game.ui.panel) and game.phase in ["combat","buy","round_end","result"] and game.players.has(game.local_id)
@@ -59,6 +59,7 @@ func _process(dt):
 		if redraw_timer>0:return
 		redraw_timer=.05
 		var p=game.players[game.local_id]
+		layout_actions(p)
 		buttons.erase("bomb");buttons.erase("gadget_mode")
 		if int(game.options.mode)==4:buttons.bomb=Rect2(620,452,190,70)
 		# Bomb and grenade selection are separate actions, including in bomb mode.
@@ -71,8 +72,19 @@ func _process(dt):
 		for action in buttons:
 			availability[action]=ActionState.equipment_ready(game,game.local_id,int(action.trim_prefix("slot"))) if action.begins_with("slot") else ActionState.available(game,game.local_id,action)
 		queue_redraw()
+func layout_actions(p:Dictionary):
+	var actions=["gadget","use"]
+	if int(p.role)==5 and p.primary in ["m2","m3"]:actions.append("medical")
+	else:buttons.erase("medical");held.medical=false
+	actions.append("skill")
+	var start=640.-(actions.size()*119.-14.)*.5
+	for i in range(actions.size()):buttons[actions[i]]=Rect2(start+i*119.,542,105,76)
 func press(action:String,on:bool):
 	# Releases must always be accepted, even if the ability became unavailable.
+	if action=="melee":
+		held.melee=on
+		if on and ActionState.available(game,game.local_id,action):game.command(action,{})
+		return
 	if on and not (action in ["ads","crouch","sprint"] and held.get(action,false)) and not ActionState.available(game,game.local_id,action):return
 	if action in ["ads","crouch","sprint"]:
 		if on:held[action]=not held.get(action,false)
@@ -147,6 +159,7 @@ func apply_input(actor:Actor,on:bool):
 	actor.input_state.use=on and (held.get("use",false) or (held.get("bomb",false) and ActionState.available(game,game.local_id,"bomb")))
 	actor.input_state.sprint=on and held.get("sprint",false) and movement.length()>.1
 	actor.input_state.alt=on and held.get("medical",false)
+	actor.input_state.melee=on and held.get("melee",false)
 	if on:
 		if look_id>=0 or held.get("ads",false) or held.get("fire",false) or game.profile.get("touch_auto_fire",false):TouchAim.assist(game,actor,1./30.)
 		if TouchAim.can_auto_fire(game,actor):
@@ -164,6 +177,7 @@ func _draw():
 		var rect:Rect2=buttons[action];var color=Color(.04,.075,.10,.40) if not held.get(action,false) else Color(.18,.48,.54,.75)
 		var ready=bool(availability.get(action,false))
 		if not ready:color=Color(.22,.23,.24,.72)
+		elif action=="skill":color=Color("f4d968")
 		elif action=="auto_fire" and game.profile.get("touch_auto_fire",false):color=Color(.18,.48,.54,.75)
 		if action=="fire":draw_circle(rect.get_center(),rect.size.x*.5,color);draw_arc(rect.get_center(),rect.size.x*.5,0,TAU,48,Color(.86,.96,1,.6),2.,true)
 		else:draw_style_box(plate(color),rect)
@@ -184,7 +198,7 @@ func _draw():
 		if action=="fire" and not p.get("alive",false):title="다음 관전";font_size=22
 		if action=="fire" and is_instance_valid(game.kill_replay) and game.kill_replay.active:title="건너뛰기";font_size=22
 		font_size=mini(font_size,maxi(12,int(font_size*(rect.size.x-14)/maxf(1.,font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x))))
-		draw_string(font,rect.position+Vector2(7,rect.size.y*.5+font_size*.35),title,HORIZONTAL_ALIGNMENT_CENTER,rect.size.x-14,font_size,Color("eefaff") if ready else Color("aeb1b4"))
+		draw_string(font,rect.position+Vector2(7,rect.size.y*.5+font_size*.35),title,HORIZONTAL_ALIGNMENT_CENTER,rect.size.x-14,font_size,Color("202b32") if ready and action=="skill" else Color("eefaff") if ready else Color("aeb1b4"))
 	var center=stick_center if stick_id>=0 else Vector2(165,530)
 	draw_circle(center,90,Color(.06,.11,.15,.27));draw_arc(center,90,0,TAU,48,Color(.8,.94,1,.5),2.,true)
 	draw_circle(center+movement*64,35,Color(.7,.9,.96,.55))

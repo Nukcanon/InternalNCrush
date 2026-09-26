@@ -27,8 +27,8 @@ func run():
 	g.clock=start+.06;MeleeCombat.tick(g,1);expect(q.hp==100.,"windup has no early damage")
 	g.clock=start+.43;MeleeCombat.tick(g,1);expect(q.hp<100.,"swept arc hits nearby actor")
 	var once=q.hp;MeleeCombat.tick(g,1);expect(q.hp==once,"one damage per victim per swing")
-	g.clock=start+1.39;expect(not MeleeCombat.begin(g,1),"cooldown remains until 1.4s")
-	g.clock=start+1.41;expect(MeleeCombat.begin(g,1),"attack available after 1.4s")
+	g.clock=start+.79;expect(not MeleeCombat.begin(g,1),"cooldown remains until 0.8s")
+	g.clock=start+.81;expect(MeleeCombat.begin(g,1),"attack available after 0.8s")
 	# Explicit anatomy damage preserves individual head/torso/limb results.
 	for role in [0,3]:
 		p.role=role

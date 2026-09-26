@@ -943,15 +943,15 @@
       "torso": 1.0,
       "legs": 1.0
     },
-    "heal_rate": 25,
+    "heal_rate": 20,
     "max_range": 15
   },
   "m2": {
     "name": "PIPER",
     "role": 5,
     "slot": 0,
-    "damage": 18.4,
-    "interval": 0.2,
+    "damage": 22,
+    "interval": 0.24,
     "mag": 24,
     "reserve": 96,
     "price": 2400,
@@ -997,7 +997,7 @@
     "pattern_recovery": 36.63,
     "heal_per_pellet": 5,
     "heal_cap": 5,
-    "description": "아군 명중 시 5 회복 · 적에게 기존 카빈의 80% 피해 · 거리별 회복/피해 감소"
+    "description": "의료 카빈 · 아군 명중 시 5 회복 · 250 RPM · 적에게 22 피해 · 거리에 따라 피해와 회복 감소"
   },
   "pistol": {
     "name": "SIDE",
@@ -1389,8 +1389,8 @@
     "name": "MENDER",
     "role": 5,
     "slot": 0,
-    "damage": 14,
-    "interval": 1.05,
+    "damage": 16,
+    "interval": 1.2,
     "mag": 5,
     "reserve": 20,
     "price": 2400,
@@ -1436,7 +1436,7 @@
     "pattern_recovery": 37.5,
     "heal_per_pellet": 6,
     "heal_cap": 30,
-    "description": "산탄당 6 회복 · 한 아군당 발사 1회 최대 30 · 거리별 회복/피해 감소"
+    "description": "의료 산탄총 · 산탄 8발 · 각 6 회복, 발사당 최대 30 · 50 RPM · 적에게 16 × 8 피해 · 거리에 따라 피해와 회복 감소"
   },
   "h4": {
     "name": "COMET",

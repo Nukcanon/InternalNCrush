@@ -1,29 +1,30 @@
 class_name HeldGrip
 extends Node3D
-# Palm and four separate finger arcs enclose the handle; thumb opposes them.
-# Local Y is the handle axis, X points from the object into the wrist.
-var wrist=Vector3(.105,0,.012)
+# Upright object along Y. Palm is on +X, knuckles point -Z; flexion
+# curls toward the object, while the wrist continues behind the palm (+Z).
+var wrist=Vector3(.055,-.025,.105)
+var finger_paths:Array=[]
 func build(role:int,radius:float=.025):
 	var skin=HumanModel.SKIN_COLORS[role];var glove=Color("45554e")
-	MeshFactory.box(self,Vector3(radius+.027,0,.012),Vector3(.047,.103,.052),skin,Vector3.ZERO,.7)
-	MeshFactory.box(self,Vector3(radius+.050,.007,.019),Vector3(.018,.088,.043),glove,Vector3.ZERO,.7)
+	var r=radius+.012
+	HumanModel.oval(self,Vector3(radius+.024,-.003,.014),Vector3(.043,.100,.079),skin)
+	HumanModel.oval(self,Vector3(radius+.043,.001,.019),Vector3(.013,.080,.062),glove)
 	for finger in range(4):
-		var y=.036-finger*.024
-		var r=radius+.010
+		var y=.035-finger*.024;var length=[.077,.086,.080,.064][finger]
+		var start=-.58;var sweep=minf(2.55,length/r)
 		var points=[]
-		var finger_length=[.082,.088,.081,.065][finger]
-		var sweep=minf(2.7,finger_length/r)
-		for i in range(4):
-			var angle=lerpf(.15,.15+sweep,i/3.)
+		for i in range(9):
+			var angle=start-sweep*i/8.
 			points.append(Vector3(cos(angle)*r,y,sin(angle)*r))
-		for i in range(points.size()-1):segment(points[i],points[i+1],.011 if finger<3 else .0095,skin)
-		for point in points:MeshFactory.sphere(self,point,Vector3.ONE*(.022 if finger<3 else .019),skin)
-	# Thumb crosses the near face, stopping outside the handle surface.
-	segment(Vector3(radius+.035,.047,.015),Vector3(radius+.009,.051,-.019),.014,skin)
-	segment(Vector3(radius+.009,.051,-.019),Vector3(.009,.037,-radius-.012),.013,skin)
-	wrist=Vector3(radius+.083,0,.012)
-	segment(Vector3(radius+.052,.002,.012),wrist,.033,glove)
+		finger_paths.append(points)
+		# Proximal joint grows out of the palm; the curved phalanges remain outside the payload.
+		segment(Vector3(radius+.025,y,-.020),points[0],.010,skin)
+		for i in range(8):segment(points[i],points[i+1],.0095 if finger<3 else .008,skin)
+	# Opposing thumb folds over the rear of the handle, not through its centre.
+	segment(Vector3(radius+.025,.041,.032),Vector3(radius*.65,.058,radius+.013),.013,skin)
+	segment(Vector3(radius*.65,.058,radius+.013),Vector3(-.006,.040,radius+.017),.011,skin)
+	wrist=Vector3(radius+.022,-.018,.108)
+	segment(Vector3(radius+.024,-.012,.044),wrist,.030,glove)
 	MeshFactory.merge_children(self)
 func segment(a:Vector3,b:Vector3,radius:float,color:Color):
-	var mesh=MeshFactory.cylinder(self,(a+b)*.5,radius,a.distance_to(b),color,Vector3.ZERO,-1,8)
-	mesh.quaternion=Quaternion(Vector3.UP,(b-a).normalized())
+	HumanModel.cord(self,a,b,radius,color)

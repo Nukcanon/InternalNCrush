@@ -49,14 +49,21 @@ func build(wrench:bool,role:int,first_person:bool):
 		arm=WeaponHand.forearm(self,role)
 	pose(-1.)
 func pose(age:float):
-	var turn=0.;var extension=0.
+	# Right-handed downward diagonal cut; parent mirroring supplies the left-hand version.
+	var rest=Vector3(.16,-.08,-.08);var wind=Vector3(.38,.24,-.16);var finish=Vector3(-.40,-.30,-.42)
+	var rest_rot=Vector3(-.35,0,-.20);var wind_rot=Vector3(.15,-.30,-.65);var finish_rot=Vector3(-1.1,.45,1.35)
+	pivot.position=rest;pivot.rotation=rest_rot
 	if age>=0. and age<MeleeCombat.DURATION:
-		if age<MeleeCombat.CONTACT_START:turn=lerpf(0.,-1.55,smoothstep(0.,MeleeCombat.CONTACT_START,age))
-		elif age<=MeleeCombat.CONTACT_END:turn=lerpf(-1.55,1.55,(age-MeleeCombat.CONTACT_START)/(MeleeCombat.CONTACT_END-MeleeCombat.CONTACT_START))
-		else:turn=lerpf(1.55,0.,smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age))
-		extension=sin(clampf(age/.23,0.,1.)*PI)
-	pivot.position=Vector3(-sin(turn)*.42,.015+extension*.035,-.09-extension*.22)
-	pivot.rotation=Vector3(-.35-extension*.35,turn,-.25-turn*.5)
+		if age<MeleeCombat.CONTACT_START:
+			var t=smoothstep(0.,MeleeCombat.CONTACT_START,age)
+			pivot.position=rest.lerp(wind,t);pivot.rotation=rest_rot.lerp(wind_rot,t)
+		elif age<=MeleeCombat.CONTACT_END:
+			var t=clampf((age-MeleeCombat.CONTACT_START)/(MeleeCombat.CONTACT_END-MeleeCombat.CONTACT_START),0.,1.)
+			pivot.position=wind.lerp(finish,t);pivot.rotation=wind_rot.lerp(finish_rot,t)
+		else:
+			# Low follow-through, then a curved recovery outside the next cutting arc.
+			var t=smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age)
+			pivot.position=finish.lerp(rest,t)+Vector3(0,-.10*sin(t*PI),.13*sin(t*PI));pivot.rotation=finish_rot.lerp(rest_rot,t)
 	if is_instance_valid(hand):
 		var elbow=Vector3(.30,-.30,.29)
 		var wrist=pivot.transform*(hand.position+hand.wrist)

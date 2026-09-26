@@ -639,21 +639,21 @@ func refresh_gear_detail():
 	gear_detail.tooltip_text="안정성↑: 연속 사격 퍼짐 감소 · 조준 시간↓: 더 빠른 조준\n무게↑ / 휴대성↓: 이동 중 퍼짐 증가 · 퍼짐은 반각 기준"
 	gear_detail.text="머리 ×%.2f · 몸통 ×1 · 다리 ×%.2f\n조준 이동 %.2f m/s · 비조준 %.1f° / 조준 %.1f°"%[w.zone_multipliers.head,w.zone_multipliers.legs,float(w.get("ads_speed",4.4))*.5,w.spread,w.ads_spread]
 	if w.name=="MONOLITH":gear_detail.text="머리·몸통·팔·다리 100 / 손·발 60 피해\n방어구 및 120m 이후 거리 감소 적용\n4발 · 사격 간격 2.35초 · 재장전 3.8초"
-	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 25/초\n유효 거리 15 m · 에너지 180\n클릭 유지: 연결한 아군 지속 치료 · 조준 이탈 ±100° 허용.\n벽·사거리 이탈 시 연결 해제 · 여러 LINK 중첩 불가."
+	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 20/초\n유효 거리 15 m · 에너지 180\n클릭 유지: 연결한 아군 지속 치료 · 조준 이탈 ±100° 허용.\n벽·사거리 이탈 시 연결 해제 · 여러 LINK 중첩 불가."
 	if float(w.get("heal_per_pellet",0.))>0:gear_detail.text=str(w.get("description",""))+"\n아군은 치료, 적군은 피해 · 모바일 자동 사격 지원"
 	if w.get("rocket",false):gear_detail.text=str(w.description)+"\n속도 30m/s · 완만한 낙하 · 직격 시 강한 밀림"
 	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n12m 이후 탄환 피해 감소 · 48m에서 10%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
 	if w.kind=="repair":gear_detail.text="FIX · 원격 수리 도구 · 10m · 초당 30 수리\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
 	if preview_kind==0:
 		preview_caption.text=HumanModel.IDENTITIES[role]+" · "+Rules.CLASSES[role]+" · %d cm"%roundi(HumanModel.HEIGHTS[role]*100)
-		gear_detail.text=["소총으로 전선을 유지하는 돌격수.","스코프 사격과 표식으로 시야를 확보하는 정찰수.","기관총과 방호로 거점을 지키는 중화기병.","샷건과 엄폐물, 자동 포탑을 운용하는 공병.","기관단총과 연막·섬광으로 경로를 통제하는 지원병.","회복 도구와 의료 카빈으로 팀을 지원하는 메딕."][role]+"\n\n"+Rules.GADGET_HELP[role]+"\n"+Rules.SKILL_HELP[role]
+		gear_detail.text=["소총으로 전선을 유지하는 돌격수.","스코프 사격과 표식으로 시야를 확보하는 정찰수.","기관총과 방호로 거점을 지키는 중화기병.","샷건과 엄폐물, 자동 포탑을 운용하는 공병.","기관단총과 연막·섬광으로 경로를 통제하는 지원병.","회복 도구와 의료 카빈으로 팀을 지원하는 메딕."][role]+"\n"+Rules.SKILL_HELP[role]
 	elif preview_kind==2:
 		preview_caption.text=gear_gadget.get_item_text(gear_gadget.selected);gear_detail.text=Rules.GADGET_HELP[role]+"\n\n3 가젯 선택 · 클릭 사용 · G 즉시 사용"
 		if gear_gadget.get_selected_id()==8 or (role==0 and gear_gadget.selected==1):gear_detail.text="G 또는 3번 선택 후 클릭을 누르면 안전핀 해제.\n놓으면 투척 · 핀 해제 2.5초 후 폭발 · 계속 들면 자신도 피해.\n벽 뒤에는 폭발 피해가 전달되지 않습니다."
 		if role==3 and gear_gadget.get_selected_id() in [0,1,2]:gear_detail.text+="\n내구도 %d · 조준한 방향에 배치"%AbilityBalance.COVER_HP[gear_gadget.selected]
 		if gear_gadget.get_selected_id()==9:gear_detail.text="해체 시간 30초 → 10초\n400 크레딧 · 기존 병과 가젯 대신 장착\n장치 앞에서 E를 계속 누르면 자동 사용합니다."
 	elif preview_kind==3:
-		preview_caption.text=["기본 복장","경량 방어구 · +25","중량 방어구 · +50"][gear_armor.selected];gear_detail.text="방어구는 체력보다 먼저 피해를 흡수합니다.\n기본 체력 100 · 기본 방어구 0\n경량: 이동 −6% / 조준 준비 +10%\n중량: 이동 −12% / 조준 준비 +20%\n"+("비용 %d 크레딧"%[0,300,600][gear_armor.selected] if game.options.mode==4 else "장비 선택은 무료입니다.")
+		preview_caption.text=["기본 복장","경량 방어구 · +25","중량 방어구 · +50"][gear_armor.selected];gear_detail.text="방어구는 체력보다 먼저 피해를 흡수합니다.\n기본 방어구 0\n경량: 이동 −6% / 조준 준비 +10%\n중량: 이동 −12% / 조준 준비 +20%\n"+("비용 %d 크레딧"%[0,300,600][gear_armor.selected] if game.options.mode==4 else "장비 선택은 무료입니다.")
 	elif preview_kind==4:
 		preview_caption.text=Rules.SKILLS[role];gear_detail.text=Rules.SKILL_HELP[role]+"\n\nF 사용 · 충전 완료 후 사용 가능"
 	if not game.options.skills and preview_kind==4:gear_detail.text+="\n현재 방에서는 스킬이 꺼져 있습니다."
@@ -760,7 +760,7 @@ func refresh():
 	if game.options.get("practice",false):status.text="FIELD ACADEMY  ·  자유 연습"
 	health.text=("◆ BLUE  " if p.team==0 else "● ORANGE  ")+"%d HP"%p.hp if p.alive else "Dead · 관전" if game.options.mode==4 or p.spectator else "Dead · 부활 %.0f초"%maxf(0,p.respawn-game.clock)
 	operator_name.text=HumanModel.IDENTITIES[int(p.role)]+"  ·  "+Rules.CLASSES[int(p.role)]
-	health_bar.size.x=220*clampf(p.hp/100.,0,1);armor_bar.size.x=220*clampf(p.armor/50.,0,1)
+	health_bar.size.x=220*clampf(p.hp/Rules.max_hp(p),0,1);armor_bar.size.x=220*clampf(p.armor/50.,0,1)
 	var fire_mode={"auto":"AUTO","semi":"SEMI","burst":"BURST"}.get(w.get("fire_mode","auto"),"")
 	weapon_title.text=w.name+"   /   "+fire_mode
 	ammo.text=str(int(p.mag.get(wid,0)))+" / "+("∞" if game.options.infinite else str(int(p.reserve.get(wid,0))))
@@ -780,7 +780,7 @@ func refresh():
 	if p.shield>game.clock:skill_label.text+="     방호 활성"
 	var labels=["1  "+Catalog.get_weapon(p.primary).name,"2  "+Catalog.get_weapon(p.secondary).name,"3  "+GadgetLoadout.label(p)+" ×"+str(p.gadget_count),"4  —"]
 	labels.append("5  "+MeleeCombat.label(p))
-	if MeleeCombat.shown(p,game.clock):weapon_title.text=MeleeCombat.label(p);ammo.text="Q 근접 · 1.4초 간격" if not TouchControls.supported() else "근접 · 1.4초 간격";ammo.show()
+	if MeleeCombat.shown(p,game.clock):weapon_title.text=MeleeCombat.label(p);ammo.text="Q 근접 · 0.8초 간격" if not TouchControls.supported() else "근접 · 0.8초 간격";ammo.show()
 	for i in range(5):
 		slots[i].text=labels[i].substr(3);slots[i].modulate=Color("6eebc7") if p.slot==i else Color("b6cbd4")
 		var usable=ActionState.equipment_ready(game,game.local_id,i)

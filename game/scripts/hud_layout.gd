@@ -28,6 +28,7 @@ static func apply(ui:Node):
 		var group=ui.hud.get_node_or_null("Hud_"+key)
 		if group:group.position=position_for(key,amount);group.scale=Vector2.ONE*amount
 	if TouchControls.supported():
+		ui.hud.get_node("Hud_time").position.x=340
 		ui.hud.get_node("Hud_health").position=Vector2(22,95)
 		ui.hud.get_node("Hud_ammo").position=Vector2(1258-263*amount,145)
 		ui.hud.get_node("Hud_gear").hide()

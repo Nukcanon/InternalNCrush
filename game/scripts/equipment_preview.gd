@@ -31,6 +31,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0):
 	if kind==0:
 		var c=CharacterVisual.new();c.enable_physics=false;model.add_child(c);c.build(role,team);c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.)
 		var gun=WeaponVisual.new();c.socket.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.scale=Vector3.ONE*.8
+		c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.);c.grip_weapon(1.);c.sync_deform()
 		model.rotation.y=-.35;camera.position=Vector3(0,1.4,-4);camera.look_at(Vector3(0,1.3,0));camera.size=1.15
 	elif kind==1:
 		var gun=WeaponVisual.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.rotation.y=PI/2;camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0));camera.size=.63
@@ -85,15 +86,19 @@ static func gadget_model(parent:Node3D,role:int,variant:int):
 			m.box(parent,Vector3(0,.25,0),Vector3(.43,.55,.09),Color("7294ae"),Vector3.ZERO,.55);m.box(parent,Vector3(0,.26,-.055),Vector3(.27,.35,.025),dark,Vector3.ZERO,.4)
 		1:m.cylinder(parent,Vector3(0,.12,0),.18,.2,dark);m.cylinder(parent,Vector3(0,.24,0),.14,.04,accent);m.cylinder(parent,Vector3(.08,.4,0),.016,.36,light)
 		2:
-			m.box(parent,Vector3(0,.35,0),Vector3(.26,.08,.17),dark,Vector3.ZERO,.35)
-			m.box(parent,Vector3(0,.402,0),Vector3(.18,.025,.11),light)
+			m.box(parent,Vector3(0,.48,0),Vector3(.20,.07,.14),dark,Vector3.ZERO,.3)
+			m.box(parent,Vector3(0,.527,0),Vector3(.14,.025,.10),light)
 			for side in [-1,1]:
-				m.cylinder(parent,Vector3(side*.10,.33,0),.049,.065,light,Vector3(0,0,PI/2))
-				m.cylinder(parent,Vector3(side*.136,.33,0),.021,.008,dark,Vector3(0,0,PI/2))
-				m.cylinder(parent,Vector3(side*.18,.20,0),.025,.27,dark,Vector3(0,0,side*-.45))
-				m.cylinder(parent,Vector3(side*.235,.09,0),.018,.15,light,Vector3(0,0,side*-.45))
-				for y in [.13,.16,.19]:m.cylinder(parent,Vector3(side*(.27-y*.45),y,0),.028,.012,accent,Vector3(0,0,side*-.45))
-				m.box(parent,Vector3(side*.265,.016,0),Vector3(.10,.032,.12),Color("202a30"),Vector3.ZERO,.4)
+				var hinge=Vector3(side*.075,.46,0);var knee=Vector3(side*.18,.25,0);var foot=Vector3(side*.30,.025,0)
+				m.cylinder(parent,hinge,.038,.09,light,Vector3(PI/2,0,0))
+				rod(parent,hinge,knee,.026,dark);rod(parent,knee,foot,.018,Color("68777e"))
+				var spring_a=hinge+Vector3(side*.033,-.025,.035);var spring_b=knee+Vector3(side*.032,.03,.035)
+				rod(parent,spring_a,spring_b,.012,light)
+				for i in range(12):
+					var pt=spring_a.lerp(spring_b,i/11.)
+					var coil=m.cylinder(parent,pt,.018,.006,dark);coil.quaternion=Quaternion(Vector3.UP,(spring_b-spring_a).normalized())
+				m.box(parent,foot,Vector3(.082,.034,.10),Color("202a30"),Vector3(0,0,side*.12),.3)
+
 		3:
 			var cover=Node3D.new();parent.add_child(cover);CombatFX.device(cover,"cover",0);cover.scale=Vector3.ONE*.32
 		4:
@@ -108,3 +113,7 @@ static func grenade_model(parent:Node3D):
 	m.cylinder(parent,Vector3(0,.31,0),.042,.055,steel)
 	m.box(parent,Vector3(.071,.20,0),Vector3(.022,.26,.047),steel,Vector3(0,0,.16))
 	var ring=TorusMesh.new();ring.inner_radius=.025;ring.outer_radius=.032;ring.rings=16;ring.ring_segments=6;m.instance(parent,ring,Vector3(-.05,.32,0),steel,Vector3(PI/2,0,0))
+
+static func rod(parent:Node3D,a:Vector3,b:Vector3,radius:float,color:Color):
+	var mesh=MeshFactory.cylinder(parent,(a+b)*.5,radius,a.distance_to(b),color)
+	mesh.quaternion=Quaternion(Vector3.UP,(b-a).normalized())

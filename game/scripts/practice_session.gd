@@ -23,6 +23,6 @@ static func tick(game):
 	if not game.players.has(1):return
 	var p=game.players[1];var a=game.actors[1]
 	if p.alive and a.position.z>30. and absf(a.position.x)<12. and game.clock>float(p.get("refit_ready",0)):
-		game.equip_ammo(p);p.skill_ready=0.;p.gadget_ready=0.;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;GadgetLoadout.reset(p);p.hp=100.;p.refit_ready=game.clock+2.
+		game.equip_ammo(p);p.skill_ready=0.;p.gadget_ready=0.;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;GadgetLoadout.reset(p);p.hp=Rules.max_hp(p);p.refit_ready=game.clock+2.
 		for device in game.devices.values():
 			if device.kind=="turret" and int(device.owner)==1:device.upgrade_ready=0.

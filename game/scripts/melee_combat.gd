@@ -4,10 +4,10 @@ extends RefCounted
 # One target can receive at most one hit (or repair) from a complete swing.
 const SLOT=4
 const REACH=1.45
-const INTERVAL=1.4
+const INTERVAL=.8
 const CONTACT_START=.045
 const CONTACT_END=.15
-const DURATION=.32
+const DURATION=.46
 const STEPS=64
 const ZONES={"head":1.5,"torso":1.,"hands":.65,"legs":.75,"feet":.55}
 static func wrench(p:Dictionary) -> bool:return int(p.role)==3
@@ -31,8 +31,9 @@ static func tick(g:Node,id:int):
 	var a=g.actors[id];var eye=a.eye()-Vector3.UP*.10
 	for step in range(int(p.get("melee_step",-1))+1,last+1):
 		var arc=lerpf(-1.55,1.55,float(step)/STEPS)*float(p.get("hand",1))
+		var slope=lerpf(.38,-.38,float(step)/STEPS)
 		for height in [0.,-.08,.08]:
-			var direction=Basis(Vector3.UP,a.aim_yaw+arc)*Basis(Vector3.RIGHT,a.aim_pitch+height)*Vector3.FORWARD
+			var direction=Basis(Vector3.UP,a.aim_yaw+arc)*Basis(Vector3.RIGHT,a.aim_pitch+slope+height)*Vector3.FORWARD
 			var hit=g.ray(eye,eye+direction*REACH,[a.get_rid()])
 			if hit.is_empty():continue
 			contact(g,id,hit,eye,direction)

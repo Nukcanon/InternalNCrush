@@ -16,7 +16,7 @@ func build(role:int,variant:int,first_person:bool,turret:bool=false):
 		for y in [-.095,.035]:MeshFactory.box(self,Vector3(-.14,y,-.26),Vector3(.56,.03,.06),Color("52626a"))
 		for x in [-.24,-.04]:MeshFactory.box(self,Vector3(x,-.15,-.28),Vector3(.045,.22,.09),Color("344049"))
 	var radius=.020 if two_handed else .044 if small else .025
-	var palms=[Vector3(.12,-.03,-.06),Vector3(-.40,-.03,-.06)] if two_handed else [Vector3(0,-.01,-.14) if small else Vector3(.11,-.03,-.14)]
+	var palms=[Vector3(.12,-.03,-.06),Vector3(-.40,-.03,-.06)] if two_handed else [Vector3(0,-.01,-.14) if small else Vector3(.04,.03,-.045)]
 	for index in range(palms.size()):
 		var palm:Vector3=palms[index];var side=1. if index==0 else -1.
 		if not small:

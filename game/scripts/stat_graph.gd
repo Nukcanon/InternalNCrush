@@ -15,7 +15,7 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 	elif kind==1 and w.kind=="remote":
 		rows=[["포탑 탄환 DPS",38.,60.,"23 → 38"],["탄환 감쇠 시작",12.,60.,"12 m"],["48m 탄환 피해",10.,100.,"10%"],["최대 단계 미사일",30.,100.,"30 / 2초"]]
 	elif kind==1:
-		rows=[["회복 / 초" if w.kind=="heal" else "수리 / 초",25. if w.kind=="heal" else 30.,100.,"25" if w.kind=="heal" else "30"],["작동 거리",w.reach,20.,"%d m"%w.reach],["에너지",w.mag,180.,str(w.mag)]]
+		rows=[["회복 / 초" if w.kind=="heal" else "수리 / 초",float(w.get("heal_rate",30.)),100.,str(int(w.get("heal_rate",30.)))],["작동 거리",w.reach,20.,"%d m"%w.reach],["에너지",w.mag,180.,str(w.mag)]]
 	elif kind==2 and variant==9:
 		rows=[["해체 시간",10.,30.,"10초 / 기본 30초"],["구매 비용",400.,1000.,"400 크레딧"]]
 	elif kind==2 and (variant==8 or (role==0 and variant==1)):
@@ -28,7 +28,8 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 			3:rows=[["내구도",float(AbilityBalance.COVER_HP[variant]),420.,str(AbilityBalance.COVER_HP[variant])],["최대 설치",2.,3.,"2개"]]
 			4:rows=[["섬광 반경",18.,20.,"18 m"],["섬광 지속",4.5,5.,"최대 4.5초"],["소지량",3.,3.,"3개"]] if variant==1 else [["연막 지속",10.,15.,"10초"],["연막 반경",5.,10.,"5 m"],["소지량",3.,3.,"3개"]]
 			5:rows=[["즉시 회복",25.,100.,"25 HP"],["작동 거리",4.,20.,"4 m"]]
-	elif kind==3:rows=[["최대 체력",100.,150.,"100 HP"],["추가 방어구",variant*25.,50.,str(variant*25)]]
+	elif kind==0:rows=[["최대 체력",Rules.CLASS_HP[role],150.,"%d HP"%Rules.CLASS_HP[role]]]
+	elif kind==3:rows=[["추가 방어구",variant*25.,50.,str(variant*25)]]
 	elif kind==4:
 		var cooldown=AbilityBalance.COOLDOWNS[role]
 		rows=[["재사용 대기",cooldown,40.,"%d초"%cooldown],["효과 시간",AbilityBalance.DURATIONS[role],180. if role==3 else 10.,"설치형" if role==3 else "%.2f초"%AbilityBalance.DURATIONS[role]]]

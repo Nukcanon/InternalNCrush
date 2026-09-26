@@ -31,7 +31,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 			if p.role==4:return p.flash_count>0 if p.gadget==1 else p.smoke>0
 			if p.role==5:
 				var target=game.aim_player(id,4.,true)
-				return game.players[target if target else id].hp<100.
+				return game.players[target if target else id].hp<Rules.max_hp(game.players[target if target else id])
 			return true
 		"bomb":return not BombLogic.action(game,id).is_empty()
 		"gadget_mode":return false

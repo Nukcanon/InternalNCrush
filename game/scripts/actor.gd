@@ -45,7 +45,7 @@ var remote_ads=false
 var legs=[]
 var arms=[]
 var team_material:StandardMaterial3D
-var input_state={"x":0.0,"z":0.0,"yaw":0.0,"pitch":0.0,"ads":false,"sprint":false,"crouch":false,"fire":false,"alt":false,"use":false,"jump":false,"trigger_seq":0}
+var input_state={"x":0.0,"z":0.0,"yaw":0.0,"pitch":0.0,"ads":false,"sprint":false,"crouch":false,"fire":false,"melee":false,"alt":false,"use":false,"jump":false,"trigger_seq":0}
 var aim_yaw=0.0
 var aim_pitch=0.0
 var sprint_release=0.0
@@ -353,7 +353,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		var allied=not viewer.is_empty() and not game.enemies(viewer,p)
 		tag.visible=allied
 		health_tag.visible=allied and int(viewer.get("role",-1))==5
-		AllyHealthLabels.layout(self);health_tag.text="%d HP"%ceili(p.hp);health_tag.modulate=Color("ff3434").lerp(Color("68ef9c"),clampf(float(p.hp)/100.,0.,1.))
+		AllyHealthLabels.layout(self);health_tag.text="%d HP"%ceili(p.hp);health_tag.modulate=Color("ff3434").lerp(Color("68ef9c"),clampf(float(p.hp)/Rules.max_hp(p),0.,1.))
 		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
 	var reloading=p.reload>now

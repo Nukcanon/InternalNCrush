@@ -1,6 +1,6 @@
 class_name MedicLink
 extends RefCounted
-const RATE=25.
+const RATE=20.
 const RANGE=15.
 const RETAIN_ANGLE=100.
 static func valid(g:Node,id:int,target:int,check_angle=true) -> bool:
@@ -25,7 +25,7 @@ static func tick(g:Node,id:int,dt:float):
 	var tid=target(g,id);p.link_target=tid
 	if tid==0 or p.energy<=0:return
 	var amount=minf(RATE*dt,float(p.energy))
-	if g.players[tid].hp<100:
+	if g.players[tid].hp<Rules.max_hp(g.players[tid]):
 		var before=float(g.players[tid].hp);g.heal_target(id,tid,amount,true,false)
 		p.energy=maxf(0.,p.energy-(float(g.players[tid].hp)-before))
 	if g.clock>=float(p.get("link_fx_ready",0)):
