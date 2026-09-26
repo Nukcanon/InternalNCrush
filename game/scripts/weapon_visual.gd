@@ -130,8 +130,10 @@ func build(w:Dictionary,hands=true,use_cache=true):
 	elif w.get("rocket",false):
 		length=.95
 		var launch_tube=tube(self,Vector3(0,.065,-.37),.09,1.04,Color("596d51"));launch_tube.mesh=launch_tube.mesh.duplicate();launch_tube.mesh.cap_top=false;launch_tube.mesh.cap_bottom=false
+		var liner=tube(self,Vector3(0,.065,-.37),.087,1.04,Color("303c2b"));liner.mesh=liner.mesh.duplicate();liner.mesh.cap_top=false;liner.mesh.cap_bottom=false;liner.mesh.flip_faces=true
 		for z in [-.87,.10]:
 			var collar=tube(self,Vector3(0,.065,z),.108,.075,metal);collar.mesh=collar.mesh.duplicate();collar.mesh.cap_top=false;collar.mesh.cap_bottom=false
+			var rim=TorusMesh.new();rim.inner_radius=.087;rim.outer_radius=.108;rim.rings=24;rim.ring_segments=8;M.instance(self,rim,Vector3(0,.065,z),edge,Vector3(PI/2,0,0))
 		tube(self,Vector3(0,.065,-.912),.084,.007,Color("10191e"))
 		block(self,Vector3(0,-.10,.014),Vector3(.075,.20,.09),metal,-.15)
 		block(self,Vector3(0,-.11,-.48),Vector3(.072,.18,.09),edge)

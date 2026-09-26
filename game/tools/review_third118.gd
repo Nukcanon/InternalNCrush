@@ -12,4 +12,8 @@ func run():
 		for i in range(10):
 			weapon.animate_reload(phase,0.,10.);c.update_pose(1./60.,Vector3.ZERO,false,false,true,0.,phase,0.);await process_frame
 		await RenderingServer.frame_post_draw;root.get_texture().get_image().save_jpg("res://../validation/v118/third-rocket-%s.jpg"%str(phase),.92)
+	c.hide();camera.position=Vector3.ZERO;camera.rotation=Vector3.ZERO;camera.fov=82.;camera.near=.04
+	var first=WeaponVisual.new();camera.add_child(first);first.position=Vector3(.255,-.255,-.46);first.build(Catalog.get_weapon("h4"),true,false);first.scale=Vector3.ONE*.85
+	for i in range(3):await process_frame
+	await RenderingServer.frame_post_draw;root.get_texture().get_image().save_jpg("res://../validation/v118/rocket-bore.jpg",.92)
 	world.free();await process_frame;quit()

@@ -88,6 +88,7 @@ jobs:
       - name: Render new equipment thumbnails and review
         run: |
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_thumbnails.gd -- --v118
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v118.gd -- --quick --no-save-profile --no-update-check
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_third118.gd
       - uses: actions/upload-artifact@v4
