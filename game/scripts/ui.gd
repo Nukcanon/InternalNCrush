@@ -380,7 +380,8 @@ func settings():
 	var displays=[]
 	for i in range(DisplayServer.get_screen_count()):
 		var native=DisplayServer.screen_get_size(i)
-		displays.append("모니터 %d · %d × %d · %.0f Hz"%[i+1,native.x,native.y,DisplayServer.screen_get_refresh_rate(i)])
+		var refresh=DisplayServer.screen_get_refresh_rate(i)
+		displays.append("모니터 %d · %d × %d"%[i+1,native.x,native.y]+(" · %.0f Hz"%refresh if is_finite(refresh) and refresh>0 else ""))
 	var monitor=option("출력 모니터",displays,int(game.profile.monitor))
 	var mode=option("화면 모드",["창 모드","전체 화면 · 빠른 앱 전환","전체 화면 · 게임 전용"],maxi(0,int(game.profile.display_mode)));mode.name="DisplayMode"
 	if OS.has_feature("web"):

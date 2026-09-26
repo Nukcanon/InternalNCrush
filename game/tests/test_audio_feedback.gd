@@ -16,7 +16,7 @@ func run():
 	g.players[1].team=0;g.players[2].team=1
 	for id in [1,2]:g.players[id].protect=0.;g.players[id].armor=0.;g.players[id].hp=100.;g.players[id].alive=true
 	g.audio_bank.played.connect(func(key,_world):heard.append(key))
-	for key in ["hit","hurt","armor_hurt","deploy","confirm"]:
+	for key in ["hit","hurt","armor_hurt","deploy","confirm","melee_swing","knife_wall","wrench_wall"]:
 		expect(g.audio_bank.streams.has(key) and g.audio_bank.streams[key].get_length()>.05,"full feedback sample present: "+key)
 	var capture=AudioEffectCapture.new();AudioServer.add_bus_effect(0,capture);AudioServer.set_bus_mute(0,false);AudioServer.set_bus_volume_db(0,0.)
 	g.damage(2,10.,1);expect("hit" in heard and g.ui.hit_until>Time.get_ticks_msec(),"player hit plays sample and shows marker")

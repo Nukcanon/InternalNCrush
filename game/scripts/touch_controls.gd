@@ -32,7 +32,7 @@ static func detect_supported() -> bool:
 func _ready():
 	enabled=supported();mouse_filter=Control.MOUSE_FILTER_IGNORE;set_process_input(enabled);visible=false
 	buttons={
-		"fire":Rect2(1100,400,130,130),"melee":Rect2(1100,320,130,66),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
+		"fire":Rect2(1100,400,130,130),"melee":Rect2(980,498,96,52),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
 		"jump":Rect2(1150,565,104,82),"crouch":Rect2(1150,660-10,104,60),
 		"sprint":Rect2(75,350,105,78),"slide":Rect2(200,350,105,78),
 		"skill":Rect2(409,542,105,76),"gadget":Rect2(528,542,105,76),"use":Rect2(647,542,105,76),"medical":Rect2(766,542,105,76),

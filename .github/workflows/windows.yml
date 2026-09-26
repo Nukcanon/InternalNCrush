@@ -131,6 +131,8 @@ jobs:
           web_name="game-${GITHUB_SHA:0:12}"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
           mv "web/build/$web_name.html" web/build/index.html
+          mkdir -p web/build/guide
+          for screen in controls touch settings lan internet; do cp "validation/v117/$screen.jpg" "web/build/guide/$screen.jpg"; done
           python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.1.7.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
@@ -178,6 +180,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: release-files
@@ -187,6 +190,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq .sha)" = "$GITHUB_SHA"
           cd release-files
           sha256sum --check SHA256SUMS.txt
           if gh release view internal-n-crush-v1.1.7 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
@@ -199,3 +203,5 @@ jobs:
           # Publish the installation descriptor last, after both downloads exist.
           gh release upload internal-n-crush-v1.1.7 WEB_RELEASE_v1.1.7.json --clobber --repo "$GITHUB_REPOSITORY"
 
+          gh release edit internal-n-crush-v1.1.7 --draft=false --latest --notes-file ../RELEASE_NOTES_V117.md --repo "$GITHUB_REPOSITORY"
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/tags/internal-n-crush-v1.1.7 --jq .object.sha)" = "$GITHUB_SHA"

@@ -11,7 +11,7 @@ static func capture_angle(game:Node,w:Dictionary) -> float:
 static func assist(game:Node,actor:Actor,dt:float):
 	if not TouchControls.supported():return
 	var p=game.players[game.local_id]
-	if not game.profile.get("touch_aim_assist",true) or not game.can_attack(p) or game.phase!="combat" or p.slot>1 or p.reload>0 or p.get("placing","")!="" or game.current_weapon(p).kind!="gun":return
+	if not game.profile.get("touch_aim_assist",true) or not game.can_attack(p) or game.phase!="combat" or p.slot>1 or MeleeCombat.active(p,game.clock) or p.reload>0 or p.get("placing","")!="" or game.current_weapon(p).kind!="gun":return
 	var weapon=game.current_weapon(p);var scoped=scoped_weapon(weapon)
 	if scoped and (not actor.input_state.ads or actor.ads_blend<=.9):return
 	var forward=Basis(Vector3.UP,actor.input_state.yaw)*Basis(Vector3.RIGHT,actor.input_state.pitch)*Vector3.FORWARD
@@ -37,7 +37,7 @@ static func assist(game:Node,actor:Actor,dt:float):
 static func can_auto_fire(game:Node,actor:Actor) -> bool:
 	if not TouchControls.supported():return false
 	var p=game.players[game.local_id]
-	if not game.profile.get("touch_auto_fire",false) or not game.can_attack(p) or game.phase!="combat" or p.slot>1 or p.reload>0 or p.get("placing","")!="" or p.get("invul_select",0)>game.clock or p.get("cooking",0)>0:return false
+	if not game.profile.get("touch_auto_fire",false) or not game.can_attack(p) or game.phase!="combat" or p.slot>1 or MeleeCombat.active(p,game.clock) or p.reload>0 or p.get("placing","")!="" or p.get("invul_select",0)>game.clock or p.get("cooking",0)>0:return false
 	var w=game.current_weapon(p)
 	if w.kind!="gun" or int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))<=0:return false
 	var direction=Basis(Vector3.UP,actor.input_state.yaw)*Basis(Vector3.RIGHT,actor.input_state.pitch)*Vector3.FORWARD

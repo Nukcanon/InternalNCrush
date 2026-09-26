@@ -15,7 +15,7 @@ func run():
 	g.ui.join_menu();await capture("lan")
 	g.ui.internet_menu();await capture("internet")
 	PracticeSession.start(g);await create_timer(1.).timeout;g.set_physics_process(false);g.ui.practice_hint_until=0
-	var p=g.players[1];var a=g.actors[1];p.protect=0.;g.ui.refresh();a.visual(1./60.,p,g.clock)
+	var p=g.players[1];var a=g.actors[1];p.protect=0.;g.ui.refresh();g.ui.stats.hide();a.visual(1./60.,p,g.clock)
 	await capture("controls")
 	TouchControls.supported_cache=1
 	g.touch=TouchControls.new();g.touch.game=g;g.ui.root.add_child(g.touch);g.ui.show_hud();g.touch._process(1.);g.ui.refresh()

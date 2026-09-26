@@ -772,6 +772,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 		"skill":use_skill(id)
 		"gadget":use_gadget(id)
 		"gadget_press":
+			if MeleeCombat.active(p,clock):return
 			if GrenadeLogic.equipped(p):GrenadeLogic.begin(self,id)
 			else:use_gadget(id)
 		"gadget_release":GrenadeLogic.release(self,id)

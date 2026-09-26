@@ -7,7 +7,7 @@ func _process(_dt):queue_redraw()
 func _draw():
 	if not game or not game.players.has(game.local_id):return
 	var p=game.players[game.local_id]
-	if p.slot>=2 or p.get("cooking",0)>0 or p.reload>game.clock:return
+	if MeleeCombat.shown(p,game.clock) or p.slot>=2 or p.get("cooking",0)>0 or p.reload>game.clock:return
 	var id=p.primary if p.slot==0 else p.secondary;var w=Catalog.get_weapon(id)
 	if w.kind in ["heal","repair"]:
 		var energy=float(p.energy)/180. if w.kind=="heal" else float(p.get("repair_energy",100))/100.
@@ -27,3 +27,4 @@ func _draw():
 		for i in range(magazines):
 			var x=(228.-magazines*13)*.5+i*13;var loaded=clampf(float(reserve-i*capacity)/capacity,0.,1.)
 			draw_rect(Rect2(x,57,8,10),Color(0,0,0,.35));draw_rect(Rect2(x,67-10*loaded,8,10*loaded),Color("91aab4"))
+

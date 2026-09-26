@@ -10,7 +10,7 @@ static func magnification(profile:Dictionary,w:Dictionary) -> float:
 static func fov(profile:Dictionary,w:Dictionary) -> float:
 	return rad_to_deg(2.*atan(tan(deg_to_rad(82.)*.5)/magnification(profile,w))) if supported(w) else float(w.zoom)
 static func active(game:Node) -> bool:
-	return game.players.has(game.local_id) and game.players[game.local_id].alive and game.actors[game.local_id].input_state.ads and SniperScope.supported(game.current_weapon(game.players[game.local_id]))
+	return game.players.has(game.local_id) and game.players[game.local_id].alive and not MeleeCombat.shown(game.players[game.local_id],game.clock) and game.actors[game.local_id].input_state.ads and SniperScope.supported(game.current_weapon(game.players[game.local_id]))
 static func change(game:Node,direction:int):
 	var w=game.current_weapon(game.players[game.local_id])
 	if not supported(w):return
@@ -23,3 +23,4 @@ static func change(game:Node,direction:int):
 static func sensitivity(game:Node,touch:bool=false) -> float:
 	var w=game.current_weapon(game.players[game.local_id])
 	return clampf(float(game.profile.get("sniper_touch_sensitivity" if touch else "sniper_mouse_sensitivity",.75)),.1,2.)*4./magnification(game.profile,w)
+

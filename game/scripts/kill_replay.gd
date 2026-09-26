@@ -126,7 +126,7 @@ func capture(dt:float):
 	for id in game.players:
 		if not game.actors.has(id):continue
 		var p=game.players[id];var a=game.actors[id]
-		actors[id]={"pos":a.position,"yaw":a.aim_yaw,"pitch":a.aim_pitch,"slot":p.slot,"melee_started":p.get("melee_started",-100.),"role":a.shown_role if a.shown_role>=0 else p.role,"team":p.team,"weapon":p.primary if p.slot==0 else p.secondary,"hand":p.get("hand",1),"alive":p.alive,"grounded":a.is_on_floor() if game.server or a.local else a.net_grounded,"crouch":a.input_state.crouch,"sprint":a.last_sprint if game.server or a.local else a.net_sprint,"velocity":a.velocity if game.server or a.local else a.net_velocity,"gait":a.gait if game.server or a.local else a.net_gait}
+		actors[id]={"pos":a.position,"yaw":a.aim_yaw,"pitch":a.aim_pitch,"slot":p.slot,"melee_age":game.clock-float(p.get("melee_started",-100.)),"role":a.shown_role if a.shown_role>=0 else p.role,"team":p.team,"weapon":p.primary if p.slot==0 else p.secondary,"hand":p.get("hand",1),"alive":p.alive,"grounded":a.is_on_floor() if game.server or a.local else a.net_grounded,"crouch":a.input_state.crouch,"sprint":a.last_sprint if game.server or a.local else a.net_sprint,"velocity":a.velocity if game.server or a.local else a.net_velocity,"gait":a.gait if game.server or a.local else a.net_gait}
 	history.append({"time":Time.get_ticks_msec()/1000.,"actors":actors,"devices":game.devices.duplicate(true),"props":game.arena.prop_states() if game.arena else []})
 	while history.size()>MAX_FRAMES:history.pop_front()
 func request(kill:Dictionary):
@@ -213,9 +213,14 @@ func _process(dt):
 		camera.look_at(focus);camera.rotation.z=sin(t*PI)*-.035;camera.fov=lerpf(68.,55.,1.-pow(1.-t,3))
 	if event.weapon in ["knife","wrench"] and is_instance_valid(melee_view):
 		var age=elapsed-RUNUP_SECONDS+.20
-		melee_view.visible=elapsed<FIRST_PERSON_SECONDS;melee_world.visible=elapsed>=FIRST_PERSON_SECONDS+DEATH_SECONDS
+		var showing=int(state.get("slot",0))==MeleeCombat.SLOT or elapsed>=RUNUP_SECONDS-.20 or float(state.get("melee_age",100.))<MeleeCombat.DURATION
+		melee_view.visible=showing and elapsed<FIRST_PERSON_SECONDS;melee_world.visible=elapsed>=FIRST_PERSON_SECONDS+DEATH_SECONDS
+		gun.visible=not showing and elapsed<FIRST_PERSON_SECONDS
 		melee_view.pose(age);melee_view.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46);melee_view.scale.x=float(state.get("hand",1))
 		melee_world.pose(-1.)
+		var body=models[killer].get_node("Body")
+		body.solve_arm(body.right_arm,body.right_elbow,body.chest.to_local(melee_world.palm.global_position),Vector3(.75,-.8,.25),dt,1.)
+		body.left_arm.rotation=Vector3(.15,.05,.12);body.left_elbow.rotation=Vector3(.35,0,0);body.sync_deform()
 		if elapsed>=RUNUP_SECONDS and elapsed<FIRST_PERSON_SECONDS:
 			title.text="킬 리플레이 · 근접 공격"
 			if not fatal_sound_played:fatal_sound_played=true;game.play_sound("melee_swing",Vector3.ZERO,false)
@@ -260,12 +265,15 @@ func hide_live(hidden:bool):
 	for node in game.device_nodes.values():node.visible=not hidden
 	for node in game.drop_nodes.values():node.visible=not hidden
 func finish():
-	if is_instance_valid(melee_view):melee_view.queue_free();melee_view=null
-	if is_instance_valid(melee_world):melee_world.queue_free();melee_world=null
+	if is_instance_valid(melee_view):melee_view.hide();melee_view.queue_free();melee_view=null
+	if is_instance_valid(melee_world):melee_world.hide();melee_world.queue_free();melee_world=null
 	var was_active=active;active=false;frames.clear()
 	if is_instance_valid(stage):stage.hide();stage.process_mode=Node.PROCESS_MODE_DISABLED;camera.current=false;fx.clear()
 	if is_instance_valid(overlay):overlay.hide()
 	for weapon in first_person_guns.values():weapon.hide()
+	for model in models.values():
+		for child in model.get_node("Body").socket.get_children():
+			if child is WeaponVisual:child.show()
 	if was_active:hide_live(false);game.update_spectator()
 func reset():
 	pending={};history.clear();shot_history.clear();finish()

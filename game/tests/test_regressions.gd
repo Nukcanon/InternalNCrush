@@ -50,7 +50,8 @@ func run():
 	g.clock+=1;g.handle_command(1,"slot",{"slot":2});expect(p.slot==2,"numeric gadget slot selectable")
 	g.clock+=1;g.handle_command(1,"slot",{"slot":3});expect(p.slot==3 and p.gadget==1,"fourth slot selects flash")
 	var key=InputEventKey.new();key.physical_keycode=KEY_F;expect(InputMap.event_is_action(key,"skill"),"F activates skill")
-	key.physical_keycode=KEY_Q;expect(InputMap.event_is_action(key,"medical"),"Q activates medical shot")
+	key.physical_keycode=KEY_C;expect(InputMap.event_is_action(key,"medical"),"C preserves medical shot")
+	key.physical_keycode=KEY_Q;expect(InputMap.event_is_action(key,"melee"),"Q activates quick melee")
 	key.physical_keycode=KEY_E;expect(InputMap.event_is_action(key,"use"),"E keeps interaction")
 	arm("a1");a.position=Vector3(25,0,60);a.reset_view(0);a.input_state.z=-1;g.options.mode=0
 	for step in range(40):a.simulate(.016,g.clock,true)
@@ -83,3 +84,4 @@ func run():
 	print("REGRESSION_RESULT ",checks-failures,"/",checks," passed")
 	await create_timer(.8).timeout
 	g.leave_game();g.queue_free();await process_frame;quit(1 if failures else 0)
+

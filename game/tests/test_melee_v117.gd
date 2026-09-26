@@ -20,7 +20,8 @@ func run():
 	expect(InputMap.action_get_events("melee")[0].physical_keycode==KEY_Q,"Q is quick melee")
 	expect(InputMap.action_get_events("medical")[0].physical_keycode==KEY_C,"medical alternate fire remains accessible on C")
 	g.options.classes=false;g.handle_command(1,"slot",{"slot":4});expect(p.slot==4,"slot 5 works without classes")
-	g.clock+=2.;p.fire_ready=0.;expect(MeleeCombat.begin(g,1),"knife begins")
+	g.clock+=2.;p.fire_ready=0.;a.input_state.fire=true;g.process_trigger(1);a.input_state.fire=false;expect(p.melee_started==g.clock,"click swings the persistently equipped knife")
+	g.handle_command(1,"slot",{"slot":0});expect(p.slot==4,"switching cannot cancel active melee to bypass its cooldown")
 	expect(not MeleeCombat.begin(g,1),"duplicate command cannot bypass cooldown")
 	var start=g.clock
 	g.clock=start+.17;MeleeCombat.tick(g,1);expect(q.hp==100.,"windup has no early damage")
@@ -51,6 +52,11 @@ func run():
 	p.melee_hits={};g.devices[901].team=1;MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==70.,"wrench deals 30 to enemy turret")
 	p.role=0;p.melee_hits={};MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==30.,"knife deals 40 to enemy turret")
 	g.devices.clear();device.free()
+	# Zero spread isolates the existing per-pellet damage accumulation from RNG.
+	b.position=Vector3(0,0,-3.);q.alive=true;q.hp=500.;q.armor=0.
+	p.primary="e1";p.slot=0;p.melee_started=-100.;p.fire_ready=0.;p.reload=0.;p.mag.e1=5;p.bloom=0.;p.spray_phase=0.;a.spread_angle=0.;a.aim_pitch=atan2(1.15-a.eye().y,3.);a.last_sprint=false;a.sprint_release=0.
+	await physics_frame;g.fire(1)
+	expect(is_equal_approx(500.-q.hp,140.),"ten PULSE pellets each apply 14 torso damage")
 	# Shotgun marks use the real ballistic paths and bounded shared impact pool.
 	b.position=Vector3(20,0,20);g.arena.box(Vector3(0,2.,-5.),Vector3(12,5,.3),Color.GRAY)
 	await physics_frame;g.dedicated=false;p.role=3;p.slot=0;p.melee_started=-100.;p.primary="e1";p.reload=0.;p.fire_ready=0.;p.mag.e1=5;p.bloom=0.;a.spread_angle=4.;a.aim_pitch=0.;a.aim_yaw=0.;a.last_sprint=false;a.sprint_release=0.

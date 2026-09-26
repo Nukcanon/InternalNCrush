@@ -151,7 +151,7 @@ func simulate(dt:float,now:float,can_move:bool):
 	shape.shape.height=(1.45/1.8*body_height) if crouch else body_height;shape.position.y=shape.shape.height*.5
 
 	var cooking=game.players.get(pid,{}).get("cooking",0)>0
-	var sprint=not cooking and bool(input_state.sprint) and not crouch and not input_state.ads and not input_state.fire
+	var sprint=not cooking and not MeleeCombat.active(game.players.get(pid,{}),now) and bool(input_state.sprint) and not crouch and not input_state.ads and not input_state.fire
 	if last_sprint and not sprint:sprint_release=now+.5
 	last_sprint=sprint
 	var speed=Rules.RUN_SPEED if sprint else Rules.CROUCH_SPEED if crouch else Rules.WALK_SPEED
@@ -324,7 +324,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		reload_stage=stage
 		if stage>0:game.play_sound("magazine" if stage==1 else "bolt",Vector3.ZERO,false)
 	elif not reloading:reload_stage=-1
-	var ads=input_state.ads and p.slot<2 and not reloading
+	var ads=input_state.ads and p.slot<2 and not reloading and not MeleeCombat.shown(p,now)
 	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
 	var scoped=ads and float(w.zoom)<=38 and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick

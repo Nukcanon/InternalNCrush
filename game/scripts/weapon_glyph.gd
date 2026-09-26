@@ -10,6 +10,11 @@ func shape(points:Array):
 	draw_colored_polygon(polygon,ink)
 func _draw():
 	draw_set_transform(Vector2((size.x-88)/2.,(size.y-27)/2.))
+	if weapon=="knife":
+		shape([[9,11],[34,11],[34,8],[74,8],[83,12],[72,17],[34,17],[34,14],[9,14]])
+		draw_rect(Rect2(32,5,4,17),ink);return
+	if weapon=="wrench":
+		shape([[10,10],[63,10],[68,3],[80,3],[74,9],[74,16],[81,22],[68,22],[62,16],[10,16]]);return
 	if weapon=="turret":
 		shape([[24,5],[59,5],[59,9],[80,9],[80,13],[54,13],[51,18],[33,18],[24,14]])
 		draw_rect(Rect2(39,18,6,5),ink);draw_line(Vector2(42,21),Vector2(22,26),ink,3);draw_line(Vector2(42,21),Vector2(64,26),ink,3);return
@@ -33,3 +38,4 @@ func _draw():
 	else:
 		shape([[38,17],[45,17],[48+variant,26],[40+variant,26]])
 		draw_rect(Rect2(30+variant*4,3,10,5),ink)
+
