@@ -860,7 +860,8 @@ func commit_loadout(id:int,d:Dictionary):
 		var elapsed=clock-(float(p.skill_ready)-AbilityBalance.COOLDOWNS[int(p.role)])
 		if p.skill_ready>0.:p.skill_ready=clock+maxf(0.,AbilityBalance.COOLDOWNS[role]-elapsed)
 		if role==5:p.skill_ready=maxf(p.skill_ready,float(p.get("initial_skill_until",clock+30.)))
-	p.role=role;p.primary=wid;p.secondary=sec;p.armor_max=armor;p.armor=armor;p.slot=0;p.gadget=gadget;GadgetLoadout.reset(p);p.reload=0.;p.owned_primary=true;p.burst_left=0;p.trigger_until=0.;p.switch_until=clock+.32;p.fire_ready=clock+.32;equip_ammo(p)
+	var health_fraction=clampf(float(p.hp)/R.max_hp(p),0.,1.)
+	p.role=role;p.hp=R.max_hp(p)*health_fraction;p.primary=wid;p.secondary=sec;p.armor_max=armor;p.armor=armor;p.slot=0;p.gadget=gadget;GadgetLoadout.reset(p);p.reload=0.;p.owned_primary=true;p.burst_left=0;p.trigger_until=0.;p.switch_until=clock+.32;p.fire_ready=clock+.32;equip_ammo(p)
 	loadout_accepted(id)
 	feedback(id,"","구매 완료 · %d 크레딧 사용"%cost if cost>0 else "장비 적용 완료")
 func loadout_accepted(id:int):

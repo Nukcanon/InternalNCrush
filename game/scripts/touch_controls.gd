@@ -177,7 +177,7 @@ func _draw():
 		var rect:Rect2=buttons[action];var color=Color(.04,.075,.10,.40) if not held.get(action,false) else Color(.18,.48,.54,.75)
 		var ready=bool(availability.get(action,false))
 		if not ready:color=Color(.22,.23,.24,.72)
-		elif action=="skill":color=Color("f4d968")
+		elif action=="skill":color=HudSymbols.GOLD
 		elif action=="auto_fire" and game.profile.get("touch_auto_fire",false):color=Color(.18,.48,.54,.75)
 		if action=="fire":draw_circle(rect.get_center(),rect.size.x*.5,color);draw_arc(rect.get_center(),rect.size.x*.5,0,TAU,48,Color(.86,.96,1,.6),2.,true)
 		else:draw_style_box(plate(color),rect)

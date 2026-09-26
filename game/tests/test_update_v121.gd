@@ -43,7 +43,11 @@ func run():
 	var p=g.players[1];var q=g.players[2];p.team=0;q.team=0;p.role=5;q.role=2;p.protect=0.;q.protect=0.;q.hp=140.;q.last_hit=-100.
 	g.heal_target(1,2,30.,true,false);expect(q.hp==150.,"heavy healing capped at 150, not 100")
 	q.role=4;q.hp=125.;g.heal_target(1,2,20.,true,false);expect(q.hp==130.,"control healing capped at 130")
-	p.role=0;p.slot=0;p.reload=0.;p.placing="";p.invul_select=0.;p.cooking=0;p.melee_ready=0.;p.melee_started=-100.
+	g.phase="buy";p.role=0;p.hp=100.
+	g.commit_loadout(1,{"role":2,"primary":"h1"});expect(p.hp==150.,"buy-phase class switch grants correct full heavy health")
+	g.commit_loadout(1,{"role":4,"primary":"c1"});expect(p.hp==130.,"switching to control does not retain heavy health")
+	p.hp=65.;g.commit_loadout(1,{"role":0,"primary":"a1"});expect(p.hp==50.,"loadout change preserves damage fraction without exceeding new class cap")
+	g.phase="combat";p.role=0;p.slot=0;p.reload=0.;p.placing="";p.invul_select=0.;p.cooking=0;p.melee_ready=0.;p.melee_started=-100.
 	var a=g.actors[1];a.input_state.melee=true;g.process_trigger(1);var started=p.melee_started
 	g.clock+=.79;g.process_trigger(1);expect(p.melee_started==started,"hold cannot bypass 0.8 second interval")
 	g.clock+=.02;g.process_trigger(1);expect(p.melee_started==g.clock,"held quick melee repeats automatically")
