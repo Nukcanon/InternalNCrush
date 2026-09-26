@@ -6,6 +6,7 @@ func expect(ok:bool,label:String):
 	if not ok:failures+=1;printerr("FAIL ",label)
 func _initialize():call_deferred("run")
 func run():
+	expect(Rules.VERSION==ProjectSettings.get_setting("application/config/version"),"visible version matches packaged game version")
 	TouchControls.supported_cache=0
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(50,50);g.arena.has_water=false;g.arena.box(Vector3(0,-.5,0),Vector3(100,1,100),Color.GRAY)

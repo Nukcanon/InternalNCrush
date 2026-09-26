@@ -129,8 +129,9 @@ func build(w:Dictionary,hands=true,use_cache=true):
 		sight(false)
 	elif w.get("rocket",false):
 		length=.95
-		tube(self,Vector3(0,.065,-.37),.09,1.04,Color("596d51"))
-		for z in [-.87,.10]:tube(self,Vector3(0,.065,z),.108,.075,metal)
+		var launch_tube=tube(self,Vector3(0,.065,-.37),.09,1.04,Color("596d51"));launch_tube.mesh=launch_tube.mesh.duplicate();launch_tube.mesh.cap_top=false;launch_tube.mesh.cap_bottom=false
+		for z in [-.87,.10]:
+			var collar=tube(self,Vector3(0,.065,z),.108,.075,metal);collar.mesh=collar.mesh.duplicate();collar.mesh.cap_top=false;collar.mesh.cap_bottom=false
 		tube(self,Vector3(0,.065,-.912),.084,.007,Color("10191e"))
 		block(self,Vector3(0,-.10,.014),Vector3(.075,.20,.09),metal,-.15)
 		block(self,Vector3(0,-.11,-.48),Vector3(.072,.18,.09),edge)
@@ -340,18 +341,20 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 	if is_instance_valid(flash):flash.visible=shot_age<.045;flash.rotation.z=shot_age*100
 	if is_instance_valid(reload_round):reload_round.hide()
 	if t<0:
+		if reload_style=="rocket":position.z=0.
 		action_part.position.z+=recoil*.045
 		if spec.name in ["PULSE","MENDER"]:
 			var pump=maxf(0,sin(clampf((shot_age-.12)/.45,0,1)*PI))*.075;left_hand.position.z+=pump
 		if spec.name in ["SCOUT","MONOLITH"]:action_part.position.z+=maxf(0,sin(clampf((shot_age-.15)/.55,0,1)*PI))*.08
 		update_hands(t,recoil,shot_age)
 		return
+	if reload_style=="rocket":position.z=-.18*smoothstep(.03,.20,t)*(1.-smoothstep(.76,.96,t))
 	var u=clampf(t/.70,0,1);var contact=smoothstep(.02,.18,u)*(1.-smoothstep(.78,.98,u));var remove=smoothstep(.15,.4,u)*(1.-smoothstep(.52,.76,u));var latch=sin(clampf((u-.78)/.22,0,1)*PI)
 	match reload_style:
 		"rocket":
-			# Front-load one round. The support hand and shell travel together.
+			# Rear-load through the open breech, within the support arm reach.
 			var take=smoothstep(.05,.25,t);var insert=smoothstep(.32,.72,t);var release=smoothstep(.74,.94,t)
-			var round_pos=Vector3(-.24,-.28,-.43).lerp(Vector3(0,.065,-1.20),take).lerp(Vector3(0,.065,-.70),insert)
+			var round_pos=Vector3(-.23,-.24,.20).lerp(Vector3(0,.065,.35),take).lerp(Vector3(0,.065,-.10),insert)
 			left_hand.position=hand_origin.lerp(round_pos+Vector3(-.085,-.01,.035),take*(1.-release))
 			if is_instance_valid(reload_round):reload_round.position=round_pos;reload_round.visible=t>.08 and t<.74
 		"revolver":
