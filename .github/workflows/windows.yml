@@ -63,8 +63,13 @@ jobs:
           timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_details_gameplay_v116.gd -- --no-save-profile --no-update-check
       - name: Validate melee, pellet impacts and touch controls
         run: timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_melee_v117.gd -- --no-save-profile --no-update-check
-      - name: Capture requested guide screens, melee grips and replay projectile
-        run: timeout 240 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v117.gd -- --no-save-profile --no-update-check
+      - name: Reuse reviewed unchanged guide screens and melee visuals
+        uses: actions/download-artifact@v4
+        with:
+          name: review-v117
+          run-id: 36212513846
+          github-token: ${{ github.token }}
+          path: validation/v117
       - uses: actions/upload-artifact@v4
         if: always()
         with:

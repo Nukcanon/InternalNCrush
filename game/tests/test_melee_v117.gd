@@ -20,7 +20,7 @@ func run():
 	expect(InputMap.action_get_events("melee")[0].physical_keycode==KEY_Q,"Q is quick melee")
 	expect(InputMap.action_get_events("medical")[0].physical_keycode==KEY_C,"medical alternate fire remains accessible on C")
 	g.options.classes=false;g.handle_command(1,"slot",{"slot":4});expect(p.slot==4,"slot 5 works without classes")
-	g.clock+=2.;p.fire_ready=0.;a.input_state.fire=true;g.process_trigger(1);a.input_state.fire=false;expect(p.melee_started==g.clock,"click swings the persistently equipped knife")
+	g.clock+=2.;p.fire_ready=g.clock+.8;expect(MeleeCombat.ready(g,p),"quick melee remains available while a gun is cooling down");a.input_state.fire=true;g.process_trigger(1);a.input_state.fire=false;expect(p.melee_started==g.clock,"click swings the persistently equipped knife")
 	g.handle_command(1,"slot",{"slot":0});expect(p.slot==4,"switching cannot cancel active melee to bypass its cooldown")
 	expect(not MeleeCombat.begin(g,1),"duplicate command cannot bypass cooldown")
 	var start=g.clock

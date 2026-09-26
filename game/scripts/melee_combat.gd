@@ -15,7 +15,7 @@ static func label(p:Dictionary) -> String:return "렌치" if wrench(p) else "칼
 static func active(p:Dictionary,now:float) -> bool:return now<float(p.get("melee_started",-100.))+DURATION
 static func shown(p:Dictionary,now:float) -> bool:return int(p.slot)==SLOT or active(p,now)
 static func ready(g:Node,p:Dictionary) -> bool:
-	return g.phase=="combat" and g.can_attack(p) and g.clock>=maxf(float(p.get("melee_ready",0.)),float(p.fire_ready)) and p.get("cooking",0)<=0 and p.get("placing","")=="" and p.get("invul_select",0)<=g.clock
+	return g.phase=="combat" and g.can_attack(p) and g.clock>=float(p.get("melee_ready",0.)) and p.get("cooking",0)<=0 and p.get("placing","")=="" and p.get("invul_select",0)<=g.clock
 static func begin(g:Node,id:int) -> bool:
 	var p=g.players[id]
 	if not ready(g,p):return false
