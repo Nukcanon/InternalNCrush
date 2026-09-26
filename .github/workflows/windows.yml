@@ -5,6 +5,8 @@ on:
       - 'game/**'
       - 'windows/**'
       - 'web/**'
+      - 'services/**'
+      - 'nas/**'
       - '.github/workflows/windows.yml'
   workflow_dispatch:
 permissions:

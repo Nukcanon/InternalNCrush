@@ -4,7 +4,7 @@
   "compatibility_date": "2026-09-01",
   "workers_dev": true,
   "vars": {
-    "GAME_VERSION": "1.1.6",
+    "GAME_VERSION": "1.1.8",
     "MAX_ROOMS": "32",
     "ALLOWED_ORIGINS": "https://nukcanon.github.io,http://127.0.0.1:8088,http://localhost:8088"
   },
