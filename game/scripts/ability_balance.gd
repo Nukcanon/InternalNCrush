@@ -4,6 +4,8 @@ const COOLDOWNS=[24.,40.,30.,30.,30.,45.]
 const DURATIONS=[5.,4.,6.,180.,8.,6.]
 const COVER_HP=[180,300,420]
 const SCAN_RANGE=35.
+const SCAN_MAX_RANGE=60.
+static func scan_range(bounds:Vector2) -> float:return clampf(bounds.length()*.5,SCAN_RANGE,SCAN_MAX_RANGE)
 const SLOW_RADIUS=15.
 const SMOKE_DURATION=10.
 const FLASH_RANGE=18.
@@ -15,7 +17,7 @@ static func skill_state(game:Node,id:int) -> Dictionary:
 	var duration=COOLDOWNS[role];var label=Rules.SKILLS[role]
 	var enabled=game.options.skills and game.options.classes and game.phase=="combat" and game.can_attack(p)
 	if role==3:
-		# Installation and every upgrade share one 35-second ability clock.
+		# Installation and every upgrade share one 30-second ability clock.
 		# Distance changes the action label, never the progress denominator/deadline.
 		for device in game.devices.values():
 			if device.kind=="turret" and int(device.owner)==id:

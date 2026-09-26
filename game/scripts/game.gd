@@ -724,7 +724,12 @@ func server_tick(dt:float):
 	if options.get("practice",false):PracticeSession.tick(self);return
 	if phase in ["buy","combat","result","round_end"]:
 		remaining-=dt
-		if phase=="buy" and remaining<=0:phase="combat";remaining=150.;announce("라운드 시작")
+		if phase=="buy" and remaining<=0:
+			phase="combat";remaining=150.;announce("라운드 시작")
+			if round_no==1:
+				for player in players.values():
+					player.initial_skill_until=clock+30.
+					if player.role==5:player.skill_ready=maxf(float(player.skill_ready),clock+30.)
 		elif phase=="round_end" and remaining<=0:
 			if MatchFlow.at_limit(self):MatchFlow.return_to_lobby(self)
 			else:begin_round()
@@ -1124,11 +1129,11 @@ func use_skill(id:int):
 	match int(p.role):
 		0:p.dash=clock+5.;p.dash_recovery=clock+8.;p.skill_ready=clock+AbilityBalance.COOLDOWNS[0]
 		1:
-			var radius=maxf(AbilityBalance.SCAN_RANGE,arena.bounds.length()*.5)
+			var radius=AbilityBalance.scan_range(arena.bounds)
 			for qid in players:
 				if players[qid].alive and enemies(p,players[qid]) and a.position.distance_to(actors[qid].position)<radius and players[qid].get("cleanse",0)<=clock:
-					TargetReveal.mark(self,qid,id,4.);feedback(qid,"","감지 파동 노출 · 4초 동안 위치가 표시됩니다.")
-			p.skill_ready=clock+40.;announce(p.nick+" · 감지 파동")
+					TargetReveal.mark(self,qid,id,4.);feedback(qid,"","하드비트센서 노출 · 4초 동안 위치가 표시됩니다.")
+			p.skill_ready=clock+40.;announce(p.nick+" · 하드비트센서")
 		2:p.shield=clock+6.;p.skill_ready=clock+AbilityBalance.COOLDOWNS[2]
 		3:Deployment.begin(self,id,"turret");return
 		4:
@@ -1140,7 +1145,7 @@ func use_skill(id:int):
 			feedback(id,"","아군 클릭: 함께 6초 무적 · 빈 곳 클릭: 자신만 보호")
 			return
 	effect.rpc("skill",a.position,Vector3.ZERO,id)
-	feedback(id,"",["기동: 5초 고속이동 / 3초 빠른이동","감지 파동 · 4초","방호 · 6초 / 전방 피해 85% 감소","설치 위치 선택","둔화 구역 · 반경 15m / 65% 둔화","무적 보호"][int(p.role)])
+	feedback(id,"",["기동: 5초 고속이동 / 3초 빠른이동","하드비트센서 · 4초","방호 · 6초 / 전방 피해 85% 감소","설치 위치 선택","둔화 구역 · 반경 15m / 65% 둔화","무적 보호"][int(p.role)])
 func use_gadget(id:int):
 	if MeleeCombat.active(players[id],clock):return
 	if int(players[id].gadget)==9:feedback(id,"","해체 키트 · 장치 앞에서 E를 10초 유지");return

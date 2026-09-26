@@ -51,4 +51,4 @@ func run():
 		g.ui.gear_class.select(role);g.ui.refresh_weapons();g.ui.gear_category=4;g.ui.preview_kind=4;g.ui.refresh_gear_detail();g.ui.refresh_gear_cards();await capture("skill-%d"%role)
 	g.ui.gear_category=0;g.ui.preview_kind=1;g.ui.gear_class.select(2);g.ui.refresh_weapons();g.ui.refresh_gear_cards();await capture("gear-heavy")
 	g.ui.settings();await capture("settings")
-	g.free();await process_frame;print("V118_REVIEW_OK");quit()
+	g.free();await process_frame;print("V119_REVIEW_OK");quit()

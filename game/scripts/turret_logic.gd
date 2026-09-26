@@ -58,7 +58,7 @@ static func tick(game:Node,dt:float):
 		if not game.devices.has(did):continue
 		var d=game.devices[did];Construction.advance(game,d)
 		if game.clock>d.expires:game.remove_device(did);continue
-		if d.kind!="turret" or game.clock<d.disabled or game.phase!="combat":continue
+		if d.kind!="turret" or Construction.active(game,d) or game.clock<d.disabled or game.phase!="combat":continue
 		var owner=game.players.get(d.owner,{})
 		if owner.is_empty() or owner.protect>game.clock:continue
 		var from=origin(d);var target=int(d.get("target",0));var aim=Vector3.INF

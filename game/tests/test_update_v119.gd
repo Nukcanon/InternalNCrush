@@ -80,6 +80,7 @@ func run():
 	a.input_state.jump=true;a.input_state.z=-1.
 	expect(a.try_mantle() and a.position.y>1.15,"forward jump can climb a cover-height ledge")
 	ledge.free();await physics_frame
+	expect(AbilityBalance.scan_range(Vector2(10,10))==35. and AbilityBalance.scan_range(Vector2(500,500))==60. and AbilityBalance.scan_range(Vector2(60,70))>35.,"sensor scales with map size inside 35 to 60 metres")
 	var preview=EquipmentPreview.new();root.add_child(preview);preview.size=Vector2(440,160)
 	for wid in Catalog.weapons:
 		preview.display(1,int(Catalog.get_weapon(wid).role),0,wid)

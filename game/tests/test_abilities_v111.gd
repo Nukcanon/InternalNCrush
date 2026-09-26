@@ -18,7 +18,7 @@ func run():
 	var did=g.devices.keys()[0];var turret=g.devices[did]
 	for level in range(2,5):turret.building_until=0.;turret.upgrade_ready=0.;p.skill_ready=0.;TurretLogic.upgrade(g,1,did);expect(turret.level==level,"nearby turret upgrade level %d"%level)
 	TurretLogic.upgrade(g,1,did);expect(turret.level==4,"turret upgrades stop at level four")
-	turret.disabled=0.;turret.next_fire=1000.;turret.rocket_ready=0.;turret.target=2;turret.lock=0.;turret.next_scan=1000.
+	turret.building_until=0.;turret.build_growth=0.;turret.disabled=0.;turret.next_fire=1000.;turret.rocket_ready=0.;turret.target=2;turret.lock=0.;turret.next_scan=1000.
 	TurretLogic.track(turret,(b.eye()-Vector3.UP*.35-TurretLogic.origin(turret)).normalized(),1.)
 	TurretLogic.tick(g,.016);expect(g.rockets.size()==1 and turret.rocket_ready==102.,"level four launches a slow missile once every two seconds")
 	TurretLogic.tick(g,.016);expect(g.rockets.size()==1,"missile cooldown prevents duplicate launches")

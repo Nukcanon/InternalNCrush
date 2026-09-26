@@ -7,7 +7,7 @@
 - Rocket: direct 60, splash 15–45 within 9m, reduced gravity, unobstructed aiming and rear reload contact.
 - Faster, wider first/third-person melee swings; collision-checked forward-jump mantling.
 - Skill recharge survives death and transfers elapsed charge across class changes; turret cooldown 30s.
-- Medic: initial 30s charge, F then click for six-second self/ally invulnerability with aim tolerance and white selection outline. Slow field radius 15m.
+- Medic: initial 30s charge, F then click for six-second self/ally invulnerability with aim tolerance and white selection outline. Slow field radius 15m. Renamed 하드비트센서 scales between 35 and 60m by map size.
 - Armor: light/heavy movement penalties 6%/12%; aim preparation penalties 10%/20%. Random four-digit default player names.
 - Physical frag/flash/smoke throws, 2.5s fuse, central countdown and rolling motion.
 - Select cover to enter placement immediately. Cover construction 2/3.5/5s; heavy cover slows carrying more.

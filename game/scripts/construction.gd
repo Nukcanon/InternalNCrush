@@ -32,18 +32,18 @@ static func visual(g:Node,node:Node3D,d:Dictionary):
 		var progress=clampf((g.clock-float(d.building_started))/(float(d.building_until)-float(d.building_started)),0.,1.)
 		if not node.has_meta("construction_material"):
 			var material=StandardMaterial3D.new();material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
-			material.cull_mode=BaseMaterial3D.CULL_DISABLED
-			var outline=ShaderMaterial.new();var shader=Shader.new()
-			shader.code="shader_type spatial; render_mode unshaded, cull_front, depth_draw_never; uniform vec4 team_color:source_color; void vertex(){VERTEX+=NORMAL*0.018;} void fragment(){ALBEDO=team_color.rgb;}"
-			outline.shader=shader;outline.set_shader_parameter("team_color",Color("48baff") if int(d.team)==0 else Color("ff983e"));material.next_pass=outline
+			material.cull_mode=BaseMaterial3D.CULL_BACK;material.depth_draw_mode=BaseMaterial3D.DEPTH_DRAW_ALWAYS
 			node.set_meta("construction_material",material)
 		var material:StandardMaterial3D=node.get_meta("construction_material");material.albedo_color=Color(.64,.86,.96,lerpf(.06,.82,progress))
 		for mesh in node.find_children("*","MeshInstance3D",true,false):
+			if mesh.get_meta("construction_edge",false):continue
 			if not mesh.has_meta("construction_original"):mesh.set_meta("construction_original",{"material":mesh.material_override,"shadow":mesh.cast_shadow})
+			if not mesh.has_node("ConstructionEdges"):add_edges(mesh,int(d.team))
 			mesh.material_override=material;mesh.material_overlay=null;mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		node.set_meta("silhouette_state","")
 	elif node.has_meta("construction_material"):
 		for mesh in node.find_children("*","MeshInstance3D",true,false):
+			if mesh.get_meta("construction_edge",false):mesh.queue_free();continue
 			if not mesh.has_meta("construction_original"):continue
 			var original=mesh.get_meta("construction_original");mesh.material_override=original.material;mesh.cast_shadow=original.shadow;mesh.remove_meta("construction_original")
 		node.remove_meta("construction_material");node.set_meta("silhouette_state","")
@@ -61,3 +61,26 @@ static func labels(g:Node,node:Node3D,d:Dictionary):
 	health.text="%d / %d"%[ceili(d.hp),roundi(d.max_hp)];health.modulate=Color("ff3434").lerp(Color.WHITE,clampf(float(d.hp)/maxf(1.,float(d.max_hp)),0.,1.))
 	timer.visible=active(g,d) and not viewer.is_empty() and int(viewer.role)==3 and int(viewer.team)==int(d.team)
 	timer.text="%.1f"%maxf(0.,float(d.get("building_until",0))-g.clock);timer.modulate=Color.WHITE
+
+static func add_edges(mesh:MeshInstance3D,team:int):
+	var edges={}
+	for surface in range(mesh.mesh.get_surface_count()):
+		if mesh.mesh.surface_get_primitive_type(surface)!=Mesh.PRIMITIVE_TRIANGLES:continue
+		var arrays=mesh.mesh.surface_get_arrays(surface);var vertices=arrays[Mesh.ARRAY_VERTEX];var indices=arrays[Mesh.ARRAY_INDEX]
+		var count=indices.size() if indices!=null and not indices.is_empty() else vertices.size()
+		for triangle in range(0,count-2,3):
+			var points=[]
+			for corner in range(3):points.append(vertices[indices[triangle+corner] if indices!=null and not indices.is_empty() else triangle+corner])
+			var normal=(points[1]-points[0]).cross(points[2]-points[0]).normalized()
+			for corner in range(3):
+				var a:Vector3=points[corner];var b:Vector3=points[(corner+1)%3]
+				var ka=str(a.snapped(Vector3.ONE*.0001));var kb=str(b.snapped(Vector3.ONE*.0001));var key=ka+kb if ka<kb else kb+ka
+				if not edges.has(key):edges[key]={"a":a,"b":b,"normal":normal,"edge":true}
+				else:
+					var entry=edges[key];entry.edge=entry.normal.dot(normal)<.85;entry.normal=(entry.normal+normal).normalized()
+	var lines=ImmediateMesh.new();lines.surface_begin(Mesh.PRIMITIVE_LINES)
+	for entry in edges.values():
+		if entry.edge:lines.surface_add_vertex(entry.a+entry.normal*.003);lines.surface_add_vertex(entry.b+entry.normal*.003)
+	lines.surface_end()
+	var wire=MeshInstance3D.new();wire.name="ConstructionEdges";wire.mesh=lines;wire.set_meta("construction_edge",true);mesh.add_child(wire)
+	var ink=StandardMaterial3D.new();ink.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;ink.albedo_color=Color("48baff") if team==0 else Color("ff983e");wire.material_override=ink;wire.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
