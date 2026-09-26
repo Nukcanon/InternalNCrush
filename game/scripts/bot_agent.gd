@@ -236,9 +236,9 @@ func support_action() -> bool:
 	var p=game.players[id];var a=game.actors[id]
 	if action=="heal" and game.players.has(ally) and game.players[ally].alive:
 		var at=game.actors[ally].eye();navigate(game.actors[ally].position,.016);look(at,.1,false)
-		if a.position.distance_to(game.actors[ally].position)<8:
+		if a.position.distance_to(game.actors[ally].position)<13:
 			a.input_state.x=0.;a.input_state.z=0.;game.handle_command(id,"slot",{"slot":0})
-			a.input_state.fire=p.primary=="m1";a.input_state.alt=p.primary=="m2";stats.heals+=1
+			a.input_state.fire=p.primary in ["m1","m2","m3"];a.input_state.alt=false;stats.heals+=1
 		return true
 	if action=="repair" and game.devices.has(repair_target):
 		var d=game.devices[repair_target];navigate(d.pos,.016);look(TurretLogic.origin(d) if d.kind=="turret" else d.pos+Vector3.UP*.6,.1,false)
@@ -289,7 +289,7 @@ func utilities():
 						if Deployment.candidate(game,id,"cover").valid:game.use_gadget(id);break
 		4:
 			if visible_target and a.position.distance_to(last_known)>17:
-				p.gadget=1 if p.flash_count>0 and p.hp>45 else 0;var end=a.eye()+a.direction()*18;var friend_close=false
+				var end=a.eye()+a.direction()*18;var friend_close=false
 				for other in game.players:
 					if game.players[other].alive and not game.enemies(p,game.players[other]) and game.actors[other].position.distance_to(end)<15:friend_close=true
 				if p.gadget!=1 or not friend_close:game.use_gadget(id)

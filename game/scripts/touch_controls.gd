@@ -59,7 +59,7 @@ func _process(dt):
 		buttons.erase("bomb");buttons.erase("gadget_mode")
 		if int(game.options.mode)==4:buttons.bomb=Rect2(620,452,190,70)
 		# Bomb and grenade selection are separate actions, including in bomb mode.
-		if p.role==4 and p.gadget!=9:buttons.gadget_mode=Rect2(820,452,145,70)
+		if false:buttons.gadget_mode=Rect2(820,452,145,70)
 		if int(game.options.mode)!=4:held.bomb=false
 		if SniperScope.active(game):
 			buttons["zoom_out"]=Rect2(970,305,105,70);buttons["zoom_in"]=Rect2(1090,305,105,70)
@@ -146,7 +146,7 @@ func apply_input(actor:Actor,on:bool):
 func _draw():
 	if not visible:return
 	var font=game.ui.theme.default_font
-	var labels={"fire":"발사","melee":"근접","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기 ON" if held.get("sprint",false) else "달리기 OFF","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"보조 발사","gear":"병과 / 장비","gadget_mode":"연막 / 섬광","bomb":"폭탄 해체" if game.bomb.get("planted",false) else "폭탄 설치","auto_fire":"자동 발사 ON" if game.profile.get("touch_auto_fire",false) else "자동 발사 OFF","menu":"메뉴","score":"기록"}
+	var labels={"fire":"발사","melee":"근접","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기 ON" if held.get("sprint",false) else "달리기 OFF","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"범위 회복","gear":"병과 / 장비","gadget_mode":"연막 / 섬광","bomb":"폭탄 해체" if game.bomb.get("planted",false) else "폭탄 설치","auto_fire":"자동 발사 ON" if game.profile.get("touch_auto_fire",false) else "자동 발사 OFF","menu":"메뉴","score":"기록"}
 	var p=game.players.get(game.local_id,{})
 	labels.zoom_in="배율 +";labels.zoom_out="배율 −"
 	for action in buttons:

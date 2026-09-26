@@ -98,6 +98,7 @@ func warm_one():
 			if not is_instance_valid(node) or node.get_meta("body_signature","")!=str([role,p.team]):
 				if is_instance_valid(node):node.queue_free()
 				node=Node3D.new();stage.add_child(node);models[id]=node
+				var name_tag=Label3D.new();name_tag.text=str(p.nick);name_tag.position.y=HumanModel.HEIGHTS[role]+.22;name_tag.font=game.ui.theme.default_font;name_tag.font_size=32;name_tag.pixel_size=.004;name_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;name_tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");node.add_child(name_tag)
 				var body=CharacterVisual.new();body.enable_physics=false;body.name="Body";node.add_child(body);body.build(role,int(p.team))
 				node.set_meta("body_signature",str([role,p.team]))
 			var body=node.get_node("Body")

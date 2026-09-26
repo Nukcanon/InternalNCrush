@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.1.6"
+const VERSION = "1.1.8"
 const MAPS = ["TIDAL YARD · 항구", "DRY DOCK · 물류 기지", "FOUNDRY · 주조 공장", "RESEARCH · 연구동", "MESA RELAY · 사막 관측소", "CANAL DISTRICT · 운하 지구", "TRANSIT HALL · 환승 터미널", "COURTYARD · 안뜰", "WORKSHOP · 정비소", "SWITCHBACK · 굽은 골목", "ORCHARD · 과수원", "POWER ROOM · 전력실", "FOUNTAIN · 분수 광장", "CARGO ROW · 적재 구역", "TWIN LAB · 쌍둥이 실험실", "FOUNDRY EAST · 동부 공장", "ROOFTOP · 옥상", "MARKET LOOP · 순환 시장", "QUARRY PASS · 채석 통로", "KASBAH · 성채 시장", "REACTOR · 이중 원자로", "VIADUCT · 고가 수로", "ARCHIVE · 기록 보관소", "SHIPBREAK · 해체 부두", "MONASTERY · 언덕 수도원", "FOUNDRY CORE · 용광로", "GREENHOUSE · 유리 온실", "METRO VAULT · 지하 금고", "COASTGUARD · 해안 통제소", "DATACENTER · 데이터 센터", "CITADEL · 산성", "FIELD ACADEMY · 훈련 기지"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16]
 static func maps_for_size(count:int,mode:int=-1) -> Array:
@@ -22,7 +22,7 @@ const CLASSES = ["돌격", "정찰", "중화기", "공병", "통제", "메딕"]
 const MODES = ["팀 데스매치", "개인전", "제한 부활 팀전", "거점 점령", "설치 / 해체"]
 const GADGETS = ["보호판", "표식기", "거치대", "엄폐물", "연막탄", "응급 키트"]
 const SKILLS = ["기동", "감지 파동", "방호", "포탑", "둔화 구역", "무적 보호"]
-const GADGET_HELP = ["보호판 또는 파편 수류탄 선택 · 수류탄은 G 누르고 준비, 놓아 투척, 3초 지연", "표식기: 장착 시 자동 · 스코프 중앙에 가까운 적 2초 추적 → 팀 전체 6초 투시 · 대상에게 경고", "거치대: 앉아서 사용, 15초 동안 정지 사격 정확도 증가", "엄폐물: 조준 방향에 설치, 내구도별 선택", "연막탄 / 4 섬광탄: 선택 후 클릭하여 사용", "응급 키트: 가까운 아군 또는 자신을 25 회복"]
+const GADGET_HELP = ["보호판 또는 파편 수류탄 선택 · 수류탄은 G 누르고 준비, 놓아 투척, 3초 지연", "표식기: 장착 시 자동 · 스코프 중앙에 가까운 적 2초 추적 → 팀 전체 6초 투시 · 대상에게 경고", "거치대: 장착하면 앉아서 사격 시 자동으로 퍼짐 65% · 반동 60% 감소", "엄폐물: 조준 방향에 설치, 내구도별 선택", "연막 3 / 섬광 3 / 파편 2 중 하나 선택 · 3번 선택 후 클릭 또는 G 사용", "응급 키트: 가까운 아군 또는 자신을 25 회복"]
 const SKILL_HELP = ["기동: 5초 고속 이동 + 3초 빠른 회복 이동 · 재사용 24초", "감지 파동: 최소 35m / 맵 대각선 1/4 · 4초 표시 · 재사용 40초", "방호: 이동하며 6초 동안 전방 피해 85% 감소", "포탑: F 위치 선택, 클릭 설치 · 가까이 F 업그레이드 · 자동 전방 100도", "둔화 구역: 반경 11m / 8초 / 이동 속도 65% 감소 · 벽 너머 제외", "무적 보호: F 후 30m 내 아군 클릭 / F 두 번 자신 · 4초 무적 · 재사용 45초"]
 const SECONDARIES = ["pistol", "heavy_pistol", "auto_pistol", "eng_pistol", "burst_pistol", "med_pistol"]
 static func medic_cap(count:int) -> int:

@@ -42,11 +42,11 @@ func run():
 	g.add_player(-1,"TEST","test");g.add_player(-2,"ALLY","ally");g.spawn(-1);g.spawn(-2)
 	var b=g.bot_agents[-1];var a=g.actors[-1];var q=g.players[-2];var p=reset_bot(5,"m1");q.team=0;q.hp=40.;q.last_hit=0.;g.actors[-2].position=a.position+Vector3(0,0,-5)
 	await physics_frame
-	b.choose_action();align(g.actors[-2].eye());b.support_action();g.options.skills=false;g.fire(-1)
+	b.choose_action();align(g.actors[-2].eye());b.support_action();g.options.skills=false;MedicLink.tick(g,-1,.1)
 	expect(b.action=="heal" and q.hp>40 and p.energy<180,"medic chooses injured teammate and LINK heals with skills off")
 	p=reset_bot(5,"m2");q.team=0;q.hp=40.;q.last_hit=0.;g.actors[-2].position=a.position+Vector3(0,0,-5);await physics_frame
 	b.choose_action();align(g.actors[-2].eye());b.support_action();g.heal_burst(-1);var health=q.hp;g.heal_burst(-1)
-	expect(health==60 and q.hp==health and is_equal_approx(p.heal_ready,g.clock+2),"combat medic healing respects two-second cooldown")
+	expect(health==70 and q.hp==health and is_equal_approx(p.heal_ready,g.clock+10),"combat medic healing respects ten-second cooldown")
 	p=reset_bot(0,"a1");p.hp=60;g.options.skills=true;b.goal=a.position+Vector3(0,0,-30);b.utilities()
 	expect(p.armor==25 and p.dash>g.clock,"assault bot uses protection and movement skill")
 	p=reset_bot(1,"r1");b.visible_target=true;align(g.actors[-2].eye()-Vector3.UP*.25);await physics_frame;b.utilities()
@@ -54,7 +54,7 @@ func run():
 	for i in range(20):MarkerTracker.tick(g,-1,.1)
 	expect(q.mark==g.clock+6. and p.gadget_count==3 and p.skill_ready>g.clock,"recon bot passively tracks for two seconds without consuming marker and uses scan")
 	p=reset_bot(2,"h1");p.hp=40;b.visible_target=true;b.utilities()
-	expect(p.get("mounted",0)>g.clock and p.shield>g.clock,"heavy bot mounts and shields under pressure")
+	expect(GadgetLoadout.mounted(p,bool(a.input_state.crouch)) and p.shield>g.clock,"heavy bot mounts and shields under pressure")
 	p=reset_bot(3,"e1");p.secondary="repair";b.goal=a.position;b.utilities();await physics_frame
 	expect(g.devices.size()==1 and p.skill_ready==g.clock+35,"engineer bot places one turret with 35-second charge")
 	var did=g.devices.keys()[0];g.update_world_visuals(.1);await physics_frame
@@ -72,7 +72,7 @@ func run():
 	await physics_frame
 	p=reset_bot(4,"c1");b.visible_target=true;b.last_known=a.position+Vector3(0,0,-35);q.team=1;g.actors[-2].position=a.position+Vector3(0,0,-30);p.flash_count=0;g.options.skills=false;b.utilities()
 	expect(g.fields.any(func(f):return f.kind=="smoke") and p.smoke==1,"control bot deploys smoke with skills off")
-	p.gadget_ready=0.;p.flash_count=1;p.hp=100;g.actors[-2].position=a.position+Vector3(0,0,-20);g.options.skills=true;await physics_frame;b.utilities();g.clock+=.36;g.update_fields(.36)
+	p.gadget_ready=0.;p.gadget=1;p.flash_count=1;p.hp=100;g.actors[-2].position=a.position+Vector3(0,0,-20);g.options.skills=true;await physics_frame;b.utilities();g.clock+=.36;g.update_fields(.36)
 	expect(p.flash_count==0 and q.flash>g.clock and g.fields.any(func(f):return f.kind=="slow"),"control bot uses flash and slow field")
 	g.fields.clear();p=reset_bot(5,"m1");p.hp=50;p.mark=g.clock+3;b.utilities()
 	expect(p.hp>50 and p.mark==0 and p.skill_ready>g.clock,"medic bot treats itself and clears status")

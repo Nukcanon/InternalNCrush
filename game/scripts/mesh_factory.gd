@@ -2,6 +2,10 @@ extends RefCounted
 class_name MeshFactory
 static var materials={}
 static var meshes={}
+const MESH_CACHE_LIMIT=1024
+const MATERIAL_CACHE_LIMIT=256
+static func bound_cache(cache:Dictionary,limit:int):
+	while cache.size()>=limit:cache.erase(cache.keys()[0])
 static var vertex_material:ShaderMaterial
 static func material(color:Color) -> StandardMaterial3D:
 	if materials.has(color):return materials[color]
@@ -9,17 +13,17 @@ static func material(color:Color) -> StandardMaterial3D:
 	var kind=SurfaceFinish.material_kind(color)
 	if kind>0:m.set_meta("surface_kind",kind)
 	if color.a<1:m.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;m.cull_mode=BaseMaterial3D.CULL_DISABLED
-	materials[color]=m;return m
+	bound_cache(materials,MATERIAL_CACHE_LIMIT);materials[color]=m;return m
 static func instance(parent:Node,mesh:Mesh,pos:Vector3,color:Color,rot=Vector3.ZERO) -> MeshInstance3D:
 	var node=MeshInstance3D.new();node.mesh=mesh;node.position=pos;node.rotation=rot;node.material_override=material(color);parent.add_child(node);return node
 static func box(parent:Node,pos:Vector3,size:Vector3,color:Color,rot=Vector3.ZERO,bevel=.3) -> MeshInstance3D:
 	var key=str(size)+str(bevel)
-	if not meshes.has(key):meshes[key]=beveled_box(size,bevel)
+	if not meshes.has(key):bound_cache(meshes,MESH_CACHE_LIMIT);meshes[key]=beveled_box(size,bevel)
 	return instance(parent,meshes[key],pos,color,rot)
 static func cylinder(parent:Node,pos:Vector3,radius:float,height:float,color:Color,rot=Vector3.ZERO,top=-1.,sides=16) -> MeshInstance3D:
 	var key="c"+str([radius,height,top,sides])
 	if not meshes.has(key):
-		var m=CylinderMesh.new();m.top_radius=radius if top<0 else top;m.bottom_radius=radius;m.height=height;m.radial_segments=sides;meshes[key]=m
+		var m=CylinderMesh.new();m.top_radius=radius if top<0 else top;m.bottom_radius=radius;m.height=height;m.radial_segments=sides;bound_cache(meshes,MESH_CACHE_LIMIT);meshes[key]=m
 	return instance(parent,meshes[key],pos,color,rot)
 static func sphere(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
 	if not meshes.has("sphere"):

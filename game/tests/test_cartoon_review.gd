@@ -28,7 +28,8 @@ func run():
 	expect(not ActionState.available(g,1,"fire") and ActionState.available(g,1,"reload"),"empty magazine disables firing but permits reload")
 	p.reload=138.;expect(not ActionState.available(g,1,"reload"),"active reload cannot be restarted")
 	p.reload=0.;p.role=4;p.gadget=0;p.gadget_count=2;p.smoke=0;p.flash_count=1
-	expect(not ActionState.equipment_ready(g,1,2) and ActionState.equipment_ready(g,1,3),"empty smoke does not grey out an available flash grenade")
+	expect(not ActionState.equipment_ready(g,1,2) and not ActionState.equipment_ready(g,1,3),"empty selected smoke cannot access a mixed flash slot")
+	p.gadget=1;expect(ActionState.equipment_ready(g,1,2),"selected flash uses the single gadget slot")
 	g.options.mode=0;expect(not ActionState.available(g,1,"bomb"),"bomb action unavailable in other game modes")
 	g.options.mode=4;g.arena.sites=[Vector3(20,0,20)];g.bomb={"planted":false,"carrier":1};p.team=MatchFlow.attackers(g)
 	expect(ActionState.available(g,1,"bomb"),"carrier can plant inside the site")

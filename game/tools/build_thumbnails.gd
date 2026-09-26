@@ -9,10 +9,12 @@ func run():
 	for role in range(6):
 		jobs.append(["role"+str(role),0,role,Catalog.first(role),0])
 		for variant in range(3 if role==3 else 2 if role in [0,4] else 1):jobs.append(["gadget"+str(role)+"_"+str(variant),2,role,Catalog.first(role),variant])
+		jobs.append(["gadget"+str(role)+"_8",2,role,Catalog.first(role),8])
 		jobs.append(["gadget"+str(role)+"_9",2,role,Catalog.first(role),9])
 		jobs.append(["skill"+str(role),4,role,Catalog.first(role),0])
 	for variant in range(3):jobs.append(["armor"+str(variant),3,0,"a1",variant])
 	for job in jobs:
+		if "--v118" in OS.get_cmdline_user_args() and not (job[0] in ["m1","m3","h4","gadget4_0","gadget4_1"] or str(job[0]).ends_with("_8")):continue
 		if "--only-new" in OS.get_cmdline_user_args() and FileAccess.file_exists("res://assets/thumbnails/"+job[0]+".png"):continue
 		preview.display(job[1],job[2],0,job[3],job[4])
 		if job[1]==0:preview.camera.position=Vector3(.2,1.40,-4);preview.camera.look_at(Vector3(0,1.25,0));preview.camera.size=1.15

@@ -3,6 +3,7 @@ extends RefCounted
 static var cache={}
 static func simplify(material:Material) -> Material:
 	if cache.has(material):return cache[material]
+	MeshFactory.bound_cache(cache,256)
 	if material is StandardMaterial3D:
 		if material.transparency!=BaseMaterial3D.TRANSPARENCY_DISABLED:return material
 		var simple=ToonMaterials.color_material(material.albedo_color)

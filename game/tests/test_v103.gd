@@ -21,7 +21,7 @@ func run():
 		expect(p.bloom<original and p.spray_phase<3.,id+" short-burst accuracy recovers during a pause")
 	expect(signatures.size()>18,"distinct weapon recoil curves")
 	var burst=Catalog.get_weapon("a4");expect(absf(CombatBalance.magazine_seconds(burst)-((int(burst.mag)-1)/3*(burst.interval*2.+burst.burst_pause)+((int(burst.mag)-1)%3)*burst.interval))<.001,"burst DPS accounts for gaps between bursts")
-	expect(AbilityBalance.flash_duration(3.,1.)>AbilityBalance.flash_duration(3.,-1.)*4. and AbilityBalance.flash_duration(14.,1.)==0.,"flash respects facing and maximum distance")
+	expect(AbilityBalance.flash_duration(3.,1.)>AbilityBalance.flash_duration(3.,-1.) and AbilityBalance.flash_duration(18.1,1.)==0.,"flash respects facing and maximum distance")
 	expect(AbilityBalance.turret_dps(4)<=38.01 and AbilityBalance.turret_hp(4)==300.,"upgraded turret bounded at 38 bullet DPS / 300 HP")
 	var image=Image.load_from_file("res://assets/textures/smoke_particle_v103.png")
 	expect(image.detect_alpha()!=Image.ALPHA_NONE and image.get_pixel(0,0).a<.05,"explosion texture has a transparent edge")

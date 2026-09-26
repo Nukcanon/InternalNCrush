@@ -13,6 +13,11 @@ version=re.search(r'config/version="([^"]+)"',(ROOT/'game/project.godot').read_t
 html=(BUILD/'index.html').read_text(encoding='utf-8')
 config=json.loads(re.search(r'const GODOT_CONFIG = (\{[^\n]+\});',html).group(1))
 executable=config['executable']
+updater=(ROOT/'web/update_client.js').read_text(encoding='utf-8')
+html=html.replace('const engine = new Engine(GODOT_CONFIG);',updater+'\nconst engine = new Engine(GODOT_CONFIG);')
+html=html.replace('(function () {', '(async function () {\n await window.incUpdateReady;')
+(BUILD/'index.html').write_text(html,encoding='utf-8')
+
 assert re.fullmatch(r'[A-Za-z0-9_-]+',executable),'Unsafe export basename'
 for name in ['index.html',executable+'.js',executable+'.wasm',executable+'.pck']:
     p=BUILD/name

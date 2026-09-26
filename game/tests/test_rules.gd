@@ -43,8 +43,8 @@ func run():
 	g.players[1].role=5;g.players[1].primary="m2";g.players[1].slot=0;g.players[1].fire_ready=0;g.players[1].heal_ready=0;g.players[1].heal_mag=3;g.actors[1].sprint_release=0;g.actors[1].last_sprint=false
 	g.players[2].team=g.players[1].team;g.players[2].hp=40;g.players[2].last_hit=0;g.actors[1].position=Vector3(25,0,60);g.actors[2].position=Vector3(25,0,55);g.actors[1].aim_yaw=0;g.actors[1].aim_pitch=0;g.actors[2].collision_layer=2
 	await physics_frame;await physics_frame
-	g.heal_burst(1);expect(g.players[2].hp==60 and g.players[1].heal_ready==209,"medical shot heals 20 and enforces 2-second gap")
-	g.heal_burst(1);expect(g.players[2].hp==60,"medical shot cannot bypass cooldown")
+	g.heal_burst(1);expect(g.players[2].hp==70 and g.players[1].heal_ready==217,"medical pulse heals 30 and enforces 10-second gap")
+	g.heal_burst(1);expect(g.players[2].hp==70,"medical shot cannot bypass cooldown")
 	g.options.mode=4;g.phase="combat";g.scores=[0,0];g.losses=[0,0];g.players[1].team=0;g.players[2].team=1;g.players[1].cash=0;g.players[2].cash=0
 	g.finish_round(0,"test");expect(g.players[1].cash==3500 and g.players[2].cash==1900,"round payouts")
 	g.phase="combat";g.finish_round(0,"test");expect(g.players[2].cash==4900,"second loss recovery")

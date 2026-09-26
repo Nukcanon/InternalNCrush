@@ -88,7 +88,7 @@ func run():
 	for key in manifest:
 		if not key.begins_with("gun_"):continue
 		gun_count+=1;hashes[FileAccess.get_sha256(manifest[key].file)]=true
-	expect(gun_count==25 and hashes.size()==25,"all 25 attack weapons have distinct sound files")
+	expect(gun_count==Catalog.weapons.values().filter(func(w):return w.kind=="gun").size() and hashes.size()==gun_count,"all attack weapons have distinct sound files")
 	expect(manifest.has("step_water_3") and manifest.has("step_stone_3") and manifest.has("step_metal_3"),"three walking surfaces include four variants each")
 	print("V04_RESULT ",checks-failures,"/",checks)
 	g.leave_game();await create_timer(.15).timeout;g.queue_free();await process_frame;await process_frame;quit(1 if failures else 0)

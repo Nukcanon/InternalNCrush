@@ -50,7 +50,7 @@ func _draw():
 	var details=[]
 	if MarkerTracker.equipped(p) and float(p.get("marker_progress",0))>0.:details.append("표식 추적 %d%%"%int(p.marker_progress/MarkerTracker.DWELL_SECONDS*100.))
 	if SniperScope.active(game):details.append("저격 %d×"%SniperScope.magnification(game.profile,game.current_weapon(p)))
-	if p.primary=="m2":details.append("C  회복탄 %d"%p.heal_mag)
+	if p.primary in ["m2","m3"]:details.append("C 범위 회복 · "+("준비" if p.heal_ready<=game.clock else "%.1f초"%(p.heal_ready-game.clock)))
 	if p.get("mounted",0)>game.clock:details.append("거치 %.0f초"%(p.mounted-game.clock))
 	if p.shield>game.clock:details.append("방호 활성")
 	if game.options.mode==4:details.append("%d 크레딧"%p.cash)

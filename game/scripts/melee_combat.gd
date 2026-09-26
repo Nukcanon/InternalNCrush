@@ -5,10 +5,10 @@ extends RefCounted
 const SLOT=4
 const REACH=1.45
 const INTERVAL=1.4
-const CONTACT_START=.18
-const CONTACT_END=.42
-const DURATION=.85
-const STEPS=40
+const CONTACT_START=.07
+const CONTACT_END=.20
+const DURATION=.44
+const STEPS=64
 const ZONES={"head":1.5,"torso":1.,"hands":.65,"legs":.75,"feet":.55}
 static func wrench(p:Dictionary) -> bool:return int(p.role)==3
 static func label(p:Dictionary) -> String:return "렌치" if wrench(p) else "칼"
@@ -30,7 +30,7 @@ static func tick(g:Node,id:int):
 	var last=clampi(int(floor((age-CONTACT_START)/(CONTACT_END-CONTACT_START)*STEPS)),0,STEPS)
 	var a=g.actors[id];var eye=a.eye()-Vector3.UP*.10
 	for step in range(int(p.get("melee_step",-1))+1,last+1):
-		var arc=lerpf(-.82,.82,float(step)/STEPS)*float(p.get("hand",1))
+		var arc=lerpf(-1.28,1.28,float(step)/STEPS)*float(p.get("hand",1))
 		for height in [0.,-.08,.08]:
 			var direction=Basis(Vector3.UP,a.aim_yaw+arc)*Basis(Vector3.RIGHT,a.aim_pitch+height)*Vector3.FORWARD
 			var hit=g.ray(eye,eye+direction*REACH,[a.get_rid()])
@@ -44,7 +44,9 @@ static func contact(g:Node,id:int,hit:Dictionary,origin:Vector3,direction:Vector
 	var tool=wrench(p);var base=30. if tool else 40.;var wid="wrench" if tool else "knife"
 	if collider is Actor:
 		var zone=str(hit.get("zone","torso"))
+		var before=float(g.players[collider.pid].hp)+float(g.players[collider.pid].armor)
 		g.damage(collider.pid,base*float(ZONES.get(zone,1.)),id,zone=="head",wid,origin,hit.position)
+		if float(g.players[collider.pid].hp)+float(g.players[collider.pid].armor)<before:g.effect.rpc("melee_flesh",hit.position,Vector3.ZERO,id)
 	elif collider.has_meta("device"):
 		var did=int(collider.get_meta("device"))
 		if not g.devices.has(did):return
@@ -53,7 +55,7 @@ static func contact(g:Node,id:int,hit:Dictionary,origin:Vector3,direction:Vector
 			var gain=minf(20.,maxf(0.,float(d.max_hp)-float(d.hp)))
 			d.hp+=gain
 			if gain>0.:
-				g.feedback(id,"","포탑 수리 +%d"%roundi(gain));g.effect.rpc("repair",origin,hit.position,id)
+				g.feedback(id,"","포탑 수리 +%d"%roundi(gain));g.effect.rpc("melee_repair",origin,hit.position,id)
 		else:g.damage_device(did,base,id)
 	elif collider is InteractiveProp:collider.hit(hit.position,direction,base)
 	elif not p.get("melee_wall",false):

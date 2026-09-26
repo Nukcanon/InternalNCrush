@@ -39,9 +39,10 @@ static func can_auto_fire(game:Node,actor:Actor) -> bool:
 	var p=game.players[game.local_id]
 	if not game.profile.get("touch_auto_fire",false) or not game.can_attack(p) or game.phase!="combat" or p.slot>1 or MeleeCombat.active(p,game.clock) or p.reload>0 or p.get("placing","")!="" or p.get("invul_select",0)>game.clock or p.get("cooking",0)>0:return false
 	var w=game.current_weapon(p)
+	if w.kind=="heal":return p.energy>0 and MedicLink.target(game,game.local_id)!=0
 	if w.kind!="gun" or int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))<=0:return false
 	var direction=Basis(Vector3.UP,actor.input_state.yaw)*Basis(Vector3.RIGHT,actor.input_state.pitch)*Vector3.FORWARD
 	var hit=game.ray(actor.eye(),actor.eye()+direction*minf(100.,float(w.get("max_range",100.))),[actor.get_rid()])
 	if hit.is_empty() or not hit.collider is Actor:return false
 	var target=game.players.get(hit.collider.pid,{})
-	return not target.is_empty() and target.alive and game.enemies(p,target) and target.get("protect",0)<=game.clock and target.get("invulnerable",0)<=game.clock and not game.in_smoke_line(actor.eye(),hit.position)
+	return not target.is_empty() and target.alive and (game.enemies(p,target) or float(w.get("heal_per_pellet",0.))>0.) and target.get("protect",0)<=game.clock and target.get("invulnerable",0)<=game.clock and not game.in_smoke_line(actor.eye(),hit.position)

@@ -340,3 +340,8 @@ func sync_bomb(game:Node):
 	if game.bomb.planted and game.phase=="combat" and worker!=0 and game.players.has(worker) and int(game.players[worker].team)!=MatchFlow.attackers(game) and game.clock>=bomb_defuse_at:
 		bomb_defuse_at=game.clock+.38;game.play_sound("bomb_defuse",game.bomb.position,true)
 
+
+func heal_area(pos:Vector3):
+	var node=group(pos)
+	var ring=MeshInstance3D.new();var mesh=TorusMesh.new();mesh.inner_radius=3.92;mesh.outer_radius=4.;mesh.rings=24;mesh.ring_segments=6;ring.mesh=mesh;ring.material_override=glow(Color(.25,1.,.65,.6));ring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.add_child(ring)
+	var tween=node.create_tween();node.scale=Vector3.ONE*.1;tween.tween_property(node,"scale",Vector3.ONE,.25);tween.tween_interval(.35);tween.tween_callback(node.queue_free)

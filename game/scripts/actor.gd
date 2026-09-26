@@ -10,9 +10,11 @@ var body_mesh:Node3D
 var head_mesh:Node3D
 var limbs:Node3D
 var tag:Label3D
+var health_tag:Label3D
 var shape:CollisionShape3D
 var gun:Node3D
 var item_model:Node3D
+var gadget_world:GadgetVisual
 var view_weapon:WeaponVisual
 var world_weapon:WeaponVisual
 var render_root:Node3D
@@ -74,6 +76,7 @@ func _ready():
 	shape=CollisionShape3D.new();var cap=CapsuleShape3D.new();cap.radius=.25;cap.height=1.8;shape.shape=cap;shape.position.y=.9;add_child(shape)
 	render_root=Node3D.new();add_child(render_root)
 	tag=Label3D.new();tag.font=game.ui.theme.default_font;tag.position.y=2.;tag.font_size=32;tag.outline_size=8;tag.outline_modulate=Color("101f2d");tag.pixel_size=.004;tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;add_child(tag)
+	health_tag=Label3D.new();health_tag.font=game.ui.theme.default_font;health_tag.font_size=30;health_tag.outline_size=8;health_tag.pixel_size=.003;health_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;health_tag.no_depth_test=true;health_tag.fixed_size=true;health_tag.hide();add_child(health_tag)
 	camera=Camera3D.new();camera.position.y=1.62;camera.fov=82;camera.far=300;camera.near=.08;add_child(camera)
 	gun=Node3D.new();camera.add_child(gun)
 	item_model=Node3D.new();gun.add_child(item_model)
@@ -174,6 +177,7 @@ func simulate(dt:float,now:float,can_move:bool):
 		if not is_on_floor():p.slide_until=now
 	var acceleration=40. if sliding else 22. if wish.length_squared()>.01 else 28.
 	if not is_on_floor():acceleration=16.
+	if game.players.get(pid,{}).get("blast_until",0)>now:acceleration=1.5
 	var planar=Vector2(velocity.x,velocity.z).move_toward(Vector2(target_velocity.x,target_velocity.z),acceleration*dt)
 	velocity.x=planar.x;velocity.z=planar.y
 	if not can_move:velocity.x=0.;velocity.z=0.
@@ -182,7 +186,7 @@ func simulate(dt:float,now:float,can_move:bool):
 	grounded_jump=bool(input_state.jump)
 	was_grounded=is_on_floor()
 	var before=global_position
-	if can_move:try_low_step(dt)
+	if can_move and game.players.get(pid,{}).get("blast_until",0)<=now:try_low_step(dt)
 	move_and_slide()
 	# Collision recovery can nudge a stationary spawn sideways. That is not a
 	# walking step, especially while movement is disabled during round setup.
@@ -234,7 +238,7 @@ func update_spread(dt:float,now:float):
 	if not game.players.has(pid):return
 	var p=game.players[pid];var w=game.current_weapon(p)
 	aim_progress=move_toward(aim_progress,1. if input_state.ads and p.slot<2 and p.reload<=now else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001))
-	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),p.get("mounted",0)>now,velocity.y,aim_progress)
+	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),GadgetLoadout.mounted(p,bool(input_state.crouch)),velocity.y,aim_progress)
 	if p.get("slide_until",0)>now:target+=2.3
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 13.)))
 func update_melee(p:Dictionary,now:float):
@@ -275,7 +279,7 @@ func headless_pose(p:Dictionary):
 	update_melee(p,game.clock)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
-	if not p.alive:tag.hide();return
+	if not p.alive:tag.hide();health_tag.hide();return
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
 	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
@@ -284,7 +288,9 @@ func visual(dt:float,p:Dictionary,now:float):
 		if signature!=item_signature:
 			item_signature=signature
 			for child in item_model.get_children():item_model.remove_child(child);child.queue_free()
-			EquipmentPreview.gadget_model(item_model,int(p.role),int(p.gadget));item_model.scale=Vector3.ONE*.45;item_model.position=Vector3(0,-.15,-.18)
+			var held=GadgetVisual.new();item_model.add_child(held);held.build(int(p.role),int(p.gadget),true);item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
+			if is_instance_valid(gadget_world):gadget_world.queue_free()
+			gadget_world=GadgetVisual.new();character.socket.add_child(gadget_world);gadget_world.build(int(p.role),int(p.gadget),false)
 	var wid=p.primary if p.slot==0 else p.secondary
 	if shown_weapon!=wid:shown_weapon=wid;build_gun(wid)
 	var w=Catalog.get_weapon(wid);var age=now-float(p.get("shot_time",-100.))
@@ -309,13 +315,20 @@ func visual(dt:float,p:Dictionary,now:float):
 	if is_instance_valid(world_weapon):
 		world_weapon.visible=p.slot<2 and p.get("cooking",0)==0;world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
+	if is_instance_valid(gadget_world):
+		gadget_world.visible=(p.slot in [2,3] or p.get("cooking",0)>0) and not MeleeCombat.shown(p,now)
+		if gadget_world.visible:character.solve_arm(character.right_arm,character.right_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.right_socket)),Vector3(.75,-.8,.25),dt,1.);character.sync_deform()
 	update_melee(p,now)
 	if is_instance_valid(world_weapon) and MeleeCombat.shown(p,now):world_weapon.hide()
 	if not local:
 		TargetReveal.apply(self,p)
 		if not game.server:global_position=global_position.lerp(target_pos,minf(1,dt*14));rotation.y=lerp_angle(rotation.y,aim_yaw,minf(1,dt*15))
 		shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
-		tag.visible=game.players.has(game.local_id) and p.team==game.players[game.local_id].team
+		var viewer=game.players.get(game.local_id,{})
+		var allied=not viewer.is_empty() and not game.enemies(viewer,p)
+		tag.visible=allied
+		health_tag.visible=allied and int(viewer.get("role",-1))==5
+		health_tag.position.y=body_height+.42;health_tag.text="%d HP"%ceili(p.hp);health_tag.modulate=Color("ff3434").lerp(Color("68ef9c"),clampf(float(p.hp)/100.,0.,1.))
 		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
 	var reloading=p.reload>now
@@ -353,7 +366,8 @@ func visual(dt:float,p:Dictionary,now:float):
 func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false
 	seen_shot=at;shot_serial+=1;recoil=minf(1.8,recoil*.35+float(game.current_weapon(game.players[pid]).get("recoil_kick",1.)))
-	if local and is_instance_valid(view_weapon) and is_instance_valid(game.combat_fx) and game.players.has(pid) and game.players[pid].slot<2:
+	if GadgetLoadout.mounted(game.players[pid],bool(input_state.crouch)):recoil*=.4
+	if not game.current_weapon(game.players[pid]).get("rocket",false) and local and is_instance_valid(view_weapon) and is_instance_valid(game.combat_fx) and game.players.has(pid) and game.players[pid].slot<2:
 		var source=gun.to_global(Vector3(.09,.01,-.16))
 		game.combat_fx.eject_case(source,camera.global_basis.x,camera.global_basis.y,global_position.y,shot_serial+pid)
 	return true

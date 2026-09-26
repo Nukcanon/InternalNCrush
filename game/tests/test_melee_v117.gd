@@ -24,7 +24,7 @@ func run():
 	g.handle_command(1,"slot",{"slot":0});expect(p.slot==4,"switching cannot cancel active melee to bypass its cooldown")
 	expect(not MeleeCombat.begin(g,1),"duplicate command cannot bypass cooldown")
 	var start=g.clock
-	g.clock=start+.17;MeleeCombat.tick(g,1);expect(q.hp==100.,"windup has no early damage")
+	g.clock=start+.06;MeleeCombat.tick(g,1);expect(q.hp==100.,"windup has no early damage")
 	g.clock=start+.43;MeleeCombat.tick(g,1);expect(q.hp<100.,"swept arc hits nearby actor")
 	var once=q.hp;MeleeCombat.tick(g,1);expect(q.hp==once,"one damage per victim per swing")
 	g.clock=start+1.39;expect(not MeleeCombat.begin(g,1),"cooldown remains until 1.4s")

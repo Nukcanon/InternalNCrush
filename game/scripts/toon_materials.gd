@@ -51,6 +51,6 @@ static func vertex_material() -> ShaderMaterial:
 	if vertex==null:vertex=make()
 	return vertex
 static func color_material(color:Color) -> ShaderMaterial:
-	if not colors.has(color):colors[color]=make(color,false)
+	if not colors.has(color):MeshFactory.bound_cache(colors,256);colors[color]=make(color,false)
 	return colors[color]
 

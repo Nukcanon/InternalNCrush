@@ -119,7 +119,10 @@ for i in range(int(.10*rate)):
  alert.append(math.sin(2*math.pi*(1450 if t<.045 else 1850)*t)*envelope*.32)
 write('turret_detect',alert,gain=-4)
 # Original melee cues use existing licensed sources, preserving all gun/hit audio.
-write('melee_swing',mix(.32,(highpass(sample('fw_02',1.8,.32),700),.32,0)),gain=-8)
+write('melee_swing',mix(.23,(highpass(sample('fw_02',2.3,.23),500),.8,0)),gain=-2)
+write('melee_flesh',mix(.28,(thud,.95,0),(cloth,.36,.008)),gain=0)
+write('rocket_launch',mix(.9,(sample('cannon_01',1.15,.9),.65,0),(sample('fw_02',.7,.8),.5,.05)),gain=-2)
+write('flash_ring',[math.sin(2*math.pi*2300*i/rate)*.22*min(1.,i/(rate*.02))*min(1.,(rate*4.5-i)/(rate*.7)) for i in range(int(rate*4.5))],gain=-10)
 write('knife_wall',mix(.24,(metal,.48,0),(sample('impactPlate_light_1',1.5,.22),.32,.025)),gain=-5)
 write('wrench_wall',mix(.30,(sample('impactMetal_heavy_000',1.05,.30),.62,0),(metal,.20,.04)),gain=-4)
 (root/'assets/audio_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

@@ -2,7 +2,7 @@ class_name MeleeVisual
 extends Node3D
 var tool=false
 var pivot:Node3D
-var hand:WeaponHand
+var hand:HeldGrip
 var arm:Node3D
 var palm:Marker3D
 func build(wrench:bool,role:int,first_person:bool):
@@ -11,35 +11,53 @@ func build(wrench:bool,role:int,first_person:bool):
 	MeshFactory.cylinder(pivot,Vector3(0,-.035,0),.024,.155,dark)
 	for y in [-.095,-.070,-.045,-.020,.005]:MeshFactory.cylinder(pivot,Vector3(0,y,0),.025,.008,Color("526067"))
 	if tool:
-		MeshFactory.box(pivot,Vector3(0,.105,0),Vector3(.038,.17,.023),steel)
-		MeshFactory.box(pivot,Vector3(0,.205,0),Vector3(.105,.05,.035),steel)
-		for side in [-1,1]:MeshFactory.box(pivot,Vector3(side*.048,.248,0),Vector3(.031,.085,.035),steel,Vector3(0,0,-side*.20))
-		MeshFactory.box(pivot,Vector3(0,.207,-.019),Vector3(.063,.018,.005),Color("4e646e"))
+		var red=Color("b82725");var jaw=Color("353e42")
+		MeshFactory.box(pivot,Vector3(0,.005,0),Vector3(.055,.26,.039),red,Vector3.ZERO,.28)
+		MeshFactory.box(pivot,Vector3(0,.153,0),Vector3(.095,.095,.062),red,Vector3.ZERO,.34)
+		# Fixed serrated jaw and offset adjustable hook form an open pipe mouth.
+		MeshFactory.box(pivot,Vector3(.008,.210,0),Vector3(.078,.032,.062),jaw)
+		MeshFactory.box(pivot,Vector3(-.052,.25,0),Vector3(.028,.16,.048),jaw)
+		MeshFactory.box(pivot,Vector3(-.01,.320,0),Vector3(.110,.028,.056),jaw,Vector3(0,0,-.16))
+		for x in [-.025,-.013,-.001,.011,.023]:
+			MeshFactory.box(pivot,Vector3(x,.231,0),Vector3(.008,.01,.055),steel)
+			MeshFactory.box(pivot,Vector3(x,.296,0),Vector3(.008,.01,.050),steel)
+		MeshFactory.cylinder(pivot,Vector3(-.045,.16,0),.035,.045,jaw,Vector3(0,0,PI/2),-1.,12)
+		for y in [.148,.160,.172]:MeshFactory.cylinder(pivot,Vector3(-.045,y,0),.036,.006,steel,Vector3.ZERO,-1.,12)
+		MeshFactory.box(pivot,Vector3(0,-.104,0),Vector3(.06,.032,.042),red)
+
 	else:
-		MeshFactory.box(pivot,Vector3(0,.048,0),Vector3(.105,.014,.044),dark)
+		MeshFactory.box(pivot,Vector3(0,-.035,0),Vector3(.045,.16,.044),Color("586747"),Vector3.ZERO,.32)
+		for y in [-.09,.018]:MeshFactory.cylinder(pivot,Vector3(0,y,.024),.008,.006,steel,Vector3(PI/2,0,0),-1.,10)
+		MeshFactory.box(pivot,Vector3(0,.052,0),Vector3(.11,.012,.055),dark)
+		var outline=PackedVector2Array([Vector2(-.027,.060),Vector2(.025,.060),Vector2(.030,.26),Vector2(.016,.34),Vector2(-.014,.40),Vector2(-.027,.29)])
 		var surface=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-		var verts=[Vector3(-.023,.065,0),Vector3(.023,.065,0),Vector3(0,.34,0),Vector3(0,.15,-.011),Vector3(0,.15,.011)]
-		for triangle in [[0,3,2],[3,1,2],[0,1,3],[0,2,4],[4,2,1],[0,4,1]]:
-			for index in triangle:surface.add_vertex(verts[index])
-		surface.generate_normals();var blade=MeshInstance3D.new();blade.mesh=surface.commit();blade.material_override=MeshFactory.material(steel);pivot.add_child(blade)
+		var indices=Geometry2D.triangulate_polygon(outline)
+		for side in [-1,1]:
+			for i in range(0,indices.size(),3):
+				for j in ([0,1,2] if side==1 else [2,1,0]):
+					var point=outline[indices[i+j]];surface.add_vertex(Vector3(point.x,point.y,side*.004))
+		for i in range(outline.size()):
+			var a=outline[i];var b=outline[(i+1)%outline.size()]
+			for point in [Vector3(a.x,a.y,-.004),Vector3(b.x,b.y,-.004),Vector3(a.x,a.y,.004),Vector3(a.x,a.y,.004),Vector3(b.x,b.y,-.004),Vector3(b.x,b.y,.004)]:surface.add_vertex(point)
+		surface.generate_normals();var blade=MeshInstance3D.new();blade.mesh=surface.commit();blade.material_override=MeshFactory.material(Color("556068"));pivot.add_child(blade)
+		for i in range(1,4):
+			var a=outline[i];var b=outline[i+1];var edge=MeshFactory.cylinder(pivot,Vector3((a.x+b.x)*.5,(a.y+b.y)*.5,0),.0025,a.distance_to(b),steel,Vector3.ZERO,-1.,6);edge.quaternion=Quaternion(Vector3.UP,Vector3(b.x-a.x,b.y-a.y,0).normalized())
+
 	palm=Marker3D.new();pivot.add_child(palm);palm.position=Vector3(.035,-.028,.025)
 	if first_person:
-		hand=WeaponHand.new();pivot.add_child(hand);hand.position=palm.position;hand.build(false,false,role)
-		# Close the trigger finger as well: a tool has a fist grip, no trigger.
-		for material in hand.materials[0]:material.set_shader_parameter("curl",Vector3(.82,1.23,.66))
+		hand=HeldGrip.new();pivot.add_child(hand);hand.position=Vector3(0,-.035,0);hand.build(role,.030 if tool else .025)
 		arm=WeaponHand.forearm(self,role)
 	pose(-1.)
 func pose(age:float):
 	var turn=0.;var extension=0.
 	if age>=0. and age<MeleeCombat.DURATION:
-		if age<MeleeCombat.CONTACT_START:turn=lerpf(0.,-.82,smoothstep(0.,MeleeCombat.CONTACT_START,age))
-		elif age<=MeleeCombat.CONTACT_END:turn=lerpf(-.82,.82,(age-MeleeCombat.CONTACT_START)/(MeleeCombat.CONTACT_END-MeleeCombat.CONTACT_START))
-		else:turn=lerpf(.82,0.,smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age))
-		extension=sin(clampf(age/.60,0.,1.)*PI)
+		if age<MeleeCombat.CONTACT_START:turn=lerpf(0.,-1.28,smoothstep(0.,MeleeCombat.CONTACT_START,age))
+		elif age<=MeleeCombat.CONTACT_END:turn=lerpf(-1.28,1.28,(age-MeleeCombat.CONTACT_START)/(MeleeCombat.CONTACT_END-MeleeCombat.CONTACT_START))
+		else:turn=lerpf(1.28,0.,smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age))
+		extension=sin(clampf(age/.32,0.,1.)*PI)
 	pivot.position=Vector3(-sin(turn)*.32,.015+extension*.035,-.09-extension*.22)
 	pivot.rotation=Vector3(-.35-extension*.35,turn,-.25-turn*.5)
 	if is_instance_valid(hand):
-		var elbow=Vector3(.28,-.34,.27);var palm_point=pivot.transform*palm.position
-		var wrist=WeaponHand.align_wrist(hand,palm_point,elbow,pivot.basis*Vector3(-1,0,-.2))
-		WeaponHand.fit_forearm(arm,elbow,wrist)
-		hand.constrain_contacts(hand.transform,[AABB(Vector3(-.026,-.12,-.026),Vector3(.052,.175,.052))])
+		var elbow=Vector3(.30,-.30,.29)
+		var wrist=pivot.transform*(hand.position+hand.wrist)
+		WeaponHand.fit_forearm(arm,elbow,wrist);arm.scale.x=1.4;arm.scale.z=1.4

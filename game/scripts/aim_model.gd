@@ -10,7 +10,7 @@ static func spread(w:Dictionary,speed:float,ads:bool,crouch:bool,sprint:bool,gro
 	penalty*=lerpf(1.,float(w.get("ads_move_scale",.45)),aiming);bloom*=lerpf(1.,.65,aiming)
 	if not grounded:penalty+=(1.8 if int(w.pellets)==1 else 1.3)+minf(absf(vertical_speed)*.18,1.8)
 	if sprint:penalty+=2.6
-	if mounted and speed<.3:base*=.35;bloom*=.35
+	if mounted:base*=.35;bloom*=.35;penalty*=.6
 	return base+penalty+bloom
 static func cone_direction(forward:Vector3,angle_degrees:float,u:float,v:float) -> Vector3:
 	var right=forward.cross(Vector3.UP).normalized()

@@ -30,7 +30,7 @@ func run():
 		for distance in [0.,5.,10.,20.,40.,80.,160.,301.]:
 			var current=CombatBalance.damage_at(w,distance)
 			expect(current<=previous+.001 and current>=0.,id+" monotonic falloff at "+str(distance));previous=current
-		expect((CombatBalance.damage_at(w,5.,"head")==100. and CombatBalance.damage_at(w,5.,"legs")==100. and CombatBalance.damage_at(w,5.,"hands")<100.) if id=="r2" else (CombatBalance.damage_at(w,5.,"head")>CombatBalance.damage_at(w,5.,"torso") and CombatBalance.damage_at(w,5.,"legs")<CombatBalance.damage_at(w,5.,"torso")),id+" zone multipliers")
+		expect((is_equal_approx(CombatBalance.damage_at(w,5.,"head"),CombatBalance.damage_at(w,5.,"torso"))) if w.get("rocket",false) else (CombatBalance.damage_at(w,5.,"head")==100. and CombatBalance.damage_at(w,5.,"legs")==100. and CombatBalance.damage_at(w,5.,"hands")<100.) if id=="r2" else (CombatBalance.damage_at(w,5.,"head")>CombatBalance.damage_at(w,5.,"torso") and CombatBalance.damage_at(w,5.,"legs")<CombatBalance.damage_at(w,5.,"torso")),id+" zone multipliers")
 	expect(Catalog.get_weapon("r2").interval>=2. and Catalog.get_weapon("r1").interval>=1.3,"snipers cannot fire at DMR cadence")
 	expect(Catalog.get_weapon("r2").ads_speed<2. and Catalog.get_weapon("r3").ads_speed<3.,"scoped movement penalty")
 	for id in ["e1","e2","e3"]:

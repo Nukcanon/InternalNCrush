@@ -1,7 +1,7 @@
 class_name MarkerTracker
 extends RefCounted
 const DWELL_SECONDS=2.
-static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)!=9
+static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)==0
 static func select_target(game:Node,id:int) -> int:
 	var p=game.players[id];var a=game.actors[id];var w=game.current_weapon(p)
 	var fov=float(w.zoom)

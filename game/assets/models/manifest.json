@@ -129,7 +129,7 @@
 			"team": 1
 		}
 	],
-	"style": "1.0.4 authored human anatomy, textile/skin materials, GPU skinning and joint physics",
+	"style": "Original low-poly comic operators, three paint bands, no skin photographs or joint physics",
 	"weapons": [
 		{
 			"id": "a1",
@@ -242,6 +242,14 @@
 		{
 			"id": "remote",
 			"name": "TETHER · 포탑 원격 조종기"
+		},
+		{
+			"id": "m3",
+			"name": "MENDER"
+		},
+		{
+			"id": "h4",
+			"name": "COMET"
 		}
 	]
 }

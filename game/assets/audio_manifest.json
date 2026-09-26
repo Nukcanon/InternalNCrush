@@ -199,6 +199,22 @@
     "license": "CC-BY-SA-3.0",
     "duration": 0.45
   },
+  "gun_m3": {
+    "file": "res://assets/audio/gun_m3.wav",
+    "category": "combat",
+    "gain_db": -4,
+    "sha256": "9c7152c3b9b05783b755c288f33ca073f4d18e54953a77dac426fe03a1c913fd",
+    "license": "CC-BY-SA-3.0",
+    "duration": 0.55
+  },
+  "gun_h4": {
+    "file": "res://assets/audio/gun_h4.wav",
+    "category": "combat",
+    "gain_db": -4,
+    "sha256": "b8a87e869235b4dc42a626228568b5a965d1c37581485c0ec02cc1134a10a74f",
+    "license": "CC-BY-SA-3.0",
+    "duration": 0.7
+  },
   "step_stone_0": {
     "file": "res://assets/audio/step_stone_0.wav",
     "category": "combat",
@@ -470,5 +486,61 @@
     "sha256": "1f2d33fb455bc7d0a3dbf368bcdc1d2c49ce5bd4e13748812d05b4684c9c7cc0",
     "license": "CC0-1.0",
     "duration": 0.55
+  },
+  "turret_detect": {
+    "file": "res://assets/audio/turret_detect.wav",
+    "category": "combat",
+    "gain_db": -4,
+    "sha256": "6ba8007270849cae1e18988dd4765473687cddd16158cc0030e7c280e10cafe8",
+    "license": "CC0-1.0",
+    "duration": 0.1
+  },
+  "melee_swing": {
+    "file": "res://assets/audio/melee_swing.wav",
+    "category": "combat",
+    "gain_db": -2,
+    "sha256": "4dc52fc8b4e58715c46beb7590bd13ec375a5a6eb1325689a8011dd9e34a4863",
+    "license": "CC0-1.0",
+    "duration": 0.23
+  },
+  "melee_flesh": {
+    "file": "res://assets/audio/melee_flesh.wav",
+    "category": "combat",
+    "gain_db": 0,
+    "sha256": "2e2f98a4f64f38bed79a94a3b04460e2f0df8eeef6663365a786b1f92dc19853",
+    "license": "CC0-1.0",
+    "duration": 0.28
+  },
+  "rocket_launch": {
+    "file": "res://assets/audio/rocket_launch.wav",
+    "category": "combat",
+    "gain_db": -2,
+    "sha256": "0aca6267fbf56d5ef409bfcb79ecd845055086f71613dd54de44249802d43700",
+    "license": "CC0-1.0",
+    "duration": 0.9
+  },
+  "flash_ring": {
+    "file": "res://assets/audio/flash_ring.wav",
+    "category": "combat",
+    "gain_db": -10,
+    "sha256": "89e855c494bcf74f6c3b2fa4b35c0af2e9fe661a2114eb5c454ce680c2aba1b7",
+    "license": "CC0-1.0",
+    "duration": 4.5
+  },
+  "knife_wall": {
+    "file": "res://assets/audio/knife_wall.wav",
+    "category": "combat",
+    "gain_db": -5,
+    "sha256": "c5d1c0601bbb5025db93cca1f8b76821bcc8dd2bc76c34d75d4dfaf1f0765be7",
+    "license": "CC0-1.0",
+    "duration": 0.24
+  },
+  "wrench_wall": {
+    "file": "res://assets/audio/wrench_wall.wav",
+    "category": "combat",
+    "gain_db": -4,
+    "sha256": "880ffc714ec7c4f00d968382a78bdb810c8673a12ba45e7f0af5b398323a1a3f",
+    "license": "CC0-1.0",
+    "duration": 0.3
   }
 }
