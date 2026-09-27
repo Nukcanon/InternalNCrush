@@ -83,7 +83,7 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 		oval(parent,center+Vector3(0,0,-.0108),Vector3(.009,.009,.002),eye_color)
 		oval(parent,center+Vector3(0,0,-.012),Vector3(.004,.004,.001),Color("182023"))
 		oval(parent,center+Vector3(-.001,.002,-.0125),Vector3(.0012,.0012,.0006),Color("e5ddd0"))
-		cord(parent,center+Vector3(-side*.013,.017,-.002),center+Vector3(side*.010,.019,.003),.0024,hair)
+		cord(parent,center+Vector3(-side*.013,.017,-.012),center+Vector3(side*.010,.019,-.009),.0024,hair)
 	if female:OperatorHair.build(parent,which,false)
 	elif which==2:
 		loft(parent,Vector3(0,.012,.014),[Vector4(.067,.094,.10,0),Vector4(.093,.098,.101,0),Vector4(.145,.065,.08,0),Vector4(.155,.008,.014,0)],Color("5c696b"),24)

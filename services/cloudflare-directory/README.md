@@ -19,7 +19,7 @@ pnpm exec wrangler deploy
 
 ```sh
 # Docker/NAS 서버와 같은 HTTP/WebSocket 계약 검사
-python services/directory/check_live.py https://배포된주소 --version 1.1.4
+python services/directory/check_live.py https://배포된주소 --version 1.2.3
 ```
 
 Python 검사 명령은 저장소 루트 기준이며 `services/directory/requirements.txt`가 필요합니다. `GAME_VERSION`은 클라이언트와 일치시켜야 합니다. URL이 확정되면 `game/assets/lobby_defaults.json`의 `url`을 업데이트하고 게임을 다시 빌드할 수 있습니다.
@@ -43,3 +43,4 @@ pnpm dev
 - WebRTC는 DTLS/SCTP로 전송을 암호화합니다. 호스트 권한 검증은 이동·사격·장비 요청 변조를 제한하지만, 방장이 자신의 프로그램을 변조하는 것을 차단하는 상용 안티치트는 아닙니다.
 
 공식 문서: [무료 한도](https://developers.cloudflare.com/durable-objects/platform/pricing/), [WebSocket hibernation](https://developers.cloudflare.com/durable-objects/best-practices/websockets/), [STUN/TURN](https://developers.cloudflare.com/realtime/turn/).
+
