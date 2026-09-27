@@ -15,8 +15,8 @@ func tick_for(seconds:float):
 	return {"frames":frames,"average_ms":total/1000./maxi(1,frames),"max_ms":longest/1000.}
 func run():
 	g=load("res://scripts/game.gd").new();g.render_actors=true;add_child(g)
-	if "--soak-low" in OS.get_cmdline_user_args():
-		g.profile.merge(GraphicsOptions.PRESETS[0],true);g.profile.display_mode=0;g.profile.width=1280;g.profile.height=720;g.profile.frame_limit=60;g.apply_display_settings();GraphicsOptions.apply(g)
+	if "--soak-low" in OS.get_cmdline_user_args() or "--soak-medium" in OS.get_cmdline_user_args():
+		g.profile.merge(GraphicsOptions.PRESETS[1 if "--soak-medium" in OS.get_cmdline_user_args() else 0],true);g.profile.display_mode=0;g.profile.width=1280;g.profile.height=720;g.profile.frame_limit=60;g.apply_display_settings();GraphicsOptions.apply(g)
 	g.profile.menu_animation=false;g.options.map_random=false;g.options.map_rotation=false;g.options.map=19;g.options.mode=4;g.options.bots=7;g.options.max_players=8
 	g.host_game(OfflineMultiplayerPeer.new());g.start_match()
 	expect(g.players.size()==8,"eight rendered actors")
@@ -32,8 +32,8 @@ func run():
 		await tick_for(.5)
 		for id in g.players:
 			var p=g.players[id];p.protect=0.;p.role=absi(id)%6;p.primary="dual_pistols" if id==1 else Catalog.first(int(p.role));p.owned_primary=true;p.slot=0;g.equip_ammo(p)
-		g.actors[1].position=Vector3(0,0,0);g.actors[-1].position=Vector3(0,0,-8)
-		for burst in range(3):g.combat_fx.explosion(Vector3(burst*2,1,-5))
+		g.actors[1].position=g.arena.sites[0]+Vector3.UP*.1;g.actors[-1].position=g.arena.sites[0]+Vector3(0,.1,-3)
+		for burst in range(3):g.combat_fx.explosion(g.arena.sites[0]+Vector3(burst*2,1,-5))
 		var sample=await tick_for(3.)
 		g.players[1].protect=0.;g.players[1].invulnerable=0.;g.players[1].hp=1.
 		g.damage(1,1000.,-1,false,"a1",g.actors[-1].eye(),g.actors[1].eye())

@@ -1,32 +1,42 @@
-## Local 1.2.6 work is unfinished
+# Internal N Crush 1.2.6 — published, 2026-09-27
 
-Read `VALIDATION_V126_PARTIAL.md` before continuing. Approved enlarged maps and the map viewer have uncommitted implementation changes. The public release below is still 1.2.5; new-map routing, full regression and performance validation are not complete. Shared movement contact tests passed 13/13 (small-prop pushing, low curbs, safe mantling). Do not report the entire renewal as complete or publish without resolving the recorded failures.
+The requested enlarged-map, map-viewer, capture-feedback and louder-announcer update is implemented and published. The user authorized deployment. Do not restart the old 1.2.6 partial work or restore 1.1.x files.
 
-# Internal N Crush 1.2.5 published handoff — 2026-09-27
+- Runtime/tag: `5d035e5586950741134bb54ba870f9f116fd96f6` / `internal-n-crush-v1.2.6`.
+- [Windows / Web / NAS downloads](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.6).
+- [Live page](https://nukcanon.github.io/nukcanon/internal-n-crush.html) / [Play](https://nukcanon.github.io/nukcanon/play/?build=11033e84d72c).
+- Website runtime installation: `59a5d2563a292b064213b21eebdfc5ff8d24f7e2`; subsequent `8ac9690d906ed959f6a847a72003dca0a6e04e68` only corrects the Escape-key guide to 게임 메뉴.
+- `PUBLICATION_STATUS.json` contains exact asset hashes, CI IDs and measured limits. `VALIDATION_V126.md` records the test evidence. `VALIDATION_V126_PARTIAL.md` is historical and superseded.
 
-Runtime source/tag: `7a51e15239cf91c0056629c4bbfcaaea629f14da`, `internal-n-crush-v1.2.5`. [Windows/Web/NAS release](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.5) · [live page](https://nukcanon.github.io/nukcanon/internal-n-crush.html). Subsequent main commits are documentation only. Start from current main and preserve `work/v1.2.3-stability-20260927`; never restore 1.1.x files. The previous runtime is 1.2.4 (`8c9e3572ac9e00d387eb6c57f83cdaa7c061942c`). This work continues the recovered 1.2.2/1.2.3 line.
+## Implemented in this release
 
-## Latest request and changes
+31 competitive maps now have wider connected corridors, rooms, alternative routes, stairs/ramps and upper/lower levels. Exactly one rectangular footprint remains per capacity (map indices 0, 2, 8, 13, 25). General sizes: 6-player 96×108m, 8-player 120×120m, 16-player 240×240m, 32-player 360×360m. Defusal: 8-player 128×160m, 12-player 228×276m. Practice expands to 240×240m with its elevated routes preserved. Names use ordinary Korean location names.
 
-- Free-loadout footer: non-wrapping `장비 선택` / `무료` information box occupies the same region as defusal money. Actions remain 72 logical pixels tall. 29 rendered cases cover free and combat modes, native/Web profiles and viewport settings; the actual exported Web browser footer and combat entry were checked too.
-- SERA/MINA: remove the compounded offline elongated-jaw morph before runtime identity shaping; native hair uses the same corrected head surface. Web has a separate lower-chin contour without native skin textures. Still stylized artwork, not photographic-reference-equivalent faces.
-- Equipment: folded rectangular carry packs, flaps, webbing, buckles, distinct vented flash and smoke shells. Web uses merged/shared low-detail geometry and no additional dynamic lights. Existing readable weapon thumbnails are preserved.
-- Maps: all twelve defusal layouts gain bent, narrower connectors (16–21 graph nodes). General arenas gain staggered halls, covered doglegs and four-room layouts while preserving the requested footprint/level-ground exceptions. These revise existing maps; they are not newly replicated CS maps. All 124 start-to-objective paths pass. An additional eight-room physical traversal regression exposed conservative flat navigation rasterization; that bug was fixed and the regression is now part of CI. Competitive balance still needs human play statistics.
+The map viewer is available below host/bot map selection, in the equipment header, alongside the scoreboard and inside 게임 메뉴. It supports layer selection, pan, wheel/pinch zoom and a close button alongside the layer controls. Random maps show their candidates. Records remain visible. Footer actions have matching dimensions, and the free-equipment information stays in the money-box region.
 
-## Verification and remaining limits
+Native district dressing adds building fronts, industrial doors, vehicles, boats, trees, ceilings and complete doorway rooms. Small pushable props avoid principal paths, spawns, sites and ramps. Web simplifies materials and decoration while preserving exactly the same collision geometry. Ramp corner heights and two invalid auxiliary objective positions were corrected after physical-route tests exposed them.
 
-Read `VALIDATION_V125.md` and `PUBLICATION_STATUS.json` for exact evidence, CI and live-site hashes. CI 36304456160 passed on its first attempt: all 45 functional groups, 32-client capacity, late-start/lifecycle/props, touch and WebRTC. Directory/Docker/Worker CI 36304456146 passed. The earlier candidate CI 36303663690 was deliberately cancelled before publication to fix room traversal.
+Capture has participant-scaled speed (1/1.5/2/2.5×), contested pause, configurable base duration (default 5 seconds), bottom-up letter/arrow fill, progress HUD and a subtle team-color floor overlay. Authoritative network announcements cover each team/site. Eleven offline-generated female voice clips replace the old announcements; gain is +10dB with bounded playback queue and output limiting. Audio provenance/license is included; no voice model runs in the game.
 
-The actual release Windows ZIP passed four rendered execution cases, packaged WebRTC loopback and 12 round/killcam cycles. Exact Web files passed hash/source checks, browser startup, equipment footer and bot combat entry with no observed browser errors. Temporary localhost tests are not external WAN tests.
+## Validation completed
 
-Two short RTX 4080 SUPER / Ryzen 9 7900 benchmark trials are recorded. Intermittent long frames remain in both 1.2.4 and 1.2.5; their cause is not proven by those samples. No Intel 10–11th-gen/GTX960/physical-phone performance guarantee. Existing native GL texture shutdown warnings remain. Earlier 120-cycle Windows/Web soaks belong to the 1.2.4 candidate, not this final release. Historical 1.2.2 c0000005 crash root cause is unknown without its dump. Multi-hour and external NAT/TURN tests remain outstanding.
+- Final-source CI `36314671336`: all 47 functional groups, 32-client capacity, independent clients, lifecycle/late-start, movable props, rotation, touch and WebRTC; Windows/Web exports and draft packaging.
+- Server CI `36315362584`: Docker Linux/TLS and Worker HTTP/WebSocket contracts. The version argument in the validation workflow was corrected separately; this does not change packaged runtime code.
+- 372 objective/elevation graph routes, 21 physical vertical destinations, 48 defusal spawn exits, 32 identical native/Web collision maps, 13 contact/mantle/push assertions, 28 capture assertions.
+- Exact CI Windows ZIP: practice, training and two ENet host/client variants passed, plus packaged WebRTC connection (`players=2`, `ping=7`, `snapshots=58`). The archive has 22 files including voice attribution.
+- Exact Web archive: all file hashes/source pin checked; actual Chromium menu, bot combat, equipment footer and game-menu map inspected. Live Pages loads WEB / v1.2.6 with no observed startup errors. Public package/PCK audit `36316707421` passed.
+- Native/Web candidate exports each completed 24 round/death/killcam cycles with no assertion failure. Warm native resources stayed at 876; Web at 823 and WASM at 100,466,688 bytes. See the validation document for measurement context.
 
-## Operational rules
+## Limits — do not turn goals into claims
 
-Native and Web share rules/networking but have separate baked graphics. Never copy `web/staging/game` models back to native `game/`. Arena cache revision is 125. The public Web JS retains bounded sparse GL handles; no automatic resolution changes. Approved menu photographs/site descriptions remain intact. Reference photographs/map diagrams were not copied into game textures.
+Intel 10–11th-gen iGPU, GTX960 and physical-phone performance has not been measured. Tests used RTX 4080 SUPER / Ryzen 9 7900. Short native samples still include 239–245ms maximum frames, and known GL texture warnings remain at shutdown. No multi-hour leak-free or universally stutter-free guarantee. The original 1.2.2 c0000005 crash lacks its dump and has no proven root cause. Art remains stylized; competitive balance still requires human play statistics. External multi-PC NAT/TURN is unverified.
 
-The Cloudflare public lobby still requires the owner's Cloudflare login. Keep `game/assets/lobby_defaults.json` empty until a real HTTPS/WSS endpoint is deployed and verified. Docker/NAS/Worker implementations are tested; GitHub Pages is only static game hosting.
+The public lobby service still needs owner Cloudflare deployment/login; its default address remains empty. Docker/NAS and Worker implementations are tested, but GitHub Pages only hosts static game files. Do not invent a public lobby endpoint.
 
-Source: `D:\python_workplace\InternalNCrush\InternalNCrush`; site: sibling `site-repository`. Exact package evidence: ignored `validation/public-v125/`, `public-windows-v125/`, `public-webrtc-v125/`, `public-web-v125/`. Fetch both remotes and preserve concurrent changes before continuing. `V124_REQUEST_AUDIT.md`, `PERFORMANCE_V124_KO.md`, and `V123_REQUEST_AUDIT.md` retain earlier request history; do not claim every historical art/performance request fully solved.
+## Development invariants and locations
 
-Map review handoff: all 32 current maps were exported from runtime collision/walk-surface data for user review. Local deliverables: `output/pdf/InternalNCrush_1.2.5_Floorplans/InternalNCrush_1.2.5_All_32_Maps.pdf` (33 pages), sibling `InternalNCrush_1.2.5_All_Map_Plans.zip` (PDF, 32 individual PNGs, legend, two comparison sheets, local HTML index). These show current geometry, not a proposed redesign. Levels are separate; ceilings/decorative meshes omitted. Source exporter and processing scripts/data remain under ignored `validation/*floorplans*`. Public game runtime is unchanged.
+Source: `D:/python_workplace/InternalNCrush/InternalNCrush`; website: sibling `site-repository`. Fetch both remotes before work and preserve other changes. The recovery branch `work/v1.2.3-stability-20260927` must not be overwritten. Continue current main; 1.2.5 (`7a51e15`) and its documents are history.
+
+Native `game/` and Web `web/staging/game/` share gameplay but use separately baked graphics. Never copy Web models back into native assets. `ArenaCache.REVISION` is 126. Authoring/bake tools live in `game/tools/maps/`; district specifications/data are tracked under `game/assets/arenas/`. CI rebakes both sets and compares collision signatures. Partial bakes merge signature manifests. Web retains bounded sparse GL handles and does not automatically lower resolution.
+
+Release evidence is under ignored `validation/public-v126`, `validation/windows-v126-ci`, `validation/webrtc-v126-package`, `validation/public-web-v126` and `validation/v126-*`. Prior map-review bundles in ignored `output/` are review artifacts, not current runtime. Do not accidentally commit generated validation outputs or test entrypoints into production exports.

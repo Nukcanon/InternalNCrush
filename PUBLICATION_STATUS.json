@@ -1,16 +1,16 @@
 {
-  "published_version": "1.2.5",
-  "source_commit": "7a51e15239cf91c0056629c4bbfcaaea629f14da",
-  "release_tag": "internal-n-crush-v1.2.5",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.5",
-  "published_at": "2026-09-27T08:23:03Z",
-  "verified_at": "2026-09-27T08:25:35.697675+00:00",
+  "published_version": "1.2.6",
+  "source_commit": "5d035e5586950741134bb54ba870f9f116fd96f6",
+  "release_tag": "internal-n-crush-v1.2.6",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.6",
+  "published_at": "2026-09-27T11:43:45Z",
+  "verified_at": "2026-09-27T11:48:44.338074+00:00",
   "status": "published_with_documented_validation_limits",
   "recovery_branch": "work/v1.2.3-stability-20260927",
   "baseline_version": "1.2.2",
   "baseline_source_commit": "fb6c32aafc1bb5a5467ae45346fa87fe51e05472",
-  "previous_published_version": "1.2.4",
-  "previous_runtime_commit": "8c9e3572ac9e00d387eb6c57f83cdaa7c061942c",
+  "previous_published_version": "1.2.5",
+  "previous_runtime_commit": "7a51e15239cf91c0056629c4bbfcaaea629f14da",
   "graphics": {
     "native": "detailed baked anatomy and materials",
     "web": "separate lightweight baked assets",
@@ -19,61 +19,63 @@
   },
   "assets": [
     {
-      "name": "InternalNCrush_NAS_Linux_v1.2.5.zip",
-      "bytes": 15516,
-      "sha256": "37327a43b8ee816007b255fcc0404c9bccff74e2b416673d4905a1b7d8e12766",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.5/InternalNCrush_NAS_Linux_v1.2.5.zip"
+      "name": "InternalNCrush_NAS_Linux_v1.2.6.zip",
+      "bytes": 15520,
+      "sha256": "05fbb83b8ab8eef9378330d6790971f644a1ca514368fda32459b5cb9673ae65",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/InternalNCrush_NAS_Linux_v1.2.6.zip"
     },
     {
-      "name": "InternalNCrush_Web_v1.2.5.zip",
-      "bytes": 77992669,
-      "sha256": "ffd3b1f177457f656b80ad51407c3c3d61ab243e980d723aae4d255014a14f56",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.5/InternalNCrush_Web_v1.2.5.zip"
+      "name": "InternalNCrush_Web_v1.2.6.zip",
+      "bytes": 56988504,
+      "sha256": "11033e84d72cfd79a213a4c35d639e63300ce64e834beff9a141a9e1bd175dcf",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/InternalNCrush_Web_v1.2.6.zip"
     },
     {
-      "name": "InternalNCrush_Windows_v1.2.5.zip",
-      "bytes": 114219828,
-      "sha256": "8de44800629f6b24a4be9aead540f9e3acdd2c5fe4b2fba33fe766b5ed08223d",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.5/InternalNCrush_Windows_v1.2.5.zip"
+      "name": "InternalNCrush_Windows_v1.2.6.zip",
+      "bytes": 110858255,
+      "sha256": "92611c502f349764dcc86f86e55659e2c37425fde257c0cc06c8b0c5572b70ef",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/InternalNCrush_Windows_v1.2.6.zip"
     },
     {
       "name": "SHA256SUMS.txt",
       "bytes": 298,
-      "sha256": "89dd08191e6bc3e100af4927768004707cfb3619bb70952c6a7d6257f3153864",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.5/SHA256SUMS.txt"
+      "sha256": "bd37548e6f53496187b781fe8e15518ca3e62093c8e651571b64a56cf4f1f7f6",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/SHA256SUMS.txt"
     },
     {
-      "name": "WEB_RELEASE_v1.2.5.json",
+      "name": "WEB_RELEASE_v1.2.6.json",
       "bytes": 168,
-      "sha256": "f5969202e89d59d183104ccfbf4c73ee62fb793a3a4c849179b6254f0ab1b6e7",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.5/WEB_RELEASE_v1.2.5.json"
+      "sha256": "4869c2451cc3c77a86cae61efb0f739b2b909f1d9ea50710ced45b39dfa32183",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/WEB_RELEASE_v1.2.6.json"
     }
   ],
   "website": {
     "url": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
-    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=ffd3b1f17745",
-    "commit": "d9977829bab47226cc4f58180780d2e4f464038c",
-    "runtime_source_commit": "7a51e15239cf91c0056629c4bbfcaaea629f14da",
+    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=11033e84d72c",
+    "commit": "8ac9690d906ed959f6a847a72003dca0a6e04e68",
+    "runtime_source_commit": "5d035e5586950741134bb54ba870f9f116fd96f6",
     "approved_images_and_descriptions_preserved": true,
     "windows_web_nas_links_verified": true,
-    "public_browser_menu_version_verified": "1.2.5",
+    "public_browser_menu_version_verified": "1.2.6",
     "public_browser_startup_errors_observed": false,
     "browser_renderer_log": "OpenGL ES 3.0 / WebGL 2.0 Chromium / Compatibility / WebKit WebGL",
-    "exact_web_archive_local_practice_entry_verified": true
+    "exact_web_archive_local_practice_entry_verified": true,
+    "runtime_installation_commit": "59a5d2563a292b064213b21eebdfc5ff8d24f7e2"
   },
   "successful_ci": {
-    "final_source_build_release": 36304456160,
+    "final_source_build_release": 36314671336,
     "final_source_build_attempt": 1,
-    "directory_docker_worker": 36304456146,
-    "site_installer": 36306036834,
-    "pages_deployment": 36306052075,
-    "public_package_source_hash_audit": 36306055765
+    "directory_docker_worker": 36315362584,
+    "site_installer": 36316683210,
+    "pages_deployment": 36316702660,
+    "public_package_source_hash_audit": 36316707421,
+    "site_guide_pages_deployment": 36316826089
   },
   "public_windows_zip_verification": {
-    "bytes": 114219828,
-    "sha256": "8de44800629f6b24a4be9aead540f9e3acdd2c5fe4b2fba33fe766b5ed08223d",
-    "files": 21,
-    "source_commit": "7a51e15239cf91c0056629c4bbfcaaea629f14da",
+    "bytes": 110858255,
+    "sha256": "92611c502f349764dcc86f86e55659e2c37425fde257c0cc06c8b0c5572b70ef",
+    "files": 22,
+    "source_commit": "5d035e5586950741134bb54ba870f9f116fd96f6",
     "native_runs": [
       {
         "mode": "practice",
@@ -115,37 +117,35 @@
     "public_zip_webrtc_loopback": {
       "passed": true,
       "evidence": [
-        "RTC_CONNECTED role=client players=2 ping=14 snapshots=60"
+        "RTC_CONNECTED role=client players=2 ping=7 snapshots=58"
       ]
     },
     "external_wan_nat_turn": "not_verified"
   },
   "rendered_repeated_sessions": {
-    "pre_final_candidate": {
-      "native_cycles": 120,
-      "native_seconds": 1170,
-      "web_cycles": 120,
-      "web_minutes_approx": 19.6,
+    "v126_candidate_native": {
+      "cycles": 24,
+      "seconds_approx": 240,
       "failures": 0,
-      "gpu": "NVIDIA GeForce RTX 4080 SUPER",
-      "web_gc_floor_mib": [
-        96,
-        97
-      ],
-      "web_wasm_mib": 95.81,
-      "native_warm_private_mib": [
-        557.12,
-        580.91
-      ],
-      "version": "1.2.4 pre-final candidate; not a 1.2.5 result"
-    },
-    "exact_final_windows_zip": {
-      "version": "1.2.5",
-      "cycles": 12,
-      "failures": 0,
+      "resources_after_warmup": 876,
+      "private_bytes_warm": 663289856,
+      "private_bytes_end": 662138880,
+      "private_bytes_peak": 675557376,
       "known_shutdown_texture_warning": true
     },
-    "note": "Prior long soaks are 1.2.4 candidate evidence. 1.2.5 final ZIP has a separate 12-cycle check. Intel/mobile and multi-hour performance remain unverified."
+    "v126_candidate_web": {
+      "cycles": 24,
+      "seconds_approx": 245,
+      "failures": 0,
+      "resources_after_warmup": 823,
+      "wasm_bytes_constant": 100466688,
+      "js_heap_mb_range": [
+        91.7,
+        115.6
+      ],
+      "maximum_sampled_warm_frame_ms": 25.099
+    },
+    "note": "Runtime source 5d035e5. Exported native/Web candidate repeated sessions; exact CI ZIP separately verified by Windows launches, loopback ENet/RTC, archive hashes and Web menu/bot-match entry. RTX 4080 SUPER; not an Intel/mobile or multi-hour guarantee."
   },
   "public_directory": {
     "status": "awaiting_owner_cloudflare_login",
@@ -162,7 +162,7 @@
     "External multi-PC LAN/WAN NAT/TURN and multi-hour play remain unverified.",
     "Female faces remain stylized game art, not reference-equivalent high-end assets."
   ],
-  "validation_document": "VALIDATION_V125.md",
+  "validation_document": "VALIDATION_V126.md",
   "request_audit_document": "V124_REQUEST_AUDIT.md",
   "performance_document": "PERFORMANCE_V124_KO.md",
   "handoff_document": "CODEX_HANDOFF.md",
@@ -176,27 +176,17 @@
     "trials": 2,
     "intermittent_long_frames_remain": true
   },
-  "pending_work": {
-    "candidate_version": "1.2.6",
-    "status": "incomplete_not_published",
-    "publication_authorized_after_completion": true,
-    "validation_notes": "VALIDATION_V126_PARTIAL.md",
-    "passed": {
-      "competitive_navigation_routes": 372,
-      "contact_traversal": 13,
-      "control_capture": 28,
-      "rules": 30,
-      "regressions": 63,
-      "ai_aim": 38,
-      "bots": 6,
-      "native_finish": 238
-    },
-    "outstanding": [
-      "complete map physical traversal and spawn verification",
-      "resolve remaining full functional suite failures",
-      "finish native art/interior review and separate Web bake",
-      "final Windows/Web launch, network and performance/resource soak checks"
-    ],
-    "published_artifacts_unchanged": true
+  "pending_work": null,
+  "v126_validation": {
+    "functional_groups": 47,
+    "navigation_routes": 372,
+    "physical_vertical_routes": 21,
+    "spawn_exits": 48,
+    "identical_native_web_collision_maps": 32,
+    "contact_traversal_assertions": 13,
+    "capture_assertions": 28,
+    "directory_unit_tests": 19,
+    "worker_policy_tests": 3,
+    "site_installer_tests": 7
   }
 }

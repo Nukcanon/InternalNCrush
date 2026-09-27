@@ -1,3 +1,5 @@
+> Historical diagnosis only. Superseded by the published 1.2.6 results in [VALIDATION_V126.md](VALIDATION_V126.md) and [PUBLICATION_STATUS.json](PUBLICATION_STATUS.json). The unfinished-state statements below no longer describe the current release.
+
 # 1.2.6 map renewal — work in progress, not published
 
 The public baseline remains 1.2.5. Local changes on `work/v1.2.3-stability-20260927` implement the approved enlarged district layouts and map viewer. Do not publish these changes as fully validated yet.
