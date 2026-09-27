@@ -4,8 +4,8 @@
   "release_tag": "internal-n-crush-v1.2.7",
   "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.7",
   "published_at": "2026-09-27T13:43:27Z",
-  "verified_at": "2026-09-27T13:55:08.705376+00:00",
-  "status": "published_post_publication_validation_in_progress",
+  "verified_at": "2026-09-27T14:05:43.268638+00:00",
+  "status": "published_with_documented_validation_limits",
   "previous_publication_record": "PUBLICATION_STATUS_V126.json",
   "recovery_branch": "work/v1.2.3-stability-20260927",
   "graphics": {
@@ -61,7 +61,10 @@
     "pages_deployment": 36323429203
   },
   "pending_ci": {
-    "source_build": 36322990615
+    "source_rebuild_and_artifact_upload": 36322990615,
+    "all_test_steps": "passed",
+    "current_step": "Export single-thread Web build",
+    "note": "Public packages already exported, hash-verified and executed locally; this independent CI rebuild is not replacing public assets."
   },
   "public_windows_zip_verification": {
     "bytes": 150484004,
@@ -122,7 +125,10 @@
     "spawn_exits": 48,
     "identical_native_web_collision_maps": 32,
     "map_cache_revision": 131,
-    "site_installer_tests": 7
+    "site_installer_tests": 7,
+    "clean_ci_functional_groups": 49,
+    "ci_network_capacity_players": 32,
+    "ci_network_lifecycle_late_start_touch_webrtc": "passed"
   },
   "public_directory": {
     "status": "awaiting_owner_cloudflare_login",
@@ -142,8 +148,59 @@
   ],
   "validation_document": "VALIDATION_V127.md",
   "handoff_document": "CODEX_HANDOFF.md",
-  "pending_work": [
-    "Rendered 24-cycle Web and exact Windows ZIP repeated sessions",
-    "Final branch CI result"
-  ]
+  "pending_work": null,
+  "rendered_repeated_sessions": {
+    "v127_web_diagnostic_export": {
+      "cycles": 24,
+      "result": "SESSION_RESULT failures=0 replays=24",
+      "resources": [
+        1087
+      ],
+      "wasm_bytes": [
+        100466688.0
+      ],
+      "js_heap_warm_range": [
+        125204203.0,
+        162434663.0
+      ],
+      "nodes_warm_range": [
+        2580,
+        2750
+      ],
+      "warm_max_frame_ms": 115.799,
+      "warm_average_ms_range": [
+        16.6447403314917,
+        27.4963727272727
+      ],
+      "seconds": 249.56,
+      "shutdown_warnings": [
+        "WorkerThreadPool Group allocator pages in use",
+        "ObjectDB instances and 2 resources still in use"
+      ],
+      "first_cycle_background_throttled": true
+    },
+    "v127_exact_windows_zip": {
+      "cycles": 24,
+      "exit_code": 0,
+      "seconds": 245.0360526000004,
+      "result": "SESSION_RESULT failures=0 replays=24",
+      "resources_warm_range": [
+        1201,
+        1210
+      ],
+      "nodes_warm_range": [
+        2723,
+        2804
+      ],
+      "private_bytes_warm": 683851776,
+      "private_bytes_end": 680312832,
+      "private_bytes_peak": 699830272,
+      "warm_max_ms": 50.442,
+      "warm_average_ms_range": [
+        16.6400386740332,
+        16.7045166666667
+      ],
+      "shutdown_texture_warnings": true
+    }
+  }
 }

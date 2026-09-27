@@ -94,5 +94,37 @@ This release must not be described as a download-size reduction.
 | Web | 94646556 | 995d687615f3b55b756e497eccdf04d07b62f89828728e6bd634bd34eac0c3a7 |
 | NAS/Linux | 15583 | cd1c0dd3ea3a23ccf37f91f1144aa2c5c66c31bb6a9508f7e64abda0f41c4343 |
 
-Extended rendered-session and final branch-CI results are recorded below when
-finished. The historical `VISUAL_REWORK_V127_PARTIAL.md` is superseded by this file.
+Extended rendered-session results are recorded below. The historical
+`VISUAL_REWORK_V127_PARTIAL.md` is superseded by this file.
+
+## Post-publication checks
+
+- Exact published Windows WebRTC host/client connected, exchanged 59 snapshots
+  (`players=2`, `ping=7`) and disconnected normally. ICE candidate send warnings
+  (errno 10051) occurred but did not prevent this loopback connection. This is not
+  a verification of external routers or TURN.
+- Chromium Web diagnostic export using the same 1.2.7 staged runtime/art completed
+  24 rendered round/death/killcam cycles in about 250 seconds, zero assertions.
+  Warm resources stayed at 1087; WASM capacity stayed at 100,466,688 bytes.
+  JS heap varied between 125.2 and 162.4MB after warm-up and ended at 135.3MB.
+  Node count changed from 2580 to 2750 within the test's bound, so this does not
+  prove zero long-term accumulation. Warm samples averaged 16.64–27.50ms and
+  included a 115.799ms frame; the first cycle was browser-background-throttled
+  and is excluded from these timing ranges. Shutdown logged WorkerThreadPool
+  allocator, ObjectDB and two remaining-resource diagnostics. Those are not
+  claimed fixed. Evidence: `validation/v127-web-soak.jsonl`.
+- Exact published Windows EXE completed 24 rendered round/death/killcam cycles
+  in 245 seconds, exit 0, zero assertions. Warm resource count was 1201–1210,
+  node count 2723–2804. Process private memory measured 683.9MB after warm-up,
+  680.3MB at the final sample and 699.8MB at peak. Warm sample averages were
+  16.64–16.70ms at a 60fps cap, maximum 50.442ms. Two shutdown texture warnings
+  persisted. Evidence: `validation/v127-native-soak.log` and
+  `validation/v127-process-memory.json`. This bounded run does not establish
+  multi-hour stability or low-end-device performance.
+
+- Source CI 36322990615 completed a clean run of all 49 functional groups,
+  32-client capacity, independent clients, lifecycle, movable props, rotation,
+  late-start lifecycle, touch and WebRTC tests successfully. Its independent
+  Web rebuild/artifact upload is still running at this checkpoint; the entire
+  workflow is not yet reported successful. Already-published packages were
+  separately exported, hash-checked and executed locally.

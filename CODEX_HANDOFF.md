@@ -1,4 +1,4 @@
-# Internal N Crush 1.2.7 — published; post-publication tests
+# Internal N Crush 1.2.7 — published; local and CI test steps verified
 
 The user explicitly requested publishing first, then continuing remaining tests.
 Windows/Web/NAS release 1.2.7 and the live website are published. Do not restore
@@ -21,8 +21,12 @@ shading changes; red map close button; 180-second bounded weapon drops.
 
 49 functional groups and 490 graph routes pass, with all 32 native/Web collision
 signatures equal. Exact Windows ZIP passes four rendered/connection scenarios.
-The release was intentionally made public before remaining extended tests.
-Record those results in VALIDATION_V127.md when finished.
+The release was intentionally made public before extended tests. Those tests now
+pass: Windows and Web each completed 24 rendered round/death/killcam cycles; exact
+Windows ZIP ENet and WebRTC checks passed. CI 36322990615 passed all 49 functional
+groups, 32-client capacity, lifecycle/late-start, props, rotation, touch and RTC
+steps; its independent Web rebuild/upload is still in progress at this checkpoint.
+Do not call the entire CI workflow successful until its final result is checked.
 
 Do not claim a complete AAA art overhaul, zero stutters, no leaks under all
 conditions, or measured Intel/mobile performance. Short native runs still have
