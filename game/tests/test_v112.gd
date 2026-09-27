@@ -165,7 +165,10 @@ func run():
 		var weapon=WeaponVisual.new();root.add_child(weapon);weapon.build(w,false)
 		var duration=w.reload
 		weapon.animate_reload(.85,0.)
-		if weapon.reload_style=="shell":
+		if weapon.reload_style=="dual":
+			weapon.animate_reload(.43,0.);expect(weapon.dual_guns[0].action_part.position.z>weapon.dual_guns[0].action_origin.z+.02,"first DUET pistol chambers")
+			weapon.animate_reload(.93,0.);expect(weapon.dual_guns[1].action_part.position.z>weapon.dual_guns[1].action_origin.z+.02,"second DUET pistol chambers")
+		elif weapon.reload_style=="shell":
 			expect(weapon.action_part.position.z>weapon.action_origin.z+.02,"shell-fed shotgun finishes with its pump action "+id)
 		elif weapon.reload_style in ["break","box","revolver","rocket"]:
 			expect(weapon.action_part.position.is_equal_approx(weapon.action_origin),"no generic rifle action on alternate reload "+id)

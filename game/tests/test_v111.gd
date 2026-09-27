@@ -63,7 +63,7 @@ func run():
 	var carrier=int(g.bomb.carrier)
 	expect(carrier!=0 and g.players[carrier].team==MatchFlow.attackers(g),"exactly one living attacker receives the bomb")
 	BombLogic.drop(g,carrier);expect(g.bomb.dropped and g.bomb.carrier==0,"carrier drops the bomb on death or disconnect")
-	g.actors[7].position=g.bomb.position;expect(not BombLogic.pickup(g,7),"defenders cannot pick up the dropped bomb")
+	g.clock+=.8;g.actors[7].position=g.bomb.position;expect(not BombLogic.pickup(g,7),"defenders cannot pick up the dropped bomb")
 	g.actors[2].position=g.bomb.position;expect(BombLogic.pickup(g,2) and g.bomb.carrier==2,"attacker can recover the bomb")
 	g.bomb.planted=true;g.bomb.site=0;g.bomb.carrier=0;g.bomb.position=g.arena.sites[0];g.actors[2].position=g.arena.sites[1];g.interact(2,4.)
 	expect(g.bomb.site==0,"a planted bomb cannot be placed at the second site")

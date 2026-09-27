@@ -59,5 +59,37 @@ func run():
 	expect(g.team_count(0)==g.team_count(1),"multiple departures balanced without moving humans")
 	for bid in TeamBalance.auto_ids(g):expect(g.bot_agents[bid].difficulty==2,"all fill bots hard")
 	g.players[2].team=1;TeamBalance.reconcile(g);expect(TeamBalance.auto_ids(g).is_empty(),"excess fill bots removed after returning player")
+
+	g.phase="combat";g.options.mode=0;g.clock=200.;p.alive=true;p.protect=0.;p.reload=0.;p.placing="";p.gadget_ready=0.;p.owned_gadget=true;p.invul_select=0.;p.slot=2
+	var click_serial=20
+	for kind in [8,0,1]:
+		p.role=4 if kind!=8 else 0;p.gadget=kind;GadgetLoadout.reset(p);p.gadget_count=1;p.smoke=1;p.flash_count=1;p.gadget_ready=0.;p.cooking=0
+		g.clock+=5.;click_serial+=1;g.handle_command(1,"trigger_press",{"seq":click_serial})
+		expect(p.cooking>0 and g.grenades[-1].held,"mouse/touch press cooks last throwable "+str(kind))
+		g.actors[1].input_state.fire=false;g.process_trigger(1);g.clock+=.4;GrenadeLogic.tick(g,.01)
+		expect(p.cooking>0 and g.grenades[-1].held,"no input snapshot can immediately throw direct press "+str(kind))
+		g.handle_command(1,"trigger_release",{})
+		expect(p.cooking==0 and not g.grenades[-1].held and g.grenades[-1].velocity.length()>10.,"release throws "+str(kind))
+		g.clock+=.4;expect(not GadgetLoadout.held_visible(p,g.clock) and not GadgetLoadout.selectable(p),"last item leaves empty hand/slot "+str(kind))
+		g.grenades.clear()
+	p.role=1;p.gadget=0;p.slot=0;p.primary="r1";p.owned_primary=true;p.flash=0.;p.reload=0.;p.gadget_count=1
+	q.alive=true;q.team=1;q.cleanse=0.;g.actors[1].position=Vector3.ZERO;g.actors[2].position=Vector3(0,0,-25)
+	g.actors[1].aim_yaw=0.;g.actors[1].aim_pitch=0.;g.actors[1].input_state.ads=true;g.actors[1].aim_progress=1.;g.actors[1].input_state.use=false
+	await physics_frame;await physics_frame
+	expect(GadgetLoadout.has_item(p) and not GadgetLoadout.selectable(p),"marker is passive equipment")
+	g.handle_command(1,"slot",{"slot":2});expect(p.slot==0,"passive shortcut rejected by authority")
+	for i in range(10):MarkerTracker.tick(g,1,.1)
+	expect(p.marker_target==2 and p.marker_progress>.9,"scope tracks nearest central target")
+	g.actors[1].aim_yaw=.3;MarkerTracker.tick(g,1,.1);expect(p.marker_progress==0.,"leaving marker cone restarts countdown")
+	g.actors[1].aim_yaw=0.;p.primary="a1";MarkerTracker.tick(g,1,.1);expect(p.marker_target==0,"ordinary rifle cannot mark")
+	p.primary="r1"
+	for i in range(20):MarkerTracker.tick(g,1,.1)
+	expect(q.mark>g.clock,"two seconds of scope dwell marks target")
+	for key in ["door","reload","magazine","throw","bounce","deploy","melee_swing"]:expect(GameAudio.audible_range(key)==40.,"non-strategic audio range "+key)
+	for key in ["explosion","flash","smoke"]:expect(GameAudio.audible_range(key)==220.,"strategic blast audio range "+key)
+	g.options.mode=0;g.ui.practice_menu()
+	for mode in range(5):
+		g.options.mode=mode;ModeOptions.refresh(g.ui)
+		for row in g.ui.mode_fields.get_children():expect(row.visible==(mode in row.get_meta("modes")),"mode-specific settings "+str(mode))
 	g.ui.clear_panel();g.free();await process_frame
 	print("V123_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

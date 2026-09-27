@@ -13,6 +13,6 @@ static func clear(g:Node):
 	for mark in g.wall_marks:
 		if is_instance_valid(mark):mark.queue_free()
 	g.wall_marks.clear()
-	if is_instance_valid(g.combat_fx):g.combat_fx.clear()
-	if is_instance_valid(g.kill_replay):g.kill_replay.reset()
+	if is_instance_valid(g.combat_fx):g.combat_fx.clear(true)
+	if is_instance_valid(g.kill_replay):g.kill_replay.reset(true)
 	if is_instance_valid(g.ui.damage_indicator):g.ui.damage_indicator.clear_hits()

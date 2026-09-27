@@ -23,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix='inc-props-') as folder:
         assert all(p.returncode==0 for p in processes)
         for output in outputs:output.flush()
         assert not any('ERROR' in path.read_text(encoding='utf-8',errors='replace') for path in barrier.glob('*.log'))
-        print('NETWORK_ROTATION_OK both-side rotation; early client; late join; staging gate')
+        print('NETWORK_ROTATION_OK complete-series rotation; early client; late join; staging gate')
     finally:
         for p in processes:
             if p.poll() is None:p.terminate()

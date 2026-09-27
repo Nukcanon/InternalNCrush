@@ -61,5 +61,7 @@ func run():
 	for i in range(100):g.clock+=1./60.;g.players[1].input_time=g.clock;g.server_tick(1./60.);await physics_frame
 	expect(not heard.any(func(k):return k.begins_with("step_")),"crouch walking remains silent")
 	AudioServer.remove_bus_effect(0,AudioServer.get_bus_effect_count(0)-1)
-	g.free();await process_frame
+	g.leave_game();g.queue_free();await process_frame
+	# Allow deferred audio/render deletion to drain before shutting down the driver.
+	await create_timer(.5).timeout
 	print("AUDIO_FEEDBACK_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

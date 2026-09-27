@@ -34,7 +34,7 @@ func run():
 	g.options.mode=0;expect(not ActionState.available(g,1,"bomb"),"bomb action unavailable in other game modes")
 	g.options.mode=4;g.arena.sites=[Vector3(20,0,20)];g.bomb={"planted":false,"carrier":1};p.team=MatchFlow.attackers(g)
 	expect(ActionState.available(g,1,"bomb"),"carrier can plant inside the site")
-	actor.position.x+=20.;expect(not ActionState.available(g,1,"bomb"),"plant button becomes unavailable outside the site")
+	actor.position.x+=20.;expect(ActionState.available(g,1,"bomb") and BombLogic.action(g,1).is_empty(),"outside-site bomb button drops instead of planting")
 	g.options.mode=0;actor.position=Vector3(20,0,20);actor.velocity=Vector3.ZERO;actor.reset_view(.7)
 	await physics_frame;await physics_frame
 	actor.simulate(1./60.,g.clock,true)

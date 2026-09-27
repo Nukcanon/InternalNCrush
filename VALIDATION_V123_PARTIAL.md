@@ -42,3 +42,5 @@ These recovered bytes have NOT been re-imported or executed. Re-run all relevant
 Fetch this branch first; do not overwrite it from an older local checkout.
 Read WORK_V123.md and this file, compare retained local files if the environment returns.
 Import with Godot, run the corrected tests, finish remaining requirements, and preserve frequent remote checkpoints.
+
+Continuation: see VALIDATION_V123.md for fresh Windows and Web evidence. This original partial report is historical, not the final release verdict.

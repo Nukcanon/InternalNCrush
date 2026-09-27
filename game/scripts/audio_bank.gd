@@ -29,6 +29,9 @@ func _ready():
 func play(key:String,where:Vector3,world:bool,gain=0.):
 	if DisplayServer.get_name()=="headless":return
 	if not streams.has(key):return
+	if world:
+		var listener=get_viewport().get_camera_3d()
+		if is_instance_valid(listener) and listener.global_position.distance_to(where)>audible_range(key):return
 	var candidates=spatial if world else feedback_voices if key in FEEDBACK else local
 	if world and key.begins_with("step_"):candidates=movement_voices
 	elif world and key in ["explosion","bomb_explosion","flash","smoke"]:candidates=blast_voices

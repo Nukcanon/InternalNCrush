@@ -26,7 +26,8 @@ func burst(interval:float,shots:int) -> Dictionary:
 func run():
 	g=load("res://scripts/game.gd").new();root.add_child(g);g.host_game();g.set_physics_process(false);g.clock=100.
 	g.add_player(-1,"Member","member_token_0001");g.add_player(-2,"Other","member_token_0002")
-	var member=g.players[-1];var other=g.players[-2];var before=other.team
+	var member=g.players[-1];var other=g.players[-2]
+	member.team=0;other.team=0;g.players[1].team=1;TeamBalance.reconcile(g);var before=other.team
 	expect(g.change_team(-1,-1,1-member.team),"lobby member chooses own team")
 	expect(not g.change_team(-1,-2,1-before) and other.team==before,"member cannot move another player")
 	g.handle_command(-1,"team",{"player_id":1,"team":1-g.players[1].team})

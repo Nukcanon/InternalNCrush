@@ -2,7 +2,7 @@ class_name WebGraphics
 extends Node
 ## Render-only policy. Never changes geometry, game rules, bot count or replay.
 const WINDOW_SECONDS=3.
-const AUTO_MIN_SCALE=.85
+const AUTO_MIN_SCALE=1.
 const PRESETS=[
 	{"lighting_quality":0,"shadow_quality":0,"antialias":0,"decor_quality":0,"fog_enabled":false},
 	{"lighting_quality":0,"shadow_quality":0,"antialias":0,"decor_quality":1,"fog_enabled":false},
@@ -38,7 +38,7 @@ static func resolve(profile:Dictionary,auto_level:int=1) -> Dictionary:
 	settings.physics_effects=0
 	return settings
 static func render_scale(profile:Dictionary,auto_scale:float=1.) -> float:
-	return clampf(auto_scale,AUTO_MIN_SCALE,1.) if quality(profile)<0 else clampf(float(profile.get("web_render_scale",1.)),.7,1.)
+	return 1. if quality(profile)<0 else clampf(float(profile.get("web_render_scale",1.)),.7,1.)
 func reset_samples():
 	elapsed=0.;frames=0;warmup=8.;slow_windows=0;fast_windows=0;hold_windows=0
 func reset_auto():
@@ -55,7 +55,7 @@ func observe(fps:float,target:float) -> bool:
 	fast_windows=fast_windows+1 if fps>=target*.97 else 0
 	var before=Vector2(level,scale_3d)
 	if slow_windows>=2:
-		# Remove effects before touching resolution. Never degrade the base mesh.
+		# Automatic mode only adjusts decorative effects. Resolution stays fixed.
 		if level>0:level-=1
 		elif scale_3d>AUTO_MIN_SCALE:scale_3d=AUTO_MIN_SCALE
 	elif fast_windows>=5:
@@ -85,10 +85,10 @@ func _process(dt:float):
 	var fps=frames/elapsed;elapsed=0.;frames=0
 	var cap=int(game.profile.get("frame_limit",60));var target=float(mini(cap,60) if cap>0 else 60)
 	if observe(fps,target):
-		# Auto only changes bounded effect budgets and render scale. Traversing every
+		# Auto only changes bounded effect budgets. Traversing every
 		# mesh/light and replacing materials here caused mid-combat main-thread stalls.
 		GraphicsOptions.detail=int(resolve(game.profile,level).decor_quality)
-		game.apply_display_settings();changed.emit(describe())
+		changed.emit(describe())
 static func apply_settings(game:Node):
 	GraphicsOptions.apply(game);game.apply_display_settings();game.save_profile()
 	if is_instance_valid(game.web_graphics):

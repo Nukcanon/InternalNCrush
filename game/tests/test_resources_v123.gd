@@ -25,6 +25,9 @@ func run():
 		expect(s.objects<=samples[1].objects+8,"objects stop growing after warmup")
 		expect(s.resources<=samples[1].resources+2,"resources stop growing after warmup")
 		expect(s.nodes==samples[1].nodes,"node count constant")
+	var first=fx.tracers[0].node
+	fx.clear(true);await process_frame;await process_frame
+	expect(fx.tracers.size()==96 and fx.tracers[0].node==first and not first.visible,"round cleanup reuses invisible tracer pool")
 	fx.clear();await process_frame;await process_frame
 	expect(fx.get_child_count()==0 and fx.tracers.is_empty(),"clear releases pooled nodes")
 	fx.free();stream.free();await process_frame

@@ -1,6 +1,6 @@
-# Internal N Crush 1.1.5
+# Internal N Crush 1.2.3
 
-1.1.5 restores detailed native models and materials while keeping the Web build lightweight. It adds full-HD battle backgrounds, clearer impact feedback, larger first-person hands and arms, centred skill badges, low-step traversal and stable spread-body deaths along bullet travel. Existing gameplay, touch controls and arcade ballistics are retained. See [release notes](game/docs/RELEASE_NOTES_V115.md), [validation](VALIDATION_V115.md) and [publication status](PUBLICATION_STATUS.json) for the exact source commit, checksums and test scope.
+Continued from the published 1.2.2 source and the preserved 1.2.3 recovery branch. See [release notes](RELEASE_NOTES_V123.md), [validation](VALIDATION_V123.md), and [publication status](PUBLICATION_STATUS.json) for changes and exact delivery status.
 
 Windows / Web tactical FPS with six operators, 31 competitive arenas and a four-level outdoor practice range. Godot 4.4.1. The player hosting a room runs the authoritative game; the lightweight lobby only provides room discovery and WebRTC signaling.
 

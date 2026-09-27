@@ -337,14 +337,14 @@ func lobby():
 	if int(game.options.mode)!=4:button("병과 · 무기 · 가젯",gear,actions)
 	button("팀 편성",teams_menu,actions);button("참가자 관리",members_menu,actions)
 	actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);pin_actions(actions)
-	if game.server or int(game.options.get("room_owner",0))==game.local_id:button("경기 시작",func():game.command("start",{}),actions)
+	if TeamBalance.host(game,game.local_id):button("경기 시작",func():game.command("start",{}),actions)
 	else:label("방장이 경기를 시작하면 참여합니다.",15)
 	button("방 나가기",func():game.request_leave(),actions);notice_label=label("",14)
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 func teams_menu():
 	make_panel("팀 편성",1100);screen="teams"
 	label("팀은 직접 변경합니다. 방장은 봇도 이동할 수 있으며, 인원이 불균형해지는 이동은 제한됩니다.",15)
-	if game.server:option("다음 경기 편성",["현재 팀 유지","무작위","기록으로 균형 편성"],game.options.next_teams,func(i):game.command("team_policy",{"next_teams":i}))
+	if TeamBalance.host(game,game.local_id):option("다음 경기 편성",["현재 팀 유지","무작위","기록으로 균형 편성"],game.options.next_teams,func(i):game.command("team_policy",{"next_teams":i}))
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 	button("돌아가기",func():
 		if game.phase=="lobby":lobby()
@@ -352,7 +352,7 @@ func teams_menu():
 	notice_label=label("",14)
 func refresh_teams():
 	if not is_instance_valid(team_columns):return
-	var signature=str(game.players.keys())+str(game.options.mode)
+	var signature=str(game.players.keys())+str(game.options.mode)+str(game.options.get("room_owner",1))
 	for p in game.players.values():signature+=str([p.id,p.team,p.role,p.nick])
 	if signature==team_signature:return
 	team_signature=signature
@@ -368,14 +368,14 @@ func refresh_teams():
 			if allowed and game.options.mode!=1:
 				var pid=int(p.id);var target=1-side
 				var full=game.team_count(target)>=16
-				var move=button("교환…" if full and game.server else "→ "+("BLUE" if target==0 else "ORANGE"),func():
-					if full and game.server:team_swap_menu(pid)
+				var move=button("교환…" if full and TeamBalance.host(game,game.local_id) else "→ "+("BLUE" if target==0 else "ORANGE"),func():
+					if full and TeamBalance.host(game,game.local_id):team_swap_menu(pid)
 					else:game.command("team",{"player_id":pid,"team":target}),row)
 				move.disabled=not TeamBalance.can_move(game,game.local_id,pid,target);move.custom_minimum_size.y=28;move.add_theme_font_size_override("font_size",13)
 		if game.phase=="lobby" and game.players.has(game.local_id) and game.players[game.local_id].team!=side and game.options.mode!=1:
 			var selected=side;button("이 팀으로 참가",func():game.command("team",{"team":selected}),box)
 func team_swap_menu(first:int):
-	if not game.server or not game.players.has(first):return
+	if not TeamBalance.host(game,game.local_id) or not game.players.has(first):return
 	make_panel("참가자 팀 교환",780)
 	label(game.players[first].nick+"와 팀을 바꿀 상대를 선택하세요. 양 팀의 인원수는 유지됩니다.",18)
 	var ids=[];var names=[]
@@ -491,15 +491,15 @@ func members_menu():
 	notice_label=label("",17)
 func refresh_members():
 	if screen!="members" or not is_instance_valid(room_list):return
-	var signature=str(game.players.keys())
+	var signature=str(game.players.keys())+str(game.options.get("room_owner",1))
 	if signature==member_signature:return
 	member_signature=signature
 	for node in room_list.get_children():room_list.remove_child(node);node.queue_free()
 	for p in game.players.values():
 		var row=HBoxContainer.new();room_list.add_child(row);var pid=int(p.id)
-		var name=label(p.nick+(" · 방장" if pid==1 else " · 나" if pid==game.local_id else ""),20,row);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.modulate=Color("78caff") if p.team==0 else Color("ffb376")
-		if pid!=1 and pid!=game.local_id:
-			if game.server:button("강퇴",func():game.command("kick",{"target":pid}),row)
+		var name=label(p.nick+(" · 방장" if TeamBalance.host(game,pid) else " · 나" if pid==game.local_id else ""),20,row);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.modulate=Color("78caff") if p.team==0 else Color("ffb376")
+		if not TeamBalance.host(game,pid) and pid!=game.local_id:
+			if TeamBalance.host(game,game.local_id) and not p.get("auto_balance",false):button("강퇴",func():game.command("kick",{"target":pid}),row)
 			if pid>0:button("강퇴 투표",func():game.command("vote_kick",{"target":pid}),row)
 func refresh_vote():
 	if game.vote.is_empty():
@@ -768,7 +768,7 @@ func refresh():
 	if p.get("invulnerable",0)>game.clock:interaction_hint.text="무적 보호 · %.1f초"%(p.invulnerable-game.clock);interaction_hint.visible=true
 	kill_feed.refresh(game.kill_events,game.local_id,Time.get_ticks_msec())
 	stats.text="%d FPS  ·  %s"%[Engine.get_frames_per_second(),"HOST" if game.server else str(game.ping_ms)+" ms"]
-	var secs=maxi(0,int(game.remaining));status.text="%02d:%02d"%[secs/60,secs%60]
+	var secs=maxi(0,int(game.remaining));status.text="∞" if game.remaining>=1e10 else "%02d:%02d"%[secs/60,secs%60]
 	hud_blue.text="BLUE %d"%game.scores[0];hud_orange.text="%d ORANGE"%game.scores[1]
 	hud_blue.visible=not game.options.get("practice",false);hud_orange.visible=hud_blue.visible
 	if game.options.get("practice",false):status.text="FIELD ACADEMY  ·  자유 연습"
@@ -784,7 +784,7 @@ func refresh():
 	if p.reload>game.clock:ammo.text="재장전 %.1f"%(p.reload-game.clock)
 	health.add_theme_color_override("font_color",Color("6bc7ff") if p.team==0 else Color("ffa35f"))
 	var skill="준비" if p.skill_ready<=game.clock else "%.0f초"%ceil(p.skill_ready-game.clock)
-	if GrenadeLogic.equipped(p) and p.slot==2:weapon_title.text="파편 수류탄";ammo.text="누르고 준비 · 놓아 투척"
+	if GrenadeLogic.equipped(p) and p.slot==2:weapon_title.text=GadgetLoadout.label(p);ammo.text="누르고 준비 · 놓아 투척"
 	if p.get("cooking",0)>0:weapon_title.text="수류탄 안전핀 해제";ammo.text="%.1f초 · 놓아 투척"%maxf(0.,GrenadeLogic.FUSE-game.clock+float(p.grenade_started))
 	ammo.add_theme_font_size_override("font_size",16 if p.slot>=2 or p.get("cooking",0)>0 else 26 if p.reload>game.clock else 30)
 	ammo.visible=p.slot>=2 or p.get("cooking",0)>0 or p.reload>game.clock
@@ -804,7 +804,9 @@ func refresh():
 	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 설정"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
 	if not p.get("pending_loadout",{}).is_empty():info.text+="   ·   다음 부활 장비 예약됨"
-	if not GadgetLoadout.selectable(p):slots[2].text=""
+	if not GadgetLoadout.selectable(p):
+		slots[2].text=""
+		if p.slot==2 and not GadgetLoadout.held_visible(p,game.clock):weapon_title.text="";ammo.hide()
 	if not p.get("owned_primary",true):slots[0].text=""
 	if not p.alive:info.text="마우스: 관전 시점   ·   클릭: 관전 대상 변경   ·   B 다음 병과/장비"
 	reticle.queue_redraw()

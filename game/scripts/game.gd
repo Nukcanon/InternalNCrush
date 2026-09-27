@@ -1418,7 +1418,7 @@ func broadcast_state(force:bool,target_peer:int=0):
 	var state={"map":options.map,"result":result,"overtime_attacker":overtime_attacker,"capture_elapsed":capture_elapsed,"completed_games":completed_games,"control_leg":control_leg,"clock":clock,"phase":phase,"remaining":remaining,"scores":scores,"tickets":tickets,"round":round_no,"players":list,"devices":devices,"fields":fields,"drops":drops,"zones":zone_owner,"supplies":supplies,"bomb":bomb,"props":arena.prop_states(),"doors":arena.door_states(),"grenades":grenades,"rockets":rockets}
 	if multiplayer.get_peers().size()>0:
 		snapshot_sequence+=1;state.sequence=snapshot_sequence
-		state.team_policy={"teams":options.teams,"next_teams":options.next_teams};state.vote=vote
+		state.team_policy={"teams":options.teams,"next_teams":options.next_teams,"room_owner":options.get("room_owner",1)};state.vote=vote
 		var packed=var_to_bytes(state).compress(FileAccess.COMPRESSION_DEFLATE)
 		var parts=int(ceil(packed.size()/1000.0))
 		for peer in multiplayer.get_peers():

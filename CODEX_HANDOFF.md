@@ -1,34 +1,13 @@
-# Internal N Crush 1.1.5 handoff
+# Internal N Crush 1.2.3 recovery handoff
 
-## Required behavior
+Resume only the fetched 1.2.2 baseline `fb6c32aafc1bb5a5467ae45346fa87fe51e05472` and branch `work/v1.2.3-stability-20260927`. Recovery base `da2424b`, first continuation checkpoint `b4efed1`. Do not restore old 1.1.x game or website files.
 
-The owner authorized fixing both repositories, validating with Godot, and publishing 1.1.5 and the homepage. Native graphics must retain the detailed original 1.1.4 models/materials with moderate optimization. Web is independently lightweight. Do not flatten native graphics to the Web profile again, simplify audio, or remove game modes, bots, practice or kill replay.
+Native and Web use the same rules/network contract but separate baked graphics. Native preserves detailed anatomy/materials; Web staging uses CartoonModel and reduced assets. Never copy lightweight assets back to `game/`. Menu photographs are unchanged approved 1.2.2 build artifacts, not newly invented replacement images.
 
-Original 1.1.4 reference: `3e87f868e10cefa98db9723096fcfe4b55f25710`, tag `internal-n-crush-v1.1.4`. The 1.1.5 runtime source is `8f1ca92fd1c2ca3a77c2f330107c5f19bdf1e761`; game code is identical to validated baseline `6cb202107915f61fa74b7a31e362dc25875f6ae6`. Later documentation/publication commits do not change that runtime. Exact publication details are in `PUBLICATION_STATUS.json`.
+Read `WORK_V123.md`, `RELEASE_NOTES_V123.md` and `VALIDATION_V123.md` for acceptance and test evidence. Current runtime changes implement the recovered requirements; publication remains 1.2.2 while final release gates run. The 1.2.3 source version is a candidate, not proof of publication.
 
-## Implemented
+Local functional regressions, native rendering, browser repeated-play, ENet gameplay/rotation/reconnect and WebRTC loopback passed. Native and Web resource counts stay bounded during measured sessions. Godot 4.4.1 reports native texture warnings / Web allocator warning during fixture shutdown; these are recorded, not hidden. Low-end/mobile FPS, many-hour play and external WAN/NAT remain unverified. Do not promise crash-free or AAA visual quality.
 
-- Native: original detailed HumanModel and material paths restored. Skin stays painted instead of photographic. The medium preset balances lighting/shadows while preserving geometry and finishes. Native menu shows real bot combat and removes it when starting gameplay.
-- Native defaults: current monitor resolution, fullscreen and medium graphics; a one-time 115 profile migration applies these, then saved settings are respected. The restore button says **기본설정으로 복원**.
-- Web: isolated staging selects lightweight models/materials via `application/config/web_assets`; it does not mutate native source assets. Fixed grazing-angle ink shading that made distant floors/objects excessively dark, plus minimum lighting brightness. Automatic graphics remains the default and retains user presets/options.
-- Web menu: 12 actual 1920×1080 bot-combat captures, shuffled crossfades, two resident textures, no live menu simulation. Capture checks firing recency, opponent distance and unobstructed viewpoints.
-- Original audio generation was not simplified. Reserved feedback voices protect hit/hurt/deployment cues from gunfire voice stealing. Deployment events use reliable delivery. Turret damage triggers enemy hit feedback just like character damage.
-- Native death physics has selectable quality; authoritative movable props remain pushable/shootable. Both death systems keep exaggerated motion **along bullet travel**, then lie flat with spread limbs. This direction was already intentional, not a bug to reverse.
-- Native ragdoll uses whole-chain settling for quiet/wedged persistent contacts, bounded velocities, damping, continuous collision detection and mutual limb collision exceptions. Lightweight Web death uses one collider and animated fall. Narrow-wall and airborne regression cases are included.
-- Grounded actors traverse static steps up to 28 cm automatically; higher obstacles, airborne movement, ceilings and movable props do not receive this shortcut.
-- Bullet marks: chipped dark core on Web; additional cracks, grain and rim detail on native. These are visual decals, not destructive collision holes.
-- First-person hands enlarged 32%; forearm thickness increased about 43%; weapon scale and aim alignment preserved.
-- Skill icons centred from real path bounds with shallow embossed shading. Disabled/cooldown state colors preserved.
-- Earlier cooldown/turret replacement, deployment, scrolling, touch sprint toggle, slide, aim assistance, kill-feed, UI wording, mild bullet drop and Web clarity changes are retained.
+Next: final candidate CI, packaged Windows execution, Web rendered repeat test, exact-source Windows/Web/NAS release and website installer. Fetch both remotes before publication, preserve concurrent changes, verify source SHA and archive/file hashes. Root publication status must be updated with actual successful run IDs and assets after release.
 
-## Validation and deployment
-
-See `VALIDATION_V115.md` for test scope and `PUBLICATION_STATUS.json` for exact results/assets. The build workflow validates native/Web rendering, motion and ragdolls, captures review images, checks actual audio PCM, runs all functional/network/touch tests, then exports Windows/Web/NAS and creates a draft release. The publication workflow verifies the successful build, source SHA and asset hashes before exposing the draft. The site installer verifies archive and individual file hashes, installs hashed runtime filenames, and requests Pages publication.
-
-Hardware limitations: Windows executable interaction on the owner's monitor, low-end GPU frame rates, physical mobile controls/performance and real WAN/NAT multiplayer are not covered by Linux automation. Do not describe these as verified. Do not infer benchmark improvements from export success.
-
-## Maintenance cautions
-
-Both GitHub repositories contain more files than the local partial editing workspace. Always create trees from the current remote base tree and fast-forward refs; never replace a tree from a partial file listing. Fetch the current branch first.
-
-The build workflow refuses to overwrite a published 1.1.5 release. Future runtime changes need an explicit release strategy/version decision. Root documentation commits do not trigger the full game build. The original 1.1.4 source tag remains available for comparison.
+Female operators are SERA (role 1) and MINA (role 5). Chin/hair and thumbnails changed; compare `validation/v123/` native/Web captures. Character appearance remains stylized and is not a photorealistic copy of the supplied portrait.

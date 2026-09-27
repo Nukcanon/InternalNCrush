@@ -76,9 +76,10 @@ func layout_actions(p:Dictionary):
 	var actions=["use"]
 	if GadgetLoadout.selectable(p) or p.get("cooking",0)>0 or p.get("placing","")=="cover":actions.push_front("gadget")
 	else:buttons.erase("gadget");held.gadget=false
-	var font=game.ui.theme.default_font
+	var font=game.ui.theme.default_font if is_instance_valid(game) and is_instance_valid(game.ui) else ThemeDB.fallback_font
 	for action in ["sprint","auto_fire"]:
-		var title=("달리기 " if action=="sprint" else "자동 발사 ")+("OFF" if not held.get(action,false) else "ON")
+		var toggled=held.get(action,false) if action=="sprint" else game.profile.get("touch_auto_fire",false) if is_instance_valid(game) else false
+		var title=("달리기 " if action=="sprint" else "자동 발사 ")+("ON" if toggled else "OFF")
 		var width=font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,22).x+22
 		buttons[action]=Rect2(190.-width*.5,350. if action=="sprint" else 260.,width,70.)
 	if int(p.role)==5 and p.primary in ["m2","m3"]:actions.append("medical")
@@ -181,7 +182,7 @@ func apply_input(actor:Actor,on:bool):
 				game.trigger_seq+=1;actor.input_state.trigger_seq=game.trigger_seq;auto_trigger_at=game.clock+maxf(.08,float(w.interval))
 func _draw():
 	if not visible:return
-	var font=game.ui.theme.default_font
+	var font=game.ui.theme.default_font if is_instance_valid(game) and is_instance_valid(game.ui) else ThemeDB.fallback_font
 	var labels={"fire":"발사","melee":"근접","reload":"재장전","ads":"조준","jump":"점프","crouch":"앉기","sprint":"달리기 ON" if held.get("sprint",false) else "달리기 OFF","slide":"슬라이딩","skill":"스킬","gadget":"가젯","use":"상호작용","medical":"범위 회복","gear":"병과 / 장비","gadget_mode":"연막 / 섬광","bomb":"폭탄 해체" if game.bomb.get("planted",false) else "폭탄 설치","auto_fire":"자동 발사 ON" if game.profile.get("touch_auto_fire",false) else "자동 발사 OFF","menu":"메뉴","score":"기록"}
 	var p=game.players.get(game.local_id,{})
 	labels.zoom_in="배율 +";labels.zoom_out="배율 −"

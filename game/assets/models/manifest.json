@@ -129,7 +129,7 @@
 			"team": 1
 		}
 	],
-	"style": "Original low-poly comic operators, three paint bands, no skin photographs or joint physics",
+	"style": "CC0 anatomical operators with original clothing, painted skin and GPU skinning",
 	"weapons": [
 		{
 			"id": "a1",
@@ -250,6 +250,10 @@
 		{
 			"id": "h4",
 			"name": "COMET"
+		},
+		{
+			"id": "dual_pistols",
+			"name": "DUET"
 		}
 	]
 }

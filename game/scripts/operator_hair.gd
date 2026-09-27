@@ -2,7 +2,7 @@ class_name OperatorHair
 extends RefCounted
 ## Original fitted cap, painted bangs and tied hair; baked with the character.
 static func build(parent:Node3D,role:int,web:bool):
-	var color=Color("24262e") if role==1 else Color("2c2429")
+	var color=Color("393a43") if role==1 else Color("453b3e")
 	var sides=16 if web else 32
 	var rings=5 if web else 9
 	var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES);st.set_smooth_group(0)

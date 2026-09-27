@@ -10,8 +10,8 @@ func run():
 	var world=Node3D.new();root.add_child(world)
 	for id in Catalog.weapons:
 		var gun=WeaponVisual.new();world.add_child(gun);gun.build(Catalog.get_weapon(id),true,false)
-		expect(gun.support_rig.handed_mesh.scale.x==-1. and gun.firing_rig.handed_mesh.scale.x==1.,"distinct anatomical left/right hands: "+id)
-		expect(is_equal_approx(gun.support_rig.basis.get_scale().length()/gun.firing_rig.basis.get_scale().length(),WeaponHand.SUPPORT_SCALE),"proportional support hand enlargement: "+id)
+		expect(gun.dual_guns[1].scale.x==-1. and gun.dual_guns[0].scale.x==1. if not gun.dual_guns.is_empty() else gun.support_rig.handed_mesh.scale.x==-1. and gun.firing_rig.handed_mesh.scale.x==1.,"distinct anatomical left/right hands: "+id)
+		expect(is_equal_approx(gun.support_rig.basis.get_scale().length()/gun.firing_rig.basis.get_scale().length(),(1. if not gun.dual_guns.is_empty() else WeaponHand.SUPPORT_SCALE)),"appropriate grip hand proportions: "+id)
 		for hand in [-1.,1.]:
 			gun.scale.x=hand
 			for phase in [-1.,.10,.30,.45,.60,.78,.90,1.]:

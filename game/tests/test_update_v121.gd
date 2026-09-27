@@ -14,10 +14,10 @@ func run():
 	var touch=TouchControls.new();root.add_child(touch)
 	for role in range(6):
 		for primary in ["m1","m2","m3","a1"]:
-			touch.layout_actions({"role":role,"primary":primary})
+			touch.layout_actions({"role":role,"primary":primary,"gadget":0,"gadget_count":1})
 			expect(touch.buttons.has("medical")==bool(role==5 and primary in ["m2","m3"]),"medical action visibility")
 			expect(touch.buttons.has("skill") and touch.buttons.skill.position.x>touch.buttons.use.position.x,"skill always present at row right")
-			var first:Rect2=touch.buttons.gadget;var last:Rect2=touch.buttons.skill
+			var first:Rect2=touch.buttons.get("gadget",touch.buttons.use);var last:Rect2=touch.buttons.skill
 			expect(is_equal_approx((first.position.x+last.end.x)*.5,640.),"dynamic row centered")
 	expect(touch.buttons.melee.size==touch.buttons.ads.size,"melee has full-sized action target")
 	expect(touch.buttons.gear.end.x<touch.buttons.score.position.x and touch.buttons.gear.position.y==touch.buttons.score.position.y,"gear beside score")

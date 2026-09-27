@@ -228,6 +228,7 @@ func build(w:Dictionary,hands=true,use_cache=true):
 	if hands:
 		for mesh in find_children("*","MeshInstance3D",true,false):mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func restore_web_model(w:Dictionary,hands:bool) -> bool:
+	if w.get("dual",false):build_dual(w,hands,false);return true
 	var id=""
 	for key in Catalog.weapons:
 		if Catalog.weapons[key].name==w.name:id=key;break
@@ -458,8 +459,11 @@ func build_dual(w:Dictionary,hands:bool,pose_only:bool):
 		if hands:gun.left_hand.hide();gun.support_arm.hide()
 		dual_guns.append(gun)
 	right_hand=dual_guns[0].right_hand;left_hand=dual_guns[1].right_hand
+	if hands:
+		firing_rig=dual_guns[0].firing_rig;support_rig=dual_guns[1].firing_rig
 	magazine=dual_guns[0].magazine;action_part=dual_guns[0].action_part;barrel_group=dual_guns[0].barrel_group
 	muzzle=dual_guns[0].muzzle;flash=dual_guns[0].flash
+	mag_origin=dual_guns[0].mag_origin;action_origin=dual_guns[0].action_origin
 func animate_dual(t:float,recoil:float,shot_age:float):
 	for index in range(2):
 		var gun=dual_guns[index];var side=1. if index==0 else -1.

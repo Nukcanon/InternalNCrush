@@ -43,7 +43,7 @@ func run():
 	expect(samples[-1].nodes<samples[3].nodes+400,"round/replay nodes bounded after warm-up")
 	expect(samples[-1].resources<samples[3].resources+160,"round/replay resources bounded after warm-up")
 	expect(samples[-1].static_bytes<samples[3].static_bytes+32*1024*1024,"round/replay static memory bounded")
-	g.leave_game();g.queue_free();await get_tree().process_frame
+	g.leave_game();g.queue_free();await get_tree().process_frame;await tick_for(1.)
 	var result="SESSION_RESULT failures=%d replays=%d"%[failures,replay_count];print(result)
 	if OS.has_feature("web"):JavaScriptBridge.eval("document.body.dataset.result="+JSON.stringify(result))
 	get_tree().quit(1 if failures else 0)

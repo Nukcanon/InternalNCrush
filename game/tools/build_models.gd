@@ -3,7 +3,7 @@ func _initialize():call_deferred("run")
 func run():
 	Catalog.load_all();DirAccess.make_dir_recursive_absolute("res://assets/models")
 	var art_source="--with-art-source" in OS.get_cmdline_user_args()
-	var manifest={"license":"Original equipment + CC0 MakeHuman-derived anatomy; see assets/human/source/LICENSE.md","style":"Original low-poly comic operators, three paint bands, no skin photographs or joint physics","operators":[],"weapons":[],"animations":["idle","walk","run","crouch","crouch_walk","jump","fall","fire","reload","hit","land","death","fall_back","fall_front","fall_left","fall_right","fall_fold"]}
+	var manifest={"license":"Original equipment + CC0 MakeHuman-derived anatomy; see assets/human/source/LICENSE.md","style":"Original low-poly comic operators, three paint bands" if RenderStyle.web() else "CC0 anatomical operators with original clothing, painted skin and GPU skinning","operators":[],"weapons":[],"animations":["idle","walk","run","crouch","crouch_walk","jump","fall","fire","reload","hit","land","death","fall_back","fall_front","fall_left","fall_right","fall_fold"]}
 	for role in range(6):
 		for team in range(2):
 			var node=CharacterVisual.make_rig(role,team);root.add_child(node)

@@ -16,10 +16,15 @@ var tracer_materials:Array=[]
 var blood:BloodFX
 static var cloud_shader:Shader
 const M=preload("res://scripts/mesh_factory.gd")
-func clear():
-	for child in get_children():child.queue_free()
+func clear(keep_tracers:bool=false):
+	var pooled={}
+	if keep_tracers:
+		for item in tracers:item.node.hide();item.until=0;pooled[item.node]=true
+	for child in get_children():
+		if not pooled.has(child):child.queue_free()
 	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();rocket_nodes.clear();active_lights=0
-	tracers.clear();tracer_cursor=0
+	if not keep_tracers:tracers.clear()
+	tracer_cursor=0
 	blood=null;bomb_visual=null;bomb_beep_at=0.
 func blood_hit(point:Vector3,direction:Vector3,amount:float):
 	if not GraphicsOptions.blood_enabled:return

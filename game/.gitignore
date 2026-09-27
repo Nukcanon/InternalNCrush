@@ -13,3 +13,7 @@ addons/webrtc_native/lib/
 assets/arenas/geometry/
 
 assets/arenas/complete/
+
+# Reused approved build artifact; CI downloads exact 1.2.2 images.
+assets/menu_slides/
+tools/announcer/*.wav.import

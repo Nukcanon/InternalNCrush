@@ -66,6 +66,7 @@ func follow_bullet(progress:float):
 	camera.position=desired;camera.look_at(end);camera.fov=68.;gun.hide()
 func prepare():
 	if is_instance_valid(stage):return
+	map_instance=game.arena.get_instance_id() if is_instance_valid(game.arena) else 0
 	stage=Node3D.new();stage.name="ReplayActors";game.add_child(stage);stage.visible=false;stage.process_mode=Node.PROCESS_MODE_DISABLED
 	fx=CombatFX.new();stage.add_child(fx)
 	camera=Camera3D.new();camera.fov=82.;camera.near=.04;camera.far=300.;stage.add_child(camera)
@@ -136,7 +137,7 @@ func request(kill:Dictionary):
 	pending=kill.duplicate();pending_delay=.04
 func _process(dt):
 	warm_clock-=dt
-	if game.phase in ["combat","lobby"] and not game.demo_mode and warm_clock<=0.:
+	if game.phase in ["combat","lobby","buy"] and not game.demo_mode and warm_clock<=0.:
 		warm_one();warm_clock=.05 if OS.has_feature("web") else .025
 	if not pending.is_empty():
 		pending_delay-=dt
@@ -269,15 +270,18 @@ func finish():
 	if is_instance_valid(melee_view):melee_view.hide();melee_view.queue_free();melee_view=null
 	if is_instance_valid(melee_world):melee_world.hide();melee_world.queue_free();melee_world=null
 	var was_active=active;active=false;frames.clear()
-	if is_instance_valid(stage):stage.hide();stage.process_mode=Node.PROCESS_MODE_DISABLED;camera.current=false;fx.clear()
+	if is_instance_valid(stage):stage.hide();stage.process_mode=Node.PROCESS_MODE_DISABLED;camera.current=false;fx.clear(true)
 	if is_instance_valid(overlay):overlay.hide()
 	for weapon in first_person_guns.values():weapon.hide()
 	for model in models.values():
 		for child in model.get_node("Body").socket.get_children():
 			if child is WeaponVisual:child.show()
 	if was_active:hide_live(false);game.update_spectator()
-func reset():
+func reset(keep_models:bool=false):
 	pending={};history.clear();shot_history.clear();finish()
+	if keep_models and is_instance_valid(stage) and is_instance_valid(game.arena) and map_instance==game.arena.get_instance_id():
+		for node in ghost_devices.values():node.queue_free()
+		ghost_devices.clear();return
 	if is_instance_valid(stage):stage.queue_free()
 	if is_instance_valid(overlay):overlay.queue_free()
 	stage=null;overlay=null;models.clear();signatures.clear();first_person_guns.clear();ghost_props.clear();ghost_devices.clear()
