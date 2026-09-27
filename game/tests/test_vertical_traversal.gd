@@ -5,16 +5,20 @@ func _initialize():call_deferred("run")
 func run():
 	Engine.time_scale=4.
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.dedicated=true;g.server=true;g.phase="lobby"
-	for index in [7,14,16,17,20,27,31]:
+	var maps=[7,14,16,17,20,27,31]
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--maps="):
+			maps=[]
+			for value in arg.trim_prefix("--maps=").split(","):maps.append(int(value))
+	for index in maps:
 		g.options.map_random=false;g.options.map=index;g.build_world()
 		if not g.players.has(-1):g.add_player(-1,"STAIRS","stairs")
 		g.players[-1].role=0;g.players[-1].primary="a1";g.players[-1].protect=0
 		var a=g.actors[-1];var bot=BotAgent.new();bot.setup(g,-1)
 		g.phase="combat";a.position=g.arena.spawn_points[0][3];a.velocity=Vector3.ZERO;a.reset_view(0)
 		await physics_frame;await physics_frame
-		var goals=[g.arena.sites[0],Vector3(0,-3.2,0)]
-		if index==16:goals.insert(1,g.arena.navigation_goals[0])
-		if index in [20,27]:goals=[g.arena.sites[1]]
+		var goals=[g.arena.sites[0]]
+		goals.append_array(g.arena.navigation_goals.filter(func(p):return absf(p.y)>1.))
 		if index==31:goals=[Vector3(-25,4.2,0),Vector3(25,8.4,0),Vector3(-25,12.6,0)]
 		for goal in goals:
 			bot.path.clear();bot.next_path=0.;bot.goal=goal

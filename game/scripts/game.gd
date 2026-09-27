@@ -58,6 +58,7 @@ var control_leg=0
 var next_device=1
 var zone_owner=[-1,-1,-1]
 var zone_capture=[0.0,0.0,0.0]
+var zone_counts=[[0,0],[0,0],[0,0]]
 var bomb={"planted":false,"site":-1,"time":0.0,"actor":0,"progress":0.0,"position":Vector3.ZERO}
 var server=false
 var dedicated=false
@@ -127,6 +128,9 @@ func _ready():
 		profile.menu_animation=true
 		if int(profile.graphics_quality)!=3:profile.merge(GraphicsOptions.PRESETS[clampi(int(profile.graphics_quality),0,2)],true)
 		profile.visual_revision=115
+	if not OS.has_feature("web") and int(profile.get("map_quality_revision",0))<126:
+		if int(profile.graphics_quality)!=3:profile.merge(GraphicsOptions.PRESETS[clampi(int(profile.graphics_quality),0,2)],true)
+		profile.map_quality_revision=126
 	if OS.has_feature("web"):
 		web_graphics=WebGraphics.new();web_graphics.game=self;add_child(web_graphics)
 	if not OS.has_feature("web") and int(profile.display_revision)<115 and DisplayServer.get_name()!="headless":
@@ -267,7 +271,7 @@ func capture_pointer(from_input_event:bool=false):
 	web_pointer_active=OS.has_feature("web")
 	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func pointer_input_active() -> bool:
-	return not is_instance_valid(ui.panel) and (Input.mouse_mode==Input.MOUSE_MODE_CAPTURED or (OS.has_feature("web") and web_pointer_active))
+	return not is_instance_valid(ui.map_viewer) and not Input.is_action_pressed("score") and not is_instance_valid(ui.panel) and (Input.mouse_mode==Input.MOUSE_MODE_CAPTURED or (OS.has_feature("web") and web_pointer_active))
 func setup_input():
 	var binds={"left":KEY_A,"right":KEY_D,"forward":KEY_W,"back":KEY_S,"sprint":KEY_SHIFT,"crouch":KEY_CTRL,"jump":KEY_SPACE,"reload":KEY_R,"use":KEY_E,"skill":KEY_F,"gadget":KEY_G,"gear":KEY_B,"score":KEY_TAB,"primary":KEY_1,"secondary":KEY_2,"medical":KEY_C,"melee":KEY_Q,"item5":KEY_5,"gadget_mode":KEY_V,"item3":KEY_3,"item4":KEY_4}
 	for k in binds:
@@ -573,6 +577,11 @@ func network_discovery():
 			if d is Dictionary and d.get("game")=="RelayStrike":
 				d.ping=maxi(0,Time.get_ticks_msec()-room_search_sent);rooms[ip]=d;ui.update_rooms()
 func _unhandled_input(event):
+	if is_instance_valid(ui.map_viewer):return
+	if event.is_action("score") and not is_instance_valid(ui.panel):
+		if event.is_pressed():Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
+		else:capture_pointer(true)
+		get_viewport().set_input_as_handled();return
 	if is_instance_valid(touch) and (event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag):return
 	if OS.has_feature("web") and not is_instance_valid(touch) and not is_instance_valid(ui.panel) and phase in ["buy","combat","round_end"] and not web_pointer_active and Input.mouse_mode!=Input.MOUSE_MODE_CAPTURED:
 		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
@@ -1325,16 +1334,7 @@ func check_objectives(dt:float):
 				var reserve=[alive[0]+tickets[0],alive[1]+tickets[1]]
 				finish_match("무승부" if reserve[0]==reserve[1] else "BLUE 승리" if reserve[0]>reserve[1] else "ORANGE 승리")
 		3:
-			for i in range(3):
-				var counts=[0,0]
-				for id in players:
-					if players[id].alive and actors[id].position.distance_to(arena.zones[i])<7:counts[players[id].team]+=1
-				if (counts[0]>0)!=(counts[1]>0):
-					var team=0 if counts[0]>0 else 1;zone_capture[i]=clampf(zone_capture[i]+dt*(1 if team==0 else -1),-5,5)
-					if absf(zone_capture[i])>=5 and zone_owner[i]!=team:
-						zone_owner[i]=team
-						for id in players:
-							if players[id].team==team and actors[id].position.distance_to(arena.zones[i])<7:players[id].objective+=2
+			ControlCapture.tick(self,dt)
 			scores=[zone_owner.count(0),zone_owner.count(1)]
 			var all_team=0 if scores[0]==3 else 1 if scores[1]==3 else -1
 			if all_team!=capture_team:capture_elapsed=0.;capture_team=all_team
@@ -1363,7 +1363,7 @@ func start_match(reset_series:bool=true):
 	for p in players.values():
 		p.match_kills=0;p.lives=int(options.lives);p.skill_ready=clock+30. if p.role==5 else 0.;p.initial_skill_until=clock+30.;p.spectator=false;p.can_respawn=true
 		if int(options.mode)==4:DefusalEconomy.reset(p,int(options.starting_cash))
-	enforce_medics();tickets=[int(options.team_respawns),int(options.team_respawns)];scores=[0,0];losses=[0,0];round_no=0;zone_owner=[-1,-1,-1];zone_capture=[0.,0.,0.]
+	enforce_medics();tickets=[int(options.team_respawns),int(options.team_respawns)];scores=[0,0];losses=[0,0];round_no=0;zone_owner=[-1,-1,-1];zone_capture=[0.,0.,0.];zone_counts=[[0,0],[0,0],[0,0]]
 	if int(options.mode)==4:begin_round()
 	else:
 		phase="combat";remaining=ModeOptions.seconds(options)
@@ -1421,7 +1421,7 @@ func broadcast_state(force:bool,target_peer:int=0):
 		var p=players[id];var a=actors[id];var d=p.duplicate();d.erase("token");d.erase("contributors");d.erase("melee_hits");d.pos=a.position;d.yaw=a.aim_yaw;d.pitch=a.aim_pitch;d.crouch=a.input_state.crouch;d.velocity=a.velocity;d.grounded=a.is_on_floor();d.sprint=a.last_sprint;d.ads=a.input_state.ads;d.spread_angle=a.spread_angle;list.append(d)
 	var supplies=[]
 	for s in arena.supplies:supplies.append(s.ready)
-	var state={"map":options.map,"result":result,"overtime_attacker":overtime_attacker,"capture_elapsed":capture_elapsed,"completed_games":completed_games,"control_leg":control_leg,"clock":clock,"phase":phase,"remaining":remaining,"scores":scores,"tickets":tickets,"round":round_no,"players":list,"devices":devices,"fields":fields,"drops":drops,"zones":zone_owner,"supplies":supplies,"bomb":bomb,"props":arena.prop_states(),"doors":arena.door_states(),"grenades":grenades,"rockets":rockets}
+	var state={"map":options.map,"result":result,"overtime_attacker":overtime_attacker,"capture_elapsed":capture_elapsed,"completed_games":completed_games,"control_leg":control_leg,"clock":clock,"phase":phase,"remaining":remaining,"scores":scores,"tickets":tickets,"round":round_no,"players":list,"devices":devices,"fields":fields,"drops":drops,"zones":zone_owner,"zone_capture":zone_capture,"zone_counts":zone_counts,"supplies":supplies,"bomb":bomb,"props":arena.prop_states(),"doors":arena.door_states(),"grenades":grenades,"rockets":rockets}
 	if multiplayer.get_peers().size()>0:
 		snapshot_sequence+=1;state.sequence=snapshot_sequence
 		state.team_policy={"teams":options.teams,"next_teams":options.next_teams,"room_owner":options.get("room_owner",1)};state.vote=vote
@@ -1468,7 +1468,7 @@ func receive_state(s:Dictionary):
 	var old_round=round_no
 	if int(s.round)!=old_round:RoundCleanup.clear(self)
 	result=s.get("result",{"team":-1,"player":0});overtime_attacker=int(s.get("overtime_attacker",0));capture_elapsed=float(s.get("capture_elapsed",0.))
-	vote=s.get("vote",{});clock=s.clock;var old_phase=phase;phase=s.phase;remaining=s.remaining;scores=s.scores;tickets=s.tickets;round_no=s.round;bomb=s.bomb;zone_owner=s.zones;fields=s.fields;drops=s.drops;MatchFlow.update_gate(self)
+	vote=s.get("vote",{});clock=s.clock;var old_phase=phase;phase=s.phase;remaining=s.remaining;scores=s.scores;tickets=s.tickets;round_no=s.round;bomb=s.bomb;zone_owner=s.zones;zone_capture=s.get("zone_capture",[0.,0.,0.]);zone_counts=s.get("zone_counts",[[0,0],[0,0],[0,0]]);fields=s.fields;drops=s.drops;MatchFlow.update_gate(self)
 	var present=[]
 	for p in s.players:
 		var id=int(p.id);var fresh=not players.has(id) or (not players[id].alive and p.alive);present.append(id);players[id]=p;ensure_actor(id);var a=actors[id];a.set_team(int(p.team));a.collision_layer=2 if p.alive else 0
@@ -1543,6 +1543,12 @@ func announce(message:String):
 	announcement.rpc(message)
 @rpc("authority","call_local","reliable",0)
 func announcement(message:String):ui.notice(message)
+@rpc("authority","call_local","reliable",0)
+func zone_announcement(index:int,team:int):
+	if index<0 or index>=3 or team not in [0,1]:return
+	var letter=ControlCapture.LABELS[index]
+	if not dedicated:play_sound("capture_"+("blue" if team==0 else "orange")+"_"+letter.to_lower(),Vector3.ZERO,false)
+	ui.notice(("BLUE" if team==0 else "ORANGE")+" 팀 · "+letter+" 거점 점령")
 @rpc("authority","call_local","reliable",0)
 func bomb_announcement(kind:String):
 	if kind not in ["bomb_planted","bomb_dropped","bomb_defused"]:return

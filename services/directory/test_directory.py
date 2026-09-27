@@ -26,12 +26,12 @@ class DirectoryTests(unittest.TestCase):
         self.assertEqual(self.client.get('/v1/rooms').status_code,401)
         self.assertEqual(self.client.post('/v1/sessions',json={'nick':'x','version':'old'}).status_code,409)
     def test_mode_options_reach_owner_admission(self):
-        settings=dict(mode=4,map=19,minutes=0,target=120,team_respawns=12,capture_hold=45,rounds=6,starting_cash=2100,prep_seconds=25,round_minutes=8,bomb_seconds=75,buy_seconds=90,lives=4,next_teams=2)
+        settings=dict(mode=4,map=19,minutes=0,target=120,team_respawns=12,capture_hold=45,capture_seconds=12,rounds=6,starting_cash=2100,prep_seconds=25,round_minutes=8,bomb_seconds=75,buy_seconds=90,lives=4,next_teams=2)
         room=self.room(**settings)
         admitted=self.ticket(room,self.owner)['room']
         for key,value in settings.items():self.assertEqual(admitted[key],value,key)
     def test_invalid_mode_options(self):
-        for data in [dict(rounds=3),dict(rounds=0),dict(lives=11),dict(minutes=-1),dict(round_minutes=0),dict(target=0),dict(starting_cash=8001),dict(minutes=True),dict(bomb_seconds=29),dict(bomb_seconds=121),dict(buy_seconds=-1),dict(buy_seconds=301),dict(round_minutes=1,buy_seconds=61)]:
+        for data in [dict(capture_seconds=0),dict(capture_seconds=61),dict(rounds=3),dict(rounds=0),dict(lives=11),dict(minutes=-1),dict(round_minutes=0),dict(target=0),dict(starting_cash=8001),dict(minutes=True),dict(bomb_seconds=29),dict(bomb_seconds=121),dict(buy_seconds=-1),dict(buy_seconds=301),dict(round_minutes=1,buy_seconds=61)]:
             self.assertEqual(self.client.post('/v1/rooms',headers=self.owner,json=data).status_code,422)
     def test_room_rules_and_payload_limits(self):
         for data in [{'capacity':32,'map':13},{'capacity':7},{'mode':4,'map':13},{'mode':0,'map':19},{'name':'x'*41}]:

@@ -9,9 +9,13 @@ var serial=0
 var feedback_voices=[]
 var movement_voices=[]
 var blast_voices=[]
+var announcer:AudioStreamPlayer
+var announcement_queue=[]
 signal played(key:String,world:bool)
 const FEEDBACK=["hit","confirm","hurt","armor_hurt","hurt_female","armor_hurt_female","deploy","knife_wall","wrench_wall","knife_flesh","wrench_flesh","wrench_repair"]
 func stop_all():
+	announcement_queue.clear()
+	if is_instance_valid(announcer):announcer.stop();announcer.stream=null
 	for voice in spatial+local+feedback_voices+movement_voices+blast_voices:
 		if is_instance_valid(voice):voice.stop();voice.stream=null
 func _exit_tree():stop_all()
@@ -20,6 +24,7 @@ func _ready():
 		var limiter=AudioEffectLimiter.new();limiter.ceiling_db=-1.;limiter.threshold_db=-2.;AudioServer.add_bus_effect(0,limiter)
 	catalog=JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio_manifest.json"))
 	for key in catalog:streams[key]=load(catalog[key].file)
+	announcer=AudioStreamPlayer.new();add_child(announcer);announcer.finished.connect(_next_announcement)
 	for i in range(56):
 		var player=AudioStreamPlayer3D.new();player.max_distance=90;player.unit_size=6;player.attenuation_model=AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE;add_child(player);spatial.append(player)
 	for i in range(16):var player=AudioStreamPlayer.new();add_child(player);local.append(player)
@@ -29,6 +34,12 @@ func _ready():
 func play(key:String,where:Vector3,world:bool,gain=0.):
 	if DisplayServer.get_name()=="headless":return
 	if not streams.has(key):return
+	if str(catalog[key].category)=="announcer":
+		if key.begins_with("win_"):announcement_queue.clear()
+		if announcement_queue.size()>=8:announcement_queue.pop_front()
+		announcement_queue.append(key)
+		if not announcer.playing:_next_announcement()
+		return
 	if world:
 		var listener=get_viewport().get_camera_3d()
 		if is_instance_valid(listener) and listener.global_position.distance_to(where)>audible_range(key):return
@@ -60,6 +71,11 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 
 func category_gain(category:String) -> float:
 	return clampf(float(profile.get(category,.75)),0,1) if category in ["ui_volume","hit_volume"] else 1.0
+func _next_announcement():
+	if announcement_queue.is_empty():return
+	var key=announcement_queue.pop_front()
+	announcer.stream=streams[key];announcer.pitch_scale=1.;announcer.volume_db=float(catalog[key].gain_db)
+	announcer.play();played.emit(key,false)
 static func audible_range(key:String) -> float:
 	if key in ["explosion","bomb_explosion","flash","smoke"]:return 220.
 	if key=="bomb_beep":return 90.

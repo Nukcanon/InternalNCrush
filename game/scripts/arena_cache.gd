@@ -1,7 +1,7 @@
 class_name ArenaCache
 extends RefCounted
-const REVISION=125
-const FIELDS=["water_rect","has_water","spawn_points","ffa_spawns","sites","zones","obstacles","map_index","indoors","bounds","playable_polygon","walk_surfaces","floor_holes","navigation_goals","navigation_blocks","vertical_map","chunk_count"]
+const REVISION=126
+const FIELDS=["district_surfaces","water_rect","has_water","spawn_points","ffa_spawns","sites","zones","obstacles","map_index","indoors","bounds","playable_polygon","walk_surfaces","floor_holes","navigation_goals","navigation_blocks","vertical_map","chunk_count"]
 static func restore(arena:Node,index:int) -> bool:
 	var path="res://assets/arenas/complete/map_%02d.scn"%index
 	if not ResourceLoader.exists(path):return false
@@ -37,8 +37,8 @@ static func save(arena:Node,path:String) -> Error:
 		source.add_child(child.duplicate())
 	var navigation=BotNavigation.new();navigation.build(arena)
 	var weights={}
-	for x in range(100):
-		for y in range(90):
+	for x in range(navigation.grid.region.size.x):
+		for y in range(navigation.grid.region.size.y):
 			var cell=Vector2i(x,y);var weight=navigation.grid.get_point_weight_scale(cell)
 			if weight!=1.:weights[cell]=weight
 	var points=[]

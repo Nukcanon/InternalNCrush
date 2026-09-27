@@ -33,7 +33,7 @@ static func build(arena:Node):
 	var rng=RandomNumberGenerator.new();rng.seed=641029+arena.map_index*179
 	var navigation=BotNavigation.new();navigation.build(arena)
 	var placed=[];var wanted=clampi(int(arena.bounds.x*arena.bounds.y/75),22,72)
-	var fixed_count=0;var moving_count=0
+	var fixed_count=0;var moving_count=arena.props.size()
 	for attempt in range(1800):
 		if placed.size()>=wanted:break
 		var pos=Vector3(rng.randf_range(-arena.bounds.x+5,arena.bounds.x-5),0,rng.randf_range(-arena.bounds.y+5,arena.bounds.y-5))

@@ -42,6 +42,7 @@ class RoomRequest(StrictModel):
     target: int = Field(default=60, ge=1, le=10000)
     team_respawns: int = Field(default=60, ge=0, le=10000)
     capture_hold: int = Field(default=60, ge=1, le=3600)
+    capture_seconds: int = Field(default=5, ge=1, le=60)
     rounds: int = Field(default=4, ge=2, le=100)
     starting_cash: int = Field(default=800, ge=0, le=8000)
     prep_seconds: int = Field(default=30, ge=5, le=120)
@@ -151,7 +152,7 @@ class Allocator:
                       "max_players": options.capacity, "mode": options.mode,
                       "map_random": options.map_random, "map_rotation": options.map_rotation,
                       "map_size": MAP_CAPACITY[options.map], "rounds": options.rounds,
-                      **{key: getattr(options, key) for key in ("minutes", "target", "team_respawns", "capture_hold", "rounds", "starting_cash", "prep_seconds", "round_minutes", "bomb_seconds", "buy_seconds", "lives", "next_teams")}}}
+                      **{key: getattr(options, key) for key in ("minutes", "target", "team_respawns", "capture_hold","capture_seconds", "rounds", "starting_cash", "prep_seconds", "round_minutes", "bomb_seconds", "buy_seconds", "lives", "next_teams")}}}
             env = os.environ.copy()
             env["INC_ROOM_CONFIG"] = json.dumps(config)
             command = [os.getenv("GODOT", "godot"), "--headless", "--path", str(ROOT / "game"),

@@ -19,7 +19,7 @@ from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSION = os.getenv("GAME_VERSION", "1.2.5")
+VERSION = os.getenv("GAME_VERSION", "1.2.6")
 CAPACITIES = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8]+[8]*6+[12]*6
 
 class SessionInput(BaseModel):
@@ -39,6 +39,7 @@ class RoomInput(BaseModel):
     target: int = Field(default=60, ge=1, le=10000)
     team_respawns: int = Field(default=60, ge=0, le=10000)
     capture_hold: int = Field(default=60, ge=1, le=3600)
+    capture_seconds: int = Field(default=5, ge=1, le=60)
     rounds: int = Field(default=4, ge=2, le=100)
     starting_cash: int = Field(default=800, ge=0, le=8000)
     prep_seconds: int = Field(default=30, ge=5, le=120)

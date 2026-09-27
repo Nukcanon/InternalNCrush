@@ -15,7 +15,7 @@ func run():
 			expect(options.max_players%2==0 and options.max_players<=Rules.MAP_PLAYERS[options.map] and (mode!=4 or options.max_players<=12),"legal mode/capacity %d/%d"%[mode,capacity])
 	for capacity in [6,8,12,16,32]:
 		var rectangles=Rules.maps_for_size(capacity).filter(func(index):return index in MapIdentity.RECTANGLES)
-		expect(rectangles.size()==2,"exactly two rectangular footprints at "+str(capacity))
+		expect(rectangles.size()==1,"exactly one rectangular footprint at "+str(capacity))
 	var signatures={}
 	for index in range(19,32):
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)

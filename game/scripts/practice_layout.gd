@@ -2,8 +2,8 @@ extends RefCounted
 class_name PracticeLayout
 const INDEX=31
 static func build(a:Node):
-	a.bounds=Vector2(44,48);a.has_water=false;a.indoors=false;a.vertical_map=true;a.set_meta("night",false)
-	a.box(Vector3(0,-.4,0),Vector3(88,.8,96),Color("a2acaa"));a.build_perimeter(INDEX)
+	DistrictLayout.build(a,INDEX);a.spawn_points=[[],[]];a.ffa_spawns=[]
+	a.has_water=false;a.indoors=false;a.vertical_map=true;a.set_meta("night",false)
 	var concrete=Color("b8b5a5");var trim=Color("536e7b")
 	# Outdoor range, side service galleries and three genuinely walkable stories.
 	for floor in [4.2,8.4,12.6]:

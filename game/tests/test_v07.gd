@@ -52,11 +52,11 @@ func run():
 	for index in [7,9,16,17]:
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.playable_polygon.size()>4,"map %d has a nonrectangular perimeter"%index)
-		expect(arena.walk_surfaces.size()>=6,"map %d has traversable terraces and ramps"%index)
-		var terrace=arena.sites[1]
+		expect(arena.district_surfaces.size()>=6,"map %d has traversable terraces and ramps"%index)
+		var terrace=arena.navigation_goals.filter(func(p):return p.y>1.5)[0]
 		expect(arena.walk_height(terrace)>1.5,"map %d navigation recognizes terrace elevation"%index)
 		await physics_frame;await physics_frame
-		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(terrace+Vector3.UP*5,terrace-Vector3.UP,1))
+		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(terrace+Vector3.UP*.5,terrace-Vector3.UP*.5,1))
 		expect(not hit.is_empty() and hit.position.y>1.5,"map %d terrace has actual collision"%index)
 		arena.free()
 	var replay=KillReplay.new();replay.game=g;root.add_child(replay);g.phase="combat"

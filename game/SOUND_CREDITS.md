@@ -1,5 +1,11 @@
 # Internal N Crush sound credits
 
+## 1.2.6 female announcer replacement
+
+The former Microsoft Zira/SAPI victory and bomb phrases described in the historical notes below have been replaced. Eleven English cues (Blue/Orange victory, bomb planted/dropped/defused, and each team's capture of A/B/C) are synthesized offline with **hexgrad Kokoro-82M v1.0**, stock female voice `af_heart`, speed 1.04. Model and voice source: https://huggingface.co/hexgrad/Kokoro-82M (Apache-2.0); inference conversion: https://github.com/thewh1teagle/kokoro-onnx . License text is retained at `assets/AUDIO_KOKORO_LICENSE.txt`.
+
+`tools/build_announcer.py` documents resampling, level matching, peak limiting and silence padding. `tools/announcer/provenance.json` records phrases and WAV hashes. These are synthetic voices, not a human performance or an imitation of a particular game actor. Only the generated recordings ship; no neural model, inference library, network voice service or inference workload is included in either game build. The final mix uses a dedicated announcement player, a bounded sequential queue and +10 dB cue gain through the game's existing limiter.
+
 Build sources, including `tools/audio_source.zip` (mono 44.1 kHz PCM) and the editing script, are available at https://github.com/Nukcanon/nukcanon/tree/internal-n-crush-v0.6.0/games/relaystrike. Development source files are not bundled with the playable ZIP. `tools/build_audio.py` documents the complete edits: trimming, pitch/resampling, filtering, layering, short early reflections, fades, and gain staging. No audio from Metal Slug, Call of Duty, Counter-Strike, or VALORANT is included.
 
 - **Q009 — Q009's weapon sounds.** https://opengameart.org/content/q009s-weapon-sounds (pack uploaded by Calinou). License: Creative Commons Attribution-ShareAlike 3.0 Unported, https://creativecommons.org/licenses/by-sa/3.0/. Source files prefixed `q_` derive from this pack. All `assets/audio/gun_*.wav` are adaptations of Q009's sounds, mixed and edited for Internal N Crush, and are distributed under **CC BY-SA 3.0**. The original license text is retained in `assets/AUDIO_Q009_LICENSE.txt`. This license applies to those sound assets, independently of the MIT game code.

@@ -175,5 +175,28 @@
     ],
     "trials": 2,
     "intermittent_long_frames_remain": true
+  },
+  "pending_work": {
+    "candidate_version": "1.2.6",
+    "status": "incomplete_not_published",
+    "publication_authorized_after_completion": true,
+    "validation_notes": "VALIDATION_V126_PARTIAL.md",
+    "passed": {
+      "competitive_navigation_routes": 372,
+      "contact_traversal": 13,
+      "control_capture": 28,
+      "rules": 30,
+      "regressions": 63,
+      "ai_aim": 38,
+      "bots": 6,
+      "native_finish": 238
+    },
+    "outstanding": [
+      "complete map physical traversal and spawn verification",
+      "resolve remaining full functional suite failures",
+      "finish native art/interior review and separate Web bake",
+      "final Windows/Web launch, network and performance/resource soak checks"
+    ],
+    "published_artifacts_unchanged": true
   }
 }

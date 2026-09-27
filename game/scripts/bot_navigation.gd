@@ -19,7 +19,7 @@ func request_route(now:float) -> bool:
 	route_count+=1;return true
 var arena:Node
 func build(world:Node):
-	arena=world;grid.region=Rect2i(0,0,100,90);grid.cell_size=Vector2(2,2);grid.offset=Vector2(-99,-89);grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.default_compute_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.default_estimate_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.update()
+	arena=world;grid.region=Rect2i(0,0,ceili(world.bounds.x),ceili(world.bounds.y));grid.cell_size=Vector2(2,2);grid.offset=-world.bounds+Vector2.ONE;grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.default_compute_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.default_estimate_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.update()
 	if arena.has_meta("navigation_cache"):
 		var cache=arena.get_meta("navigation_cache");static_solid=cache.solid.duplicate();layer_cells=cache.cells.duplicate(true);layer_ground=cache.ground.duplicate()
 		for cell_id in static_solid:grid.set_point_solid(cell_id)
@@ -39,8 +39,8 @@ func build(world:Node):
 				# A small turn allowance covers waypoint tolerance without adding
 				# another whole two-metre cell on each side of every doorway.
 				if rect.grow(.25).has_point(Vector2(sample.x,sample.z)):grid.set_point_solid(id);static_solid[id]=true
-	for x in range(100):
-		for y in range(90):
+	for x in range(grid.region.size.x):
+		for y in range(grid.region.size.y):
 			var id=Vector2i(x,y)
 			var world_point=point(id)
 			if arena.vertical_map:
@@ -55,9 +55,9 @@ func build(world:Node):
 	if arena.vertical_map:build_layers()
 func build_layers():
 	layers.clear();layer_cells.clear();layer_ground.clear()
-	for x in range(100):
-		for z in range(90):
-			var cell_id=Vector2i(x,z);var horizontal=Vector3(-99+x*2,0,-89+z*2)
+	for x in range(grid.region.size.x):
+		for z in range(grid.region.size.y):
+			var cell_id=Vector2i(x,z);var horizontal=Vector3(grid.offset.x+x*2,0,grid.offset.y+z*2)
 			for height in arena.navigation_heights(horizontal):
 				var pos=Vector3(horizontal.x,height,horizontal.z)
 				if not arena.navigation_clear(pos):continue
@@ -77,7 +77,7 @@ func connects_surface(from:Vector3,to:Vector3) -> bool:
 	if absf(from.y-to.y)>1.1:return false
 	# Authored stairs slope along Z. Their sides are vertical slab edges, not
 	# traversable steps; approach a flight through its landing instead.
-	if absf(from.x-to.x)>.1 and absf(from.y-to.y)>.08:return false
+	if not arena.has_meta("district") and absf(from.x-to.x)>.1 and absf(from.y-to.y)>.08:return false
 	var previous=from.y
 	for step in range(1,5):
 		var point=from.lerp(to,step/4.);var height=INF;var best=INF
@@ -86,9 +86,9 @@ func connects_surface(from:Vector3,to:Vector3) -> bool:
 		if not is_finite(height) or absf(height-previous)>.38 or not arena.navigation_clear(Vector3(point.x,height,point.z)):return false
 		previous=height
 	return true
-func cell(pos:Vector3) -> Vector2i:return Vector2i(clampi(int(round((pos.x+99)/2)),0,99),clampi(int(round((pos.z+89)/2)),0,89))
+func cell(pos:Vector3) -> Vector2i:return Vector2i(clampi(roundi((pos.x-grid.offset.x)/2),0,grid.region.size.x-1),clampi(roundi((pos.z-grid.offset.y)/2),0,grid.region.size.y-1))
 func point(id:Vector2i) -> Vector3:
-	var pos=Vector3(-99+id.x*2,0,-89+id.y*2)
+	var pos=Vector3(grid.offset.x+id.x*2,0,grid.offset.y+id.y*2)
 	if is_instance_valid(arena):pos.y=arena.walk_height(pos)
 	return pos
 func nearest(pos:Vector3) -> Vector2i:

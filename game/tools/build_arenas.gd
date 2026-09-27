@@ -12,6 +12,9 @@ func run():
 	DirAccess.make_dir_recursive_absolute("res://assets/arenas/geometry")
 	DirAccess.make_dir_recursive_absolute("res://assets/arenas/complete")
 	var indices=range(Rules.MAPS.size())
+	var signatures={}
+	if FileAccess.file_exists("res://assets/arenas/physics_signatures.json"):
+		signatures=JSON.parse_string(FileAccess.get_file_as_string("res://assets/arenas/physics_signatures.json"))
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--maps="):
 			indices=[]
@@ -24,8 +27,18 @@ func run():
 		if result!=OK:printerr("ARENA_BAKE_FAILED ",index," code=",result);quit(1);return
 		var restored=load("res://assets/arenas/geometry/map_%02d.scn"%index).instantiate();root.add_child(restored)
 		if physics_signature(arena.architecture)!=physics_signature(restored):printerr("ARENA_PHYSICS_MISMATCH ",index);quit(1);return
+		signatures[str(index)]=physics_signature(arena.architecture)
 		restored.free()
 		if ArenaCache.save(arena,"res://assets/arenas/complete/map_%02d.scn"%index)!=OK:quit(2);return
+		if index==PracticeLayout.INDEX:
+			var preview_path="res://assets/arenas/districts/plan_31.json"
+			var preview=JSON.parse_string(FileAccess.get_file_as_string(preview_path));preview.triangles.upper=[]
+			for surface in arena.walk_surfaces:
+				var r:Rect2=surface.rect
+				for p in [r.position,Vector2(r.end.x,r.position.y),r.end,r.position,r.end,Vector2(r.position.x,r.end.y)]:preview.triangles.upper.append([p.x,p.y])
+			preview.spawns=[[0,35],[0,-35]];preview.targets=[[-25,0],[25,0],[0,-18]]
+			var file=FileAccess.open(preview_path,FileAccess.WRITE);file.store_string(JSON.stringify(preview));file.close()
 		print("ARENA_BAKED ",index," ms=",Time.get_ticks_msec()-started)
 		arena.free();await process_frame
+	FileAccess.open("res://assets/arenas/physics_signatures.json",FileAccess.WRITE).store_string(JSON.stringify(signatures,"  "))
 	print("ARENAS_BUILT ",indices.size());quit()

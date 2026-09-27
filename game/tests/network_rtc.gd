@@ -8,7 +8,7 @@ func run():
 	if result.has("error"):printerr(result);quit(1);return
 	var id=""
 	if host:
-		result=await game.internet.request("/v1/rooms",{"name":"RTC TEST","mode":0,"map":13,"capacity":8,"map_random":false,"minutes":0,"target":125,"team_respawns":28,"capture_hold":40,"rounds":6,"starting_cash":1700,"prep_seconds":25,"round_minutes":7,"bomb_seconds":75,"buy_seconds":90,"lives":3,"next_teams":2})
+		result=await game.internet.request("/v1/rooms",{"name":"RTC TEST","mode":0,"map":13,"capacity":8,"map_random":false,"minutes":0,"target":125,"team_respawns":28,"capture_hold":40,"capture_seconds":12,"rounds":6,"starting_cash":1700,"prep_seconds":25,"round_minutes":7,"bomb_seconds":75,"buy_seconds":90,"lives":3,"next_teams":2})
 		id=str(result.get("id",""))
 	else:
 		for attempt in range(60):
@@ -27,8 +27,8 @@ func run():
 		if game.players.size()>=2 and game.phase=="combat":
 			if connected_at<0:connected_at=step
 			if step-connected_at>=8:
-				for key in ["minutes","target","team_respawns","capture_hold","rounds","starting_cash","prep_seconds","round_minutes","bomb_seconds","buy_seconds","lives","next_teams"]:
-					var wanted={"minutes":0,"target":125,"team_respawns":28,"capture_hold":40,"rounds":6,"starting_cash":1700,"prep_seconds":25,"round_minutes":7,"bomb_seconds":75,"buy_seconds":90,"lives":3,"next_teams":2}
+				for key in ["minutes","target","team_respawns","capture_hold","capture_seconds","rounds","starting_cash","prep_seconds","round_minutes","bomb_seconds","buy_seconds","lives","next_teams"]:
+					var wanted={"minutes":0,"target":125,"team_respawns":28,"capture_hold":40,"capture_seconds":12,"rounds":6,"starting_cash":1700,"prep_seconds":25,"round_minutes":7,"bomb_seconds":75,"buy_seconds":90,"lives":3,"next_teams":2}
 					if int(game.options[key])!=int(wanted[key]):printerr("RTC_OPTION_MISMATCH ",key);quit(1);return
 				print("RTC_CONNECTED role=", "host" if host else "client"," players=",game.players.size()," ping=",game.ping_ms," snapshots=",game.received_sequence)
 				if not host and (game.received_sequence<2 or game.ping_ms>4000):quit(1);return

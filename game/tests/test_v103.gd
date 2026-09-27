@@ -55,7 +55,7 @@ func run():
 	var states=g.arena.door_states();door.opened=false;g.arena.receive_doors(states);expect(door.opened,"door snapshot restores open state for joining clients")
 	g.arena.reset_props();expect(not door.opened and door.progress==0.,"new round resets doors")
 	p.use_prev=true;g.spawn(1);expect(not p.use_prev,"respawn resets interaction edge")
-	var blood=BloodFX.new();g.add_child(blood);var point=Vector3(0,1.,g.arena.bounds.y-7.)
+	var blood=BloodFX.new();g.add_child(blood);var point=g.arena.spawn_points[0][0]+Vector3.UP
 	blood.emit_hit(point,Vector3.DOWN,30.);expect(blood.drops.size()>=5 and blood.marks.size()>0,"hit emits droplets and a projected floor stain")
 	for i in range(70):blood.stain(point,Vector3.UP,.15)
 	expect(blood.marks.size()==BloodFX.MAX_MARKS,"blood marks have a fixed performance budget")

@@ -36,20 +36,20 @@ func run():
 		model.free()
 	expect(female==2,"six-role roster contains two female operators")
 	for size in [6,8,16,32]:
-		var flat=Rules.maps_for_size(size).filter(func(index):return not VerticalLayout.enabled(index))
-		expect(flat.size()==1,"one flat map remains for %d players"%size)
+		var rectangular=Rules.maps_for_size(size).filter(func(index):return index in MapIdentity.RECTANGLES)
+		expect(rectangular.size()==1,"one rectangular map remains for %d players"%size)
 	for index in range(19):
-		if not VerticalLayout.enabled(index):continue
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
-		expect(int(arena.get_meta("stair_count",0))>=6 and arena.get_meta("vertical_levels").size()>=3,"map %d has stairs, ground, upper floor and underground"%index)
+		expect(arena.district_surfaces.size()>=6 and arena.navigation_goals.any(func(p):return p.y>4.) and arena.navigation_goals.any(func(p):return p.y< -4.),"map %d has ramps, ground, upper floor and underground"%index)
 		for team in [0,1]:
 			var start=arena.spawn_points[team][3]
 			for goal in arena.navigation_goals:
 				var route=nav.route(start,goal)
 				expect(route.size()>1 and route[-1].distance_to(goal)<2.1,"map %d team %d reaches %s"%[index,team,str(goal)])
 		await physics_frame;await physics_frame
-		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0,-.5,0),Vector3(0,-5,0),1))
-		expect(not hit.is_empty() and absf(hit.position.y+3.2)<.05,"map %d basement has actual walkable floor"%index)
+		var basement=arena.navigation_goals.filter(func(p):return p.y< -4.)[0]
+		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(basement+Vector3.UP*.5,basement-Vector3.UP*.5,1))
+		expect(not hit.is_empty() and absf(hit.position.y-basement.y)<.05,"map %d basement has actual walkable floor"%index)
 		arena.free();await process_frame
 	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=0;g.build_world();g.add_player(1,"TEST","v101_test")
 	var actor=g.actors[1];var p=g.players[1]

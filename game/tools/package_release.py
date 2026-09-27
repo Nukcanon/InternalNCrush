@@ -53,6 +53,7 @@ def package(build_dir: Path, output_dir: Path) -> Path:
         'licenses/MAKEHUMAN_PROVENANCE.md': PROJECT / 'assets/human/CREDITS.md',
         'licenses/AUDIO_Q009_LICENSE.txt': PROJECT / 'assets/AUDIO_Q009_LICENSE.txt',
         'licenses/AUDIO_KENNEY_LICENSE.txt': PROJECT / 'assets/AUDIO_KENNEY_LICENSE.txt',
+        'licenses/AUDIO_KOKORO_LICENSE.txt': PROJECT / 'assets/AUDIO_KOKORO_LICENSE.txt',
         'licenses/SOUND_CREDITS.md': PROJECT / 'SOUND_CREDITS.md',
     }
     library='libwebrtc_native.windows.template_release.x86_64.dll'

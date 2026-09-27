@@ -474,42 +474,90 @@
   "bomb_planted": {
     "file": "res://assets/audio/bomb_planted.wav",
     "category": "announcer",
-    "gain_db": 0,
-    "sha256": "be91c613b12ea7fbab7a271b72bf919670802fd4e59210af9a86f28cf2f30b4e",
-    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
-    "duration": 2.189
+    "gain_db": 10,
+    "sha256": "f6bba29027497f2f55d17004d9b46f29e02339040571ae10ab394321c3d9ec02",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 1.711
   },
   "bomb_dropped": {
     "file": "res://assets/audio/bomb_dropped.wav",
     "category": "announcer",
-    "gain_db": 0,
-    "sha256": "04cbf7b10decf4fbbebc0365190c10074adcc36679c4ff950e4a5f04dda662ec",
-    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
-    "duration": 1.764
+    "gain_db": 10,
+    "sha256": "4224c261d1c51bfa7edd30e8a9d418b05571df0e09c8810ef0ec83ed59e10e05",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 1.711
   },
   "bomb_defused": {
     "file": "res://assets/audio/bomb_defused.wav",
     "category": "announcer",
-    "gain_db": 0,
-    "sha256": "11ad8640922410e3676c426e7768825a70cd00154faca71b05cf0403e26c3dc6",
-    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
-    "duration": 2.389
+    "gain_db": 10,
+    "sha256": "5a09f2e24a9f0f04b20bd90c8fb7912400bd5e978a71623178747504cf43d6b5",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 1.785
   },
   "win_blue": {
     "file": "res://assets/audio/win_blue.wav",
     "category": "announcer",
-    "gain_db": 0,
-    "sha256": "51b9bf04269cc1e2f8e76a1f0b2f2e3f0d3198340d310d077b6992784f26b068",
-    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
-    "duration": 1.789
+    "gain_db": 10,
+    "sha256": "8d03dfbd8a912d8dbd3579cdc0043b370803471ab459470a51b1bda8f0dc5d81",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 1.395
   },
   "win_orange": {
     "file": "res://assets/audio/win_orange.wav",
     "category": "announcer",
-    "gain_db": 0,
-    "sha256": "e39a35f65317f24f1f95da735993f441278bee67aa3ca346d3c8417b5e0392f7",
-    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
-    "duration": 2.009
+    "gain_db": 10,
+    "sha256": "4d274e08e7e1796e2d6608628f5d1a4a49dacbdd346a8252d620e485bb3055a3",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 1.584
+  },
+  "capture_blue_a": {
+    "file": "res://assets/audio/capture_blue_a.wav",
+    "category": "announcer",
+    "gain_db": 10,
+    "sha256": "1b810b566ee33c00cf1e5565e43677197c85eeab1eb57fa17b94abe597aabca3",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 2.062
+  },
+  "capture_blue_b": {
+    "file": "res://assets/audio/capture_blue_b.wav",
+    "category": "announcer",
+    "gain_db": 10,
+    "sha256": "cd46f889adf86b243a457dc97c51a63fb314a4f2ca50edc74e0a54111f0a294f",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 2.167
+  },
+  "capture_blue_c": {
+    "file": "res://assets/audio/capture_blue_c.wav",
+    "category": "announcer",
+    "gain_db": 10,
+    "sha256": "ab0a1e04f49eacddba0a7bfc3f2e00234a9cf89994e9ee90681989baf2113a03",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 2.126
+  },
+  "capture_orange_a": {
+    "file": "res://assets/audio/capture_orange_a.wav",
+    "category": "announcer",
+    "gain_db": 10,
+    "sha256": "05cd5fd1c5446d9086aa610f8430f3f0e0eb250ea03c2e0832b7544f3930baca",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 2.233
+  },
+  "capture_orange_b": {
+    "file": "res://assets/audio/capture_orange_b.wav",
+    "category": "announcer",
+    "gain_db": 10,
+    "sha256": "41a0080ff6bcf5fe7f744c665894150cd4f5a4b34ee7fd0ad98a5ba292399e4b",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 2.295
+  },
+  "capture_orange_c": {
+    "file": "res://assets/audio/capture_orange_c.wav",
+    "category": "announcer",
+    "gain_db": 10,
+    "sha256": "b49c1cc00b5e7d58d8766875d1aaaf1c75585f026acacf90d6deb4ee34174ffa",
+    "license": "Kokoro-82M generated speech; Apache-2.0 model; see SOUND_CREDITS.md",
+    "duration": 2.287
   },
   "bomb_explosion": {
     "file": "res://assets/audio/bomb_explosion.wav",

@@ -16,10 +16,9 @@ func run():
 				g.phase="buy";g.spawn(-1);MatchFlow.update_gate(g)
 				await physics_frame;await physics_frame
 				if side==0:g.phase="combat";MatchFlow.update_gate(g)
-				var target_index=-1
-				for link in spec.links:
-					if side in link:target_index=link[1] if link[0]==side else link[0];break
-				var target=Vector3(spec.points[target_index].x,0,spec.points[target_index].y)
+				# A real objective lies beyond the entire spawn enclosure; the first
+				# graph junction can legitimately be inside that enclosure.
+				var target=g.arena.sites[side]
 				var bot=BotAgent.new();bot.setup(g,-1);var rect=MatchFlow.spawn_rect(g,p.team).grow(2.)
 				for step in range(600):
 					var dt=Engine.time_scale/Engine.physics_ticks_per_second;g.clock+=dt

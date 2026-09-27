@@ -1,0 +1,65 @@
+{
+  "model": "Kokoro-82M v1.0",
+  "voice": "af_heart",
+  "license": "Apache-2.0",
+  "source": "https://huggingface.co/hexgrad/Kokoro-82M",
+  "phrases": {
+    "win_blue": "Blue team wins!",
+    "win_orange": "Orange team wins!",
+    "bomb_planted": "The bomb has been planted.",
+    "bomb_defused": "The bomb has been defused.",
+    "bomb_dropped": "The bomb has been dropped.",
+    "capture_blue_a": "Blue team has captured point A.",
+    "capture_blue_b": "Blue team has captured point B.",
+    "capture_blue_c": "Blue team has captured point C.",
+    "capture_orange_a": "Orange team has captured point A.",
+    "capture_orange_b": "Orange team has captured point B.",
+    "capture_orange_c": "Orange team has captured point C."
+  },
+  "files": {
+    "win_blue": {
+      "sha256": "748f69cf3b9f9fdcca781ca98c568f30d79484ccb308da10497d656bb30f939f",
+      "seconds": 1.394625850340136
+    },
+    "win_orange": {
+      "sha256": "717933e5f5b65a99c5a7cc6f528a6a8bea5e813f8e75ddf6a2f035bbafca4d65",
+      "seconds": 1.584013605442177
+    },
+    "bomb_planted": {
+      "sha256": "3f944fff9651ada93d8d414d8f59bb3f9c03ebceca0142043305262c74952f01",
+      "seconds": 1.7106349206349207
+    },
+    "bomb_defused": {
+      "sha256": "dab4902458338db304d4c08a88f8db1daad6d7b7f7571945a05701450771b8bf",
+      "seconds": 1.784671201814059
+    },
+    "bomb_dropped": {
+      "sha256": "3ed06d47b5b8b0a56f8c031c5b7da5d8a4dff4f6ad44794a86e2921f09efb894",
+      "seconds": 1.7106349206349207
+    },
+    "capture_blue_a": {
+      "sha256": "3aaca306c61c0033d07a1a7f4bdd897f5224011b839c0215cbc2d30b83be5678",
+      "seconds": 2.062018140589569
+    },
+    "capture_blue_b": {
+      "sha256": "3fd9a93d3f9ee8634c02606427ddad6bb383256685abcc63bde6cd37feef7e3b",
+      "seconds": 2.16734693877551
+    },
+    "capture_blue_c": {
+      "sha256": "3c5031a7666387a4f206c09762859ce54441ddfb944a345da54377245aaadb8c",
+      "seconds": 2.1260090702947845
+    },
+    "capture_orange_a": {
+      "sha256": "2d5d03a63be023fbc7ebaac86bf20d4a50167b497fe54e953487c4201cb3b047",
+      "seconds": 2.2326757369614514
+    },
+    "capture_orange_b": {
+      "sha256": "a79433f4d69d33147f38d654206a0f619d5e82b0450c1d8dfef9a23a3b83c1b4",
+      "seconds": 2.2953514739229024
+    },
+    "capture_orange_c": {
+      "sha256": "639415f639a2158033617c408d4aca1a6047183394fa3c7da853c08c8ec5443f",
+      "seconds": 2.286643990929705
+    }
+  }
+}

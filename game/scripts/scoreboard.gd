@@ -1,20 +1,30 @@
 extends PanelContainer
 class_name MatchScoreboard
 var game:Node
-var columns:HBoxContainer
+var columns:BoxContainer
 var timer=0.
 var last_signature=""
 var lineup:WinnerLineup
 var body:VBoxContainer
+var map_card:MapPlanView
+var layout:BoxContainer
+var records_scroll:ScrollContainer
 func _ready():
 	position=Vector2(65,108);custom_minimum_size=Vector2(1150,520);mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var style=StyleBoxFlat.new();style.bg_color=Color("101e2c");style.set_corner_radius_all(16);style.set_content_margin_all(20);style.border_color=Color("344d62");style.set_border_width_all(1);add_theme_stylebox_override("panel",style)
 	var main=VBoxContainer.new();add_child(main);lineup=WinnerLineup.new();lineup.game=game;main.add_child(lineup)
-	body=VBoxContainer.new();main.add_child(body);var title=Label.new();title.text="기록 · 처치 100 · 도움 75 · 치료 1HP당 0.6 · 설치 80 · 목표 50 · 사망 −25";title.add_theme_font_size_override("font_size",19);body.add_child(title)
-	columns=HBoxContainer.new();columns.add_theme_constant_override("separation",18);body.add_child(columns)
+	layout=BoxContainer.new();layout.vertical=get_viewport().get_visible_rect().size.x<1100;layout.add_theme_constant_override("separation",18);main.add_child(layout)
+	var scroll=ScrollContainer.new();scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL;scroll.custom_minimum_size=Vector2(520,280 if layout.vertical else 420);layout.add_child(scroll)
+	records_scroll=scroll
+	body=VBoxContainer.new();body.size_flags_horizontal=Control.SIZE_EXPAND_FILL;scroll.add_child(body);var title=Label.new();title.text="기록 · 처치 100 · 도움 75 · 치료 1HP당 0.6 · 설치 80 · 목표 50 · 사망 −25";title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;title.add_theme_font_size_override("font_size",16);body.add_child(title)
+	columns=VBoxContainer.new();columns.add_theme_constant_override("separation",18);body.add_child(columns)
+	map_card=game.ui.add_map_card(layout,Vector2(0,170) if layout.vertical else Vector2(310,360))
 func refresh_scores(dt=.016):
+	if map_card.map_index!=int(game.options.map):map_card.select_map(int(game.options.map))
 	lineup.refresh();position.y=15 if game.phase=="result" else 108
 	custom_minimum_size.y=650 if game.phase=="result" else 520
+	records_scroll.custom_minimum_size.y=260 if game.phase=="result" else 280 if layout.vertical else 420
+	size.y=custom_minimum_size.y
 	timer-=dt
 	if timer>0:return
 	timer=.3

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.2.5"
-const MAPS = ["TIDAL YARD · 항구", "DRY DOCK · 물류 기지", "FOUNDRY · 주조 공장", "RESEARCH · 연구동", "MESA RELAY · 사막 관측소", "CANAL DISTRICT · 운하 지구", "TRANSIT HALL · 환승 터미널", "COURTYARD · 안뜰", "WORKSHOP · 정비소", "SWITCHBACK · 굽은 골목", "ORCHARD · 과수원", "POWER ROOM · 전력실", "FOUNTAIN · 분수 광장", "CARGO ROW · 적재 구역", "TWIN LAB · 쌍둥이 실험실", "FOUNDRY EAST · 동부 공장", "ROOFTOP · 옥상", "MARKET LOOP · 순환 시장", "QUARRY PASS · 채석 통로", "KASBAH · 성채 시장", "REACTOR · 이중 원자로", "VIADUCT · 고가 수로", "ARCHIVE · 기록 보관소", "SHIPBREAK · 해체 부두", "MONASTERY · 언덕 수도원", "FOUNDRY CORE · 용광로", "GREENHOUSE · 유리 온실", "METRO VAULT · 지하 금고", "COASTGUARD · 해안 통제소", "DATACENTER · 데이터 센터", "CITADEL · 산성", "FIELD ACADEMY · 훈련 기지"]
+const VERSION = "1.2.6"
+const MAPS = ["항구", "조선소", "제철소", "연구소", "사막 기지", "운하", "중앙역", "구시가지", "정비 공장", "산동네", "과수원", "발전소", "분수 광장", "물류 창고", "실험 단지", "폐공장", "고층 빌딩", "재래시장", "채석장", "요새", "원전", "수로교", "도서관", "폐선장", "수도원", "용광로", "온실", "지하 금고", "해안 기지", "서버 센터", "산성", "훈련장"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16]
 static func maps_for_size(count:int,mode:int=-1) -> Array:
 	var out=[]
@@ -48,7 +48,7 @@ static func score(p:Dictionary) -> int:
 static func rating(p:Dictionary) -> float:
 	return float(score(p)) / maxf(1.0,p.get("played",60.0)/60.0)
 static func default_options() -> Dictionary:
-	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":2,"lives":0,"shared_lives":true,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":4,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":30,"team_respawns":60,"capture_hold":60,"starting_cash":800,"round_minutes":5,"bomb_seconds":45,"buy_seconds":60}
+	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":2,"lives":0,"shared_lives":true,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":4,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":30,"team_respawns":60,"capture_hold":60,"capture_seconds":5,"starting_cash":800,"round_minutes":5,"bomb_seconds":45,"buy_seconds":60}
 static func balanced_ids(ps:Dictionary) -> Dictionary:
 	var ids=ps.keys()
 	ids.sort_custom(func(a,b):return rating(ps[a])>rating(ps[b]))
@@ -78,6 +78,7 @@ static func sanitize_room(options:Dictionary):
 	options.target=clampi(int(options.get("target",60)),1,10000)
 	options.team_respawns=clampi(int(options.get("team_respawns",60)),0,10000)
 	options.capture_hold=clampi(int(options.get("capture_hold",60)),1,3600)
+	options.capture_seconds=clampi(int(options.get("capture_seconds",5)),1,60)
 	options.starting_cash=clampi(int(options.get("starting_cash",800)),0,8000)
 	options.round_minutes=clampi(int(options.get("round_minutes",5)),1,60)
 	options.bomb_seconds=clampi(int(options.get("bomb_seconds",45)),30,120)

@@ -4,10 +4,12 @@ const SPEED=36. # 20% faster: retains lead/dodge time with this game's broad spl
 const GRAVITY=.65
 const RADIUS=9.
 const LIFETIME=10.
+static func flight_lifetime(bounds:Vector2) -> float:
+	return maxf(LIFETIME,ceilf(bounds.length()*2.*1.2/SPEED))
 static func launch(g:Node,id:int,w:Dictionary):
 	var p=g.players[id];var a=g.actors[id];var origin=a.muzzle_world()
 	var direction=a.direction();var blocked=g.ray(a.eye(),a.desired_muzzle(),[a.get_rid()],1|4|8)
-	var rocket={"pos":origin,"origin":origin,"velocity":direction*SPEED,"owner":id,"device":0,"until":g.clock+LIFETIME,"launcher":true}
+	var rocket={"pos":origin,"origin":origin,"velocity":direction*SPEED,"owner":id,"device":0,"until":g.clock+flight_lifetime(g.arena.bounds),"launcher":true}
 	if not blocked.is_empty():explode(g,rocket,blocked)
 	else:g.rockets.append(rocket)
 	p.shot_time=g.clock;g.effect.rpc("rocket_launch",origin,origin+direction,id,g.clock,{"weapon":"h4"})

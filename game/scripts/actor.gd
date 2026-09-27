@@ -237,7 +237,19 @@ func simulate(dt:float,now:float,can_move:bool):
 	update_spread(dt,now)
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
 	global_position.x=clampf(global_position.x,-bound.x+2,bound.x-2);global_position.z=clampf(global_position.z,-bound.y+2,bound.y-2)
-	if global_position.y< (-12. if game.arena and game.arena.vertical_map else -4.):global_position.y=.2;velocity.y=0
+	if global_position.y< (-12. if game.arena and game.arena.vertical_map else -4.):
+		# Irregular maps have genuine voids. Raising Y at the same X/Z would
+		# repeatedly drop the actor into the same hole instead of recovering.
+		var safe=Vector3(global_position.x,.2,global_position.z)
+		if game.arena and game.arena.has_meta("district"):
+			var nav=game.bot_navigation;var cell=nav.nearest(safe)
+			if not nav.grid.is_point_solid(cell):safe=nav.point(cell)+Vector3.UP*.2
+			else:
+				var distance=INF
+				var fallen_position=safe
+				for spawn in game.arena.ffa_spawns:
+					if spawn.distance_squared_to(fallen_position)<distance:distance=spawn.distance_squared_to(fallen_position);safe=spawn+Vector3.UP*.1
+		global_position=safe;velocity=Vector3.ZERO
 func try_mantle() -> bool:
 	if not input_state.jump or float(input_state.z)>-.5 or velocity.y< -3. or input_state.crouch:return false
 	var forward=Basis(Vector3.UP,aim_yaw)*Vector3.FORWARD

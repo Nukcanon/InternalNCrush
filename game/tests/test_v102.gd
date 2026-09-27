@@ -44,7 +44,8 @@ func run():
 		var a=Arena.new();root.add_child(a);a.build(index);await physics_frame;await physics_frame
 		expect(a.indoors==(index in CombatLayout.INDOOR),"indoor selection "+str(index))
 		if a.indoors:
-			var hit=a.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0,9.,0),Vector3(0,12.,0),1))
+			var start=a.spawn_points[0][0]
+			var hit=a.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(start+Vector3.UP*5.,start+Vector3.UP*8.,1))
 			expect(not hit.is_empty(),"indoor map has solid ceiling "+str(index))
 		var distances=[]
 		for x in range(-4,5):

@@ -8,6 +8,7 @@ static var geometry={}
 const NAMES=["KASBAH · 성채 시장","REACTOR · 이중 원자로","VIADUCT · 고가 수로","ARCHIVE · 기록 보관소","SHIPBREAK · 해체 부두","MONASTERY · 언덕 수도원","FOUNDRY CORE · 용광로","GREENHOUSE · 유리 온실","METRO VAULT · 지하 금고","COASTGUARD · 해안 통제소","DATACENTER · 데이터 센터","CITADEL · 산성"]
 static func enabled(index:int) -> bool:return index>=FIRST and index<=LAST
 static func spec(index:int) -> Dictionary:
+	if FileAccess.file_exists("res://assets/arenas/district_specs.json"):return DistrictLayout.route_spec(index)
 	var k=index-FIRST
 	# node 0 = attack staging, 1 = defender spawn, 2/3 = objectives, remaining = junctions
 	var points=[

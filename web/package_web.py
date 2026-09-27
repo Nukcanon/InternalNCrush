@@ -29,7 +29,7 @@ for name in ['index.html',executable+'.js',executable+'.wasm',executable+'.pck']
 assert 'const GODOT_THREADS_ENABLED = false' in html,'Threads would require COOP/COEP unavailable on Pages'
 assert '$GODOT_' not in html,'Unexpanded shell placeholder'
 licenses=BUILD/'licenses';licenses.mkdir(exist_ok=True)
-for source in [ROOT/'game/LICENSE.txt',ROOT/'game/SOUND_CREDITS.md',ROOT/'game/GODOT_LICENSE.txt',ROOT/'game/assets/human/CREDITS.md',ROOT/'game/assets/human/source/LICENSE.ASSETS.md',ROOT/'game/assets/FONT_LICENSE.txt',ROOT/'game/assets/fonts/rajdhani-OFL.txt',ROOT/'game/assets/fonts/dohyeon-OFL.txt',ROOT/'game/assets/AUDIO_KENNEY_LICENSE.txt',ROOT/'game/assets/AUDIO_Q009_LICENSE.txt']:
+for source in [ROOT/'game/LICENSE.txt',ROOT/'game/SOUND_CREDITS.md',ROOT/'game/GODOT_LICENSE.txt',ROOT/'game/assets/human/CREDITS.md',ROOT/'game/assets/human/source/LICENSE.ASSETS.md',ROOT/'game/assets/FONT_LICENSE.txt',ROOT/'game/assets/fonts/rajdhani-OFL.txt',ROOT/'game/assets/fonts/dohyeon-OFL.txt',ROOT/'game/assets/AUDIO_KOKORO_LICENSE.txt',ROOT/'game/assets/AUDIO_KENNEY_LICENSE.txt',ROOT/'game/assets/AUDIO_Q009_LICENSE.txt']:
     shutil.copy2(source,licenses/source.name)
 metadata={'version':version,'threads':False,'source_commit':os.environ.get('GITHUB_SHA',''),'executable':executable,'transport':'WebRTC','touch':'coarse-pointer/mobile detection; landscape','files':[]}
 for p in sorted(BUILD.rglob('*')):

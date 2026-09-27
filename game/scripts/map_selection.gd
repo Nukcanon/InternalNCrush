@@ -2,6 +2,7 @@ extends RefCounted
 class_name MapSelection
 static func build(ui) -> Callable:
 	var game=ui.game;var count=ui.option("참가 정원",[],0);var scale=ui.option("전장 규모",[],0);var map=ui.option("전장",[],0)
+	ui.button("맵 보기",ui.show_current_map)
 	count.name="PlayerCapacity";scale.name="MapCapacity";map.name="MapChoice"
 	var update_maps=func():
 		var sizes=[]

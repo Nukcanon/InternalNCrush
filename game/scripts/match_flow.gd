@@ -9,12 +9,15 @@ static func rotate(game):
 	for id in game.players:
 		if id<0:
 			var bot=BotAgent.new();bot.setup(game,id);game.bot_agents[id]=bot
-	game.zone_owner=[-1,-1,-1];game.zone_capture=[0.,0.,0.]
+	game.zone_owner=[-1,-1,-1];game.zone_capture=[0.,0.,0.];game.zone_counts=[[0,0],[0,0],[0,0]]
 static func spawn_rect(game:Node,team:int) -> Rect2:
 	var side=0 if team==attackers(game) else 1
 	var spec=DefusalLayout.spec(int(game.options.map))
 	var half=Vector2(9.2,6.2) if side==0 else Vector2(4.2,4.2)
-	return Rect2(spec.points[side]-half,half*2.)
+	var center:Vector2=spec.points[side]
+	if is_instance_valid(game.arena) and game.arena.has_meta("district"):
+		center=game.arena.get_meta("district_spawns")[side]
+	return Rect2(center-half,half*2.)
 static func protected_spawn(game:Node,id:int) -> bool:
 	if int(game.options.mode)!=4 or not DefusalLayout.enabled(int(game.options.map)) or not game.actors.has(id):return false
 	var pos:Vector3=game.actors[id].position

@@ -11,7 +11,7 @@ static var blood_enabled=false
 static var fog=false
 const PRESETS=[
 	{"antialias":0,"shadow_quality":0,"decor_quality":0,"lighting_quality":0,"physics_effects":0,"corpse_quality":0,"fog_enabled":false},
-	{"antialias":1,"shadow_quality":1,"decor_quality":1,"lighting_quality":1,"physics_effects":1,"corpse_quality":1,"fog_enabled":true},
+	{"antialias":0,"shadow_quality":0,"decor_quality":1,"lighting_quality":1,"physics_effects":1,"corpse_quality":1,"fog_enabled":true},
 	{"antialias":2,"shadow_quality":1,"decor_quality":2,"lighting_quality":2,"physics_effects":2,"corpse_quality":2,"fog_enabled":true}]
 
 static func apply(game:Node):
@@ -67,7 +67,7 @@ static func build(ui:Node):
 		ui.check("유혈 효과",bool(profile.get("blood_effects",false)),func(on):profile.blood_effects=on)
 		ui.check("메뉴 배경 전투 · 다음 메인 화면부터",bool(profile.get("menu_animation",true)),func(on):profile.menu_animation=on)
 		ui.option("최대 프레임",["제한 없음","30 FPS","60 FPS","90 FPS","120 FPS","144 FPS"],maxi(0,[0,30,60,90,120,144].find(int(profile.frame_limit))),func(i):profile.frame_limit=[0,30,60,90,120,144][i])
-		ui.label("중간 기본값: 상세 모델·재질, 주 광원 1개, 가까운 그림자, MSAA 2×, 제한된 장식 물리. 이동·충돌·총격 판정과 게임 규칙은 품질 설정과 무관합니다. 광원을 끄면 그림자도 꺼집니다.",17)
+		ui.label("중간 기본값: 기본 재질, 주 광원 1개, 그림자·MSAA 끄기, 제한된 장식 물리. 이동·충돌·총격 판정과 게임 규칙은 품질 설정과 무관합니다. 광원을 끄면 그림자도 꺼집니다.",17)
 	if not OS.has_feature("web"):
 		ui.button("기본설정으로 복원",func():
 			profile.graphics_quality=1;profile.merge(PRESETS[1],true);profile.frame_limit=60;profile.menu_animation=true
@@ -88,6 +88,9 @@ static func apply_world(root:Node):
 			for material in materials:
 				if material is ShaderMaterial and "rich_detail" in material.shader.code:material.set_shader_parameter("rich_detail",detail==2)
 				if material is ShaderMaterial and "texture_detail" in material.shader.code:material.set_shader_parameter("texture_detail",detail>0)
+	for mesh in root.find_children("*","MeshInstance3D",true,false):
+		if mesh.has_meta("district_detail"):
+			mesh.visible=detail>0;mesh.visibility_range_end=([0.,40.,65.] if RenderStyle.web() else [0.,65.,100.])[detail];mesh.visibility_range_end_margin=5.
 	var points=0
 	for light in root.find_children("*","Light3D",true,false):
 		if not light.has_meta("quality_shadow"):light.set_meta("quality_shadow",light.shadow_enabled)

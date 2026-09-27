@@ -128,10 +128,10 @@ static func finish_detail(a:Node,which:int):
 			for x in [-78,78]:a.detail(Vector3(x,.024,z),Vector3(.14,.02,3),Color("e1d7ab"))
 
 static func extent(which:int) -> Vector2:
-	if which in [2,3]:return Vector2(58,54)
-	if which<6:return Vector2(100,90)
-	if which==6:return Vector2(52,50)
-	return Vector2(26,30) if which<13 else Vector2(36,42)
+	if which==31:return Vector2(120,120)
+	var count=Rules.MAP_PLAYERS[which]
+	if DefusalLayout.enabled(which):return Vector2(64,80) if count==8 else Vector2(114,138)
+	return Vector2(180,180) if count==32 else Vector2(120,120) if count==16 else Vector2(60,60) if count==8 else Vector2(48,54)
 
 # Each row is a distinct layout: normalized x/z center and width/depth.
 # Coordinates reserve a central crossing, side routes and objective pockets.

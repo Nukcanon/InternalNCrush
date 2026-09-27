@@ -1,3 +1,7 @@
+## Local 1.2.6 work is unfinished
+
+Read `VALIDATION_V126_PARTIAL.md` before continuing. Approved enlarged maps and the map viewer have uncommitted implementation changes. The public release below is still 1.2.5; new-map routing, full regression and performance validation are not complete. Shared movement contact tests passed 13/13 (small-prop pushing, low curbs, safe mantling). Do not report the entire renewal as complete or publish without resolving the recorded failures.
+
 # Internal N Crush 1.2.5 published handoff — 2026-09-27
 
 Runtime source/tag: `7a51e15239cf91c0056629c4bbfcaaea629f14da`, `internal-n-crush-v1.2.5`. [Windows/Web/NAS release](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.5) · [live page](https://nukcanon.github.io/nukcanon/internal-n-crush.html). Subsequent main commits are documentation only. Start from current main and preserve `work/v1.2.3-stability-20260927`; never restore 1.1.x files. The previous runtime is 1.2.4 (`8c9e3572ac9e00d387eb6c57f83cdaa7c061942c`). This work continues the recovered 1.2.2/1.2.3 line.

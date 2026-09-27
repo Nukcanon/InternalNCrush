@@ -1,7 +1,7 @@
 extends RefCounted
 class_name MapIdentity
-# Exactly two rectangular competitive footprints per capacity tier; training is separate.
-const RECTANGLES=[0,1,2,4,8,10,13,14,25,26]
+# Exactly one rectangular competitive footprints per capacity tier; training is separate.
+const RECTANGLES=[0,2,8,13,25]
 const WINGS=[.48,.44,.50,.45,.48,.54,.43,.48,.45,.51,.48,.43,.46,.48,.51,.44,.48,.52,.45]
 const DEPTHS=[.55,.50,.44,.52,.55,.43,.52,.47,.56,.43,.55,.47,.50,.55,.44,.52,.47,.43,.53]
 static func perimeter(which:int,b:Vector2) -> PackedVector2Array:

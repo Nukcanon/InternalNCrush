@@ -1,6 +1,8 @@
 extends Node3D
 class_name Arena
 const M=preload("res://scripts/mesh_factory.gd")
+var district_surfaces=[]
+var district_cells={}
 var water_rect=Rect2(-9,-33,18,66)
 var has_water=true
 var spawn_points=[[],[]]
@@ -127,6 +129,9 @@ func tree(pos:Vector3):
 		HumanModel.oval(trunk,end+Vector3.UP*.6,Vector3(2.6,2.1,2.5),Color("779261") if i%2==0 else Color("94a678"))
 func build(which:int):
 	if not bake_geometry and ArenaCache.restore(self,which):return
+	if ResourceLoader.exists("res://scripts/district_layout.gd") and FileAccess.file_exists("res://assets/arenas/districts/map_%02d.json"%which) and which!=PracticeLayout.INDEX:
+		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
+		DistrictLayout.build(self,which);finish_architecture();apply_surface_detail();ArenaLighting.build(self);return
 	if DefusalLayout.enabled(which) or which==PracticeLayout.INDEX:
 		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 		if which==PracticeLayout.INDEX:PracticeLayout.build(self)
@@ -196,7 +201,7 @@ func build(which:int):
 func finish_architecture():
 	building=false
 	var path="res://assets/arenas/geometry/map_%02d.scn"%map_index
-	if not bake_geometry and ResourceLoader.exists(path):
+	if not bake_geometry and not has_meta("district") and ResourceLoader.exists(path):
 		# Navigation and dynamic props are generated identically on every peer;
 		# only immutable architecture is replaced by the clipped build-time scene.
 		var packed=load(path) as PackedScene
@@ -264,6 +269,7 @@ func apply_surface_detail():
 	for mesh in list:
 		if mesh.name=="Geometry":mesh.material_override=material
 func wading(pos:Vector3) -> bool:
+	if has_meta("district_water"):return pos.y<-.25 and Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),get_meta("district_water"))
 	if map_index==5:
 		for z in [-27,0,27]:
 			if absf(pos.z-z)<2.5:return false
@@ -340,6 +346,7 @@ func reset_props():
 	for prop in props.values():prop.reset_home()
 
 func navigation_heights(pos:Vector3) -> Array:
+	if not district_surfaces.is_empty():return DistrictLayout.heights(self,pos)
 	var result=[];var point=Vector2(pos.x,pos.z);var hole=false
 	for rect in floor_holes:
 		if rect.has_point(point):hole=true;break
@@ -350,6 +357,7 @@ func navigation_heights(pos:Vector3) -> Array:
 			if not height in result:result.append(height)
 	return result
 func navigation_clear(pos:Vector3) -> bool:
+	if not district_surfaces.is_empty() and not DistrictLayout.clear(self,pos):return false
 	if has_meta("route_spec") and pos.y<6.8:
 		var point=Vector2(pos.x,pos.z);var spec=get_meta("route_spec")
 		for offset in [Vector2.ZERO,Vector2(.5,0),Vector2(-.5,0),Vector2(0,.5),Vector2(0,-.5)]:

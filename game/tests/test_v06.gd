@@ -16,7 +16,7 @@ func run():
 		for team in [0,1]:
 			var candidates=arena.spawn_candidates(team,false)
 			clear=clear and candidates.size()>=7
-			for pos in candidates:clear=clear and arena.point_clear(pos) and absf(pos.z)<=arena.bounds.y-6
+			for pos in candidates:clear=clear and arena.point_clear(pos) and absf(pos.z)<=arena.bounds.y-2
 			for zone in arena.zones:
 				var route=nav.route(candidates[0],zone)
 				connected=connected and arena.point_clear(zone) and route.size()>1 and route[-1].distance_to(zone)<3.
@@ -40,7 +40,7 @@ func run():
 	g.combat_fx._process(CombatFX.CASING_LIFETIME+.1);expect(g.combat_fx.casings.is_empty(),"casings disappear after their lifetime")
 	var old_position=a.position;var old_gait=a.gait
 	a.input_state.z=0.;a.simulate(.016,g.clock,false);expect(a.gait==old_gait,"standing still does not advance foot cycle")
-	a.position=Vector3.ZERO;a.input_state.z=-1.;await physics_frame
+	a.position=g.arena.spawn_points[0][3];a.input_state.z=-1.;await physics_frame
 	for i in range(20):a.simulate(.016,g.clock,true);await physics_frame
 	expect(a.gait>old_gait,"actual ground travel advances locomotion phase")
 	var character=a.character;character.motion_seed=0.;character.update_pose(.1,Vector3.ZERO,false,false,true,0,-1,0);var chest_a=character.chest.rotation

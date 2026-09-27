@@ -1,5 +1,6 @@
 extends CanvasLayer
 const Reticle=preload("res://scripts/reticle.gd")
+var map_viewer:MapViewer
 var map_refresh=Callable()
 var reticle:Control
 var background:Control
@@ -113,6 +114,7 @@ func _ready():
 	theme.set_color("font_color","Label",Color("e8f2f3"));theme.set_color("font_color","Button",Color("e8f2f3"));root.theme=theme
 	theme.set_color("font_outline_color","Label",Color(0.01,0.025,0.04,.65));theme.set_constant("outline_size","Label",1)
 func clear_panel(keep_background=false):
+	if is_instance_valid(map_viewer):map_viewer.queue_free();map_viewer=null
 	if is_instance_valid(hud):hud.show()
 	if is_instance_valid(navigation_confirm):navigation_confirm.queue_free();navigation_confirm=null
 	if lan_lobby:lan_lobby.close_dialog()
@@ -151,7 +153,7 @@ func pin_actions(node:Control):
 	if node is BoxContainer:
 		node.alignment=BoxContainer.ALIGNMENT_END
 		for child in node.get_children():
-			if child is Button:child.custom_minimum_size=Vector2(160,ACTION_HEIGHT);child.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			if child is Button:child.custom_minimum_size=Vector2(180,ACTION_HEIGHT);child.size_flags_horizontal=Control.SIZE_EXPAND_FILL;child.clip_text=true
 	elif node is Button:
 		node.custom_minimum_size=Vector2(200,ACTION_HEIGHT);node.size_flags_horizontal=Control.SIZE_SHRINK_END
 func label(text:String,size=20,parent:Node=null) -> Label:
@@ -165,7 +167,7 @@ func button(text:String,callback:Callable,parent:Node=null) -> Button:
 		else:callback.call())
 	(parent if parent else stack).add_child(b)
 	if parent and parent.get_meta("pinned_actions",false):
-		b.custom_minimum_size=Vector2(160,ACTION_HEIGHT);b.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size=Vector2(180,ACTION_HEIGHT);b.size_flags_horizontal=Control.SIZE_EXPAND_FILL;b.clip_text=true
 	if returning:
 		for state in ["normal","hover","pressed"]:
 			var style=theme.get_stylebox(state,"Button").duplicate();style.bg_color=Color("593b4b") if state=="normal" else Color("805263");style.border_color=Color("c28c9a");b.add_theme_stylebox_override(state,style)
@@ -269,7 +271,7 @@ func training_menu():
 	button("자유 연습장",confirm_practice)
 	stack.add_child(HSeparator.new());label("봇 전투",27)
 	label("실제 경기 규칙으로 조준, 전술과 목표 수행을 연습합니다.",18)
-	button("봇 연습 설정",practice_menu);button("메인메뉴",menu)
+	button("봇 전투 설정",practice_menu);button("메인메뉴",menu)
 func practice_menu():
 	make_panel("봇 전투");screen="practice"
 	if int(game.options.bots) not in [3,5,7,15,31]:game.options.bots=7
@@ -307,7 +309,7 @@ func host_settings():
 	stack=groups[1]
 	label("경기 탭에서 참가 정원을 짝수로 선택합니다. 맵 정원이 참가 정원보다 작을 수 없습니다.",17)
 	option("진행 중 참가",["금지","관전만","참가 허용 · 폭탄은 다음 라운드"],game.options.join,func(i):game.options.join=i)
-	option("다음 경기 팀",["현재 팀 유지","무작위","기록으로 균형 편성"],game.options.next_teams,func(i):game.options.next_teams=i)
+	option("다음 경기 팀",["현재 팀 유지","무작위","성적 기준 팀 균형"],game.options.next_teams,func(i):game.options.next_teams=i)
 	label("각자 본인의 팀을 선택하며, 방장은 본인과 봇만 이동할 수 있습니다.\n불균형한 이동은 제한되고, 빈자리는 난이도 상의 균형 봇이 채웁니다.",16)
 	stack=groups[2]
 	check("병과 사용",game.options.classes,func(v):game.options.classes=v)
@@ -321,7 +323,7 @@ func host_settings():
 	option("봇 인원",["없음","3명","5명","7명","15명","31명"],maxi(0,[0,3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[0,3,5,7,15,31][i])
 	option("봇 난이도",["하 · 느린 반응","중 · 균형","상 · 빠른 판단"],game.options.get("bot_difficulty",1),func(i):game.options.bot_difficulty=i)
 	label("봇도 참가 인원에 포함됩니다.\n선택 인원이 방 정원을 넘으면 정원까지 추가합니다.",16)
-	stack=outer;var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);button("이 설정으로 방 만들기",func():game.host_game(),actions);button("돌아가기",join_menu,actions);pin_actions(actions);notice_label=label("",14)
+	stack=outer;var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);button("방 만들기",func():game.host_game(),actions);button("돌아가기",join_menu,actions);pin_actions(actions);notice_label=label("",14)
 func join_menu():
 	if OS.has_feature("web"):internet_menu("lan")
 	else:lan_lobby.show()
@@ -347,7 +349,7 @@ func lobby():
 func teams_menu():
 	make_panel("팀 편성",1100);screen="teams"
 	label("팀은 직접 변경합니다. 방장은 봇도 이동할 수 있으며, 인원이 불균형해지는 이동은 제한됩니다.",15)
-	if TeamBalance.host(game,game.local_id):option("다음 경기 편성",["현재 팀 유지","무작위","기록으로 균형 편성"],game.options.next_teams,func(i):game.command("team_policy",{"next_teams":i}))
+	if TeamBalance.host(game,game.local_id):option("다음 경기 편성",["현재 팀 유지","무작위","성적 기준 팀 균형"],game.options.next_teams,func(i):game.command("team_policy",{"next_teams":i}))
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 	button("돌아가기",func():
 		if game.phase=="lobby":lobby()
@@ -532,7 +534,8 @@ func gear():
 	if not bot_setup and not game.players.has(game.local_id):return
 	if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish()
 	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
-	make_panel("오퍼레이터 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
+	make_panel("병과 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
+	var title=stack.get_child(stack.get_child_count()-1);stack.remove_child(title);var heading=HBoxContainer.new();stack.add_child(heading);heading.add_child(title);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button("맵 보기",show_current_map,heading)
 	# Hidden selectors preserve one canonical loadout state for networking and menus.
 	gear_secondary=str(queued.get("secondary",p.secondary))
 	gear_class=option("병과",Rules.CLASSES,chosen);gear_class.get_parent().hide()
@@ -706,15 +709,18 @@ func refresh_gear_detail():
 	var cost=game.loadout_cost(p,selected_loadout())
 	gear_price.text=str(cost) if game.options.mode==4 else "무료"
 	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id(),gear_armor.selected)
-	gear_submit.text="선택한 장비로 연습 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "준비 시간에 구매 가능"
+	gear_submit.text="봇 전투 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활부터 적용" if game.options.mode!=4 else "준비 시간에 구매 가능"
 	refresh_gear_economy()
 func toggle_pause():
+	if is_instance_valid(map_viewer):map_viewer.dismiss();return
 	if is_instance_valid(panel):clear_panel();game.capture_pointer();return
-	make_panel("일시 메뉴",480,true)
+	make_panel("게임 메뉴",480,true)
 	label("경기는 계속 진행됩니다.",17)
 	if game.phase=="lobby":button("돌아가기",lobby)
 	else:button("돌아가기",func():clear_panel();game.capture_pointer())
-	button("병과 · 무기 · 가젯",gear);button("팀 편성",teams_menu);button("참가자 관리",members_menu);button("환경 설정",settings);button("방 나가기",func():game.request_leave())
+	button("병과 · 장비",gear)
+	add_map_card(stack,Vector2(380,155))
+	button("팀 편성",teams_menu);button("참가자 관리",members_menu);button("환경 설정",settings);button("방 나가기",func():game.request_leave())
 func hud_label(text:String,pos:Vector2,size:int=20) -> Label:
 	var l=Label.new();l.text=text;l.position=pos;l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_shadow_color",Color(0,0,0,.8));l.add_theme_constant_override("shadow_offset_x",1);l.add_theme_constant_override("shadow_offset_y",2);hud.add_child(l);return l
 func hud_plate(pos:Vector2,size:Vector2) -> Panel:
@@ -727,6 +733,7 @@ func show_hud():
 	clear_panel()
 	if hud:hud.queue_free()
 	hud=Control.new();hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(hud)
+	var capture_display=ControlCaptureHud.new();capture_display.game=game;hud.add_child(capture_display)
 	hud_plate(Vector2(406,15),Vector2(468,49))
 	status=hud_label("",Vector2(422,24),21);status.custom_minimum_size.x=436;status.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	hud_blue=hud_label("",Vector2(422,24),21);hud_blue.modulate=Color("69bdff")
@@ -834,7 +841,7 @@ func refresh():
 		slot_panels[i].self_modulate=(Color("75cebb") if p.slot==i else Color.WHITE) if usable else Color("737373")
 		if not usable:slots[i].modulate=Color("888888")
 		if i in [2,3] and not game.options.classes:slots[i].text="사용 안 함"
-	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 설정"
+	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 게임 메뉴"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
 	if not p.get("pending_loadout",{}).is_empty():info.text+="   ·   다음 부활 장비 예약됨"
 	if not GadgetLoadout.selectable(p):
@@ -963,3 +970,20 @@ func build_touch_main_actions():
 		for item in items:button(item[0],item[1],row).size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	label("왼손 이동 · 오른손 화면 조준 · 달리기 버튼으로 켜기/끄기",25)
 
+
+func show_current_map():
+	var indices=[int(game.options.map)]
+	if screen in ["practice","host","internet_create"] or bot_setup:
+		if game.options.get("map_random",false):indices=Rules.maps_for_size(int(game.options.get("map_size",8)),int(game.options.mode))
+	open_map(indices)
+func open_map(indices:Array):
+	if is_instance_valid(map_viewer) or indices.is_empty():return
+	map_viewer=MapViewer.new();root.add_child(map_viewer);map_viewer.build(indices);Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
+	map_viewer.closed.connect(func():
+		map_viewer=null
+		if not is_instance_valid(panel) and not Input.is_action_pressed("score"):game.capture_pointer(true))
+func add_map_card(parent:Node,dimensions:Vector2) -> MapPlanView:
+	var card=VBoxContainer.new();parent.add_child(card)
+	var title=label("현재 맵 · "+Rules.MAPS[int(game.options.map)],17,card)
+	var view=MapPlanView.new();view.custom_minimum_size=dimensions;card.add_child(view);view.select_map(int(game.options.map));view.activated.connect(show_current_map)
+	return view

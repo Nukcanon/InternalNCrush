@@ -56,8 +56,10 @@ func run():
 	for index in range(Rules.MAPS.size()):
 		var extent=DefusalLayout.spec(index).size if DefusalLayout.enabled(index) else Vector2(44,48) if index==PracticeLayout.INDEX else MapLayouts.extent(index)
 		max_diagonal=maxf(max_diagonal,extent.length()*2.)
-	expect(RocketCombat.SPEED*RocketCombat.LIFETIME>max_diagonal*1.2,"rocket lifespan spans every map with at least 20 percent range margin")
-	print("ROCKET_RANGE diagonal=",max_diagonal," lifetime_distance=",RocketCombat.SPEED*RocketCombat.LIFETIME)
+	var longest_lifetime=RocketCombat.flight_lifetime(Vector2.ONE*(max_diagonal/sqrt(2.)*.5))
+	expect(RocketCombat.SPEED*longest_lifetime>=max_diagonal*1.2,"rocket lifespan spans every map with at least 20 percent range margin")
+	expect(RocketCombat.flight_lifetime(Vector2(50,50))==10.,"small maps retain ten-second rocket expiry")
+	print("ROCKET_RANGE diagonal=",max_diagonal," lifetime_distance=",RocketCombat.SPEED*longest_lifetime)
 	for web in [false,true]:
 		ProjectSettings.set_setting("application/config/web_assets",web)
 		for item in [[1,0],[4,0],[4,1],[5,0],[0,8],[0,9]]:
