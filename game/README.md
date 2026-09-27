@@ -1,12 +1,12 @@
-# Internal N Crush 1.2.3
+# Internal N Crush 1.2.4
 
-배포 상태와 검증 범위는 [배포 기록](../PUBLICATION_STATUS.json)과 [1.2.3 검증](../VALIDATION_V123.md)을 확인하세요.
+배포 상태와 검증 범위는 [배포 기록](../PUBLICATION_STATUS.json)과 [1.2.4 검증](../VALIDATION_V124.md)을 확인하세요.
 
 Windows x64·웹·모바일 브라우저용 FPS. 6개 병과, 31개 대전 전장과 야외 연습장, 5가지 모드와 최대 32인 LAN을 지원합니다. Linux/NAS 운영자가 마련한 서버에는 인터넷 로비로 접속합니다. 같은 버전끼리 플레이하세요.
 
 ## 시작과 연결
 
-1. [Windows ZIP](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.3)을 모두 풀고 `InternalNCrush.exe`를 실행합니다. `.pck`는 EXE 옆에 둡니다.
+1. [Windows ZIP](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.4)을 모두 풀고 `InternalNCrush.exe`를 실행합니다. `.pck`는 EXE 옆에 둡니다.
 2. 혼자라면 메인 메뉴의 **연습장 / 봇 전투**, LAN이라면 **내부망 로비 → 방 만들기**, 나머지는 로비 목록 또는 **IP로 접속**을 선택합니다.
 3. 기본은 8명·8인용 무작위 전장입니다. 짝수 정원을 먼저 고르면 그 이상 규모의 전장만 표시됩니다. 봇도 인원에 포함됩니다. 무작위 전장을 선택하거나 순환을 켜면 같은 규모 안에서 다음 전장을 고릅니다. 점령은 양쪽 시작 진영, 설치·해체는 설정한 전체 시리즈와 필요한 연장전을 마친 뒤 순환합니다.
 4. B에서 오퍼레이터/장비 카드와 능력치 그래프를 확인한 뒤 적용합니다. 전투 중 변경은 다음 부활, 폭탄 모드는 준비 시간에 구매하며, 기본 권총으로 시작합니다.

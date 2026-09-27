@@ -1,6 +1,6 @@
-# Internal N Crush 1.2.3
+# Internal N Crush 1.2.4
 
-Continued from the published 1.2.2 source and the preserved 1.2.3 recovery branch. See [release notes](RELEASE_NOTES_V123.md), [validation](VALIDATION_V123.md), and [publication status](PUBLICATION_STATUS.json) for changes and exact delivery status.
+Continued from the published 1.2.2 source and the preserved 1.2.3 recovery branch. See [release notes](RELEASE_NOTES_V124.md), [validation](VALIDATION_V124.md), and [publication status](PUBLICATION_STATUS.json) for changes and exact delivery status.
 
 Windows / Web tactical FPS with six operators, 31 competitive arenas and a four-level outdoor practice range. Godot 4.4.1. The player hosting a room runs the authoritative game; the lightweight lobby only provides room discovery and WebRTC signaling.
 
@@ -24,3 +24,5 @@ The browser detects mobile/coarse touch devices and enables floating movement, a
 Source was moved from `Nukcanon/nukcanon/games/relaystrike` to this repository's `game/`. Historical filenames and wire compatibility tokens are preserved where needed. Asset origins and licenses are included; no MakeHuman application code is shipped.
 
 요청별 반영 내용과 남은 범위: [1.2.3 한국어 확인표](V123_REQUEST_AUDIT.md).
+
+1.2.4 추가 요청과 확인 범위: [한국어 확인표](V124_REQUEST_AUDIT.md) · [성능·안정성 측정 설명](PERFORMANCE_V124_KO.md).

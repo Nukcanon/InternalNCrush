@@ -95,6 +95,7 @@ jobs:
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v124.gd -- --no-save-profile --no-update-check
       - uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: review-v124
           path: validation/v124/*.png
       - name: 32-client capacity with paced startup

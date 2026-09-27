@@ -1,14 +1,16 @@
 {
-  "published_version": "1.2.3",
-  "source_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
-  "release_tag": "internal-n-crush-v1.2.3",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.3",
-  "published_at": "2026-09-27T03:20:23Z",
-  "verified_at": "2026-09-27T03:31:59.311661+00:00",
+  "published_version": "1.2.4",
+  "source_commit": "8c9e3572ac9e00d387eb6c57f83cdaa7c061942c",
+  "release_tag": "internal-n-crush-v1.2.4",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.4",
+  "published_at": "2026-09-27T06:26:54Z",
+  "verified_at": "2026-09-27T06:31:18.802644+00:00",
   "status": "published_with_documented_validation_limits",
   "recovery_branch": "work/v1.2.3-stability-20260927",
   "baseline_version": "1.2.2",
   "baseline_source_commit": "fb6c32aafc1bb5a5467ae45346fa87fe51e05472",
+  "previous_published_version": "1.2.3",
+  "previous_runtime_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
   "graphics": {
     "native": "detailed baked anatomy and materials",
     "web": "separate lightweight baked assets",
@@ -17,58 +19,61 @@
   },
   "assets": [
     {
-      "name": "InternalNCrush_NAS_Linux_v1.2.3.zip",
-      "bytes": 15456,
-      "sha256": "e179aaf3378d214970b18caa08fa26d552a290943ebb4dde954190be8a74b612",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/InternalNCrush_NAS_Linux_v1.2.3.zip"
+      "name": "InternalNCrush_NAS_Linux_v1.2.4.zip",
+      "bytes": 15514,
+      "sha256": "ee96797c61586cc0cbd2a2d545ae8b6e5d0ddf97a209f71dbdfd904852b104ac",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.4/InternalNCrush_NAS_Linux_v1.2.4.zip"
     },
     {
-      "name": "InternalNCrush_Web_v1.2.3.zip",
-      "bytes": 78701300,
-      "sha256": "6ac9824da179d563251768c9985b6587ad13f967c37118222ffecd9a98d6878f",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/InternalNCrush_Web_v1.2.3.zip"
+      "name": "InternalNCrush_Web_v1.2.4.zip",
+      "bytes": 79246049,
+      "sha256": "5fc45816bc02343eae0dc523a760e8de08adef2e78867671f7268b38e47dbc7b",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.4/InternalNCrush_Web_v1.2.4.zip"
     },
     {
-      "name": "InternalNCrush_Windows_v1.2.3.zip",
-      "bytes": 113852832,
-      "sha256": "b228929aa7b86ebe520168545212c96abb40427e69402edf43d318474cfa9ec4",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/InternalNCrush_Windows_v1.2.3.zip"
+      "name": "InternalNCrush_Windows_v1.2.4.zip",
+      "bytes": 115061868,
+      "sha256": "195b89727b15408073a53b02ab94ca1b4598b7194bca1bf9f3298498e62bbf17",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.4/InternalNCrush_Windows_v1.2.4.zip"
     },
     {
       "name": "SHA256SUMS.txt",
       "bytes": 298,
-      "sha256": "b1257a7890869f8d0c43bfa2bf7de37a38c19cf2372c9eb0c485159288702359",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/SHA256SUMS.txt"
+      "sha256": "f0fda5299e4459687eaf4d821e24a90782c1a147a924ffae14eb429e63a5eaeb",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.4/SHA256SUMS.txt"
     },
     {
-      "name": "WEB_RELEASE_v1.2.3.json",
+      "name": "WEB_RELEASE_v1.2.4.json",
       "bytes": 168,
-      "sha256": "98637ad0e76cd03bf353b6a4d135257665611f1dc598f83bf617556e093bf7c8",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/WEB_RELEASE_v1.2.3.json"
+      "sha256": "97fbb35131bbfd3322755e0bccb29bcdbfc2fef61d8d72690cc215af9cf487b3",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.4/WEB_RELEASE_v1.2.4.json"
     }
   ],
   "website": {
     "url": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
-    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=6ac9824da179",
-    "commit": "b9b045437fd3297b39d67751804e99b535972bb8",
-    "runtime_source_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
+    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=5fc45816bc02",
+    "commit": "486c898353a490571259492e0a433189bab7c81c",
+    "runtime_source_commit": "8c9e3572ac9e00d387eb6c57f83cdaa7c061942c",
     "approved_images_and_descriptions_preserved": true,
     "windows_web_nas_links_verified": true,
-    "public_browser_menu_version_verified": "1.2.3"
+    "public_browser_menu_version_verified": "1.2.4",
+    "public_browser_startup_errors_observed": false,
+    "browser_renderer_log": "OpenGL ES 3.0 / WebGL 2.0 Chromium / Compatibility / WebKit WebGL",
+    "exact_web_archive_local_practice_entry_verified": true
   },
   "successful_ci": {
-    "final_source_build_release": 36290116158,
-    "checkpoint_functional_network": 36289439256,
-    "directory_docker_worker": 36289440984,
-    "site_installer": 36291478302,
-    "pages_deployment": 36291571438,
-    "public_package_source_hash_audit": 36291571895
+    "final_source_build_release": 36297739209,
+    "final_source_build_attempt": 2,
+    "directory_docker_worker": 36297739210,
+    "site_installer": 36300127001,
+    "pages_deployment": 36300233091,
+    "public_package_source_hash_audit": 36300234098
   },
   "public_windows_zip_verification": {
-    "bytes": 113852832,
-    "sha256": "b228929aa7b86ebe520168545212c96abb40427e69402edf43d318474cfa9ec4",
+    "bytes": 115061868,
+    "sha256": "195b89727b15408073a53b02ab94ca1b4598b7194bca1bf9f3298498e62bbf17",
     "files": 21,
-    "source_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
+    "source_commit": "8c9e3572ac9e00d387eb6c57f83cdaa7c061942c",
     "native_runs": [
       {
         "mode": "practice",
@@ -107,30 +112,56 @@
   },
   "connections": {
     "enet_32_clients": true,
-    "restart_reconnect_two_8_peer_runs": true,
+    "normal_and_late_start_8_peer_restart": true,
     "public_zip_webrtc_loopback": {
-      "players": 2,
-      "ping_ms": 7,
-      "snapshots": 59,
-      "passed": true
+      "passed": true,
+      "evidence": [
+        "RTC_CONNECTED role=client players=2 ping=7 snapshots=59"
+      ],
+      "warnings": [
+        "WARNING: rtc::impl::IceTransport::LogCallback@391: juice: Send failed, errno=10051"
+      ]
     },
-    "browser_to_packaged_windows_loopback": {
-      "players": 2,
-      "ping_ms": 17,
-      "snapshots": 85,
-      "passed": true
-    },
-    "external_wan_nat_turn": "not_verified"
+    "external_wan_nat_turn": "not_verified",
+    "ci_first_attempt": "Late-start client 6 had 4649 ms final snapshot age; same strict test passed on local Windows and the final CI attempt. Cause unproven; thresholds unchanged."
   },
   "rendered_repeated_sessions": {
-    "native_rounds_and_killcams": 12,
-    "browser_rounds_and_killcams": 36,
-    "browser_duration_minutes_approx": 6,
-    "failures": 0,
-    "gpu": "NVIDIA GeForce RTX 4080 SUPER",
-    "browser_frame_mean_ms": 16.783505,
-    "browser_frame_max_ms": 187.5,
-    "note": "Bounded observations; not a GTX960/mobile or multi-hour stability claim."
+    "pre_final_candidate": {
+      "native_cycles": 120,
+      "native_seconds": 1170,
+      "web_cycles": 120,
+      "web_minutes_approx": 19.6,
+      "failures": 0,
+      "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+      "web_gc_floor_mib": [
+        96,
+        97
+      ],
+      "web_wasm_mib": 95.81,
+      "native_warm_private_mib": [
+        557.12,
+        580.91
+      ]
+    },
+    "exact_final_windows_zip": {
+      "cycles": 12,
+      "failures": 0,
+      "final_sample": {
+        "average_ms": 16.66485,
+        "cycle": 11,
+        "effect_pool": 3,
+        "frames": 180,
+        "loft_cache": 16,
+        "max_ms": 18.62,
+        "nodes": 2154,
+        "replays": 12,
+        "resources": 646,
+        "static_bytes": 0,
+        "video_bytes": 100057671
+      },
+      "known_shutdown_texture_warning": true
+    },
+    "note": "Candidate long sessions predate final presentation changes. Final package checks are separate. Not an Intel/mobile or multi-hour performance claim."
   },
   "public_directory": {
     "status": "awaiting_owner_cloudflare_login",
@@ -139,14 +170,16 @@
     "docker_and_worker_implementation_tested": true
   },
   "remaining_limits": [
-    "Intermittent long frames remain.",
-    "Web WorkerThreadPool allocator warnings at engine exit remain.",
-    "Some native runs report GL texture warnings at driver exit, including public ZIP practice and bot combat.",
-    "GTX960, physical Android/iOS, mobile Safari and multi-hour sessions are unverified.",
-    "External multi-PC LAN/WAN NAT/TURN routes are unverified.",
-    "Female face changes remain stylized game art, not reference-equivalent high-end character assets."
+    "Intel 10th/11th generation UHD/Iris Xe, GTX960 and physical Android/iOS performance are unverified.",
+    "Intermittent long frames are not all explained; a major first-deployment CPU stall was reduced.",
+    "Known native GL texture and Web WorkerThreadPool allocator warnings remain at shutdown.",
+    "The historical v1.2.2 c0000005 crash has no original dump and no proven root cause.",
+    "The first CI late-start receive delay was not reproduced locally or in the final strict CI rerun; root cause remains unproven.",
+    "External multi-PC LAN/WAN NAT/TURN and multi-hour play remain unverified.",
+    "Female faces remain stylized game art, not reference-equivalent high-end assets."
   ],
-  "validation_document": "VALIDATION_V123.md",
-  "request_audit_document": "V123_REQUEST_AUDIT.md",
+  "validation_document": "VALIDATION_V124.md",
+  "request_audit_document": "V124_REQUEST_AUDIT.md",
+  "performance_document": "PERFORMANCE_V124_KO.md",
   "handoff_document": "CODEX_HANDOFF.md"
 }
