@@ -1,31 +1,13 @@
 {
-  "development_work": {
-    "target_version": "1.2.7",
-    "branch": "work/v1.2.7-visual-readability",
-    "status": "candidate_validation_in_progress",
-    "handoff": "VISUAL_REWORK_V127_PARTIAL.md",
-    "map_cache_revision": 131,
-    "native_arenas_baked": 32,
-    "route_checks_passed": 304,
-    "physical_spawn_exit_checks_passed": 48,
-    "drop_retention_test": "passed",
-    "web_graphics_policy_checks_passed": 19,
-    "intel_igpu_verified": false,
-    "actual_browser_runtime_verified": false,
-    "complete_art_overhaul": false
-  },
-  "published_version": "1.2.6",
-  "source_commit": "5d035e5586950741134bb54ba870f9f116fd96f6",
-  "release_tag": "internal-n-crush-v1.2.6",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.6",
-  "published_at": "2026-09-27T11:43:45Z",
-  "verified_at": "2026-09-27T11:48:44.338074+00:00",
-  "status": "published_with_documented_validation_limits",
+  "published_version": "1.2.7",
+  "source_commit": "75ffb19e0a448d74303fdc4705f4bd2aa33b9d68",
+  "release_tag": "internal-n-crush-v1.2.7",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.7",
+  "published_at": "2026-09-27T13:43:27Z",
+  "verified_at": "2026-09-27T13:55:08.705376+00:00",
+  "status": "published_post_publication_validation_in_progress",
+  "previous_publication_record": "PUBLICATION_STATUS_V126.json",
   "recovery_branch": "work/v1.2.3-stability-20260927",
-  "baseline_version": "1.2.2",
-  "baseline_source_commit": "fb6c32aafc1bb5a5467ae45346fa87fe51e05472",
-  "previous_published_version": "1.2.5",
-  "previous_runtime_commit": "7a51e15239cf91c0056629c4bbfcaaea629f14da",
   "graphics": {
     "native": "detailed baked anatomy and materials",
     "web": "separate lightweight baked assets",
@@ -34,63 +16,58 @@
   },
   "assets": [
     {
-      "name": "InternalNCrush_NAS_Linux_v1.2.6.zip",
-      "bytes": 15520,
-      "sha256": "05fbb83b8ab8eef9378330d6790971f644a1ca514368fda32459b5cb9673ae65",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/InternalNCrush_NAS_Linux_v1.2.6.zip"
+      "name": "InternalNCrush_NAS_Linux_v1.2.7.zip",
+      "bytes": 15583,
+      "sha256": "cd1c0dd3ea3a23ccf37f91f1144aa2c5c66c31bb6a9508f7e64abda0f41c4343",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/InternalNCrush_NAS_Linux_v1.2.7.zip"
     },
     {
-      "name": "InternalNCrush_Web_v1.2.6.zip",
-      "bytes": 56988504,
-      "sha256": "11033e84d72cfd79a213a4c35d639e63300ce64e834beff9a141a9e1bd175dcf",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/InternalNCrush_Web_v1.2.6.zip"
+      "name": "InternalNCrush_Web_v1.2.7.zip",
+      "bytes": 94646556,
+      "sha256": "995d687615f3b55b756e497eccdf04d07b62f89828728e6bd634bd34eac0c3a7",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/InternalNCrush_Web_v1.2.7.zip"
     },
     {
-      "name": "InternalNCrush_Windows_v1.2.6.zip",
-      "bytes": 110858255,
-      "sha256": "92611c502f349764dcc86f86e55659e2c37425fde257c0cc06c8b0c5572b70ef",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/InternalNCrush_Windows_v1.2.6.zip"
+      "name": "InternalNCrush_Windows_v1.2.7.zip",
+      "bytes": 150484004,
+      "sha256": "d56495a91e195ef5192b41fa11b74ccc39d43b5ab2be4b1523f0c07ccb1e24a2",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/InternalNCrush_Windows_v1.2.7.zip"
     },
     {
       "name": "SHA256SUMS.txt",
-      "bytes": 298,
-      "sha256": "bd37548e6f53496187b781fe8e15518ca3e62093c8e651571b64a56cf4f1f7f6",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/SHA256SUMS.txt"
+      "bytes": 301,
+      "sha256": "cc1b0954213e3dde630bf85a2f0111446103d5a1b3947f47a6055b9acc585e0f",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/SHA256SUMS.txt"
     },
     {
-      "name": "WEB_RELEASE_v1.2.6.json",
-      "bytes": 168,
-      "sha256": "4869c2451cc3c77a86cae61efb0f739b2b909f1d9ea50710ced45b39dfa32183",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.6/WEB_RELEASE_v1.2.6.json"
+      "name": "WEB_RELEASE_v1.2.7.json",
+      "bytes": 173,
+      "sha256": "d3d4fba925da0fbda7130a6dba4b4e239a8b55784b0504101e02e26b9ebc179e",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/WEB_RELEASE_v1.2.7.json"
     }
   ],
   "website": {
     "url": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
-    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=11033e84d72c",
-    "commit": "8ac9690d906ed959f6a847a72003dca0a6e04e68",
-    "runtime_source_commit": "5d035e5586950741134bb54ba870f9f116fd96f6",
-    "approved_images_and_descriptions_preserved": true,
+    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=995d687615f3",
+    "runtime_installation_commit": "a7246bff370dae77d17a624903512adad38b97a1",
+    "runtime_source_commit": "75ffb19e0a448d74303fdc4705f4bd2aa33b9d68",
     "windows_web_nas_links_verified": true,
-    "public_browser_menu_version_verified": "1.2.6",
-    "public_browser_startup_errors_observed": false,
-    "browser_renderer_log": "OpenGL ES 3.0 / WebGL 2.0 Chromium / Compatibility / WebKit WebGL",
-    "exact_web_archive_local_practice_entry_verified": true,
-    "runtime_installation_commit": "59a5d2563a292b064213b21eebdfc5ff8d24f7e2"
+    "live_build_json_verified": true,
+    "exact_archive_local_browser_combat_entry_verified": true
   },
   "successful_ci": {
-    "final_source_build_release": 36314671336,
-    "final_source_build_attempt": 1,
-    "directory_docker_worker": 36315362584,
-    "site_installer": 36316683210,
-    "pages_deployment": 36316702660,
-    "public_package_source_hash_audit": 36316707421,
-    "site_guide_pages_deployment": 36316826089
+    "directory_docker_worker": 36322990614,
+    "site_installer": 36323407195,
+    "pages_deployment": 36323429203
+  },
+  "pending_ci": {
+    "source_build": 36322990615
   },
   "public_windows_zip_verification": {
-    "bytes": 110858255,
-    "sha256": "92611c502f349764dcc86f86e55659e2c37425fde257c0cc06c8b0c5572b70ef",
-    "files": 22,
-    "source_commit": "5d035e5586950741134bb54ba870f9f116fd96f6",
+    "bytes": 150484004,
+    "sha256": "d56495a91e195ef5192b41fa11b74ccc39d43b5ab2be4b1523f0c07ccb1e24a2",
+    "files": 27,
+    "source_commit": "75ffb19e0a448d74303fdc4705f4bd2aa33b9d68",
     "native_runs": [
       {
         "mode": "practice",
@@ -132,35 +109,20 @@
     "public_zip_webrtc_loopback": {
       "passed": true,
       "evidence": [
-        "RTC_CONNECTED role=client players=2 ping=7 snapshots=58"
-      ]
+        "RTC_CONNECTED role=client players=2 ping=7 snapshots=59"
+      ],
+      "warning": "ICE candidate send warning errno10051 observed; connection and snapshots succeeded"
     },
     "external_wan_nat_turn": "not_verified"
   },
-  "rendered_repeated_sessions": {
-    "v126_candidate_native": {
-      "cycles": 24,
-      "seconds_approx": 240,
-      "failures": 0,
-      "resources_after_warmup": 876,
-      "private_bytes_warm": 663289856,
-      "private_bytes_end": 662138880,
-      "private_bytes_peak": 675557376,
-      "known_shutdown_texture_warning": true
-    },
-    "v126_candidate_web": {
-      "cycles": 24,
-      "seconds_approx": 245,
-      "failures": 0,
-      "resources_after_warmup": 823,
-      "wasm_bytes_constant": 100466688,
-      "js_heap_mb_range": [
-        91.7,
-        115.6
-      ],
-      "maximum_sampled_warm_frame_ms": 25.099
-    },
-    "note": "Runtime source 5d035e5. Exported native/Web candidate repeated sessions; exact CI ZIP separately verified by Windows launches, loopback ENet/RTC, archive hashes and Web menu/bot-match entry. RTX 4080 SUPER; not an Intel/mobile or multi-hour guarantee."
+  "v127_validation": {
+    "functional_groups": 49,
+    "navigation_routes": 490,
+    "physical_vertical_routes": 16,
+    "spawn_exits": 48,
+    "identical_native_web_collision_maps": 32,
+    "map_cache_revision": 131,
+    "site_installer_tests": 7
   },
   "public_directory": {
     "status": "awaiting_owner_cloudflare_login",
@@ -173,35 +135,15 @@
     "Intermittent long frames are not all explained; a major first-deployment CPU stall was reduced.",
     "Known native GL texture and Web WorkerThreadPool allocator warnings remain at shutdown.",
     "The historical v1.2.2 c0000005 crash has no original dump and no proven root cause.",
-    "The first CI late-start receive delay was not reproduced locally or in the final strict CI rerun; root cause remains unproven.",
     "External multi-PC LAN/WAN NAT/TURN and multi-hour play remain unverified.",
-    "Female faces remain stylized game art, not reference-equivalent high-end assets."
+    "Female faces remain stylized game art, not reference-equivalent high-end assets.",
+    "Web archive increased to 94,646,556 bytes; not a download-size reduction.",
+    "Complete reference-equivalent art overhaul is not claimed."
   ],
-  "validation_document": "VALIDATION_V126.md",
-  "request_audit_document": "V124_REQUEST_AUDIT.md",
-  "performance_document": "PERFORMANCE_V124_KO.md",
+  "validation_document": "VALIDATION_V127.md",
   "handoff_document": "CODEX_HANDOFF.md",
-  "short_performance_comparison": {
-    "evidence": "VALIDATION_V125.md",
-    "hardware": "RTX 4080 SUPER / Ryzen 9 7900",
-    "versions": [
-      "1.2.4",
-      "1.2.5"
-    ],
-    "trials": 2,
-    "intermittent_long_frames_remain": true
-  },
-  "pending_work": null,
-  "v126_validation": {
-    "functional_groups": 47,
-    "navigation_routes": 372,
-    "physical_vertical_routes": 21,
-    "spawn_exits": 48,
-    "identical_native_web_collision_maps": 32,
-    "contact_traversal_assertions": 13,
-    "capture_assertions": 28,
-    "directory_unit_tests": 19,
-    "worker_policy_tests": 3,
-    "site_installer_tests": 7
-  }
+  "pending_work": [
+    "Rendered 24-cycle Web and exact Windows ZIP repeated sessions",
+    "Final branch CI result"
+  ]
 }

@@ -1,21 +1,41 @@
-# Active work: 1.2.7 visual rework — partial, not released
+# Internal N Crush 1.2.7 — published; post-publication tests
 
-Continue `work/v1.2.7-visual-readability`, based on the published 1.2.6 below.
-Read [VISUAL_REWORK_V127_PARTIAL.md](VISUAL_REWORK_V127_PARTIAL.md) first. It records
-the user's complete art/model/map scope, implemented changes, real validation,
-asset licensing, screenshots and unfinished work. Do not claim this is a
-finished art overhaul or deploy it under the old 1.2.6 version.
+The user explicitly requested publishing first, then continuing remaining tests.
+Windows/Web/NAS release 1.2.7 and the live website are published. Do not restore
+1.1.x, the 1.2.3 recovery branch, or the older 1.2.6 source as the working baseline.
 
-The latest request requires map-specific materials, lamps and props, with
-genuinely different topology; not every map may have an underground waterway and
-an elevated deck. Optional levels, 11 CC0 texture sources, initial themed props,
-supported decks, stairs, narrower corridors and two-sided geometry are now in
-source. Character anatomy is now shared across editions with a reduced Web body
-and protected face; native hair fitting, faceted weapon shells and hand shading
-also changed. Full visual/performance validation is in progress. Intel iGPU and
-physical-phone performance is unverified.
+- Runtime/tag: `75ffb19e0a448d74303fdc4705f4bd2aa33b9d68` / `internal-n-crush-v1.2.7`.
+- Website install: `a7246bff370dae77d17a624903512adad38b97a1`.
+- Release: https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.7
+- Live: https://nukcanon.github.io/nukcanon/internal-n-crush.html
+- Read `VALIDATION_V127.md` and `PUBLICATION_STATUS.json` for current evidence.
+- `VISUAL_REWORK_V127_PARTIAL.md` and all sections below are historical, not current release status.
 
-# Internal N Crush 1.2.6 — published, 2026-09-27
+## Current implementation and limits
+
+Cache revision 131; distinct optional level combinations; narrower corridors;
+CC0 themed materials and props; two-sided surfaces; supported decks and stairs;
+brighter lighting with bounded high-quality spotlights and sun shadows; shared
+operator anatomy with reduced Web geometry; hair fitting, weapon-shell and hand
+shading changes; red map close button; 180-second bounded weapon drops.
+
+49 functional groups and 490 graph routes pass, with all 32 native/Web collision
+signatures equal. Exact Windows ZIP passes four rendered/connection scenarios.
+The release was intentionally made public before remaining extended tests.
+Record those results in VALIDATION_V127.md when finished.
+
+Do not claim a complete AAA art overhaul, zero stutters, no leaks under all
+conditions, or measured Intel/mobile performance. Short native runs still have
+long frames; shutdown texture warnings persist. Intel 10–11th-gen integrated GPUs
+and physical smartphones are unavailable here. The Web download is now 94.65 MB.
+
+Preserve published assets/tag; runtime fixes require a new version, not silent
+replacement of the public 1.2.7 packages. Work branch: work/v1.2.7-visual-readability.
+Recovery branch: work/v1.2.3-stability-20260927. The public lobby endpoint is still
+unconfigured pending owner service deployment. Source repo and site repo remain
+separate; fetch before modifying and preserve unrelated output/ files.
+
+# Historical 1.2.6 record — superseded by 1.2.7
 
 The requested enlarged-map, map-viewer, capture-feedback and louder-announcer update is implemented and published. The user authorized deployment. Do not restart the old 1.2.6 partial work or restore 1.1.x files.
 

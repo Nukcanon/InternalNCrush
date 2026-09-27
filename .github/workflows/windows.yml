@@ -221,7 +221,10 @@ jobs:
           cd release-files
           sha256sum --check SHA256SUMS.txt
           if gh release view internal-n-crush-v1.2.7 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
-            test "$(cat /tmp/is-draft)" = true
+            if [ "$(cat /tmp/is-draft)" != true ]; then
+              echo "1.2.7 is already public; preserve its verified immutable assets."
+              exit 0
+            fi
             gh release edit internal-n-crush-v1.2.7 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           else
             gh release create internal-n-crush-v1.2.7 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.2.7" --notes "Rebuild enlarged layered maps, add interactive map plans and team capture feedback, and improve announcements." --repo "$GITHUB_REPOSITORY"

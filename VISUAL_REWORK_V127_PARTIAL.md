@@ -1,3 +1,7 @@
+# Historical checkpoint — superseded
+
+1.2.7 is now published. Read VALIDATION_V127.md and PUBLICATION_STATUS.json for current facts. The unreleased status and remaining-work lists below describe earlier checkpoints only.
+
 # 1.2.7 visual rework — PARTIAL, NOT RELEASED
 
 2026-09-27. Branch: `work/v1.2.7-visual-readability`.
