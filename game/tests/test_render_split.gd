@@ -14,7 +14,8 @@ func run():
 	else:
 		expect("material_atlas" in world.shader.code,"native retains detailed architecture atlas")
 		expect("finish_metallic" in SurfaceFinish.equipment_material().shader.code,"native equipment retains metal response")
-		expect(not "sampler2D skin_texture" in human.shader.code,"native skin is painted, not photographic")
+		var detail:Texture2D=human.get_shader_parameter("anatomy_detail")
+		expect(detail!=null and detail.get_width()<=512 and detail.get_height()<=512,"native CC0 skin detail has a fixed 512px budget")
 	var host=Node3D.new();root.add_child(host)
 	var mesh=MeshFactory.box(host,Vector3.ZERO,Vector3.ONE,Color.GRAY);mesh.material_override=world
 	WebMaterials.apply(host)

@@ -10,7 +10,8 @@ static func human_material(role:int=0) -> ShaderMaterial:
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
 uniform sampler2D operator_atlas:source_color,filter_linear_mipmap_anisotropic;
-// Painted skin, no photographic facial or body skin texture.
+uniform sampler2D anatomy_detail:source_color,filter_linear_mipmap;
+// Two shared CC0 diffuse maps, importer-capped to 512px; never loaded in Web.
 varying vec3 p;
 varying vec3 local_normal;
 void vertex(){p=VERTEX;local_normal=NORMAL;}
@@ -25,18 +26,30 @@ void fragment(){
  float lum=dot(tex,vec3(.2126,.7152,.0722));
  float mid=kind==0.?.35:kind==1.?.14:kind==2.?.075:.085;
  float relief=clamp(lum/max(.04,mid),.55,1.6);
- ALBEDO=COLOR.rgb*mix(1.,relief,kind==3.?.55:.32);
+ ALBEDO=COLOR.rgb*mix(1.,relief,kind==3.?.28:kind==1.?.13:.24);
+ // A narrow bound crew-neck edge follows the actual skinned cloth surface.
+ if(kind==1. && p.y>1.470 && p.y<=1.4801){ALBEDO*=mix(1.,.76,smoothstep(1.470,1.474,p.y));}
  if(kind==0.){
    ALBEDO=COLOR.rgb;
  }
  ROUGHNESS=clamp(UV2.x+(relief-1.)*.10,.58,.97);
  METALLIC=0.;SPECULAR=kind==0.?.24:.14;
  // Face only: clean painted colors, without photographic pores or glossy highlights.
- if(kind==4.){ALBEDO=COLOR.rgb;ROUGHNESS=1.;SPECULAR=0.;}
+ if(kind==4.){
+   ALBEDO=COLOR.rgb;ROUGHNESS=.78;SPECULAR=.16;
+   if(UV2.x>.89){
+     vec3 skin=texture(anatomy_detail,UV).rgb;
+     if(OUTPUT_IS_SRGB){skin=pow(skin,vec3(2.2));}
+     float skin_lum=dot(skin,vec3(.2126,.7152,.0722));
+     // Retain the restrained operator palette; use facial detail without red tint.
+     ALBEDO*=mix(1.,clamp(skin_lum/.43,.60,1.15),.30);
+   }
+ }
 }
 """
 	var human=ShaderMaterial.new();human.shader=shader
 	human.set_shader_parameter("operator_atlas",load("res://assets/textures/operator_materials_v11.png"))
+	human.set_shader_parameter("anatomy_detail",load("res://assets/human/textures/female.png" if role in HumanModel.FEMALE_ROLES else "res://assets/human/textures/male.png"))
 	humans[role]=human;return human
 static func hand_material(color:Color,kind:int) -> ShaderMaterial:
 	if RenderStyle.web():return ToonMaterials.color_material(color)

@@ -23,6 +23,51 @@ def rotate_to_down(v,axis):
     a=unit(axis);b=[0,-1,0];c=dot(a,b);k=cross(a,b)
     return add(add(v,cross(k,v)),mul(cross(k,cross(k,v)),1/max(1+c,1e-8)))
 
+def finish_neck(data):
+    """Cut a real neckline instead of blending skin and cloth within a triangle.
+
+    Done offline, with interpolated bind weights and UVs. The seam adds no draw
+    call or material and is identical for both genders' shared shoulder rig.
+    """
+    height=1.480
+    data['source_vertex_count']=len(data['vertices'])
+    points=data['vertices']; kinds=data['kinds']; facial=data['face_coordinates']; weights=data['weights']
+    result=[]; result_uvs=[]; cuts={}
+    def crossing(a,b,ua,ub,kind):
+        t=(height-points[a][1])/(points[b][1]-points[a][1])
+        key=(min(a,b),max(a,b),kind)
+        if key not in cuts:
+            cuts[key]=len(points)
+            p=mix(points[a],points[b],t);p[1]=height;points.append(p)
+            facial.append(mix(facial[a],facial[b],t));kinds.append(kind)
+            combined={}
+            for bone,w in weights[a]:combined[bone]=combined.get(bone,0.)+w*(1-t)
+            for bone,w in weights[b]:combined[bone]=combined.get(bone,0.)+w*t
+            weights.append([[bone,w] for bone,w in combined.items() if w>1e-6])
+        return cuts[key],mix(ua,ub,t)
+    for face,uv in zip(data['faces'],data['face_uvs']):
+        ys=[points[i][1] for i in face]
+        if min(ys)<height<max(ys):
+            for upper in (False,True):
+                polygon=[]
+                for n,a in enumerate(face):
+                    b=face[(n+1)%3]; ua=uv[n];ub=uv[(n+1)%3]
+                    inside_a=(points[a][1]>=height) if upper else (points[a][1]<=height)
+                    inside_b=(points[b][1]>=height) if upper else (points[b][1]<=height)
+                    if inside_a:polygon.append((a,ua))
+                    if inside_a!=inside_b:polygon.append(crossing(a,b,ua,ub,0 if upper else 1))
+                for n in range(1,len(polygon)-1):
+                    triangle=[polygon[0],polygon[n],polygon[n+1]]
+                    result.append([v[0] for v in triangle]);result_uvs.append([v[1] for v in triangle])
+        else:result.append(face);result_uvs.append(uv)
+    for i,p in enumerate(points):
+        if p[1]>height:kinds[i]=0
+        elif p[1]>1.405:kinds[i]=1
+    # Cut vertices belong to separate skin/cloth faces even at the same position.
+    for (_,_,kind),i in cuts.items():kinds[i]=kind
+    data['faces']=result;data['face_uvs']=result_uvs;data['neckline_height']=height
+    print('Neckline:',len(cuts),'seam vertices;',len(result),'triangles')
+
 def bake(gender):
     vertices=[];faces=[];face_uvs=[];uvs=[];groups={};group=''
     for line in (ROOT/'source/base.obj').read_text().splitlines():
@@ -39,6 +84,14 @@ def bake(gender):
         for line in (ROOT/'source'/name).read_text().splitlines():
             f=line.split()
             if len(f)==4 and f[0].isdigit():vertices[int(f[0])]=add(vertices[int(f[0])],list(map(float,f[1:])))
+    # CC0 anatomical targets sculpt existing topology offline, without adding
+    # a runtime modifier, texture upload, bone or vertex. See pinned provenance.
+    morphs={'neck-double-decr.target':.85,'chin-prognathism-decr.target':.18}
+    if gender=='female':morphs.update({'chin-prognathism-decr.target':.50,'chin-height-decr.target':.25,'chin-width-decr.target':.18,'mouth-scale-horiz-decr.target':.16,'mouth-angles-up.target':.10,'l-eye-height2-incr.target':.15,'r-eye-height2-incr.target':.15,'head-oval.target':.18})
+    for name,weight in morphs.items():
+        for line in (ROOT/'source'/name).read_text().splitlines():
+            f=line.split()
+            if len(f)==4 and f[0].isdigit():vertices[int(f[0])]=add(vertices[int(f[0])],mul(list(map(float,f[1:])),weight))
     def joint(name):
         ids=groups['joint-'+name];return [sum(vertices[i][k] for i in ids)/len(ids) for k in range(3)]
     head=joint('head');neck=joint('neck');pelvis=joint('pelvis')
@@ -151,9 +204,12 @@ if __name__=='__main__':
     male=json.loads((ROOT/'male.json').read_text())
     female=json.loads((ROOT/'female.json').read_text())
     for i,body in enumerate(male['vertices']):
-        weight=smooth(1.53,1.60,body[1])
+        weight=smooth(1.48,1.55,body[1])
         female['vertices'][i]=[round(v,6) for v in mix(body,female['vertices'][i],weight)]
         female['weights'][i]=male['weights'][i]
         female['kinds'][i]=male['kinds'][i]
     (ROOT/'female.json').write_text(json.dumps(female,separators=(',',':')))
     print('Female: male body/neck/shoulders and skin weights; female face above jaw')
+    for gender,anatomy in [('male',male),('female',female)]:
+        finish_neck(anatomy)
+        (ROOT/f'{gender}.json').write_text(json.dumps(anatomy,separators=(',',':')))

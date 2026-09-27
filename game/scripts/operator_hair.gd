@@ -24,5 +24,8 @@ static func point(u:float,v:float,role:int,web:bool) -> Vector3:
 	var angle=u*TAU;var front=clampf(-sin(angle),0.,1.)
 	var fringe=smoothstep(.15,.55,front)
 	var hem=lerpf(-.007,.052 if role==1 else .057,fringe)+sin(angle*13.)*.0025*fringe
+	if not web:
+		var swept=.070-.022*exp(-pow((cos(angle)+(.32 if role==1 else -.25))/.55,2))
+		hem=lerpf(-.007,swept,fringe)
 	var radius=sqrt(maxf(0.,1.-pow(v,4.)))
 	return Vector3(cos(angle)*(.106 if web else .098)*radius,lerpf(hem,.215 if web else .163,v),sin(angle)*(.120 if web else .116)*radius+.009)

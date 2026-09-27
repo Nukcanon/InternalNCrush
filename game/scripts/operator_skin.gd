@@ -74,7 +74,7 @@ static func _append_geometry(node:Node3D,rig:Node3D,index:int,rest:Array,st:Surf
 						st.set_bones(PackedInt32Array([int(weights.x),int(weights.y),0,0]));st.set_weights(PackedFloat32Array([weights.z,weights.w,0.,0.]))
 					st.set_color(colors[k] if colors!=null and not colors.is_empty() else material.albedo_color.srgb_to_linear() if material is StandardMaterial3D else Color.WHITE)
 					st.set_uv(uv[k] if uv!=null and not uv.is_empty() else Vector2.ZERO)
-					st.set_uv2(uv2[k] if child.has_meta("authored_anatomy") and uv2!=null and not uv2.is_empty() else Vector2(.86,1.01))
+					st.set_uv2(uv2[k] if child.has_meta("authored_anatomy") and uv2!=null and not uv2.is_empty() else Vector2(.86,float(child.get_meta("surface_kind",1))+.01))
 					st.set_normal((transform.basis.inverse().transposed()*normals[k]).normalized());st.add_vertex(position)
 		elif child is Node3D and not child.has_meta("deform_bone") and child.name!="WeaponSocket":_append_geometry(child,rig,index,rest,st)
 static func sync(rig:Node3D,skeleton:Skeleton3D):

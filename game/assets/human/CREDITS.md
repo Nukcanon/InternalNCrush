@@ -22,6 +22,19 @@ The repository includes original data and `tools/bake_human.py` for an offline,
 standard-library rebuild. `male.json` and `female.json` contain only the derived
 anatomical surface and weights. The playable characters are clothed.
 
+## 1.2.4 anatomical finishing
+
+Nine additional **CC0** shape-data files from the same pinned MakeHuman revision
+are recorded individually in `source/face-morphs-v124.json` with source URLs and
+SHA-256 hashes. They refine the under-chin/neck volume, jaw projection, female
+oval face, chin proportions, mouth corners and eyelids. They are applied **only
+by the offline baker**: no runtime target loading or additional animation bones.
+The shared body/shoulder rig is retained below the neckline. The neckline is cut
+into the existing surface so skin and cloth no longer interpolate across a face.
+Native faces use the existing CC0 male/female diffuse maps below, capped to
+512px on import and shared across roles. Only luminance detail is combined with
+the muted vertex palette. Web strips both maps and keeps its paint shader.
+
 ## Skin textures in 1.1.0
 
 Four UV-aligned diffuse textures come from the official MakeHuman Community **CC0 system assets** pack, with original archive paths and SHA-256 values in `textures/origin.json`. This includes young Caucasian male/female, young African male and young Asian female skins. Upstream material metadata is preserved in `textures/upstream-materials.txt`. The game desaturates/redness-corrects these textures and combines them with original clothing and equipment materials.

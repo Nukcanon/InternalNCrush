@@ -5,7 +5,9 @@ const HEIGHTS=[1.80,1.72,1.88,1.76,1.83,1.70]
 const WIDTHS=[1.0,.95,1.08,1.01,.98,.95]
 const FEMALE_ROLES=[1,5]
 const IDENTITIES=["MASON", "SERA", "BRIGGS", "REED", "VALE", "MINA"]
-const SKIN_COLORS=[Color("b3a28c"),Color("c7b69f"),Color("89765f"),Color("b9a48a"),Color("9b866e"),Color("c2b099")]
+const SKIN_COLORS=[Color("b3a28c"),Color("cbbcaf"),Color("89765f"),Color("b9a48a"),Color("9b866e"),Color("c7b6a8")]
+static var loft_meshes={}
+const LOFT_CACHE_LIMIT=128
 static func joint(parent:Node,label:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=label;n.position=pos;parent.add_child(n);return n
 static func pose_rig(which:int) -> Node3D:
@@ -21,6 +23,8 @@ static func pose_rig(which:int) -> Node3D:
 # Elliptical cross sections make anatomical volumes and fabric, with continuous normals.
 # Each ring is (height, half-width, half-depth, depth-offset).
 static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=20,sculpt:bool=false) -> MeshInstance3D:
+	var cache_key=str([rings,sides,sculpt])
+	if loft_meshes.has(cache_key):return M.instance(parent,loft_meshes[cache_key],pos,color)
 	var smooth=[]
 	for j in range(rings.size()-1):
 		var a:Vector4=rings[maxi(0,j-1)];var b:Vector4=rings[j];var c:Vector4=rings[j+1];var d:Vector4=rings[mini(rings.size()-1,j+2)]
@@ -47,7 +51,9 @@ static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=20,sc
 			var a=TAU*i/sides;var b=TAU*(i+1)/sides
 			var p=Vector3(cos(a)*r.y,r.x,sin(a)*r.z+r.w);var q=Vector3(cos(b)*r.y,r.x,sin(b)*r.z+r.w)
 			for point in ([center,q,p] if end==0 else [center,p,q]):st.add_vertex(point)
-	st.generate_normals();st.index();return M.instance(parent,st.commit(),pos,color)
+	st.generate_normals();st.index();var mesh=st.commit()
+	MeshFactory.bound_cache(loft_meshes,LOFT_CACHE_LIMIT);loft_meshes[cache_key]=mesh
+	return M.instance(parent,mesh,pos,color)
 static func sculpt_face(point:Vector3) -> Vector3:
 	if point.z>=0:return point
 	var x=point.x;var y=point.y;var front=smoothstep(.015,.065,-point.z)
@@ -79,10 +85,10 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 	# Eyelids, nose, lips, ears and jaw are now the continuous authored mesh.
 	for eye in AuthoredHuman.eyes(which):
 		var center=Vector3(eye[0],eye[1],eye[2]);var side=signf(center.x)
-		oval(parent,center,Vector3(.022,.022,.022),Color("c4c5b9"))
-		oval(parent,center+Vector3(0,0,-.0108),Vector3(.009,.009,.002),eye_color)
-		oval(parent,center+Vector3(0,0,-.012),Vector3(.004,.004,.001),Color("182023"))
-		oval(parent,center+Vector3(-.001,.002,-.0125),Vector3(.0012,.0012,.0006),Color("e5ddd0"))
+		oval(parent,center,Vector3(.022,.019,.022),Color("dad7cc")).set_meta("surface_kind",4)
+		oval(parent,center+Vector3(0,0,-.0108),Vector3(.010,.010,.002),eye_color).set_meta("surface_kind",4)
+		oval(parent,center+Vector3(0,0,-.012),Vector3(.004,.004,.001),Color("182023")).set_meta("surface_kind",4)
+		oval(parent,center+Vector3(-.001,.002,-.0125),Vector3(.0012,.0012,.0006),Color("e5ddd0")).set_meta("surface_kind",4)
 		cord(parent,center+Vector3(-side*.013,.017,-.012),center+Vector3(side*.010,.019,-.009),.0024,hair)
 	if female:OperatorHair.build(parent,which,false)
 	elif which==2:
@@ -105,7 +111,7 @@ static func build(which:int,team:int) -> Node3D:
 	var hips=joint(root,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
 	loft(hips,Vector3.ZERO,[Vector4(-.15,.10,.10,0),Vector4(-.09,.168,.127,.01),Vector4(.02,.172,.13,0),Vector4(.105,.158,.115,0)],trousers)
 	loft(chest,Vector3.ZERO,[Vector4(-.23,.145,.101,0),Vector4(-.13,.156,.108,.009),Vector4(.01,.181,.125,0),Vector4(.115,.192,.126,0),Vector4(.19,.169,.097,0),Vector4(.245,.062,.055,0)],shirt,24)
-	loft(chest,Vector3(0,.248,0),[Vector4(-.025,.073,.063,0),Vector4(.009,.066,.056,0)],shirt.darkened(.12),28)
+	# The collar binding is painted on the cut neckline, never a floating cylinder.
 
 	for side in [-1,1]:
 		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.207,.105,0))
@@ -135,9 +141,6 @@ static func build(which:int,team:int) -> Node3D:
 	if which in FEMALE_ROLES:
 		pass # Authored female anatomy shares the animation skeleton.
 	# Role-specific soft gear: radio, scout scarf, padded vest, tool roll, satchel, medical bag.
-	if which==1:
-		# A fitted collar replaces the broad floating scarf below the scout's neck.
-		loft(chest,Vector3(0,.225,0),[Vector4(-.012,.070,.061,0),Vector4(.012,.065,.058,0)],Color("71806a"))
 	if which==2:oval(chest,Vector3(0,-.015,.16),Vector3(.34,.40,.19),Color("6a715e"))
 	if which==3:
 		oval(hips,Vector3(.213,-.105,.028),Vector3(.10,.19,.19),Color("987851"))

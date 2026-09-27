@@ -1,15 +1,15 @@
 [
   {
     "path": "CREDITS.md",
-    "sha256": "485dab47781a2369bb390f9f835dbefd45dea9b25a7cb114aa1fa2addd1f09de"
+    "sha256": "bdb6d4188b18c9bbf081662d014c3331ad20455e2b862b7f6f1a0dc0fb8219a8"
   },
   {
     "path": "female.json",
-    "sha256": "1f20bd3d5eb208c77564464922c269b5ff2143dfd833aecf6c4a8726ab4145dc"
+    "sha256": "55a3336a585b73ca1e9e0d3c876ee6eaaa96f59e886cf378f2c633bc2d938815"
   },
   {
     "path": "male.json",
-    "sha256": "f800b7571361a70db83dd29b4ece024ee23867efdf70e41479efc0bb4767f2f1"
+    "sha256": "a278cf8255c9bb4cc984d196fe0f32840c00b173add61eae7261c06c6bc35dac"
   },
   {
     "path": "source/.gdignore",
@@ -28,6 +28,30 @@
     "sha256": "70e228ba7164737dae664454394536fc5935fa48d333c1a97d77e2dc6eacc5f5"
   },
   {
+    "path": "source/chin-height-decr.target",
+    "sha256": "acf83b5b7f2d6665f19d0d91205472878c23ab78b3f43d48420f75afe8e82818"
+  },
+  {
+    "path": "source/chin-prognathism-decr.target",
+    "sha256": "4dd20d7912e9baf38d5b92e4e3a9f03a7bc0b59578db9d9a80288729ded88885"
+  },
+  {
+    "path": "source/chin-width-decr.target",
+    "sha256": "ac081bd1652c203fc8973f20988a868a423a49f1fe6449cb974727fd46c26af1"
+  },
+  {
+    "path": "source/face-morphs-v124.json",
+    "sha256": "5e0b9ba3fcf8ccd837668ea3d9f813a05389740033eba851620292f108a8af7a"
+  },
+  {
+    "path": "source/head-oval.target",
+    "sha256": "a17cd3a600588a344babe520fbd4d4edcb096db3328051fe692dfb997a1a678d"
+  },
+  {
+    "path": "source/l-eye-height2-incr.target",
+    "sha256": "8521b63c1bf07af06194e96e14eb522dce43615ef1139b8117f104f5132fbc69"
+  },
+  {
     "path": "source/LICENSE.ASSETS.md",
     "sha256": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c"
   },
@@ -36,8 +60,24 @@
     "sha256": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1"
   },
   {
+    "path": "source/mouth-angles-up.target",
+    "sha256": "8ddc2f53f4264742f4e10ddafd128e059e09c6a4268a2722e9495bad0f274898"
+  },
+  {
+    "path": "source/mouth-scale-horiz-decr.target",
+    "sha256": "07a9ef160755467a470bd0a1df035143d83ebddbc12e4612e69e93a64644405c"
+  },
+  {
+    "path": "source/neck-double-decr.target",
+    "sha256": "21757d56fd147be67c962fdad9c3fee07e06bf069f17f1bb8f29fdae53b17b5a"
+  },
+  {
     "path": "source/origin.json",
     "sha256": "c1b09811f3b74539f4fbc774f6a65fb6e237e0e0db6395c267bd69899f047bf5"
+  },
+  {
+    "path": "source/r-eye-height2-incr.target",
+    "sha256": "35e1f070ab8a77dc103aab81c478f04136f6afec378a7003d8834e49ff02d916"
   },
   {
     "path": "source/universal-female-young-averagemuscle-averageweight.target",
@@ -52,16 +92,32 @@
     "sha256": "b2a6ac8cd4f9febdb447368e29c76cd68410bb66e46d9dcfa2d5f75126eea8fc"
   },
   {
+    "path": "textures/female.png.import",
+    "sha256": "455e5befa40bbb7d7564ca37ae3f7fa5ee038172bffa8c58fb00ecff376f8758"
+  },
+  {
     "path": "textures/female_asian.png",
     "sha256": "1d82f782b7d2da732229633bd2d14754d873fff53cdb1d088977bcf67ae19dde"
+  },
+  {
+    "path": "textures/female_asian.png.import",
+    "sha256": "9aa9b77d5579de1d707238da534c4542a86c69d0d68e5f72afa2dd9aa7694608"
   },
   {
     "path": "textures/male.png",
     "sha256": "862a26e335e958b70534cb5f0d7c47ef30ab148a56c42b3e9da969cf76f12963"
   },
   {
+    "path": "textures/male.png.import",
+    "sha256": "05211b1a0e5d2bac4badabc71b690d8ceae8c818d0364572588ca6a60d8db44d"
+  },
+  {
     "path": "textures/male_dark.png",
     "sha256": "e3f0dbb634e4c68561338f0087f7a122444e84ec56df102212f1222aa12e4d50"
+  },
+  {
+    "path": "textures/male_dark.png.import",
+    "sha256": "55e3077c10b7746b86609aeadb06bfe4079238adf7c134e7ac9d8415b308b8e2"
   },
   {
     "path": "textures/origin.json",

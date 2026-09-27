@@ -7,6 +7,8 @@ var grenade_nodes={}
 var rocket_nodes=[]
 var status_nodes={}
 var ragdolls=[]
+var explosion_pool:Array=[]
+const MAX_EXPLOSIONS=8
 var active_lights=0
 const MAX_TRACERS=96
 var tracers:Array=[]
@@ -20,10 +22,11 @@ func clear(keep_tracers:bool=false):
 	var pooled={}
 	if keep_tracers:
 		for item in tracers:item.node.hide();item.until=0;pooled[item.node]=true
+		for node in explosion_pool:node.retire();pooled[node]=true
 	for child in get_children():
 		if not pooled.has(child):child.queue_free()
 	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();rocket_nodes.clear();active_lights=0
-	if not keep_tracers:tracers.clear()
+	if not keep_tracers:tracers.clear();explosion_pool.clear()
 	tracer_cursor=0
 	blood=null;bomb_visual=null;bomb_beep_at=0.
 func blood_hit(point:Vector3,direction:Vector3,amount:float):
@@ -264,13 +267,19 @@ func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:f
 	var t=light.create_tween();t.tween_property(light,"light_energy",0.,seconds);t.tween_callback(light.queue_free)
 func muzzle_light(pos:Vector3):temporary_light(pos,Color("ffc77b"),1.3,3.8,.075)
 func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.):
-	transients=transients.filter(func(n):return is_instance_valid(n))
-	while transients.size()>=96:
-		var old=transients.pop_front()
-		if is_instance_valid(old):old.queue_free()
-	var node=BurstVisual.new();add_child(node);node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.build(fire)
+	var node:BurstVisual
+	for candidate in explosion_pool:
+		if not candidate.active:node=candidate;break
+	if node==null and explosion_pool.size()<MAX_EXPLOSIONS:
+		node=BurstVisual.new();node.pooled=true;add_child(node);explosion_pool.append(node)
+	if node==null:
+		# Replace the oldest lingering smoke, keeping fresh detonations visible.
+		node=explosion_pool[0]
+		for candidate in explosion_pool:
+			if candidate.age>node.age:node=candidate
+		node.retire()
+	node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.build(fire)
 	temporary_light(pos+Vector3.UP*.3,Color("ffc78a"),6.,10.,.20)
-	transients.append(node)
 func skill_burst(role:int,pos:Vector3,color:Color):
 	var node=group(pos);var radius=[2.5,12.,2.2,2.,5.,2.4][role]
 	for i in range(3):

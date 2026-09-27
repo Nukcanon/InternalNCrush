@@ -1,0 +1,59 @@
+{
+  "upstream_commit": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+  "assets": [
+    {
+      "file": "neck-double-decr.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/neck/neck-double-decr.target",
+      "sha256": "21757d56fd147be67c962fdad9c3fee07e06bf069f17f1bb8f29fdae53b17b5a",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "chin-prognathism-decr.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/chin/chin-prognathism-decr.target",
+      "sha256": "4dd20d7912e9baf38d5b92e4e3a9f03a7bc0b59578db9d9a80288729ded88885",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "chin-height-decr.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/chin/chin-height-decr.target",
+      "sha256": "acf83b5b7f2d6665f19d0d91205472878c23ab78b3f43d48420f75afe8e82818",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "chin-width-decr.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/chin/chin-width-decr.target",
+      "sha256": "ac081bd1652c203fc8973f20988a868a423a49f1fe6449cb974727fd46c26af1",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "mouth-scale-horiz-decr.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/mouth/mouth-scale-horiz-decr.target",
+      "sha256": "07a9ef160755467a470bd0a1df035143d83ebddbc12e4612e69e93a64644405c",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "mouth-angles-up.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/mouth/mouth-angles-up.target",
+      "sha256": "8ddc2f53f4264742f4e10ddafd128e059e09c6a4268a2722e9495bad0f274898",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "l-eye-height2-incr.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/eyes/l-eye-height2-incr.target",
+      "sha256": "8521b63c1bf07af06194e96e14eb522dce43615ef1139b8117f104f5132fbc69",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "r-eye-height2-incr.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/eyes/r-eye-height2-incr.target",
+      "sha256": "35e1f070ab8a77dc103aab81c478f04136f6afec378a7003d8834e49ff02d916",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    },
+    {
+      "file": "head-oval.target",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/head/head-oval.target",
+      "sha256": "a17cd3a600588a344babe520fbd4d4edcb096db3328051fe692dfb997a1a678d",
+      "license": "CC0-1.0; LICENSE.ASSETS.md"
+    }
+  ]
+}

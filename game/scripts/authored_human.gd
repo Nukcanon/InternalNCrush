@@ -26,16 +26,23 @@ static func face_point(which:int,p:Vector3) -> Vector3:
 	var nose=exp(-pow(p.x/.018,2)-pow((p.y+.006)/.028,2))*smoothstep(.04,.075,-p.z)
 	shaped.z-=[.004,-.001,.002,.008,.003,-.002][which]*nose
 	if which in HumanModel.FEMALE_ROLES:
-		shaped.y+=maxf(0.,-p.y)*.18
+		shaped.y+=maxf(0.,-p.y)*.05
 		shaped.z+=nose*.006
 		# Retract the lower facial plane, leaving the throat and eye sockets intact.
 		var lower=smoothstep(.005,-.067,p.y)*smoothstep(-.14,-.08,p.y)
 		var front=smoothstep(.025,.075,-p.z)
-		shaped.z+=lower*front*.026
-		shaped.y+=lower*.005
+		shaped.z+=lower*front*.006
+		shaped.y+=lower*.002
 		shaped.x*=1.-lower*.045
 		var cheek=exp(-pow((absf(p.x)-.044)/.026,2)-pow((p.y+.005)/.027,2))
 		shaped.x+=signf(p.x)*cheek*.003
+		var mouth=exp(-pow(p.x/.032,4)-pow((p.y+.027)/.011,4))*smoothstep(.055,.085,-p.z)
+		shaped.y+=mouth*pow(clampf(absf(p.x)/.026,0.,1.),2)*.003
+		# Open the eyelid aperture without changing eye-socket centers or rig size.
+		var eye_y=.028345;var eye_x=.02885
+		var eyelid=exp(-pow((absf(p.x)-eye_x)/.018,4)-pow((p.y-eye_y)/.013,4))*smoothstep(.045,.075,-p.z)
+		shaped.y+=(p.y-eye_y)*.08*eyelid
+		shaped.x+=signf(p.x)*(absf(p.x)-eye_x)*.12*eyelid
 	return p.lerp(shaped,strength)
 static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trousers:Color):
 	_remove_base(root,[skin,shirt,trousers])
@@ -49,9 +56,11 @@ static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trouse
 			# produced random leather/hair triangles along the neck seam.
 			var kinds=[int(info.kinds[face[0]]),int(info.kinds[face[1]]),int(info.kinds[face[2]])]
 			var face_kind=kinds[0] if kinds[0]==kinds[1] or kinds[0]==kinds[2] else kinds[1]
+			var face_height=(float(info.vertices[face[0]][1])+float(info.vertices[face[1]][1])+float(info.vertices[face[2]][1]))/3.
+			if face_height>1.405:face_kind=0 if face_height>=float(info.get("neckline_height",1.48)) else 1
 			for corner in range(3):
 				var index=face[corner]
-				var p=info.vertices[index];var kind=int(info.kinds[index]);var color:Color=palette[kind];var q=info.face_coordinates[index]
+				var p=info.vertices[index];var kind=face_kind;var color:Color=palette[kind];var q=info.face_coordinates[index]
 				var surface_kind=4 if face_kind==0 else 2 if face_kind in [3,4] else 1
 				# Muted lip/ear coloration is part of the surface, never floating spheres.
 				if kind==0 and p[1]>1.48:
@@ -69,7 +78,7 @@ static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trouse
 				st.set_uv(Vector2(uv[0],uv[1]))
 				st.set_bones(bones);st.set_weights(weights);st.set_color(color.srgb_to_linear());st.set_uv2(Vector2(.67 if surface_kind==0 else .9,float(surface_kind)+.01))
 				var point=Vector3(p[0],p[1]-.94,p[2])
-				if kind==0 and p[1]>1.45:
+				if p[1]>1.45:
 					var shaped=face_point(which,Vector3(p[0],p[1]-1.6,p[2]))
 					point=shaped+Vector3(0,.66,0)
 				st.add_vertex(point)

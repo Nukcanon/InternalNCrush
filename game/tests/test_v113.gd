@@ -16,10 +16,11 @@ func run():
 	var male=AuthoredHuman.source(0)
 	for role in HumanModel.FEMALE_ROLES:
 		var female=AuthoredHuman.source(role);var same=true
-		for i in range(male.vertices.size()):
-			if male.vertices[i][1]<=1.53 and female.vertices[i]!=male.vertices[i]:same=false
-		expect(same,"female torso neck and shoulder geometry uses male source")
-		expect(female.weights==male.weights,"female skin uses common male joint weights")
+		var original_count=int(male.get("source_vertex_count",male.vertices.size()))
+		for i in range(original_count):
+			if male.vertices[i][1]<=1.48 and female.vertices[i]!=male.vertices[i]:same=false
+		expect(same,"female torso and shoulders retain male source below the tailored neckline")
+		expect(female.weights.slice(0,original_count)==male.weights.slice(0,original_count),"female original skin vertices use common male joint weights; seam vertices interpolate them")
 		var rig=HumanModel.pose_rig(role);root.add_child(rig)
 		expect(is_equal_approx(rig.scale.x,.95) and is_equal_approx(rig.scale.z,1.),"female only lateral width five percent slimmer")
 		expect(is_equal_approx(rig.get_node("Hips/Chest/LeftArm").position.y,.105),"shared shoulder animation baseline")

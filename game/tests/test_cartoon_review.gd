@@ -15,7 +15,10 @@ func run():
 		expect(arrays[Mesh.ARRAY_INDEX].size()<18000,"comic operator has fewer than 6000 triangles, role "+str(role))
 		expect(skeleton.get_bone_count()==15 and rig.has_node("Hips/Chest/WeaponSocket"),"combat joints and weapon grip remain available, role "+str(role))
 		var material=body.mesh.surface_get_material(0)
-		expect(material is ShaderMaterial and not "sampler2D skin_texture" in material.shader.code,"operator has no sampled facial texture, role "+str(role))
+		var uses_anatomy_uv=false
+		for uv in arrays[Mesh.ARRAY_TEX_UV2]:
+			if uv.x>.89:uses_anatomy_uv=true
+		expect(material is ShaderMaterial and not uses_anatomy_uv,"lightweight cartoon geometry never samples the native anatomy texture, role "+str(role))
 		rig.free()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(100,100);g.arena.has_water=false
