@@ -220,5 +220,5 @@ jobs:
           # Publish the installation descriptor last, after both downloads exist.
           gh release upload internal-n-crush-v1.2.4 WEB_RELEASE_v1.2.4.json --clobber --repo "$GITHUB_REPOSITORY"
 
-          gh release edit internal-n-crush-v1.2.4 --draft=false --latest --notes-file ../RELEASE_NOTES_V124.md --repo "$GITHUB_REPOSITORY"
-          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/tags/internal-n-crush-v1.2.4 --jq .object.sha)" = "$GITHUB_SHA"
+          # Keep this draft until rendered Windows/Web soak results are reviewed.
+          gh release edit internal-n-crush-v1.2.4 --notes-file ../RELEASE_NOTES_V124.md --repo "$GITHUB_REPOSITORY"
