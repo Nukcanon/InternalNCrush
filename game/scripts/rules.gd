@@ -35,8 +35,12 @@ static func damage_water(hit_submerged:bool, shooter_wading:bool, target_outside
 	return 0.5 if hit_submerged or (shooter_wading and target_outside) else 1.0
 static func ammo_pickup(capacity:int) -> int:
 	return maxi(1, int(ceil(capacity * 0.25)))
+static func score_parts(p:Dictionary) -> Dictionary:
+	return {"kills":int(p.get("kills",0))*100,"assists":int(p.get("assists",0))*75,"healing":roundi(float(p.get("healed",0))*.6),"builds":int(p.get("builds",0))*80,"objectives":int(p.get("objective",0))*50,"deaths":-int(p.get("deaths",0))*25}
 static func score(p:Dictionary) -> int:
-	return int(p.get("kills",0)*100 + p.get("assists",0)*50 + p.get("objective",0)*35 + p.get("healed",0)*.3 + p.get("builds",0)*20 - p.get("deaths",0)*25)
+	var total=0
+	for value in score_parts(p).values():total+=int(value)
+	return total
 static func rating(p:Dictionary) -> float:
 	return float(score(p)) / maxf(1.0,p.get("played",60.0)/60.0)
 static func default_options() -> Dictionary:

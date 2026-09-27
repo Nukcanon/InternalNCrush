@@ -21,6 +21,16 @@ func _draw():
 		draw_circle(center,radius,Color("14212a"),false,4.,true)
 		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:draw_line(center+direction*8,center+direction*radius*.85,Color(.05,.1,.13,.85),1.,true)
 		for i in [-3,-2,-1,1,2,3]:draw_line(center+Vector2(-4,i*35),center+Vector2(4,i*35),Color(.05,.1,.13,.85),1.,true)
+		if MarkerTracker.equipped(p) and game.current_weapon(p).get("category","") in ["저격소총","지정사수소총"]:
+			var marking_radius=AimModel.pixel_radius(5.,a.camera.fov,size.y)
+			draw_arc(center,marking_radius,0,TAU,96,Color(1.,.86,.36,.28),3.,true)
+			var target=int(p.get("marker_target",0))
+			if target!=0 and game.actors.has(target):
+				var point=game.actors[target].eye()+Vector3.UP*.28
+				if not a.camera.is_position_behind(point):
+					var pos=a.camera.unproject_position(point);var text="%.1f"%maxf(0.,MarkerTracker.DWELL_SECONDS-float(p.get("marker_progress",0.)))
+					draw_string_outline(get_theme_default_font(),pos+Vector2(-35,-12),text,HORIZONTAL_ALIGNMENT_CENTER,70,18,3,Color.BLACK)
+					draw_string(get_theme_default_font(),pos+Vector2(-35,-12),text,HORIZONTAL_ALIGNMENT_CENTER,70,18,Color("ffe79d"))
 	else:
 		var gap=maxf(2.5,AimModel.pixel_radius(a.visual_spread,a.camera.fov,size.y))
 		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:

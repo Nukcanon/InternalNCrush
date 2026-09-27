@@ -306,6 +306,7 @@ func host_game(transport:MultiplayerPeer=null):
 		add_player(1,profile.nick,profile.token)
 		if not bot_start_loadout.is_empty():commit_loadout(1,bot_start_loadout)
 	for i in range(mini(int(options.bots),int(options.max_players)-(0 if dedicated else 1))):add_player(-i-1,"BOT %02d"%(i+1),"bot"+str(i))
+	TeamBalance.reconcile(self)
 	ui.lobby();broadcast_state(true);print("SERVER_READY port=",port)
 func reset_transport_state():
 	received_sequence=-1;snapshot_sequence=0;snapshot_buffers.clear();received_parts.clear();expected_parts=0;incoming_at.clear();peer_activity.clear();pending_peers.clear();snapshot_timer=0.;input_timer=0.;ping_timer=0.;ping_ms=0;full_sync_timer=0.;connection_busy=false;connection_notice=false;last_snapshot_ms=Time.get_ticks_msec();session_started=last_snapshot_ms
@@ -383,9 +384,11 @@ func register(nick:String,token:String,password:String,version:String,ticket:Str
 		if old_id==1 or Time.get_ticks_msec()-int(peer_activity.get(old_id,0))<5000:
 			reject.rpc_id(id,"같은 플레이어의 이전 연결이 아직 남아 있습니다. 5초 뒤 다시 접속하세요.");return
 		multiplayer.multiplayer_peer.disconnect_peer(old_id);disconnected(old_id)
+	if players.size()>=int(options.max_players) and not TeamBalance.auto_ids(self).is_empty():TeamBalance.remove_auto(self,TeamBalance.auto_ids(self)[0])
 	if players.size()>=int(options.max_players):reject.rpc_id(id,"방이 가득 찼습니다.");return
 	add_player(id,nick.left(20),token);peer_activity[id]=Time.get_ticks_msec();pending_peers.erase(id)
 	if not claims.is_empty():public_room.accepted(id,claims);options.room_owner=public_room.owner_peer
+	TeamBalance.reconcile(self)
 	configure.rpc_id(id,public_options());broadcast_state(true,id)
 	print("JOIN ",id," count=",players.size())
 @rpc("authority","call_remote","reliable",0)
@@ -413,7 +416,7 @@ func add_player(id:int,nick:String,token:String):
 		p.alive=false;p.respawn=clock+3 if int(options.join)==2 and int(options.mode)!=4 else 1e12
 	p.bloom=0.;p.shot_time=-100.;p.spray_index=0;p.spray_phase=0.;p.bot_action=""
 	p.pending_loadout={};p.trigger_seen=0;p.fire_prev=false;p.burst_left=0;p.trigger_until=0.;p.reload_started=0.;p.switch_until=0.
-	if id<0 and p.role==3:p.secondary="repair"
+	if id<0 and p.role==3 and int(options.mode)!=4:p.secondary="repair"
 	if not p.has("number"):public_serial+=1;p.number=public_serial
 	p.base_nick=nick.strip_edges().replace("\n"," ").replace("\r"," ").left(20)
 	if p.base_nick.is_empty():p.base_nick="Player"
@@ -427,6 +430,7 @@ func ensure_actor(id:int):
 	var a=A.new();a.pid=id;a.game=self;a.name="Player_"+str(id);add_child(a);actors[id]=a;a.set_local(id==local_id and not dedicated);a.set_team(int(players[id].team));a.target_pos=Vector3.ZERO
 func equip_ammo(p:Dictionary):
 	for id in [p.primary,p.secondary]:
+		if str(id).is_empty():continue
 		var w=C.get_weapon(id);p.mag[id]=int(w.mag);p.reserve[id]=int(w.reserve)
 func spawn(id:int):
 	players[id].use_prev=false
@@ -507,7 +511,7 @@ func disconnected(id:int):
 			if devices[did].owner==id:remove_device(did)
 	players.erase(id);bot_agents.erase(id)
 	if actors.has(id):actors[id].queue_free();actors.erase(id)
-	if server:call_deferred("broadcast_state",true)
+	if server:TeamBalance.reconcile(self);call_deferred("broadcast_state",true)
 func prune_reconnects():
 	for token in reconnects.keys():
 		if clock-float(reconnects[token].get("disconnected_at",clock))>300.:reconnects.erase(token)
@@ -825,19 +829,15 @@ func handle_command(id:int,action:String,data:Dictionary):
 		"gadget_mode":
 			pass # Only the selected loadout can be used; no mixed smoke/flash pack.
 func change_team(requester:int,target:int,team:int) -> bool:
-	if not players.has(target) or team not in [0,1] or int(options.mode)==1:return false
-	if requester!=1 and (phase!="lobby" or requester!=target):feedback(requester,"","경기 중 팀 변경은 방장만 할 수 있습니다.");return false
-	var p=players[target]
-	if p.team==team:return true
-	if team_count(team)>=16:feedback(requester,"","한 팀은 최대 16명입니다.");return false
-	p.team=team
-	finish_team_change(target);enforce_medics();broadcast_state(true);return true
+	var ok=TeamBalance.move(self,requester,target,team)
+	if not ok:feedback(requester,"","본인 또는 방장이 관리하는 봇만 인원 균형을 유지하며 이동할 수 있습니다.")
+	return ok
 func swap_teams(requester:int,first:int,second:int) -> bool:
-	if requester!=1 or first==second or not players.has(first) or not players.has(second) or int(options.mode)==1:return false
-	var one=players[first];var two=players[second]
-	if one.team==two.team:return false
-	var old_team=one.team;one.team=two.team;two.team=old_team
-	finish_team_change(first);finish_team_change(second);enforce_medics();broadcast_state(true);return true
+	if first==second or not players.has(first) or not players.has(second) or int(options.mode)==1:return false
+	if not TeamBalance.allowed(self,requester,first) or not TeamBalance.allowed(self,requester,second):return false
+	if players[first].team==players[second].team:return false
+	var team=players[first].team;players[first].team=players[second].team;players[second].team=team
+	finish_team_change(first);finish_team_change(second);TeamBalance.reconcile(self);enforce_medics();broadcast_state(true);return true
 func finish_team_change(target:int):
 	var p=players[target]
 	for did in devices.keys():
@@ -1302,16 +1302,20 @@ func check_objectives(dt:float):
 		0:
 			if maxi(scores[0],scores[1])>=int(options.target) or remaining<=0:finish_match("무승부" if scores[0]==scores[1] else ("BLUE 승리" if scores[0]>scores[1] else "ORANGE 승리"))
 		1:
-			var best=0;var winner=""
+			var best=-1;var winner=0;var tied=false
 			for p in players.values():
-				if p.kills>=best:best=p.kills;winner=p.nick
-			if best>=int(options.target) or remaining<=0:finish_match(winner+" 개인전 승리")
+				var kills=int(p.get("match_kills",0))
+				if kills>best:best=kills;winner=int(p.id);tied=false
+				elif kills==best:tied=true
+			if best>=int(options.target) or remaining<=0:finish_match("무승부" if tied else str(players[winner].nick)+" 개인전 승리",-1,0 if tied else winner)
 		2:
 			var alive=[0,0]
 			for p in players.values():
-				if p.alive or (p.can_respawn if options.shared_lives else p.lives>0):alive[p.team]+=1
-			if players.size()>1 and (alive[0]==0 or alive[1]==0):finish_match("BLUE 승리" if alive[0]>0 else "ORANGE 승리")
-			elif remaining<=0:finish_match("시간 종료")
+				if p.alive or p.can_respawn:alive[p.team]+=1
+			if players.size()>1 and (alive[0]==0 or alive[1]==0):finish_match("무승부" if alive[0]==alive[1] else "BLUE 승리" if alive[0]>0 else "ORANGE 승리")
+			elif remaining<=0:
+				var reserve=[alive[0]+tickets[0],alive[1]+tickets[1]]
+				finish_match("무승부" if reserve[0]==reserve[1] else "BLUE 승리" if reserve[0]>reserve[1] else "ORANGE 승리")
 		3:
 			for i in range(3):
 				var counts=[0,0]
@@ -1323,14 +1327,17 @@ func check_objectives(dt:float):
 						zone_owner[i]=team
 						for id in players:
 							if players[id].team==team and actors[id].position.distance_to(arena.zones[i])<7:players[id].objective+=2
-				if zone_owner[i]>=0:scores[zone_owner[i]]+=dt*.4
-			if maxf(scores[0],scores[1])>=int(options.target) or remaining<=0:finish_match("BLUE 승리" if scores[0]>scores[1] else "ORANGE 승리")
+			scores=[zone_owner.count(0),zone_owner.count(1)]
+			var all_team=0 if scores[0]==3 else 1 if scores[1]==3 else -1
+			if all_team!=capture_team:capture_elapsed=0.;capture_team=all_team
+			if all_team>=0:capture_elapsed+=dt
+			if (all_team>=0 and capture_elapsed>=float(options.capture_hold)) or remaining<=0:finish_match("무승부" if scores[0]==scores[1] else "BLUE 승리" if scores[0]>scores[1] else "ORANGE 승리")
 		4:
 			BombLogic.tick(self,dt)
 			if bomb.actor!=0 and (not players.has(bomb.actor) or not players[bomb.actor].alive or not actors[bomb.actor].input_state.use or clock-bomb.get("last_touch",0)>.1):bomb.actor=0;bomb.progress=0
 			var attackers=MatchFlow.attackers(self);var alive=[0,0]
 			for p in players.values():
-				if p.alive:alive[p.team]+=1
+				if p.alive or p.can_respawn:alive[p.team]+=1
 			if bomb.planted:
 				bomb.time=maxf(0.,bomb.time-dt)
 				if bomb.time<=0:BombLogic.detonate(self);return
@@ -1394,6 +1401,7 @@ func next_match():
 	elif int(options.next_teams)==1:
 		var ids=players.keys();ids.shuffle()
 		for i in range(ids.size()):players[ids[i]].team=i%2;actors[ids[i]].set_team(i%2)
+	TeamBalance.reconcile(self)
 	start_match(false)
 func broadcast_state(force:bool,target_peer:int=0):
 	if not server or arena==null or multiplayer.get_peers().is_empty():return
@@ -1467,7 +1475,7 @@ func receive_state(s:Dictionary):
 	if phase=="buy" and (old_phase!=phase or old_round!=round_no):call_deferred("open_buy_menu")
 	elif old_phase!=phase:
 		if phase=="lobby":ui.lobby()
-		elif phase=="combat":ui.show_hud();capture_pointer()
+		elif phase=="combat":ui.clear_panel();ui.show_hud();capture_pointer()
 func update_world_visuals(dt:float):
 	if arena==null:return
 	var upgrade_target=TurretSelection.target(self,local_id)

@@ -46,6 +46,8 @@ func tick(dt:float):
 			var move=Basis(Vector3.UP,previous_yaw)*Vector3(a.input_state.x,0,a.input_state.z);move=Basis(Vector3.UP,float(a.input_state.yaw)).inverse()*move;a.input_state.x=move.x;a.input_state.z=move.z
 		return
 	if game.phase!="combat":return
+	if int(game.bomb.get("actor",0))==id and not BombLogic.action(game,id).is_empty():
+		a.input_state.use=true;a.input_state.crouch=true;return
 	if p.flash>now:
 		if p.role==5:game.use_skill(id)
 		return
@@ -67,7 +69,7 @@ func tick(dt:float):
 		var w=game.current_weapon(p)
 		if w.kind!="gun" or (p.role==3 and distance>40 and p.secondary!="repair"):
 			game.handle_command(id,"slot",{"slot":1});w=game.current_weapon(p)
-		elif p.slot!=0 and p.primary!="m1" and (p.role!=3 or distance<30):game.handle_command(id,"slot",{"slot":0})
+		elif p.slot!=0 and p.get("owned_primary",true) and p.primary!="m1" and (p.role!=3 or distance<30):game.handle_command(id,"slot",{"slot":0})
 		var cadence=[2.,1.6,1.3][difficulty];var firing=fmod(now+abs(id)*.17,cadence)<[.45,.65,.72][difficulty]
 		var aligned=absf(angle_difference(float(a.input_state.yaw),atan2(-(aim_at-a.eye()).x,-(aim_at-a.eye()).z)))<.15
 		if now>=ready_to_fire and firing and aligned and w.kind=="gun":
@@ -154,7 +156,7 @@ func choose_action():
 		for supply in game.arena.supplies:
 			var distance=a.position.distance_to(supply.pos)
 			if supply.ready<=now and distance<best:best=distance;supply_pos=supply.pos
-		if best<80 and (not visible_target or int(p.mag.get(p.primary,0))==0):action="resupply";set_goal(supply_pos);return
+		if best<80 and not p.primary.is_empty() and (not visible_target or int(p.mag.get(p.primary,0))==0):action="resupply";set_goal(supply_pos);return
 	if p.hp<28 and visible_target and difficulty>0:
 		var away=(a.position-last_known).normalized();action="retreat";set_goal(a.position+away*12);return
 	if int(game.options.mode)==4:
@@ -257,7 +259,7 @@ func objective_interaction():
 	if not game.bomb.planted and p.team==attackers:
 		for site in game.arena.sites:
 			if a.position.distance_to(site)<4.5:a.input_state.x=0.;a.input_state.z=0.;a.input_state.use=true;a.input_state.fire=false;stats.interactions+=1
-	elif game.bomb.planted and p.team!=attackers and a.position.distance_to(game.bomb.position)<4.5:
+	elif game.bomb.planted and p.team!=attackers and a.position.distance_to(game.bomb.position)<1.65:
 		a.input_state.x=0.;a.input_state.z=0.;a.input_state.use=true;a.input_state.fire=false;stats.interactions+=1
 func utilities():
 	var p=game.players[id];var a=game.actors[id]
@@ -301,14 +303,6 @@ func utilities():
 	if p.skill_ready>skill_before:stats.skills+=1
 func instant_look(at:Vector3):
 	var a=game.actors[id];var delta=at-a.eye();a.aim_yaw=atan2(-delta.x,-delta.z);a.aim_pitch=atan2(delta.y,Vector2(delta.x,delta.z).length());a.input_state.yaw=a.aim_yaw;a.input_state.pitch=a.aim_pitch
-func shop():
+func shop():	
 	if purchase_round==game.round_no:return
-	purchase_round=game.round_no;var p=game.players[id];var best="";var most=-1
-	for wid in Catalog.list_for(p.role,game.options.classes):
-		var price=int(Catalog.get_weapon(wid).price)
-		if price<=p.cash-300 and price>most:best=wid;most=price
-	if best.is_empty():return
-	var armor=1 if p.cash-most>=300 else 0
-	var request={"role":p.role,"primary":best,"armor":armor,"gadget":0,"repair":p.role==3}
-	if game.loadout_cost(p,request)>p.cash:request.armor=0
-	if game.loadout_cost(p,request)<=p.cash:game.apply_loadout(id,request)
+	purchase_round=game.round_no;DefusalMatch.bot_buy(game,id)

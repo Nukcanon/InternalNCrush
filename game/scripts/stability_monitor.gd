@@ -16,7 +16,10 @@ func _ready():
 func open_log():
 	if file:file.close()
 	var path="user://stability.jsonl"
-	if FileAccess.file_exists(path) and FileAccess.get_file_as_bytes(path).size()>=MAX_BYTES:
+	var current=FileAccess.open(path,FileAccess.READ) if FileAccess.file_exists(path) else null
+	var bytes=current.get_length() if current else 0
+	if current:current.close()
+	if bytes>=MAX_BYTES:
 		DirAccess.remove_absolute("user://stability.previous.jsonl")
 		DirAccess.rename_absolute(path,"user://stability.previous.jsonl")
 	file=FileAccess.open(path,FileAccess.READ_WRITE if FileAccess.file_exists(path) else FileAccess.WRITE)

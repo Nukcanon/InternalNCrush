@@ -1,15 +1,10 @@
 class_name MarkerTracker
 extends RefCounted
 const DWELL_SECONDS=2.
-static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)==0
+static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)==0 and GadgetLoadout.has_item(p)
 static func select_target(game:Node,id:int) -> int:
 	var p=game.players[id];var a=game.actors[id];var w=game.current_weapon(p)
-	var fov=float(w.zoom)
-	if SniperScope.supported(w):
-		var zoom=float(a.input_state.get("scope_zoom",w.get("scope_default",4.)))
-		if not zoom in SniperScope.steps(w):zoom=float(w.get("scope_default",4.))
-		fov=rad_to_deg(2.*atan(tan(deg_to_rad(82.)*.5)/zoom))
-	var threshold=cos(atan(tan(deg_to_rad(fov)*.5)*SniperScope.SCREEN_RADIUS*2.));var best=threshold;var target=0
+	var best=cos(deg_to_rad(5.));var target=0
 	for other in game.players:
 		var q=game.players[other]
 		if other==id or not q.alive or not game.enemies(p,q) or q.get("cleanse",0)>game.clock:continue
@@ -21,7 +16,7 @@ static func select_target(game:Node,id:int) -> int:
 	return target
 static func tick(game:Node,id:int,dt:float):
 	var p=game.players[id];var a=game.actors[id];var w=game.current_weapon(p)
-	if not equipped(p) or not game.options.classes or not game.can_attack(p) or not a.input_state.ads or p.slot>1 or float(w.zoom)>38 or p.reload>game.clock or p.flash>game.clock or a.aim_progress<.9:
+	if not equipped(p) or not game.options.classes or not game.can_attack(p) or not a.input_state.ads or p.slot>1 or w.get("category","") not in ["저격소총","지정사수소총"] or p.reload>game.clock or p.flash>game.clock or a.aim_progress<.9:
 		p.marker_target=0;p.marker_progress=0.;p.marker_scan=0.;return
 	p.marker_scan=float(p.get("marker_scan",0))+dt
 	if p.marker_scan<.1:return

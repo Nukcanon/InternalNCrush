@@ -358,7 +358,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/.72,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	if is_instance_valid(world_weapon):
-		world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if is_instance_valid(gadget_world):
 		gadget_world.visible=GadgetLoadout.held_visible(p,now) and (p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
@@ -388,6 +388,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
 	camera.fov=lerpf(88. if sprint else 82.,SniperScope.fov(game.profile,w),ads_blend)
 	var base=Vector3(.255,-.255,-.46).lerp(Vector3(.25,-.21,-.50) if w.get("rocket",false) else Vector3(0,-.14,-.5),ads_blend)
+	if w.get("dual",false):base=Vector3(0,-.19,-.56)
 	base+=Vector3(-.025,.095,-.025)*crouch_blend*(1.-ads_blend)
 	var motion=move_blend*(1.-ads_blend*.93)*(1.-crouch_blend*.35)
 	base.y+=sin(now*1.9)*.002*(1.-move_blend)*(1.-ads_blend)
@@ -414,7 +415,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	if is_instance_valid(gadget_world):
 		var payload=gadget_world.get_node_or_null("Payload")
 		if payload:payload.visible=not throwing
-	view_weapon.reload_round_count=int(p.get("reload_count",3))
+	view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.reload_round_count=int(p.get("reload_count",3))
 	view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))

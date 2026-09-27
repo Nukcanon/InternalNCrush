@@ -28,9 +28,11 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 	if is_instance_valid(model):stage.remove_child(model);model.queue_free()
 	model=Node3D.new();stage.add_child(model)
 	if is_instance_valid(skill_symbol):skill_symbol.hide()
+	if (kind==1 and weapon.is_empty()) or (kind==2 and gadget in [-1,99]):
+		custom_minimum_size.y=130.;return
 	if kind==0:
 		var c=CharacterVisual.new();c.enable_physics=false;model.add_child(c);c.build(role,team);c.set_armor(armor_level);c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.)
-		var gun=WeaponVisual.new();c.socket.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.scale=Vector3.ONE*.8
+		var gun=WeaponVisual.new();c.socket.add_child(gun);gun.build(Catalog.get_weapon("pistol" if weapon.is_empty() else weapon),false);gun.scale=Vector3.ONE*.8
 		c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.);c.grip_weapon(1.);c.sync_deform()
 		model.rotation.y=-.35;camera.position=Vector3(0,1.4,-4);camera.look_at(Vector3(0,1.3,0));camera.size=1.15
 	elif kind==1:

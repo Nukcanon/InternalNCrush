@@ -310,7 +310,7 @@ func solve_feet(dt:float,move:Vector3,crouched:bool,sprinting:bool,phase:float):
 func grip_weapon(dt:float):
 	var weapon:Node3D
 	for child in socket.get_children():
-		if child is WeaponVisual:weapon=child;break
+		if child is WeaponVisual and child.visible:weapon=child;break
 	if not is_instance_valid(weapon):return
 	var right_target=chest.to_local(weapon.right_hand.global_position)
 	var left_target=chest.to_local(weapon.left_hand.global_position)

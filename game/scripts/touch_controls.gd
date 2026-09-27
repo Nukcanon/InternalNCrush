@@ -110,6 +110,7 @@ func press(action:String,on:bool):
 			if not game.players[game.local_id].alive:game.cycle_spectator();return
 			game.trigger_seq+=1;game.actors[game.local_id].input_state.trigger_seq=game.trigger_seq;game.actors[game.local_id].input_state.fire=true
 			if game.players[game.local_id].slot==2 and GrenadeLogic.equipped(game.players[game.local_id]):game.command("trigger_press",{"seq":game.trigger_seq})
+		"use","bomb":game.command("bomb_tap",{})
 		"reload","skill","melee":game.command(action,{})
 		"slide":
 			held.crouch=false;game.command("slide",{"forward":true})

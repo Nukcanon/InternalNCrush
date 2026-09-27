@@ -1,6 +1,8 @@
 extends Node3D
 class_name WeaponVisual
 const M=preload("res://scripts/mesh_factory.gd")
+var dual_guns:Array=[]
+var fire_side=0
 var magazine:Node3D
 var action_part:Node3D
 var left_hand:Node3D
@@ -30,6 +32,7 @@ var light=Color("9baeb6")
 var accent=Color("62bcb3")
 const LENGTHS={"VECTOR-24":.66,"RAPID-9":.59,"ATLAS":.76,"TRIAD":.68,"SCOUT":.88,"MONOLITH":1.06,"ECHO":.79,"LARK":.7,"KESTREL":.84,"ANCHOR":.78,"BASTION":.9,"PULSE":.83,"TIDAL":.68,"FOLD":.44,"SWIFT":.43,"FLUX":.42,"LINE":.53,"HIVE":.55,"PIPER":.59,"MENDER":.83,"COMET":.95}
 func build_pose(w:Dictionary):
+	if w.get("dual",false):build_dual(w,false,true);return
 	# Identical sockets/reload nodes without GPU geometry, for dedicated hit poses.
 	spec=w;name=w.name;reload_style=str(w.reload_style)
 	if w.name in ["HIVE","TIDAL"]:reload_style="drum"
@@ -98,6 +101,7 @@ func magazine_shape(style:String):
 			block(magazine,Vector3(0,-.15,.012),Vector3(.067,.023,.094),metal)
 static var web_templates={}
 func build(w:Dictionary,hands=true,use_cache=true):
+	if w.get("dual",false):build_dual(w,hands,false);return
 	if use_cache and restore_web_model(w,hands):return
 	spec=w;name=w.name
 	for color in [metal,edge,light]:
@@ -354,6 +358,7 @@ func update_hands(t:float,recoil:float,shot_age:float):
 				rocket_grip.position=reload_round.position+Vector3(0,0,.225);rocket_grip.position.z=maxf(.24,rocket_grip.position.z)
 				WeaponHand.fit_forearm(support_arm,Vector3(-.30,-.28,.12-position.z),rocket_grip.transform*rocket_grip.wrist)
 func animate_reload(t:float,recoil:float,shot_age=10.):
+	if not dual_guns.is_empty():animate_dual(t,recoil,shot_age);return
 	if not trigger_origin_set:trigger_origin=right_hand.position;trigger_origin_set=true
 	right_hand.position=trigger_origin
 	magazine.position=mag_origin;magazine.rotation=Vector3.ZERO;action_part.position=action_origin;action_part.rotation=Vector3.ZERO;left_hand.position=hand_origin;left_hand.rotation=Vector3.ZERO;barrel_group.rotation=Vector3.ZERO
@@ -440,3 +445,31 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 	if reload_style!="rocket":left_hand.position.x-=.09*travel
 	if reload_style=="pistol":left_hand.position.y-=.04*travel
 	update_hands(t,recoil,shot_age)
+
+func build_dual(w:Dictionary,hands:bool,pose_only:bool):
+	spec=w;name=w.name;reload_style="dual";length=.3
+	for index in range(2):
+		var gun=WeaponVisual.new();add_child(gun)
+		var single=Catalog.get_weapon("pistol").duplicate(true);single.role=w.role
+		if pose_only:gun.build_pose(single)
+		else:gun.build(single,hands)
+		gun.position=Vector3(.22 if index==0 else -.22,0,0);gun.scale.x=1. if index==0 else -1.
+		if hands:gun.left_hand.hide();gun.support_arm.hide()
+		dual_guns.append(gun)
+	right_hand=dual_guns[0].right_hand;left_hand=dual_guns[1].right_hand
+	magazine=dual_guns[0].magazine;action_part=dual_guns[0].action_part;barrel_group=dual_guns[0].barrel_group
+	if not pose_only:muzzle=dual_guns[0].muzzle;flash=dual_guns[0].flash
+func animate_dual(t:float,recoil:float,shot_age:float):
+	for index in range(2):
+		var gun=dual_guns[index];var side=1. if index==0 else -1.
+		var fired=index==fire_side
+		gun.animate_reload(-1.,recoil if fired else 0.,shot_age if fired else 10.)
+		gun.position=Vector3(.22*side,0.,recoil*.055 if fired else 0.);gun.rotation=Vector3(recoil*.15 if fired else 0.,0.,0.)
+		gun.magazine.visible=true
+		if t>=0.:
+			# Each pistol is lowered to a belt magazine station while its firing hand stays on the grip.
+			var phase=clampf(t*2.-index,0.,1.);var lower=sin(phase*PI)
+			gun.position.y-=lower*.43;gun.position.z+=lower*.18;gun.rotation.x-=lower*.5
+			gun.magazine.visible=not (phase>.28 and phase<.66)
+			gun.action_part.position.z+=sin(clampf((phase-.72)/.22,0.,1.)*PI)*.045
+	muzzle=dual_guns[fire_side].muzzle;flash=dual_guns[fire_side].flash

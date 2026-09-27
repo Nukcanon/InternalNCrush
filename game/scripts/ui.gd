@@ -43,6 +43,7 @@ var notice_until=0
 var practice_hint_until=0
 var hit_until=0
 var room_list:VBoxContainer
+var gear_secondary="pistol"
 var gear_primary:OptionButton
 var gear_class:OptionButton
 var gear_armor:OptionButton
@@ -331,9 +332,10 @@ func lobby():
 		for ip in IP.get_local_addresses():
 			if "." in ip and not ip.begins_with("127."):ips.append(ip)
 		label("접속 주소  "+", ".join(ips),15)
-	label("대기실: 내 팀 선택 가능 · 방장: 모든 참가자 배치 가능",14)
+	label("내 팀은 직접 선택 · 방장은 본인과 봇만 이동 · 인원 균형 유지",14)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
-	button("병과 · 무기 · 가젯",gear,actions);button("팀 편성",teams_menu,actions);button("참가자 관리",members_menu,actions)
+	if int(game.options.mode)!=4:button("병과 · 무기 · 가젯",gear,actions)
+	button("팀 편성",teams_menu,actions);button("참가자 관리",members_menu,actions)
 	actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);pin_actions(actions)
 	if game.server or int(game.options.get("room_owner",0))==game.local_id:button("경기 시작",func():game.command("start",{}),actions)
 	else:label("방장이 경기를 시작하면 참여합니다.",15)
@@ -341,7 +343,7 @@ func lobby():
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 func teams_menu():
 	make_panel("팀 편성",1100);screen="teams"
-	label("방장만 경기 중 팀을 변경할 수 있습니다. 변경된 참가자는 부활 후 합류하며 설치/해체 모드는 다음 라운드에 합류합니다.",15)
+	label("팀은 직접 변경합니다. 방장은 봇도 이동할 수 있으며, 인원이 불균형해지는 이동은 제한됩니다.",15)
 	if game.server:option("다음 경기 편성",["현재 팀 유지","무작위","기록으로 균형 편성"],game.options.next_teams,func(i):game.command("team_policy",{"next_teams":i}))
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 	button("돌아가기",func():
@@ -362,14 +364,14 @@ func refresh_teams():
 			if p.team!=side:continue
 			var row=HBoxContainer.new();box.add_child(row)
 			var name=label(p.nick+("  · 나" if p.id==game.local_id else "")+"  /  "+Rules.CLASSES[p.role],15,row);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-			var allowed=game.server or (game.phase=="lobby" and p.id==game.local_id)
+			var allowed=TeamBalance.allowed(game,game.local_id,int(p.id))
 			if allowed and game.options.mode!=1:
 				var pid=int(p.id);var target=1-side
 				var full=game.team_count(target)>=16
 				var move=button("교환…" if full and game.server else "→ "+("BLUE" if target==0 else "ORANGE"),func():
 					if full and game.server:team_swap_menu(pid)
 					else:game.command("team",{"player_id":pid,"team":target}),row)
-				move.custom_minimum_size.y=28;move.add_theme_font_size_override("font_size",13)
+				move.disabled=not TeamBalance.can_move(game,game.local_id,pid,target);move.custom_minimum_size.y=28;move.add_theme_font_size_override("font_size",13)
 		if game.phase=="lobby" and game.players.has(game.local_id) and game.players[game.local_id].team!=side and game.options.mode!=1:
 			var selected=side;button("이 팀으로 참가",func():game.command("team",{"team":selected}),box)
 func team_swap_menu(first:int):
@@ -378,7 +380,7 @@ func team_swap_menu(first:int):
 	label(game.players[first].nick+"와 팀을 바꿀 상대를 선택하세요. 양 팀의 인원수는 유지됩니다.",18)
 	var ids=[];var names=[]
 	for p in game.players.values():
-		if p.team!=game.players[first].team:ids.append(int(p.id));names.append(p.nick+" / "+Rules.CLASSES[p.role])
+		if p.team!=game.players[first].team and TeamBalance.allowed(game,game.local_id,int(p.id)):ids.append(int(p.id));names.append(p.nick+" / "+Rules.CLASSES[p.role])
 	var choice=option("상대 팀 참가자",names,0)
 	button("팀 교환 적용",func():
 		if not ids.is_empty():game.command("team_swap",{"first":first,"second":ids[choice.selected]})
@@ -523,10 +525,12 @@ func sensitivity_control(title:String,value:float,low:float,high:float,callback:
 	slider.value_changed.connect(func(v):number.set_value_no_signal(v);callback.call(v))
 	number.value_changed.connect(func(v):slider.set_value_no_signal(v);callback.call(v))
 func gear():
+	if int(game.options.mode)==4 and game.phase!="buy":notice("준비 시간에 장비를 구매할 수 있습니다.");return
 	if not bot_setup and not game.players.has(game.local_id):return
 	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
 	make_panel("오퍼레이터 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
 	# Hidden selectors preserve one canonical loadout state for networking and menus.
+	gear_secondary=str(queued.get("secondary",p.secondary))
 	gear_class=option("병과",Rules.CLASSES,chosen);gear_class.get_parent().hide()
 	gear_class.disabled=not game.options.classes
 	gear_primary=option("주무기",[],0);gear_primary.get_parent().hide()
@@ -555,7 +559,7 @@ func gear():
 		if bot_setup:
 			var selection=selected_loadout();bot_choice.merge(selection,true);bot_choice.armor_max=selection.armor*25
 			bot_setup=false;game.start_bot_match(selection)
-		else:game.command("loadout",selected_loadout()),actions)
+		else:submit_loadout(),actions)
 	if game.phase=="combat" and int(game.options.mode) in [0,1,3] and not game.options.get("practice",false):
 		button("사망 후 즉시 적용 · −25점",func():
 			var selection=selected_loadout();selection["immediate"]=true;game.command("loadout",selection),actions)
@@ -565,7 +569,13 @@ func gear():
 	refresh_weapons()
 	var wanted=queued.get("primary",p.primary)
 	if wanted in weapon_ids:gear_primary.select(weapon_ids.find(wanted))
-	gear_gadget.select(maxi(0,gear_gadget.get_item_index(int(queued.get("gadget",p.gadget)))));refresh_gear_detail();refresh_gear_cards()
+	gear_gadget.select(maxi(0,gear_gadget.get_item_index(99 if int(queued.get("gadget",p.gadget))<0 else int(queued.get("gadget",p.gadget)))));refresh_gear_detail();refresh_gear_cards()
+func submit_loadout():
+	var selection=selected_loadout();var p=game.players[game.local_id]
+	if int(game.options.mode)==4 and DefusalEconomy.replacement(p,selection):
+		var dialog=ConfirmationDialog.new();dialog.title="구매 장비 변경";dialog.dialog_text="병과를 변경하면 구매한 장비를 잃습니다. 선택한 장비로 변경하시겠습니까?" if int(selection.role)!=int(p.role) else "현재 장비를 교체하고 새 장비를 구매하시겠습니까?"
+		root.add_child(dialog);dialog.confirmed.connect(func():selection.confirmed=true;game.command("loadout",selection);dialog.queue_free());dialog.canceled.connect(dialog.queue_free);dialog.popup_centered(Vector2i(560,170))
+	else:game.command("loadout",selection)
 func exit_gear():
 	if bot_setup:bot_choice.merge(selected_loadout(),true);bot_choice.armor_max=bot_choice.armor*25;bot_setup=false;practice_menu();return
 	if game.phase=="lobby":lobby()
@@ -594,11 +604,11 @@ func refresh_gear_cards():
 	match gear_category:
 		0:
 			for i in range(weapon_ids.size()):
-				var index=i;var w=Catalog.get_weapon(weapon_ids[i])
-				image_card(gear_cards,weapon_ids[i],w.name,gear_primary.selected==i,func():gear_primary.select(index);preview_kind=1;preview_secondary=false;refresh_gear_detail();refresh_gear_cards())
+				var index=i;var w=Catalog.get_weapon(weapon_ids[i]);var caption="주무기 없음" if weapon_ids[i].is_empty() else w.name
+				image_card(gear_cards,weapon_ids[i],caption,gear_primary.selected==i,func():gear_primary.select(index);preview_kind=1;preview_secondary=false;refresh_gear_detail();refresh_gear_cards())
 		1:
-			for id in ([Rules.SECONDARIES[role],"repair"] if role==3 else [Rules.SECONDARIES[role]]):
-				var wid=id;image_card(gear_cards,id,Catalog.get_weapon(id).name,gear_repair.button_pressed if id=="repair" else not gear_repair.button_pressed,func():gear_repair.button_pressed=wid=="repair";preview_kind=1;preview_secondary=true;refresh_gear_detail();refresh_gear_cards())
+			for id in Catalog.secondaries_for(role):
+				var wid=id;image_card(gear_cards,id,Catalog.get_weapon(id).name,gear_secondary==id,func():gear_secondary=wid;gear_repair.button_pressed=wid=="repair";preview_kind=1;preview_secondary=true;refresh_gear_detail();refresh_gear_cards())
 		2:
 			for i in range(gear_gadget.item_count):
 				var index=i;image_card(gear_cards,"gadget"+str(role)+"_"+str(gear_gadget.get_item_id(i)),gear_gadget.get_item_text(i).split(" · ")[0],gear_gadget.selected==i,func():gear_gadget.select(index);preview_kind=2;refresh_gear_detail();refresh_gear_cards())
@@ -607,10 +617,12 @@ func refresh_gear_cards():
 				var index=i;image_card(gear_cards,"armor"+str(i),["기본 복장","경량 방어구","중량 방어구"][i],gear_armor.selected==i,func():gear_armor.select(index);preview_kind=3;refresh_gear_detail();refresh_gear_cards())
 		4:image_card(gear_cards,"skill"+str(role),Rules.SKILLS[role],true,func():preview_kind=4;refresh_gear_detail())
 func selected_loadout() -> Dictionary:
-	return {"role":gear_class.selected,"primary":weapon_ids[gear_primary.selected],"armor":gear_armor.selected,"gadget":gear_gadget.get_selected_id(),"repair":gear_repair.button_pressed}
+	return {"role":gear_class.selected,"primary":weapon_ids[gear_primary.selected],"armor":gear_armor.selected,"gadget":-1 if gear_gadget.get_selected_id()==99 else gear_gadget.get_selected_id(),"repair":gear_secondary=="repair","secondary":gear_secondary}
 func refresh_weapons():
 	if gear_class.selected!=3:gear_repair.button_pressed=false
+	if gear_secondary not in Catalog.secondaries_for(gear_class.selected):gear_secondary="pistol"
 	gear_primary.clear();weapon_ids=[]
+	if int(game.options.mode)==4:weapon_ids.append("");gear_primary.add_item("주무기 없음")
 	for id in Catalog.list_for(gear_class.selected,game.options.classes):
 		var w=Catalog.get_weapon(id)
 		if not game.options.classes and w.kind!="gun":continue
@@ -622,7 +634,9 @@ func refresh_weapons():
 		elif gear_class.selected==0:items=["보호판", "확산 파편 수류탄 ×2"]
 		elif gear_class.selected==4:items=["연막탄 ×3","섬광탄 ×3"]
 		else:items=[Rules.GADGETS[gear_class.selected]]
-		for item in items:gear_gadget.add_item(item)
+		for i in range(items.size()):gear_gadget.add_item(items[i],i)
+		if int(game.options.mode)==4:
+			gear_gadget.add_item("가젯 없음",99);gear_gadget.set_item_metadata(gear_gadget.item_count-1,-1)
 		gear_gadget.add_item("파편 수류탄 ×2",8)
 		if int(game.options.mode)==4:gear_gadget.add_item("해체 키트 · 400 크레딧",9)
 		gear_repair.hide()
@@ -630,7 +644,7 @@ func refresh_weapons():
 func refresh_gear_detail():
 	if not is_instance_valid(gear_detail) or weapon_ids.is_empty():return
 	var role=gear_class.selected;var p=bot_choice if bot_setup else game.players[game.local_id]
-	var preview_id=("repair" if role==3 and gear_repair.button_pressed else Rules.SECONDARIES[role]) if preview_kind==1 and preview_secondary else weapon_ids[gear_primary.selected]
+	var preview_id=gear_secondary if preview_kind==1 and preview_secondary else weapon_ids[gear_primary.selected]
 	var w=Catalog.get_weapon(preview_id)
 	var mode={"auto":"연발","semi":"단발","burst":"3점사"}.get(w.get("fire_mode","auto"),"")
 	preview_caption.text=w.name+" · "+str(w.get("category",mode))
@@ -659,11 +673,11 @@ func refresh_gear_detail():
 	if not game.options.skills and preview_kind==4:gear_detail.text+="\n현재 방에서는 스킬이 꺼져 있습니다."
 	stat_graph.configure(preview_kind,w,role,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id())
 	var primary=Catalog.get_weapon(weapon_ids[gear_primary.selected])
-	role_detail.text="%s  /  %s\n%s"%[Rules.CLASSES[role],primary.name,"선택한 장비는 다음 부활에 적용" if game.phase=="combat" and not game.options.get("practice",false) else "장비를 선택하세요."]
+	role_detail.text="%s  /  %s\n%s"%[Rules.CLASSES[role],"주무기 없음" if weapon_ids[gear_primary.selected].is_empty() else primary.name,"선택한 장비는 다음 부활에 적용" if game.phase=="combat" and not game.options.get("practice",false) else "장비를 선택하세요."]
 	var cost=game.loadout_cost(p,selected_loadout())
 	gear_price.text="비용 %d / 보유 %d"%[cost,p.cash] if game.options.mode==4 else "장비 선택 무료"
 	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id(),gear_armor.selected)
-	gear_submit.text="선택한 장비로 연습 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "다음 라운드 구매 예약"
+	gear_submit.text="선택한 장비로 연습 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "준비 시간에 구매 가능"
 func toggle_pause():
 	if is_instance_valid(panel):clear_panel();game.capture_pointer();return
 	make_panel("일시 메뉴",480,true)
