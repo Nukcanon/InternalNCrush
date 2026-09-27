@@ -12,6 +12,8 @@ Status: release candidate; public 1.2.4 is unchanged until package verification 
 
 ## Limits
 
-Full local suite: 44 groups passed. CI and exact exported package verification are pending below. Existing engine-exit warnings about two 349,524-byte GL textures remain reproducible after the rendered equipment fixture. They are not silently classified as solved. Intel 10–11th-gen integrated graphics, GTX960, physical phones, external NAT and multi-hour soak remain unverified. The layout changes are revisions of existing maps, not newly copied Counter-Strike maps or a claim of AAA artwork.
+Initial local suite: 44 groups passed. Additional physical traversal through eight new rooms passes after correcting flat-map grid rasterization. The final CI suite includes this regression as a 45th group. CI and exact exported package verification are pending below. Existing engine-exit warnings about two 349,524-byte GL textures remain reproducible after the rendered equipment fixture. They are not silently classified as solved. Intel 10–11th-gen integrated graphics, GTX960, physical phones, external NAT and multi-hour soak remain unverified. The layout changes are revisions of existing maps, not newly copied Counter-Strike maps or a claim of AAA artwork.
 
 Local evidence: ignored `validation/v125/`, `validation/v125-*.log`. Reproducible tools: `review_gear_v125.gd`, `review_v125.gd`, `review_maps_v125.gd`, `audit_layout_v125.gd`.
+
+The first candidate CI run (36303663690) was deliberately cancelled before publication: extra room-interior traversal exposed conservative navigation rasterization. A doorway is now sampled with explicit capsule/turn clearance, rather than rounding both ends out to whole grid cells. Room tests follow traversable floor near each room centre (furniture is not a valid walking target) continuously through all four rooms per map.

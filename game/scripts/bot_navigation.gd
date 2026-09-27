@@ -33,7 +33,12 @@ func build(world:Node):
 		var lo=cell(Vector3(rect.position.x,0,rect.position.y));var hi=cell(Vector3(rect.end.x,0,rect.end.y))
 		for x in range(lo.x,hi.x+1):
 			for y in range(lo.y,hi.y+1):
-				var id=Vector2i(x,y);grid.set_point_solid(id);static_solid[id]=true
+				var id=Vector2i(x,y);var sample=point(id)
+				# Rectangles already include capsule clearance. Rounding both ends
+				# outward filled narrow doorways which were physically traversable.
+				# A small turn allowance covers waypoint tolerance without adding
+				# another whole two-metre cell on each side of every doorway.
+				if rect.grow(.25).has_point(Vector2(sample.x,sample.z)):grid.set_point_solid(id);static_solid[id]=true
 	for x in range(100):
 		for y in range(90):
 			var id=Vector2i(x,y)

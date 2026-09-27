@@ -173,8 +173,8 @@ static func build_sized(a:Node,which:int):
 			# Four corner rooms provide indoor flanks around the central court.
 			for side in [-1,1]:
 				a.box(pos+Vector3(side*(size.x*.5-.15),1.7,0),Vector3(.30,3.4,size.z),walls[theme])
-				var segment=maxf(.2,(size.x-2.8)*.5)
-				for edge in [-1,1]:a.box(pos+Vector3(edge*(1.4+segment*.5),1.7,side*(size.z*.5-.15)),Vector3(segment,3.4,.30),walls[theme])
+				var segment=maxf(.2,(size.x-4.4)*.5)
+				for edge in [-1,1]:a.box(pos+Vector3(edge*(2.2+segment*.5),1.7,side*(size.z*.5-.15)),Vector3(segment,3.4,.30),walls[theme])
 			a.box(pos+Vector3(0,3.55,0),Vector3(size.x+.12,.3,size.z+.12),accent[theme])
 			a.set_meta("renewed_level_rooms",4)
 		elif theme in [0,2]:
