@@ -305,7 +305,7 @@ func host_settings():
 	label("경기 탭에서 참가 정원을 짝수로 선택합니다. 맵 정원이 참가 정원보다 작을 수 없습니다.",17)
 	option("진행 중 참가",["금지","관전만","참가 허용 · 폭탄은 다음 라운드"],game.options.join,func(i):game.options.join=i)
 	option("다음 경기 팀",["현재 팀 유지","무작위","기록으로 균형 편성"],game.options.next_teams,func(i):game.options.next_teams=i)
-	label("입장할 때 인원에 맞춰 자동 배치합니다.\n대기실에서는 각자 팀을 고르고 방장은 모든 참가자를 이동시킬 수 있습니다.\n경기 중에는 방장만 팀을 변경할 수 있습니다.",16)
+	label("각자 본인의 팀을 선택하며, 방장은 본인과 봇만 이동할 수 있습니다.\n불균형한 이동은 제한되고, 빈자리는 난이도 상의 균형 봇이 채웁니다.",16)
 	stack=groups[2]
 	check("병과 사용",game.options.classes,func(v):game.options.classes=v)
 	check("특수 스킬 사용",game.options.skills,func(v):game.options.skills=v)

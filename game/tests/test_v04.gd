@@ -30,9 +30,11 @@ func run():
 	expect(g.change_team(-1,-1,1-member.team),"lobby member chooses own team")
 	expect(not g.change_team(-1,-2,1-before) and other.team==before,"member cannot move another player")
 	g.handle_command(-1,"team",{"player_id":1,"team":1-g.players[1].team})
-	expect(g.change_team(1,-2,1-other.team),"host arranges lobby players")
+	member.team=0;other.team=1;g.players[1].team=1;TeamBalance.reconcile(g)
+	expect(g.change_team(1,-2,0),"host moves bot when team balance permits")
 	g.phase="combat";before=member.team
-	expect(not g.change_team(-1,-1,1-before) and member.team==before,"combat member team change denied")
+	expect(g.change_team(-1,-1,1-before),"member can move own team with balanced counts")
+	before=member.team;other.team=0;g.players[1].team=1;TeamBalance.reconcile(g)
 	var deaths=member.deaths;var lives=member.lives
 	expect(g.change_team(1,-1,1-before) and not member.alive and member.respawn>g.clock and member.deaths==deaths and member.lives==lives,"host combat transfer schedules respawn without death penalty")
 	g.options.mode=4

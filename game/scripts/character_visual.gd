@@ -350,6 +350,13 @@ func throw_pose(started:float,held:bool,until:float,now:float):
 		chest.rotation.y+=sin(phase*PI)*.15
 	sync_deform()
 
+func bomb_pose(now:float):
+	# Crouched, weight over the feet; support the case while the other hand keys it.
+	chest.rotation.x=-.35;head.rotation.x=.35
+	solve_arm(left_arm,left_elbow,Vector3(-.14,-.25,-.35),Vector3(-.7,-.8,.25),.016,1.)
+	solve_arm(right_arm,right_elbow,Vector3(.09,-.22+sin(now*12.)*.014,-.38),Vector3(.7,-.8,.25),.016,1.)
+	sync_deform()
+
 func slide_pose(phase:float):
 	var weight=sin(clampf(phase*4.,0.,1.)*PI*.5)*sin(clampf((1.-phase)*4.,0.,1.)*PI*.5)
 	hips.position.y=lerpf(hips.position.y,.43,weight);chest.rotation.x+=weight*.22;hips.rotation.z-=weight*.13

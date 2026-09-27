@@ -403,7 +403,8 @@ func configure(opts:Dictionary):
 func add_player(id:int,nick:String,token:String):
 	prune_reconnects()
 	var t=0;var counts=[0,0]
-	for p in players.values():counts[p.team]+=1
+	for p in players.values():
+		if not p.get("auto_balance",false):counts[p.team]+=1
 	t=randi()%2 if counts[0]==counts[1] else 0 if counts[0]<counts[1] else 1
 	var role=0 if id>0 or not options.classes else absi(id)%6
 	if role==5 and medic_count(t)>=R.medic_cap(counts[t]+1):role=0
@@ -471,7 +472,8 @@ func can_attack(p:Dictionary) -> bool:return not (int(options.mode)==4 and phase
 func passive_regen(p:Dictionary,dt:float):
 	if options.autoheal and p.alive and clock-maxf(p.last_hit,float(p.get("shot_time",-100.)))>=R.REGEN_DELAY:p.hp=minf(R.max_hp(p),p.hp+R.REGEN_RATE*dt)
 func kick_player(requester:int,target:int,by_vote=false) -> bool:
-	if not server or (requester!=1 and not by_vote) or target==1 or not players.has(target):return false
+	if not server or (not TeamBalance.host(self,requester) and not by_vote) or TeamBalance.host(self,target) or not players.has(target):return false
+	if players[target].get("auto_balance",false):feedback(requester,"","균형 봇은 참가 인원에 맞춰 자동으로 관리됩니다.");return false
 	var name=players[target].nick;var token=players[target].token
 	if target>0:
 		banned_tokens[token]=Time.get_ticks_msec()+180000
@@ -810,7 +812,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 		"team":change_team(id,int(data.get("player_id",id)),int(data.get("team",0)))
 		"team_swap":swap_teams(id,int(data.get("first",0)),int(data.get("second",0)))
 		"team_policy":
-			if id!=1:return
+			if not TeamBalance.host(self,id):return
 			options.next_teams=clampi(int(data.get("next_teams",options.next_teams)),0,2);broadcast_state(true)
 		"slide":begin_slide(id,bool(data.get("forward",false)),Vector2(float(data.get("x",0)),float(data.get("z",0))))
 		"skill":use_skill(id)
@@ -1390,7 +1392,10 @@ func winner_voice(team:int):
 	if not dedicated and team in [0,1]:play_sound("win_blue" if team==0 else "win_orange",Vector3.ZERO,false)
 
 func next_match():
-	if MatchFlow.at_limit(self):MatchFlow.return_to_lobby(self);return
+	if MatchFlow.at_limit(self):
+		if options.get("map_random",false) or options.get("map_rotation",false):MatchFlow.rotate(self);start_match(false)
+		else:MatchFlow.return_to_lobby(self)
+		return
 	if int(options.mode)==3:control_leg=1-control_leg
 	if int(options.mode)!=3 or control_leg==0:MatchFlow.rotate(self)
 	RoundCleanup.clear(self)
@@ -1552,7 +1557,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 		if owner==local_id:play_sound("wrench_wall" if shot_state.get("wrench",false) else "knife_wall",from,false)
 		return
 	if kind=="melee_flesh" and owner!=local_id:return
-	if kind in ["grenade_throw","grenade_bounce"]:play_sound(kind,from,owner!=local_id);return
+	if kind in ["grenade_throw","grenade_bounce"]:play_sound(kind.trim_prefix("grenade_"),from,owner!=local_id);return
 	if kind=="bomb_explosion":
 		combat_fx.explosion(from,true,to.x/4.)
 		play_sound("bomb_explosion",from,true)

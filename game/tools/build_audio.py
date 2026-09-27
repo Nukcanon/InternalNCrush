@@ -92,7 +92,7 @@ for suffix,voice in [('', 'hurt_male'),('_female','hurt_female')]:
  write('armor_hurt'+suffix,mix(.62,(grunt,.93,0),(lowpass(sample('impactMetal_heavy_000',.95,.13),1100),.12,.004)),gain=0)
 write('hit',mix(.19,(body,.65,0),(thud,.55,0),(cloth,.12,.006)),'hit_volume',-1)
 write('confirm',mix(.32,(metal,.44,0),(glass,.26,.045)),'hit_volume',-4)
-write('ui',sample('ui_click_001',1.15,.12),'ui_volume',-10)
+write('ui',mix(.085,(highpass(sample('impactGeneric_light_000',2.2,.075),900),.85,0),(highpass(metal,1900),.22,0)),'ui_volume',-7)
 write('switch',mix(.23,(metal,.3,0),(sample('ui_close_001',1.1,.16),.42,.03)),gain=-9)
 # Dry sliding fabric, spring/latch and metal close; no UI notification samples.
 slide=highpass(lowpass(sample('footstep_grass_1',1.5,.16),3000),650)
@@ -105,19 +105,18 @@ write('shell_insert',sample('shell_load',1.45,.56),gain=0,license='CC-BY-3.0')
 write('rocket_insert',mix(.38,(slide,.38,0),(lowpass(sample('impactMetal_heavy_000',.90,.23),1800),.5,.14)),gain=-1)
 write('heal',mix(.30,(sample('ui_glass_003',.95,.3),.23,0),(glass,.09,.09)),gain=-13)
 write('deploy',mix(.65,(sample('impactMetal_heavy_000',.85,.6),.53,0),(metal,.22,.10)),gain=-5)
-write('bomb_beep',[math.sin(i/rate*2*math.pi*1500)*math.sin(math.pi*i/(rate*.09))**.5 for i in range(int(rate*.09))],gain=-12)
+write('bomb_beep',[math.sin(i/rate*2*math.pi*1500)*math.sin(math.pi*i/(rate*.09))**.5 for i in range(int(rate*.09))],gain=-4)
 write('bomb_defuse',mix(.34,(metal,.45,0),(sample('impactPlate_light_1',1.7,.14),.23,.09),(metal,.25,.21)),gain=-9)
-for name in ['bomb_planted','bomb_dropped','bomb_defused']:
+for name in ['bomb_planted','bomb_dropped','bomb_defused','win_blue','win_orange']:
  with wave.open(str(root/'tools/announcer'/(name+'.wav')),'rb') as voice:
   assert voice.getframerate()==rate and voice.getnchannels()==1 and voice.getsampwidth()==2
   pcm=array.array('h',voice.readframes(voice.getnframes()))
   if sys.byteorder!='little':pcm.byteswap()
   write(name,[v/32768 for v in pcm],category='announcer',gain=0,license='Windows SAPI generated speech; see SOUND_CREDITS.md')
 write('bomb_explosion',mix(3.6,(sample('bang_03',.62,3.2),.7,0),(sample('cannon_01',.42,3.4),.8,.035),(lowpass(sample('cannon_01',.29,3.1),180),.7,.18)),gain=0)
-write('explosion',mix(2.1,(sample('bang_03',.87,1.9),.88,0),(sample('cannon_01',.68,2.),.72,.015),(lowpass(sample('cannon_01',.42,1.9),230),.65,.035)),gain=3)
-write('flash',mix(.7,(highpass(sample('shot_01',1.3,.6),650),.55,0),(glass,.3,.025)),gain=1)
+grenade_blast=mix(2.1,(sample('bang_03',.87,1.9),.88,0),(sample('cannon_01',.68,2.),.72,.015),(lowpass(sample('cannon_01',.42,1.9),230),.65,.035))
+for cue in ['explosion','flash','smoke']:write(cue,grenade_blast,gain=3)
 write('skill',mix(.64,(sample('ui_glass_003',.77,.6),.47,0),(sample('ui_open_002',.75,.5),.30,.06)),gain=-7)
-write('smoke',mix(.9,(highpass(sample('shot_01',1.55,.24),500),.62,0),(sample('fw_02',1.15,.85),.3,.07)),gain=0)
 # Original short whoosh + low impact for the replay portrait cut (CC0).
 rng=random.Random(707)
 sting=[]
@@ -138,11 +137,17 @@ write('turret_detect',alert,gain=-4)
 # Original melee cues use existing licensed sources, preserving all gun/hit audio.
 rng=random.Random(122)
 wind=[rng.uniform(-1,1)*math.sin(math.pi*i/(rate*.18))**1.5 for i in range(int(rate*.18))]
-write('melee_swing',highpass(lowpass(wind,5000),600),gain=1)
+old_swing=highpass(lowpass(wind,5000),600)
+write('deploy',old_swing,gain=1)
+write('equip',old_swing,gain=1)
+heavy_wind=highpass(lowpass(wind,1450),110)
+write('melee_swing',mix(.22,(heavy_wind,2.4,0),(lowpass(sample('footstep_grass_1',1.3,.18),700),.15,.008)),gain=1)
+write('throw',highpass(lowpass(wind,2900),250),gain=1)
+write('bounce',mix(.34,(sample('impactMetal_heavy_000',.8,.30),.80,0),(lowpass(sample('impactPlate_light_1',.7,.30),2400),.38,.014)),gain=-1)
 write('melee_flesh',mix(.24,(body,.68,0),(thud,.85,0),(cloth,.2,.006)),gain=1)
 write('rocket_launch',mix(.9,(sample('cannon_01',1.15,.9),.65,0),(sample('fw_02',.7,.8),.5,.05)),gain=-2)
 write('flash_ring',[math.sin(2*math.pi*2300*i/rate)*.22*min(1.,i/(rate*.02))*min(1.,(rate*4.5-i)/(rate*.7)) for i in range(int(rate*4.5))],gain=-10)
-write('knife_wall',mix(.24,(metal,.48,0),(sample('impactPlate_light_1',1.5,.22),.32,.025)),gain=-5)
+write('knife_wall',mix(.32,(sample('impactMetal_heavy_000',1.1,.27),.64,0),(sample('impactPlate_light_1',.95,.30),.55,.008)),gain=-1)
 write('wrench_wall',mix(.30,(sample('impactMetal_heavy_000',1.05,.30),.62,0),(metal,.20,.04)),gain=-4)
 (root/'assets/audio_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print('AUDIO_BUILT',len(manifest),'sample-based clips;',sum(k.startswith('gun_') for k in manifest),'distinct weapon mixes')

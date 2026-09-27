@@ -354,8 +354,10 @@ func sync_bomb(game:Node):
 	var carrier=int(game.bomb.get("carrier",0))
 	bomb_visual.visible=carrier!=game.local_id or carrier==0
 	bomb_visual.rotation=Vector3.ZERO
+	bomb_visual.scale=Vector3.ONE*(.52 if carrier else .72)
 	if carrier and game.actors.has(carrier):
 		var actor=game.actors[carrier];bomb_visual.position=actor.position+Vector3.UP*.9+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,.33);bomb_visual.rotation.y=actor.aim_yaw
+		if BombHandling.active(actor):bomb_visual.position=actor.position+Vector3.UP*.65+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,-.43)
 	else:bomb_visual.position=game.bomb.position
 	var interval=BombLogic.beep_interval(game.bomb.time,float(game.bomb.get("total_time",120.))) if game.bomb.planted else .6
 	var lamp=bomb_visual.get_node("Beacon");lamp.visible=fmod(game.clock,interval)<interval*.4

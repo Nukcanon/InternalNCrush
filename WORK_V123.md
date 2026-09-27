@@ -33,3 +33,27 @@ Work is checkpointed on `work/v1.2.3-stability-20260927`; release remains unchan
 - [ ] Long-running stability measurements; real browser check and native runtime check.
 - [ ] 1.2.3 Windows/Web/NAS build, exact source/manifest match, site deployment and public download audit.
 - [ ] Preserve unchanged homepage images and descriptions.
+
+## Windows recovery continuation — 2026-09-27
+
+Fetched origin and resumed `da2424b` on the recovery branch. No 1.1.3 source was
+merged into this work. Reference JPG was found locally and inspected. Native
+`HumanModel`/`AuthoredHuman` and Web `CartoonModel` remain separate; game rules
+continue to be shared and Web assets generated only in the isolated staging tree.
+
+Implemented after recovery: mode settings across both Python services, Worker
+policy and RTC admission; hard fill-bot lifecycle and dedicated-owner controls;
+new foley/announcements with existing gun PCM preserved; smaller carried bomb
+and handling poses; DUET pose-only muzzle; softer female jaw and fitted hair;
+series winner determined by total wins, rotation after the whole series.
+
+Fresh checks so far: recovery import; updated gameplay 65/65; Python services
+19 tests; Worker policy 3 tests; 72,000 tracer / 1,800 healing-update resource
+stress bounded. Full legacy regression and rendered Windows/browser sessions
+are still running. Old tests expecting combat-time defusal purchase queues,
+45-second prep, side swaps every round, old MONOLITH/flash values and host moves
+of other humans are being updated to the requested rules, not silently ignored.
+
+No 1.2.3 release or site update has been made. Remaining gates include completed
+regressions, live network options/state transitions, rendered asset review,
+longer browser session, builds and exact-source publication checks.

@@ -215,6 +215,14 @@
     "license": "CC-BY-SA-3.0",
     "duration": 0.7
   },
+  "gun_dual_pistols": {
+    "file": "res://assets/audio/gun_dual_pistols.wav",
+    "category": "combat",
+    "gain_db": -4,
+    "sha256": "9aa107ecd20a081f300530d8c6b8d24de36c7f0b66eab6c9dafd22bde92ab2fa",
+    "license": "CC-BY-SA-3.0",
+    "duration": 0.45
+  },
   "step_stone_0": {
     "file": "res://assets/audio/step_stone_0.wav",
     "category": "combat",
@@ -370,10 +378,10 @@
   "ui": {
     "file": "res://assets/audio/ui.wav",
     "category": "ui_volume",
-    "gain_db": -10,
-    "sha256": "1e232c18f2b602685db64165f6d65120f1d8c603d54ccbbb7e67e150dce65130",
+    "gain_db": -7,
+    "sha256": "bdef332d439ea6e287fe4674b4f7b63cc338c52c1de0d453d0fd715c9ee628e5",
     "license": "CC0-1.0",
-    "duration": 0.084
+    "duration": 0.085
   },
   "switch": {
     "file": "res://assets/audio/switch.wav",
@@ -442,15 +450,15 @@
   "deploy": {
     "file": "res://assets/audio/deploy.wav",
     "category": "combat",
-    "gain_db": -5,
-    "sha256": "74e2c5edac539f3ca752fdacf1d094c295997d73fe1c195cbd74936b9cb239e2",
+    "gain_db": 1,
+    "sha256": "4a25f84dd0fb4c15b1311bbd94f591045f8fa472ba0626bbe8c10174686b31eb",
     "license": "CC0-1.0",
-    "duration": 0.65
+    "duration": 0.18
   },
   "bomb_beep": {
     "file": "res://assets/audio/bomb_beep.wav",
     "category": "combat",
-    "gain_db": -12,
+    "gain_db": -4,
     "sha256": "ba5c9befc984b030773f1e0bd5ee71a1f24ebc6847a4f65a3c5d5e66ea8ef7ae",
     "license": "CC0-1.0",
     "duration": 0.09
@@ -487,6 +495,22 @@
     "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
     "duration": 2.389
   },
+  "win_blue": {
+    "file": "res://assets/audio/win_blue.wav",
+    "category": "announcer",
+    "gain_db": 0,
+    "sha256": "51b9bf04269cc1e2f8e76a1f0b2f2e3f0d3198340d310d077b6992784f26b068",
+    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
+    "duration": 1.789
+  },
+  "win_orange": {
+    "file": "res://assets/audio/win_orange.wav",
+    "category": "announcer",
+    "gain_db": 0,
+    "sha256": "e39a35f65317f24f1f95da735993f441278bee67aa3ca346d3c8417b5e0392f7",
+    "license": "Windows SAPI generated speech; see SOUND_CREDITS.md",
+    "duration": 2.009
+  },
   "bomb_explosion": {
     "file": "res://assets/audio/bomb_explosion.wav",
     "category": "combat",
@@ -506,10 +530,18 @@
   "flash": {
     "file": "res://assets/audio/flash.wav",
     "category": "combat",
-    "gain_db": 1,
-    "sha256": "1e33925e493f19ec23f804dd54040ba43f2c3375e26ae312c26018c35a7cfb9d",
+    "gain_db": 3,
+    "sha256": "7ee8410a6e77f89cc26d037dc97910b855181fcf91d08665d17e5a7317dc4234",
     "license": "CC0-1.0",
-    "duration": 0.7
+    "duration": 2.1
+  },
+  "smoke": {
+    "file": "res://assets/audio/smoke.wav",
+    "category": "combat",
+    "gain_db": 3,
+    "sha256": "7ee8410a6e77f89cc26d037dc97910b855181fcf91d08665d17e5a7317dc4234",
+    "license": "CC0-1.0",
+    "duration": 2.1
   },
   "skill": {
     "file": "res://assets/audio/skill.wav",
@@ -518,14 +550,6 @@
     "sha256": "314ccd897d0b746eb7ba61bc4c5ffafe39ef23a2901947f2dfa01e54fb1cd383",
     "license": "CC0-1.0",
     "duration": 0.64
-  },
-  "smoke": {
-    "file": "res://assets/audio/smoke.wav",
-    "category": "combat",
-    "gain_db": 0,
-    "sha256": "19e17ce144acee4095274d98c297f1e46562fb78913e925f72715f75f3e1af83",
-    "license": "CC0-1.0",
-    "duration": 0.9
   },
   "kill_sting": {
     "file": "res://assets/audio/kill_sting.wav",
@@ -543,13 +567,37 @@
     "license": "CC0-1.0",
     "duration": 0.1
   },
-  "melee_swing": {
-    "file": "res://assets/audio/melee_swing.wav",
+  "equip": {
+    "file": "res://assets/audio/equip.wav",
     "category": "combat",
     "gain_db": 1,
     "sha256": "4a25f84dd0fb4c15b1311bbd94f591045f8fa472ba0626bbe8c10174686b31eb",
     "license": "CC0-1.0",
     "duration": 0.18
+  },
+  "melee_swing": {
+    "file": "res://assets/audio/melee_swing.wav",
+    "category": "combat",
+    "gain_db": 1,
+    "sha256": "c670d35c1cf61419b85895e02420b080ca6b11bafcd24d998cc96bbded239e38",
+    "license": "CC0-1.0",
+    "duration": 0.22
+  },
+  "throw": {
+    "file": "res://assets/audio/throw.wav",
+    "category": "combat",
+    "gain_db": 1,
+    "sha256": "92bd03973535450b3ac4cbc43d4200682bd60990c0bbb3697e14c616721091de",
+    "license": "CC0-1.0",
+    "duration": 0.18
+  },
+  "bounce": {
+    "file": "res://assets/audio/bounce.wav",
+    "category": "combat",
+    "gain_db": -1,
+    "sha256": "b3af348320093fe61cd6de999c1de4372faee93cbe8c204f2d7fc84004ab3bf2",
+    "license": "CC0-1.0",
+    "duration": 0.34
   },
   "melee_flesh": {
     "file": "res://assets/audio/melee_flesh.wav",
@@ -578,10 +626,10 @@
   "knife_wall": {
     "file": "res://assets/audio/knife_wall.wav",
     "category": "combat",
-    "gain_db": -5,
-    "sha256": "c5d1c0601bbb5025db93cca1f8b76821bcc8dd2bc76c34d75d4dfaf1f0765be7",
+    "gain_db": -1,
+    "sha256": "139459382033846a564e0f761cafadb85bc653d0442ce88e2e7afebcd2cac30d",
     "license": "CC0-1.0",
-    "duration": 0.24
+    "duration": 0.32
   },
   "wrench_wall": {
     "file": "res://assets/audio/wrench_wall.wav",

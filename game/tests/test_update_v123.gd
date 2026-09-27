@@ -52,5 +52,12 @@ func run():
 	g.phase="combat";g.round_no=4;g.scores=[2,1];DefusalMatch.finish(g,1,"test");expect(g.phase=="round_end","tied series gets overtime")
 	DefusalMatch.begin(g);expect(g.round_no==5 and MatchFlow.attackers(g) in [0,1],"one random side overtime begins")
 	g.phase="combat";DefusalMatch.finish(g,0,"test");expect(g.phase=="result" and g.result.team==0,"overtime winner ends series")
+	g.phase="combat";g.round_no=4;g.scores=[3,0];DefusalMatch.finish(g,1,"last round");expect(g.result.team==0,"series champion differs from last round winner")
+	var pose=WeaponVisual.new();g.add_child(pose);pose.build_pose(Catalog.get_weapon("dual_pistols"));pose.animate_reload(.8,.2,.02);expect(is_instance_valid(pose.muzzle),"dedicated DUET pose has valid alternating muzzle");pose.free()
+	g.phase="lobby";g.options.mode=0
+	g.players[1].team=0;g.players[2].team=0;TeamBalance.reconcile(g)
+	expect(g.team_count(0)==g.team_count(1),"multiple departures balanced without moving humans")
+	for bid in TeamBalance.auto_ids(g):expect(g.bot_agents[bid].difficulty==2,"all fill bots hard")
+	g.players[2].team=1;TeamBalance.reconcile(g);expect(TeamBalance.auto_ids(g).is_empty(),"excess fill bots removed after returning player")
 	g.ui.clear_panel();g.free();await process_frame
 	print("V123_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

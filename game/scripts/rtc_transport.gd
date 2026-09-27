@@ -58,6 +58,7 @@ func receive(value:Dictionary):
 				peer.create_server(CHANNELS);game.connection_busy=false
 				var options:Dictionary=admission.room
 				game.options.merge({"room":options.name,"mode":int(options.mode),"map":int(options.map),"max_players":int(options.capacity),"map_size":Rules.MAP_PLAYERS[int(options.map)],"map_random":bool(options.map_random),"map_rotation":bool(options.map_rotation),"rounds":int(options.rounds),"prep_seconds":int(options.prep_seconds),"bots":0},true)
+				game.options.merge(ModeOptions.network(options),true)
 				game.host_game(peer)
 			else:
 				peer.create_client(id,CHANNELS);game.begin_rtc_client(peer);make_connection(1,false)

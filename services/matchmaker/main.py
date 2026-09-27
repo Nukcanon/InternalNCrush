@@ -38,11 +38,21 @@ class RoomRequest(StrictModel):
     capacity: int = Field(default=8, ge=2, le=32)
     map_random: bool = True
     map_rotation: bool = False
-    rounds: int = Field(default=0, ge=0, le=100)
-    prep_seconds: int = Field(default=45, ge=30, le=60)
+    minutes: int = Field(default=10, ge=0, le=180)
+    target: int = Field(default=60, ge=1, le=10000)
+    team_respawns: int = Field(default=60, ge=0, le=10000)
+    capture_hold: int = Field(default=60, ge=1, le=3600)
+    rounds: int = Field(default=4, ge=2, le=100)
+    starting_cash: int = Field(default=800, ge=0, le=8000)
+    prep_seconds: int = Field(default=30, ge=5, le=120)
+    round_minutes: int = Field(default=5, ge=1, le=60)
+    lives: int = Field(default=0, ge=0, le=10)
+    next_teams: int = Field(default=2, ge=0, le=2)
 
     @model_validator(mode="after")
     def compatible_map(self):
+        if self.rounds % 2:
+            raise ValueError("rounds must be even")
         if self.capacity > MAP_CAPACITY[self.map]:
             raise ValueError("capacity exceeds this map's limit")
         if self.capacity % 2:
@@ -137,7 +147,7 @@ class Allocator:
                       "max_players": options.capacity, "mode": options.mode,
                       "map_random": options.map_random, "map_rotation": options.map_rotation,
                       "map_size": MAP_CAPACITY[options.map], "rounds": options.rounds,
-                      "prep_seconds": options.prep_seconds}}
+                      **{key: getattr(options, key) for key in ("minutes", "target", "team_respawns", "capture_hold", "rounds", "starting_cash", "prep_seconds", "round_minutes", "lives", "next_teams")}}}
             env = os.environ.copy()
             env["INC_ROOM_CONFIG"] = json.dumps(config)
             command = [os.getenv("GODOT", "godot"), "--headless", "--path", str(ROOT / "game"),

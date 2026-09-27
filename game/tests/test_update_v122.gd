@@ -8,7 +8,7 @@ func expect(ok:bool,message:String):
 func run():
 	Catalog.load_all()
 	var mono=Catalog.get_weapon("r2");var scout=Catalog.get_weapon("r1")
-	for spec in [["head",300.],["torso",150.],["hands",90.],["feet",90.]]:expect(is_equal_approx(CombatBalance.damage_at(mono,20.,spec[0]),spec[1]),"MONOLITH "+spec[0])
+	for spec in [["head",300.],["torso",120.],["hands",80.],["feet",80.]]:expect(is_equal_approx(CombatBalance.damage_at(mono,20.,spec[0]),spec[1]),"MONOLITH "+spec[0])
 	expect(scout.damage==80.,"SCOUT base 80")
 	for id in ["r1","r2","r3","r4","r5","a1"]:
 		var w=Catalog.get_weapon(id);var scale=.4 if id in ["r1","r2"] else .6 if id in ["r3","r4","r5"] else 1.

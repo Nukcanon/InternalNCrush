@@ -34,7 +34,7 @@ func run():
 		g.remove_device(did);expect(g.players[1].skill_ready==ready_before_destruction,"destruction does not refund charge")
 	g.players[1].alive=false;g.phase="buy";g.options.mode=4;g.players[1].cash=800;g.players[1].armor=0;g.players[1].primary="pistol";g.players[1].owned_primary=false
 	g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==800 and g.players[1].primary=="pistol","insufficient funds rejected")
-	g.players[1].cash=4000;g.apply_loadout(1,{"role":0,"primary":"a1","armor":2});expect(g.players[1].cash==1000 and g.players[1].primary=="a1","purchase costs deducted")
+	g.players[1].cash=4000;g.apply_loadout(1,{"role":0,"primary":"a1","armor":2,"gadget":-1,"confirmed":true});expect(g.players[1].cash==1000 and g.players[1].primary=="a1","confirmed purchase costs deducted")
 	g.players[1].alive=false;g.apply_loadout(1,{"role":0,"primary":"r2"});expect(g.players[1].primary=="a1","class weapon restriction")
 	g.phase="combat";g.remaining=500;g.players[1].alive=true;g.players[1].protect=0;g.players[1].slot=0;g.players[1].mag.a1=0;g.players[1].reserve.a1=20;g.clock=200
 	g.handle_command(1,"reload",{});g.clock=203;g.server_tick(.01);expect(g.players[1].mag.a1==20 and g.players[1].reserve.a1==0,"finite reload transfers existing reserve")

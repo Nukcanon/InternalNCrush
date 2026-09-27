@@ -84,24 +84,12 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 		oval(parent,center+Vector3(0,0,-.012),Vector3(.004,.004,.001),Color("182023"))
 		oval(parent,center+Vector3(-.001,.002,-.0125),Vector3(.0012,.0012,.0006),Color("e5ddd0"))
 		cord(parent,center+Vector3(-side*.013,.017,-.002),center+Vector3(side*.010,.019,.003),.0024,hair)
-	if female:
-		for side in [-1,1]:
-			oval(parent,Vector3(side*.072,.022,.048),Vector3(.030,.15 if which==5 else .12,.08),hair)
-		if which==1:
-			oval(parent,Vector3(0,.066,.133),Vector3(.090,.12,.10),hair)
-			cord(parent,Vector3(0,.03,.143),Vector3(0,-.11,.153),.027,hair)
-			cord(parent,Vector3(-.028,.015,.15),Vector3(.028,.015,.15),.008,Color("779085"))
-	if which==1:
-		# Fitted beret: a band wraps the temples and the asymmetric crown rests on it.
-		loft(parent,Vector3(0,0,.013),[Vector4(.071,.090,.103,0),Vector4(.090,.091,.105,0),Vector4(.099,.089,.103,0)],Color("455447"),28)
-		var crown=loft(parent,Vector3(-.009,0,.013),[Vector4(.089,.091,.103,0),Vector4(.125,.108,.108,.006),Vector4(.159,.076,.079,.01),Vector4(.171,.006,.008,.012)],Color("5c6954"),28);crown.rotation.z=-.10
+	if female:OperatorHair.build(parent,which,false)
 	elif which==2:
 		loft(parent,Vector3(0,.012,.014),[Vector4(.067,.094,.10,0),Vector4(.093,.098,.101,0),Vector4(.145,.065,.08,0),Vector4(.155,.008,.014,0)],Color("5c696b"),24)
 	elif which==3:
 		loft(parent,Vector3(0,0,.012),[Vector4(.073,.095,.109,0),Vector4(.112,.094,.109,0),Vector4(.145,.078,.088,.006),Vector4(.164,.010,.014,.008)],Color("bb955c"),28)
 		oval(parent,Vector3(0,.079,-.115),Vector3(.192,.018,.135),Color("a5804f"))
-	elif which==5:
-		loft(parent,Vector3(0,0,.014),[Vector4(.070,.085,.101,0),Vector4(.104,.086,.102,0),Vector4(.147,.067,.081,0),Vector4(.162,.009,.012,0)],Color("d1c9ab"),28)
 	# Small communication headset leaves the face and human silhouette readable.
 	oval(parent,Vector3(.092,.012,.014),Vector3(.038,.059,.051),Color("414947"))
 	cord(parent,Vector3(.099,-.004,0),Vector3(.061,-.055,-.10),.005,Color("383f3f"))

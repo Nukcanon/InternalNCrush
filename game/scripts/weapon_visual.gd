@@ -49,6 +49,7 @@ func build_pose(w:Dictionary):
 	left_hand=piece("LeftHand",Vector3(-.057,-.125,.055) if pistol else Vector3(-.065,-.073,-length*.59));hand_origin=left_hand.position
 	right_hand=piece("RightHand",Vector3(.044,-.120,-.15 if w.name in ["RAPID-9","KESTREL","FLUX"] else .035))
 	calibrate_grips(false)
+	muzzle=Marker3D.new();muzzle.position=Vector3(0,.02,-length);add_child(muzzle)
 func block(parent:Node,pos:Vector3,size:Vector3,color:Color,tilt=0.) -> MeshInstance3D:return M.box(parent,pos,size,color,Vector3(tilt,0,0),.48)
 func tube(parent:Node,pos:Vector3,radius:float,depth:float,color:Color) -> MeshInstance3D:return M.cylinder(parent,pos,radius,depth,color,Vector3(PI/2,0,0))
 func shell(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
@@ -458,7 +459,7 @@ func build_dual(w:Dictionary,hands:bool,pose_only:bool):
 		dual_guns.append(gun)
 	right_hand=dual_guns[0].right_hand;left_hand=dual_guns[1].right_hand
 	magazine=dual_guns[0].magazine;action_part=dual_guns[0].action_part;barrel_group=dual_guns[0].barrel_group
-	if not pose_only:muzzle=dual_guns[0].muzzle;flash=dual_guns[0].flash
+	muzzle=dual_guns[0].muzzle;flash=dual_guns[0].flash
 func animate_dual(t:float,recoil:float,shot_age:float):
 	for index in range(2):
 		var gun=dual_guns[index];var side=1. if index==0 else -1.

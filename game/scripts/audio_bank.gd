@@ -51,7 +51,7 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 		voice.attenuation_model=AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 		if key in ["explosion","bomb_explosion","flash","smoke"]:voice.unit_size=20.
 	if world and key=="bomb_beep":voice.unit_size=16.;voice.pitch_scale=1.
-	if key in ["bomb_planted","bomb_dropped","bomb_defused"]:voice.pitch_scale=1.
+	if key in ["bomb_planted","bomb_dropped","bomb_defused","win_blue","win_orange"]:voice.pitch_scale=1.
 	if world and key=="bomb_defuse":voice.max_distance=16.;voice.unit_size=3.;voice.pitch_scale=1.
 	voice.play();played.emit(key,world)
 

@@ -35,13 +35,23 @@ class RoomInput(BaseModel):
     capacity: int = Field(default=8, ge=2, le=32)
     map_random: bool = True
     map_rotation: bool = False
-    rounds: int = Field(default=0, ge=0, le=100)
-    prep_seconds: int = Field(default=45, ge=30, le=60)
+    minutes: int = Field(default=10, ge=0, le=180)
+    target: int = Field(default=60, ge=1, le=10000)
+    team_respawns: int = Field(default=60, ge=0, le=10000)
+    capture_hold: int = Field(default=60, ge=1, le=3600)
+    rounds: int = Field(default=4, ge=2, le=100)
+    starting_cash: int = Field(default=800, ge=0, le=8000)
+    prep_seconds: int = Field(default=30, ge=5, le=120)
+    round_minutes: int = Field(default=5, ge=1, le=60)
+    lives: int = Field(default=0, ge=0, le=10)
+    next_teams: int = Field(default=2, ge=0, le=2)
     scope: str = Field(default="internet", pattern="^(internet|lan)$")
     locked: bool = False
 
     @model_validator(mode="after")
     def check_map(self):
+        if self.rounds % 2:
+            raise ValueError("진행 라운드 수는 짝수여야 합니다.")
         if self.capacity % 2 or self.capacity > CAPACITIES[self.map]:
             raise ValueError("맵 정원 이내의 짝수 인원이 필요합니다.")
         if (self.mode == 4) != (self.map >= 19) or (self.mode == 4 and self.capacity > 12):

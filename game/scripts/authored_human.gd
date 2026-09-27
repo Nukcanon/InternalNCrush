@@ -28,6 +28,12 @@ static func face_point(which:int,p:Vector3) -> Vector3:
 	if which in HumanModel.FEMALE_ROLES:
 		shaped.y+=maxf(0.,-p.y)*.18
 		shaped.z+=nose*.006
+		# Retract the lower facial plane, leaving the throat and eye sockets intact.
+		var lower=smoothstep(.005,-.067,p.y)*smoothstep(-.14,-.08,p.y)
+		var front=smoothstep(.025,.075,-p.z)
+		shaped.z+=lower*front*.026
+		shaped.y+=lower*.005
+		shaped.x*=1.-lower*.045
 		var cheek=exp(-pow((absf(p.x)-.044)/.026,2)-pow((p.y+.005)/.027,2))
 		shaped.x+=signf(p.x)*cheek*.003
 	return p.lerp(shaped,strength)

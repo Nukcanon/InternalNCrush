@@ -103,9 +103,9 @@ class LobbyTest(unittest.TestCase):
 
     def test_rotation_options_and_heartbeat_map_validation(self):
         room = self.create(mode=4, map=19, capacity=6, map_random=True,
-                           map_rotation=True, rounds=0, prep_seconds=60)
+                           map_rotation=True, rounds=4, prep_seconds=60)
         self.assertEqual(room.options.prep_seconds, 60)
-        self.assertEqual(room.options.rounds, 0)
+        self.assertEqual(room.options.rounds, 4)
         url = f"/internal/rooms/{room.id}/heartbeat"
         headers = {"Authorization": "Bearer " + room.key}
         response = self.client.post(url, headers=headers, json={"players": [], "phase": "combat", "map": 20})

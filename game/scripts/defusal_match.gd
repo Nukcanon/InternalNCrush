@@ -29,5 +29,8 @@ static func finish(g:Node,winner:int,reason:String):
 	for p in g.players.values():p.cash=mini(8000,p.cash+(3500 if p.team==winner else Rules.loss_reward(g.losses[p.team])))
 	g.completed_games+=1;g.winner_voice.rpc(winner)
 	if g.round_no>=int(g.options.rounds) and g.scores[0]!=g.scores[1]:
-		g.phase="result";g.remaining=12.;g.result={"team":winner,"player":0};g.announce(("BLUE" if winner==0 else "ORANGE")+" 최종 승리")
+		var champion=0 if g.scores[0]>g.scores[1] else 1
+		g.phase="result";g.remaining=12.;g.result={"team":champion,"player":0};g.announce(("BLUE" if champion==0 else "ORANGE")+" 최종 승리")
+		if champion!=winner:g.get_tree().create_timer(2.).timeout.connect(func():
+			if is_instance_valid(g) and g.phase=="result":g.winner_voice.rpc(champion))
 	else:g.phase="round_end";g.remaining=7.;g.announce(reason+" · "+("BLUE" if winner==0 else "ORANGE")+" 승리")

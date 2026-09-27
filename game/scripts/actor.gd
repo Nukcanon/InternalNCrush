@@ -15,6 +15,7 @@ var shape:CollisionShape3D
 var gun:Node3D
 var item_model:Node3D
 var gadget_world:GadgetVisual
+var bomb_view:Node3D
 var view_weapon:WeaponVisual
 var world_weapon:WeaponVisual
 var render_root:Node3D
@@ -320,6 +321,7 @@ func headless_pose(p:Dictionary):
 	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
 	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/.72,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),game.clock)
+	BombHandling.pose(self,game.clock)
 	update_melee(p,game.clock)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
@@ -368,6 +370,11 @@ func visual(dt:float,p:Dictionary,now:float):
 			character.sync_deform()
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	update_melee(p,now)
+	BombHandling.pose(self,now)
+	if BombHandling.active(self):
+		if is_instance_valid(world_weapon):world_weapon.hide()
+		if is_instance_valid(gadget_world):gadget_world.hide()
+		if is_instance_valid(melee_world):melee_world.hide()
 	if is_instance_valid(world_weapon) and MeleeCombat.shown(p,now):world_weapon.hide()
 	if not local:
 		TargetReveal.apply(self,p)
@@ -417,6 +424,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		if payload:payload.visible=not throwing
 	view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.reload_round_count=int(p.get("reload_count",3))
 	view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
+	BombHandling.view(self,p,now)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))
 

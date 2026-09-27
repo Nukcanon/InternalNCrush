@@ -21,3 +21,13 @@ Three short English announcements were synthesized locally using Windows SAPI / 
 - Mike Koenig — Loading Shotgun, https://soundbible.com/1403-Loading-Shotgun.html, Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Excerpts at 2.58–3.43 and 8.24–9.29 seconds, mono conversion, normalization, pitch adjustment and metal latch layering for shell insertion / action rack. `shell_insert.wav` and `bolt.wav`, plus the corresponding source excerpts in `tools/foley`, remain CC BY 3.0.
 
 Magazine, movement, melee and explosive cues use the previously credited CC0 recordings plus original noise envelopes. Gunfire mixes are unchanged.
+
+## 1.2.3 foley and announcements
+
+The old original melee noise envelope is reused for equip/deploy. A lower filtered
+envelope supplies the new swing; throw, heavy metal bounce and clear UI taps use
+the CC0 sources above. Flash/smoke use the exact grenade blast PCM and gain.
+Blue/Orange team victory phrases are locally generated Microsoft Zira Desktop
+SAPI speech, with the same provenance as the bomb announcements. No game audio
+or voice engine is redistributed. Existing gun recipes and source ordering stay
+unchanged; DUET is appended as a new weapon.

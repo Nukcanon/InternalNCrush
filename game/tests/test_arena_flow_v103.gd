@@ -8,7 +8,7 @@ func expect(ok:bool,label:String):
 	print("PASS " if ok else "FAIL ",label)
 func run():
 	Catalog.load_all()
-	var defaults=Rules.default_options();expect(defaults.max_players==8 and defaults.map_random and defaults.rounds==0,"default eight-player random map with unlimited games")
+	var defaults=Rules.default_options();expect(defaults.max_players==8 and defaults.map_random and defaults.rounds==4,"default eight-player random map and four-round defusal series")
 	for mode in range(5):
 		for capacity in range(2,33,2):
 			var options=Rules.default_options();options.mode=mode;options.max_players=capacity;Rules.sanitize_room(options)
@@ -33,14 +33,15 @@ func run():
 		arena.free();await process_frame
 	expect(signatures.size()==12,"twelve defusal maps have distinct route graphs and positions")
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.options.mode=4;g.options.map=19;g.options.map_size=8;g.options.map_random=true;g.phase="lobby";g.build_world();g.add_player(1,"A","stage_a");g.add_player(2,"B","stage_b");g.players[1].team=0;g.players[2].team=1;g.start_match()
-	expect(g.phase=="buy" and g.remaining==45.,"45-second preparation starts")
+	expect(g.phase=="buy" and g.remaining==30.,"30-second preparation starts")
 	var boundary=float(g.arena.get_meta("staging_z"));g.actors[1].position.z=boundary-8.;g.actors[2].position.z=boundary+2.
 	MatchFlow.preparation(g,1);MatchFlow.preparation(g,2)
 	expect(g.actors[1].position.z>=boundary and not MatchFlow.spawn_rect(g,0).has_point(Vector2(g.actors[2].position.x,g.actors[2].position.z)),"preparation keeps opposing teams in disjoint areas")
 	g.players[1].protect=0.;var hp=g.players[1].hp;g.damage(1,500,2);expect(g.players[1].hp==hp,"preparation blocks all incoming damage")
 	g.phase="combat";MatchFlow.update_gate(g);expect(g.arena.get_node_or_null("PreparationGate")!=null and g.actors[1].collision_mask&16==0,"round start unlocks friendly passage and retains spawn protection")
-	var first=g.options.map;g.begin_round();expect(g.options.map==first and MatchFlow.attackers(g)==1,"second leg swaps attacking team on the same map")
-	g.begin_round();expect(g.options.map!=first and Rules.MAP_PLAYERS[g.options.map]==8,"third leg rotates only after both sides played")
+	var first=g.options.map;g.begin_round();expect(g.options.map==first and MatchFlow.attackers(g)==0,"second round keeps first-half sides")
+	g.begin_round();expect(g.options.map==first and MatchFlow.attackers(g)==1,"halftime swaps sides without map change")
+	g.round_no=4;g.scores=[3,1];g.phase="result";g.next_match();expect(g.options.map!=first and Rules.MAP_PLAYERS[g.options.map]==8 and g.round_no==1,"selected rotation begins a new series after both halves")
 	g.leave_game();g.free();await process_frame
 	var practice=load("res://scripts/game.gd").new();root.add_child(practice);practice.set_physics_process(false);practice.ui.clear_panel();PracticeSession.start(practice)
 	expect(practice.arena.map_index==31 and practice.players.size()==10,"practice creates player and nine passive targets")

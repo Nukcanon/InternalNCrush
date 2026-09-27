@@ -34,17 +34,22 @@ static func build(role:int,team:int) -> Node3D:
 	form(hips,[Vector3(-.12,.14,.11),Vector3(.10,.17,.12)],trousers)
 	form(chest,[Vector3(-.21,.145,.11),Vector3(.10,.20,.13),Vector3(.22,.10,.09)],shirt)
 	form(chest,[Vector3(.20,.055,.05),Vector3(.30,.055,.05)],skin)
-	form(head,[Vector3(-.09,.055,.065),Vector3(-.04,.085,.085),Vector3(.10,.087,.088),Vector3(.18,.055,.055)],skin)
+	var female=role in HumanModel.FEMALE_ROLES
+	form(head,[Vector3(-.073,.041,.048),Vector3(-.033,.065,.067),Vector3(.055,.081,.083),Vector3(.13,.08,.078),Vector3(.18,.052,.053)],skin,12) if female else form(head,[Vector3(-.09,.055,.065),Vector3(-.04,.085,.085),Vector3(.10,.087,.088),Vector3(.18,.055,.055)],skin)
 	# Flat painted eyes/brows and one small nose, no glossy eyeballs or skin maps.
 	for side in [-1,1]:
 		box(head,Vector3(side*.038,.045,-.083),Vector3(.026,.012,.009),ink)
+		if female:
+			box(head,Vector3(side*.038,.043,-.089),Vector3(.020,.009,.003),Color("d1c6b3"))
+			box(head,Vector3(side*.038,.043,-.092),Vector3(.008,.009,.003),Color("473a31"))
 		box(head,Vector3(side*.038,.071,-.080),Vector3(.035,.008,.008),ink)
 	box(head,Vector3(0,.006,-.091),Vector3(.017,.032,.018),skin.darkened(.08))
-	box(head,Vector3(0,-.038,-.079),Vector3(.031,.006,.009),Color("785548"))
+	box(head,Vector3(0,-.031,-.069 if female else -.079),Vector3(.031,.006,.009),Color("785548"))
 	var hat=[ink,Color("50715b"),ink,Color("e2b34c"),ink,Color("f1e9ce")][role]
-	form(head,[Vector3(.10,.092,.095),Vector3(.18,.082,.080),Vector3(.205,.055,.055)],hat)
-	if role in [1,3,5]:box(head,Vector3(0,.103,-.091),Vector3(.19,.015,.085),hat)
-	if role in HumanModel.FEMALE_ROLES:box(head,Vector3(0,.01,.075),Vector3(.15,.20,.055),ink)
+	if female:OperatorHair.build(head,role,true)
+	else:
+		form(head,[Vector3(.10,.092,.095),Vector3(.18,.082,.080),Vector3(.205,.055,.055)],hat)
+		if role==3:box(head,Vector3(0,.103,-.091),Vector3(.19,.015,.085),hat)
 	for side in [-1,1]:
 		var prefix="Left" if side<0 else "Right"
 		var arm=chest.get_node(prefix+"Arm");var elbow=arm.get_node("Elbow");var hand=elbow.get_node("Hand")
