@@ -1,6 +1,6 @@
 # 1.2.5 verification — 2026-09-27
 
-Status: release candidate; public 1.2.4 is unchanged until package verification and publication.
+Status: verified release 1.2.5; runtime source `7a51e15239cf91c0056629c4bbfcaaea629f14da`. See PUBLICATION_STATUS.json for live-site and package hashes.
 
 ## Changes and evidence
 
@@ -12,8 +12,21 @@ Status: release candidate; public 1.2.4 is unchanged until package verification 
 
 ## Limits
 
-Initial local suite: 44 groups passed. Additional physical traversal through eight new rooms passes after correcting flat-map grid rasterization. The final CI suite includes this regression as a 45th group. CI and exact exported package verification are pending below. Existing engine-exit warnings about two 349,524-byte GL textures remain reproducible after the rendered equipment fixture. They are not silently classified as solved. Intel 10–11th-gen integrated graphics, GTX960, physical phones, external NAT and multi-hour soak remain unverified. The layout changes are revisions of existing maps, not newly copied Counter-Strike maps or a claim of AAA artwork.
+Initial local suite: 44 groups passed. Additional physical traversal through eight new rooms passes after correcting flat-map grid rasterization. Final CI 36304456160 passed all 45 groups, 32-client capacity, late-start/lifecycle/prop tests, touch and WebRTC tests on its first attempt. Directory/Docker/Worker CI 36304456146 passed. The exact release ZIP passed four rendered Windows execution cases, packaged WebRTC loopback and 12 rendered round/killcam cycles. The exact Web ZIP passed manifest/hash checks and actual browser startup, free-equipment footer and bot combat entry with no observed browser errors. Existing engine-exit warnings about two 349,524-byte GL textures remain reproducible. They are not silently classified as solved. Intel 10–11th-gen integrated graphics, GTX960, physical phones, external NAT and multi-hour soak remain unverified. The layout changes are revisions of existing maps, not newly copied Counter-Strike maps or a claim of AAA artwork.
 
 Local evidence: ignored `validation/v125/`, `validation/v125-*.log`. Reproducible tools: `review_gear_v125.gd`, `review_v125.gd`, `review_maps_v125.gd`, `audit_layout_v125.gd`.
 
 The first candidate CI run (36303663690) was deliberately cancelled before publication: extra room-interior traversal exposed conservative navigation rasterization. A doorway is now sampled with explicit capsule/turn clearance, rather than rounding both ends out to whole grid cells. Room tests follow traversable floor near each room centre (furniture is not a valid walking target) continuously through all four rooms per map.
+
+## Short performance comparison
+
+RTX 4080 SUPER / Ryzen 9 7900, medium, 1280×720, uncapped, five-second warm-up and twelve-second measurement. Two sequential trials compare the published 1.2.4 executable with the local final-source 1.2.5 export. Live bot combat is not deterministic; draw counts and long frames vary between trials. This is a regression observation, not an Intel/phone benchmark or proof that stalls are fixed.
+
+| Players | Version | Mean ms, trials 1 / 2 | P95 ms, trials 1 / 2 | Maximum ms, trials 1 / 2 |
+|---|---|---|---|---|
+| 8 | 1.2.4 | 1.254 / 1.321 | 2.934 / 3.186 | 127.421 / 249.207 |
+| 8 | 1.2.5 | 1.252 / 1.117 | 2.884 / 2.783 | 231.704 / 4.703 |
+| 32 | 1.2.4 | 2.169 / 2.688 | 7.065 / 7.886 | 242.628 / 132.765 |
+| 32 | 1.2.5 | 2.122 / 3.047 | 6.928 / 8.378 | 238.208 / 125.922 |
+
+Intermittent long frames remain in both versions. Their cause is not established by these samples. The second 32-player trial is slower on average in 1.2.5, while the first is similar; no low-end performance guarantee is made. Evidence: `validation/v125-performance-comparison.json` and the four benchmark logs.
