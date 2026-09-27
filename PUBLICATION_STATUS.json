@@ -1,11 +1,152 @@
 {
-  "published_version": "1.2.2",
-  "source_commit": "fb6c32aafc1bb5a5467ae45346fa87fe51e05472",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.2",
-  "published_at": "2026-09-26T16:24:24Z",
-  "candidate_version": "1.2.3",
-  "candidate_branch": "work/v1.2.3-stability-20260927",
-  "status": "final_validation_in_progress",
+  "published_version": "1.2.3",
+  "source_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
+  "release_tag": "internal-n-crush-v1.2.3",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.3",
+  "published_at": "2026-09-27T03:20:23Z",
+  "verified_at": "2026-09-27T03:31:59.311661+00:00",
+  "status": "published_with_documented_validation_limits",
+  "recovery_branch": "work/v1.2.3-stability-20260927",
+  "baseline_version": "1.2.2",
+  "baseline_source_commit": "fb6c32aafc1bb5a5467ae45346fa87fe51e05472",
+  "graphics": {
+    "native": "detailed baked anatomy and materials",
+    "web": "separate lightweight baked assets",
+    "shared_gameplay": true,
+    "automatic_web_resolution_changes": false
+  },
+  "assets": [
+    {
+      "name": "InternalNCrush_NAS_Linux_v1.2.3.zip",
+      "bytes": 15456,
+      "sha256": "e179aaf3378d214970b18caa08fa26d552a290943ebb4dde954190be8a74b612",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/InternalNCrush_NAS_Linux_v1.2.3.zip"
+    },
+    {
+      "name": "InternalNCrush_Web_v1.2.3.zip",
+      "bytes": 78701300,
+      "sha256": "6ac9824da179d563251768c9985b6587ad13f967c37118222ffecd9a98d6878f",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/InternalNCrush_Web_v1.2.3.zip"
+    },
+    {
+      "name": "InternalNCrush_Windows_v1.2.3.zip",
+      "bytes": 113852832,
+      "sha256": "b228929aa7b86ebe520168545212c96abb40427e69402edf43d318474cfa9ec4",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/InternalNCrush_Windows_v1.2.3.zip"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 298,
+      "sha256": "b1257a7890869f8d0c43bfa2bf7de37a38c19cf2372c9eb0c485159288702359",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/SHA256SUMS.txt"
+    },
+    {
+      "name": "WEB_RELEASE_v1.2.3.json",
+      "bytes": 168,
+      "sha256": "98637ad0e76cd03bf353b6a4d135257665611f1dc598f83bf617556e093bf7c8",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.3/WEB_RELEASE_v1.2.3.json"
+    }
+  ],
+  "website": {
+    "url": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
+    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=6ac9824da179",
+    "commit": "b9b045437fd3297b39d67751804e99b535972bb8",
+    "runtime_source_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
+    "approved_images_and_descriptions_preserved": true,
+    "windows_web_nas_links_verified": true,
+    "public_browser_menu_version_verified": "1.2.3"
+  },
+  "successful_ci": {
+    "final_source_build_release": 36290116158,
+    "checkpoint_functional_network": 36289439256,
+    "directory_docker_worker": 36289440984,
+    "site_installer": 36291478302,
+    "pages_deployment": 36291571438,
+    "public_package_source_hash_audit": 36291571895
+  },
+  "public_windows_zip_verification": {
+    "bytes": 113852832,
+    "sha256": "b228929aa7b86ebe520168545212c96abb40427e69402edf43d318474cfa9ec4",
+    "files": 21,
+    "source_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
+    "native_runs": [
+      {
+        "mode": "practice",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=10 phase=combat"
+        ],
+        "known_shutdown_texture_warning": true
+      },
+      {
+        "mode": "training",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=8 phase=combat"
+        ],
+        "known_shutdown_texture_warning": true
+      },
+      {
+        "mode": "network-client-headless-host",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=2 phase=combat"
+        ],
+        "known_shutdown_texture_warning": false
+      },
+      {
+        "mode": "network-client-window-host",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=2 phase=combat"
+        ],
+        "known_shutdown_texture_warning": false
+      }
+    ],
+    "windows_exe_loopback_connection": true
+  },
+  "connections": {
+    "enet_32_clients": true,
+    "restart_reconnect_two_8_peer_runs": true,
+    "public_zip_webrtc_loopback": {
+      "players": 2,
+      "ping_ms": 7,
+      "snapshots": 59,
+      "passed": true
+    },
+    "browser_to_packaged_windows_loopback": {
+      "players": 2,
+      "ping_ms": 17,
+      "snapshots": 85,
+      "passed": true
+    },
+    "external_wan_nat_turn": "not_verified"
+  },
+  "rendered_repeated_sessions": {
+    "native_rounds_and_killcams": 12,
+    "browser_rounds_and_killcams": 36,
+    "browser_duration_minutes_approx": 6,
+    "failures": 0,
+    "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+    "browser_frame_mean_ms": 16.783505,
+    "browser_frame_max_ms": 187.5,
+    "note": "Bounded observations; not a GTX960/mobile or multi-hour stability claim."
+  },
+  "public_directory": {
+    "status": "awaiting_owner_cloudflare_login",
+    "default_url": "",
+    "existing_public_default_in_1_2_2": false,
+    "docker_and_worker_implementation_tested": true
+  },
+  "remaining_limits": [
+    "Intermittent long frames remain.",
+    "Web WorkerThreadPool allocator warnings at engine exit remain.",
+    "Some native runs report GL texture warnings at driver exit, including public ZIP practice and bot combat.",
+    "GTX960, physical Android/iOS, mobile Safari and multi-hour sessions are unverified.",
+    "External multi-PC LAN/WAN NAT/TURN routes are unverified.",
+    "Female face changes remain stylized game art, not reference-equivalent high-end character assets."
+  ],
   "validation_document": "VALIDATION_V123.md",
-  "website": "https://nukcanon.github.io/nukcanon/internal-n-crush.html"
+  "request_audit_document": "V123_REQUEST_AUDIT.md",
+  "handoff_document": "CODEX_HANDOFF.md"
 }

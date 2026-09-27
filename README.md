@@ -6,7 +6,7 @@ Windows / Web tactical FPS with six operators, 31 competitive arenas and a four-
 
 | Directory | Purpose |
 |---|---|
-| [game/](game/README.md) | Shared Windows/Web gameplay, artwork, physics and tests |
+| [game/](game/README.md) | Shared gameplay/physics/tests and detailed Windows assets; Web graphics are baked separately |
 | [windows/](windows/README.md) | Windows launcher, export and packaged-EXE validation |
 | [web/](web/README.md) | Single-thread browser export for GitHub Pages, mobile touch controls |
 | [nas/](nas/README.md) | Linux/NAS Docker setup wizard, HTTPS proxy and operations |
@@ -22,3 +22,5 @@ Windows LAN uses local UDP discovery. Browser LAN and mixed Windows/Web rooms us
 The browser detects mobile/coarse touch devices and enables floating movement, aim, fire, reload and ability controls. Desktop uses keyboard/mouse. Real-device and WAN results are recorded separately from local tests in the handoff.
 
 Source was moved from `Nukcanon/nukcanon/games/relaystrike` to this repository's `game/`. Historical filenames and wire compatibility tokens are preserved where needed. Asset origins and licenses are included; no MakeHuman application code is shipped.
+
+요청별 반영 내용과 남은 범위: [1.2.3 한국어 확인표](V123_REQUEST_AUDIT.md).

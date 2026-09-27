@@ -2,7 +2,7 @@
 
 Public baseline: game `fb6c32aafc1bb5a5467ae45346fa87fe51e05472`, site `f320788e6850dafd500d5281e0908ce3fe29abdf` (1.2.2).
 Uncommitted previous 1.2.3 work was absent after environment restoration. Previous test results are historical and **do not validate this checkout**. All reconstructed changes require fresh validation.
-Work is checkpointed on `work/v1.2.3-stability-20260927`; release remains unchanged until gates pass.
+Work is checkpointed on `work/v1.2.3-stability-20260927` and published to main. **1.2.3 Windows/Web/NAS and Pages are live**, with runtime source `19386e693a45134b2f8a69ecbe4d5b28ea800ae6`. Current evidence is in `VALIDATION_V123.md` and `PUBLICATION_STATUS.json`.
 
 ## Stability
 - [x] Native and Web repeated combat / round changes: resource counts, allocations and frame-time spikes.
@@ -28,13 +28,13 @@ Work is checkpointed on `work/v1.2.3-stability-20260927`; release remains unchan
 - [x] Support score breakdown and room-persistent stats, separate match kills; domination majority at timeout or hold all zones; winner portraits/names above scoreboard.
 
 ## Release gates
-- [ ] Godot parse + targeted tests + legacy functional/network checks.
-- [ ] Native/Web model rendering and gameplay visual review.
-- [ ] Long-running stability measurements; real browser check and native runtime check.
-- [ ] 1.2.3 Windows/Web/NAS build, exact source/manifest match, site deployment and public download audit.
-- [ ] Preserve unchanged homepage images and descriptions.
+- [x] Godot parse + targeted tests + legacy functional/network checks (42 groups, final-source CI succeeded).
+- [x] Native/Web model rendering and gameplay visual review.
+- [x] Repeated-session measurements; real browser and actual native EXE checks (12 native/36 browser cycles; not a multi-hour or low-end hardware certification).
+- [x] 1.2.3 Windows/Web/NAS build, exact source/manifest match, site deployment and public download audit.
+- [x] Preserve unchanged homepage images and descriptions.
 
-## Windows recovery continuation — 2026-09-27
+## Historical recovery checkpoint — superseded by the completed gates above
 
 Fetched origin and resumed `da2424b` on the recovery branch. No 1.1.3 source was
 merged into this work. Reference JPG was found locally and inspected. Native
@@ -58,5 +58,5 @@ No 1.2.3 release or site update has been made. Remaining gates include completed
 regressions, live network options/state transitions, rendered asset review,
 longer browser session, builds and exact-source publication checks.
 
-Current candidate checks and limits supersede the intermediate counts above: see VALIDATION_V123.md. Source preserves separate rendering. Neck atlas-ID interpolation was corrected after final visual inspection; female eyebrows/jaw width adjusted without increasing mesh count.
+Final published checks and limits supersede the intermediate counts above: see VALIDATION_V123.md. Source preserves separate rendering. Neck atlas-ID interpolation was corrected after final visual inspection; female eyebrows/jaw width adjusted without increasing mesh count. Open follow-up: authenticated Cloudflare deployment, real low-end/mobile and external WAN testing, remaining intermittent long frames / engine exit warnings.
 
