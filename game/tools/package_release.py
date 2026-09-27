@@ -3,9 +3,35 @@ from pathlib import Path
 import argparse
 import hashlib
 import re
+import struct
 import zipfile
 
 PROJECT = Path(__file__).resolve().parents[1]
+
+
+def validate_native_pack(path: Path):
+    """Editor previews cannot catch missing dependencies excluded from exports."""
+    with path.open('rb') as pack:
+        assert pack.read(4) == b'GDPC', 'Expected a Godot resource pack'
+        pack.seek(24)
+        base = struct.unpack('<Q', pack.read(8))[0]
+        pack.seek(96)
+        count = struct.unpack('<I', pack.read(4))[0]
+        entries = {}
+        for _ in range(count):
+            length = struct.unpack('<I', pack.read(4))[0]
+            name = pack.read(length).rstrip(b'\0').decode()
+            offset, size = struct.unpack('<QQ', pack.read(16))
+            pack.read(20)
+            entries[name] = (offset + base, size)
+        for gender in ('male', 'female'):
+            name = f'assets/human/textures/{gender}.png.import'
+            assert name in entries, 'Missing native face import: ' + name
+            offset, size = entries[name]
+            pack.seek(offset)
+            imported = pack.read(size).decode()
+            paths = re.findall(r'^path(?:\.[a-z0-9_]+)?="res://([^"\n]+)"', imported, re.M)
+            assert paths and all(p in entries for p in paths), 'Missing imported face texture: ' + name
 
 
 def package(build_dir: Path, output_dir: Path) -> Path:
@@ -35,9 +61,7 @@ def package(build_dir: Path, output_dir: Path) -> Path:
     with files['InternalNCrush.exe'].open('rb') as executable:
         if executable.read(2) != b'MZ':
             raise SystemExit('Expected a Windows executable')
-    with files['InternalNCrush.pck'].open('rb') as pack:
-        if pack.read(4) != b'GDPC':
-            raise SystemExit('Expected a Godot resource pack')
+    validate_native_pack(files['InternalNCrush.pck'])
     output_dir.mkdir(parents=True, exist_ok=True)
     output = output_dir / f'InternalNCrush_Windows_v{version}.zip'
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
