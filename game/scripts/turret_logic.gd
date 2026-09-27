@@ -122,6 +122,7 @@ static func tick(game:Node,dt:float):
 static func tick_rockets(game:Node,dt:float):
 	for rocket in game.rockets:
 		if rocket.get("launcher",false):RocketCombat.tick(game,rocket,dt);continue
+		if rocket.until<=game.clock:game.event_fx.rpc("explosion",rocket.pos,Vector3.ZERO,rocket.owner);continue
 		var from:Vector3=rocket.pos;var to=from+rocket.velocity*dt;var exclude=[]
 		if game.device_nodes.has(int(rocket.device)):exclude.append(game.device_nodes[int(rocket.device)].get_rid())
 		var hit=game.ray(from,to,exclude)

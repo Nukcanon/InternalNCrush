@@ -51,9 +51,13 @@ static func visual(g:Node,node:Node3D,d:Dictionary):
 static func labels(g:Node,node:Node3D,d:Dictionary):
 	var viewer=g.players.get(g.local_id,{})
 	var name_label=node.get_node("Label");var health=node.get_node("HealthLabel");var timer=node.get_node("BuildTimer")
+	var factor=TurretLogic.SCALES[clampi(int(d.level)-1,0,3)] if d.kind=="turret" else 1.
+	var top=((2.5 if int(d.level)==4 else 2.1)*factor+.28) if d.kind=="turret" else 1.55
+	for pair in [[health,top],[name_label,top+.25],[timer,top+.53]]:
+		pair[0].position.y=pair[1]/factor;pair[0].scale=Vector3.ONE/factor
 	var aimed=false
 	if not viewer.is_empty() and viewer.alive and g.actors.has(g.local_id):
-		var a=g.actors[g.local_id];var point=d.pos+Vector3.UP*(.7 if d.kind=="cover" else 1.)
+		var a=g.actors[g.local_id];var point=d.pos+Vector3.UP*.7 if d.kind=="cover" else TurretLogic.origin(d)
 		var delta=point-a.eye()
 		aimed=delta.length()<80. and delta.length()>.01 and a.direction().dot(delta.normalized())>cos(deg_to_rad(9.)) and g.clear_line(a.eye(),point,[a.get_rid(),node.get_rid()])
 	name_label.visible=aimed;health.visible=aimed

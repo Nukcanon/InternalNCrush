@@ -20,12 +20,31 @@ static func build(a:Node):
 	for i in range(points.size()):
 		var point:Vector3=points[i]
 		if not fixture_clear(a,point,indoor):continue
+		var ceiling=INF
+		if indoor or point.y<0:
+			for collider in a.find_children("*","CollisionShape3D",true,false):
+				if collider.shape==null or collider.get_parent() is CharacterBody3D or collider.get_parent() is RigidBody3D:continue
+				var bounds=collider.global_transform*collider.shape.get_debug_mesh().get_aabb()
+				if bounds.position.y>point.y+.10 and bounds.position.y<point.y+12. and point.x>bounds.position.x+.4 and point.x<bounds.end.x-.4 and point.z>bounds.position.z+.1 and point.z<bounds.end.z-.1:ceiling=minf(ceiling,bounds.position.y)
+			# Decorative roof panels are intentionally non-colliding, but can
+			# physically support the fixture just like a solid ceiling.
+			for panel in a.architecture.find_children("*","MeshInstance3D",true,false):
+				var bounds=panel.global_transform*panel.get_aabb()
+				if bounds.size.y<.8 and bounds.size.x>1. and bounds.size.z>.4 and bounds.position.y>point.y+.10 and bounds.position.y<point.y+12. and point.x>bounds.position.x+.4 and point.x<bounds.end.x-.4 and point.z>bounds.position.z+.1 and point.z<bounds.end.z-.1:ceiling=minf(ceiling,bounds.position.y)
+			if not is_finite(ceiling):continue # No roof/beam: never leave a hanging light unattached.
 		var warm=i%2==0;var color=Color("ffd49a") if warm else Color("a3d9ed")
 		var light=OmniLight3D.new();light.position=point;light.name="Practical"+str(i);light.light_color=color;light.light_energy=1.8 if indoor else 2.2;light.omni_range=18. if point.y>0 else 8.;light.omni_attenuation=1.3;light.shadow_enabled=i<4;light.distance_fade_enabled=true;light.distance_fade_begin=55.;light.distance_fade_length=12.;a.add_child(light)
 		var fixture=MeshFactory.box(a,point,Vector3(1.1,.13,.40),Color("354452"));fixture.name="Luminaire";fixture.set_meta("fixture_point",point);fixture.set_meta("fixture_indoor",indoor)
 		var lens=MeshFactory.box(a,point-Vector3.UP*.075,Vector3(.93,.035,.29),color)
 		var mat=StandardMaterial3D.new();mat.albedo_color=color;mat.emission_enabled=true;mat.emission=color;mat.emission_energy_multiplier=1.6;lens.material_override=mat;lens.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		if not indoor and point.y>0:MeshFactory.cylinder(a,point+Vector3(.6,-point.y*.5,0),.06,point.y,Color("415361"))
+		if is_finite(ceiling):
+			for x in [-.33,.33]:MeshFactory.cylinder(a,Vector3(point.x+x,(ceiling+point.y)*.5,point.z),.017,ceiling-point.y,Color("415361"),Vector3.ZERO,-1,6)
+			fixture.set_meta("fixture_attachment","ceiling");fixture.set_meta("fixture_anchor_y",ceiling)
+		else:
+			var floor_y=a.walk_height(point+Vector3(.6,0,0))
+			MeshFactory.cylinder(a,Vector3(point.x+.6,(point.y+floor_y)*.5,point.z),.06,point.y-floor_y,Color("415361"))
+			MeshFactory.box(a,point+Vector3(.31,0,0),Vector3(.64,.09,.11),Color("415361"))
+			fixture.set_meta("fixture_attachment","pole");fixture.set_meta("fixture_anchor_y",floor_y)
 	a.set_meta("practical_lights",points.size())
 
 	GraphicsOptions.apply_world(a)

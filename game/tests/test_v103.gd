@@ -48,6 +48,9 @@ func run():
 	expect(door.opened,"held E cannot toggle a door twice")
 	for frame in range(60):await physics_frame
 	expect(g.ray(from,to,[],1).is_empty(),"open door leaves a clear physical passage")
+	for i in range(door.leaves.size()):
+		expect(absf(door.leaves[i].position.x)-InteractiveDoor.WIDTH*.25>InteractiveDoor.WIDTH*.5,"open leaf fully retracts outside the aperture")
+		expect(door.leaf_materials[i].get_shader_parameter("leaf_offset")==door.leaves[i].position.x,"render clipping follows the moving door pocket")
 	actor.position=door.global_position;expect(not door.toggle(g.actors) and door.opened,"door does not close through an actor")
 	var states=g.arena.door_states();door.opened=false;g.arena.receive_doors(states);expect(door.opened,"door snapshot restores open state for joining clients")
 	g.arena.reset_props();expect(not door.opened and door.progress==0.,"new round resets doors")

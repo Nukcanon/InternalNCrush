@@ -5,7 +5,7 @@ extends RefCounted
 static func box(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
 	var mesh=BoxMesh.new();mesh.size=size
 	return MeshFactory.instance(parent,mesh,pos,color)
-static func form(parent:Node,rings:Array,color:Color,sides:int=8):
+static func form(parent:Node,rings:Array,color:Color,sides:int=8,hair_role:int=-1):
 	var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES);st.set_smooth_group(-1)
 	for level in range(rings.size()-1):
 		var low:Vector3=rings[level];var high:Vector3=rings[level+1]
@@ -15,14 +15,41 @@ static func form(parent:Node,rings:Array,color:Color,sides:int=8):
 			var b=Vector3(cos(next)*low.y,low.x,sin(next)*low.z)
 			var c=Vector3(cos(angle)*high.y,high.x,sin(angle)*high.z)
 			var d=Vector3(cos(next)*high.y,high.x,sin(next)*high.z)
-			for point in [a,b,c,b,d,c]:st.add_vertex(point)
+			if hair_role>=0:
+				paint_head_face(st,[a,b,c],color,hair_role);paint_head_face(st,[b,d,c],color,hair_role)
+			else:
+				for point in [a,b,c,b,d,c]:st.add_vertex(point)
 	for end in [0,rings.size()-1]:
 		var ring:Vector3=rings[end]
 		for i in range(sides):
 			var a=Vector3(cos(i*TAU/sides)*ring.y,ring.x,sin(i*TAU/sides)*ring.z)
 			var b=Vector3(cos((i+1)*TAU/sides)*ring.y,ring.x,sin((i+1)*TAU/sides)*ring.z)
-			for point in ([Vector3(0,ring.x,0),b,a] if end==0 else [Vector3(0,ring.x,0),a,b]):st.add_vertex(point)
-	st.generate_normals();st.index();MeshFactory.instance(parent,st.commit(),Vector3.ZERO,color)
+			var triangle=[Vector3(0,ring.x,0),b,a] if end==0 else [Vector3(0,ring.x,0),a,b]
+			if hair_role>=0:paint_head_face(st,triangle,color,hair_role)
+			else:
+				for point in triangle:st.add_vertex(point)
+	st.generate_normals();st.index()
+	var mesh=MeshFactory.instance(parent,st.commit(),Vector3.ZERO,color)
+	if hair_role>=0:
+		mesh.material_override=ToonMaterials.vertex_material()
+static func paint_head_face(st:SurfaceTool,triangle:Array,skin:Color,role:int):
+	# Split on the hairline before baking vertex colors: no floating shell,
+	# z-fighting, extra material or added runtime draw call.
+	var signed=[]
+	for p in triangle:
+		var front=clampf(-sin(atan2(p.z,p.x)),0.,1.)
+		signed.append(p.y-lerpf(-.007,.078 if role==1 else .083,smoothstep(.15,.55,front)))
+	for hair in [false,true]:
+		var polygon=[]
+		for i in range(3):
+			var j=(i+1)%3;var a:Vector3=triangle[i];var b:Vector3=triangle[j]
+			var inside=signed[i]>=0. if hair else signed[i]<=0.;var next=signed[j]>=0. if hair else signed[j]<=0.
+			if inside:polygon.append(a)
+			if inside!=next:polygon.append(a.lerp(b,signed[i]/(signed[i]-signed[j])))
+		var color=Color("393a43") if role==1 else Color("453b3e")
+		for i in range(1,polygon.size()-1):
+			for p in [polygon[0],polygon[i],polygon[i+1]]:
+				st.set_color((color if hair else skin).srgb_to_linear());st.add_vertex(p)
 static func build(role:int,team:int) -> Node3D:
 	var rig=HumanModel.pose_rig(role)
 	rig.set_meta("height_m",HumanModel.HEIGHTS[role]);rig.set_meta("identity",HumanModel.IDENTITIES[role]);rig.set_meta("gender","female" if role in HumanModel.FEMALE_ROLES else "male")
@@ -35,7 +62,7 @@ static func build(role:int,team:int) -> Node3D:
 	form(chest,[Vector3(-.21,.145,.11),Vector3(.10,.20,.13),Vector3(.22,.10,.09)],shirt)
 	form(chest,[Vector3(.20,.055,.05),Vector3(.30,.055,.05)],skin)
 	var female=role in HumanModel.FEMALE_ROLES
-	form(head,[Vector3(-.073,.041,.048),Vector3(-.033,.065,.067),Vector3(.055,.081,.083),Vector3(.13,.08,.078),Vector3(.18,.052,.053)],skin,12) if female else form(head,[Vector3(-.09,.055,.065),Vector3(-.04,.085,.085),Vector3(.10,.087,.088),Vector3(.18,.055,.055)],skin)
+	form(head,[Vector3(-.073,.041,.048),Vector3(-.033,.065,.067),Vector3(.055,.081,.083),Vector3(.13,.08,.078),Vector3(.18,.052,.053)],skin,12,role) if female else form(head,[Vector3(-.09,.055,.065),Vector3(-.04,.085,.085),Vector3(.10,.087,.088),Vector3(.18,.055,.055)],skin)
 	# Flat painted eyes/brows and one small nose, no glossy eyeballs or skin maps.
 	for side in [-1,1]:
 		box(head,Vector3(side*.038,.045,-.083),Vector3(.026,.012,.009),ink)

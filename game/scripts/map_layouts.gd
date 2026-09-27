@@ -20,7 +20,7 @@ static func build(a:Node,which:int):
 		for x in [-75,-25,25,75]:a.detail(Vector3(x,10.6,0),Vector3(42,.5,176),Color("465962") if which==2 else Color("acb9bd"))
 		for x in [-85,-45,0,45,85]:
 			for z in [-65,-32,0,32,65]:
-				a.detail(Vector3(x,9.8,z),Vector3(7,.1,.5),Color("e2f2e8"))
+				a.detail(Vector3(x,10.30,z),Vector3(7,.1,.5),Color("e2f2e8"))
 				if x!=0 and z!=0:a.box(Vector3(x,4.6,z),Vector3(1.2,9.2,1.2),Color("536c76"))
 	match which:
 		2:

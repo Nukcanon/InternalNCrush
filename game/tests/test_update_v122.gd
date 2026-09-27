@@ -28,8 +28,8 @@ func run():
 	for mesh in web.find_children("*","MeshInstance3D",true,false):wcount+=mesh.mesh.surface_get_array_len(0)
 	expect(ncount>wcount,"native vest has more geometry detail")
 	var detailed=BulletMark.make(false);var simple=BulletMark.make(true);holder.add_child(detailed);holder.add_child(simple)
-	expect(detailed.get_child_count()>simple.get_child_count(),"native crater has actual relief")
-	var scratch=MeleeMark.make(false,false);holder.add_child(scratch);expect(scratch.get_child_count()>0,"native slash relief")
+	expect(detailed.get_child_count()==0 and simple.get_child_count()==0,"bullet marks are flat decals without protruding gray rims")
+	var scratch=MeleeMark.make(false,false);holder.add_child(scratch);expect(scratch.get_child_count()==0,"knife scratches have no raised gray geometry")
 	holder.free()
 	var medic=CharacterVisual.new();root.add_child(medic);medic.build(5,0)
 	medic.set_armor(0);var shirt_patch=medic.medical_patch.position.z

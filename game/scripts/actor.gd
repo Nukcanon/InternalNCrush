@@ -196,7 +196,7 @@ func simulate(dt:float,now:float,can_move:bool):
 	wish=Basis(Vector3.UP,aim_yaw)*wish
 	var target_velocity=wish*speed if can_move else Vector3.ZERO
 	if sliding and can_move:
-		var p=game.players[pid];var age=now-float(p.slide_started);target_velocity=p.slide_direction*maxf(2.4,6.8-age*5.)
+		var p=game.players[pid];var age=now-float(p.slide_started);target_velocity=p.slide_direction*maxf(2.4,Rules.SLIDE_SPEED-age*Rules.SLIDE_DECAY)
 		if not is_on_floor():p.slide_until=now
 	var acceleration=40. if sliding else 22. if wish.length_squared()>.01 else 28.
 	if not is_on_floor():acceleration=16.
@@ -319,7 +319,7 @@ func headless_pose(p:Dictionary):
 	weapon.reload_round_count=int(p.get("reload_count",3))
 	weapon.animate_reload(progress,0.,game.clock-float(p.get("shot_time",-100.)))
 	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
-	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/.72,0.,1.))
+	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),game.clock)
 	BombHandling.pose(self,game.clock)
 	update_melee(p,game.clock)
@@ -357,7 +357,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	var yaw_delta=wrapf(aim_yaw-previous_yaw,-PI,PI);previous_yaw=aim_yaw;turn_sway=lerpf(turn_sway,clampf(yaw_delta/maxf(dt,.001),-4,4),1.-exp(-dt*10))
 	character.set_armor(clampi(int(p.armor_max)/25,0,2))
 	character.update_pose(dt,moving_velocity,sprint,bool(input_state.crouch),grounded,aim_pitch,progress,recoil,phase,turn_sway)
-	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/.72,0.,1.))
+	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	if is_instance_valid(world_weapon):
 		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)

@@ -1,6 +1,12 @@
 extends Control
 var game:Node
 var ui:Node
+func marker_position(actor:Node,camera:Camera3D) -> Vector2:
+	var point=actor.character.head.global_position+Vector3.UP*.26 if is_instance_valid(actor.character) and is_instance_valid(actor.character.head) else actor.eye()+Vector3.UP*.20
+	if camera.is_position_behind(point):return Vector2.INF
+	# Camera projection is in viewport coordinates; the HUD can be independently
+	# scaled/offset. Convert to this Control's space before placing the label.
+	return get_global_transform_with_canvas().affine_inverse()*camera.unproject_position(point)
 func _draw():
 	if not game.players.has(game.local_id):return
 	var p=game.players[game.local_id]
@@ -22,13 +28,13 @@ func _draw():
 		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:draw_line(center+direction*8,center+direction*radius*.85,Color(.05,.1,.13,.85),1.,true)
 		for i in [-3,-2,-1,1,2,3]:draw_line(center+Vector2(-4,i*35),center+Vector2(4,i*35),Color(.05,.1,.13,.85),1.,true)
 		if MarkerTracker.equipped(p) and game.current_weapon(p).get("category","") in ["저격소총","지정사수소총"]:
-			var marking_radius=AimModel.pixel_radius(5.,a.camera.fov,size.y)
+			var marking_radius=AimModel.pixel_radius(MarkerTracker.HALF_ANGLE_DEGREES,a.camera.fov,size.y)
 			draw_arc(center,marking_radius,0,TAU,96,Color(1.,.86,.36,.28),3.,true)
 			var target=int(p.get("marker_target",0))
 			if target!=0 and game.actors.has(target):
-				var point=game.actors[target].eye()+Vector3.UP*.28
-				if not a.camera.is_position_behind(point):
-					var pos=a.camera.unproject_position(point);var text="%.1f"%maxf(0.,MarkerTracker.DWELL_SECONDS-float(p.get("marker_progress",0.)))
+				var pos=marker_position(game.actors[target],a.camera)
+				if pos.is_finite():
+					var text="%.1f"%maxf(0.,MarkerTracker.DWELL_SECONDS-float(p.get("marker_progress",0.)))
 					draw_string_outline(get_theme_default_font(),pos+Vector2(-35,-12),text,HORIZONTAL_ALIGNMENT_CENTER,70,18,3,Color.BLACK)
 					draw_string(get_theme_default_font(),pos+Vector2(-35,-12),text,HORIZONTAL_ALIGNMENT_CENTER,70,18,Color("ffe79d"))
 	else:

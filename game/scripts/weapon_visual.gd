@@ -2,6 +2,7 @@ extends Node3D
 class_name WeaponVisual
 const M=preload("res://scripts/mesh_factory.gd")
 var dual_guns:Array=[]
+var dual_spacing=.22
 var fire_side=0
 var magazine:Node3D
 var action_part:Node3D
@@ -124,7 +125,6 @@ func build(w:Dictionary,hands=true,use_cache=true):
 		block(self,Vector3(0,-.118,-.066),Vector3(.067,.014,.105),metal)
 		block(self,Vector3(0,-.078,-.112),Vector3(.064,.08,.014),metal)
 		block(self,Vector3(0,-.083,-.050),Vector3(.012,.046,.016),light,-.2)
-		tube(barrel_group,Vector3(0,.022,-length*.7),.021,.14,metal)
 		magazine.position=Vector3(0,-.19,.046);magazine_shape("pistol")
 		if model=="CHIME":
 			for child in magazine.get_children():child.free()
@@ -132,9 +132,16 @@ func build(w:Dictionary,hands=true,use_cache=true):
 			tube(magazine,Vector3.ZERO,.064,.105,Color("84918e"))
 			block(self,Vector3(0,.069,-.19),Vector3(.082,.034,.28),edge)
 		elif model=="SPARK":block(self,Vector3(0,-.012,-.17),Vector3(.11,.115,.16),edge);length=.32
-		elif model=="RIVET":tube(self,Vector3(0,.021,-.32),.045,.1,edge)
+		elif model=="RIVET":length=.37
 		elif model=="TRIO":block(self,Vector3(0,.079,-.12),Vector3(.064,.028,.11),accent)
 		elif model=="FEATHER":metal=Color("7b9994");block(self,Vector3(0,.048,-.1),Vector3(.083,.04,.22),metal)
+		# One continuous, open barrel: the old oversized black cap floated ahead
+		# of the shorter pistol tube, reading as a detached circular plate.
+		var bore=tube(barrel_group,Vector3(0,.025,-(length+.15)*.5),.021,length-.15,metal)
+		bore.mesh=bore.mesh.duplicate();bore.mesh.cap_top=false;bore.mesh.cap_bottom=false
+		var rim=TorusMesh.new();rim.inner_radius=.013;rim.outer_radius=.021;rim.rings=16;rim.ring_segments=6
+		M.instance(barrel_group,rim,Vector3(0,.025,-length+.003),edge,Vector3(PI/2,0,0))
+		tube(barrel_group,Vector3(0,.025,-length+.014),.013,.003,Color("10191e"))
 		sight(false)
 	elif w.get("rocket",false):
 		length=.95
@@ -285,7 +292,7 @@ func add_surface_details(pistol:bool,role:int):
 		for x in [-.030,.030]:block(self,Vector3(x,-.108,-.068+trigger_shift),Vector3(.009,.055,.10),metal,.12)
 		block(self,Vector3(0,-.136,-.055+trigger_shift),Vector3(.066,.01,.08),metal)
 		block(self,Vector3(0,-.11,-.06+trigger_shift),Vector3(.01,.04,.015),light,-.3)
-	tube(barrel_group,Vector3(0,.025,-length-.002),.026 if pistol else .028,.006,Color("10191e"))
+	if not pistol:tube(barrel_group,Vector3(0,.025,-length-.002),.028,.006,Color("10191e"))
 	if not pistol:
 		var guard_z=-length*.6
 		for x in [-.055,.055]:
@@ -450,12 +457,13 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 
 func build_dual(w:Dictionary,hands:bool,pose_only:bool):
 	spec=w;name=w.name;reload_style="dual";length=.3
+	dual_spacing=.30 if hands else .22
 	for index in range(2):
 		var gun=WeaponVisual.new();add_child(gun)
 		var single=Catalog.get_weapon("pistol").duplicate(true);single.role=w.role
 		if pose_only:gun.build_pose(single)
 		else:gun.build(single,hands)
-		gun.position=Vector3(.22 if index==0 else -.22,0,0);gun.scale.x=1. if index==0 else -1.
+		gun.position=Vector3(dual_spacing if index==0 else -dual_spacing,0,0);gun.scale.x=1. if index==0 else -1.
 		if hands:gun.left_hand.hide();gun.support_arm.hide()
 		dual_guns.append(gun)
 	right_hand=dual_guns[0].right_hand;left_hand=dual_guns[1].right_hand
@@ -469,7 +477,7 @@ func animate_dual(t:float,recoil:float,shot_age:float):
 		var gun=dual_guns[index];var side=1. if index==0 else -1.
 		var fired=index==fire_side
 		gun.animate_reload(-1.,recoil if fired else 0.,shot_age if fired else 10.)
-		gun.position=Vector3(.22*side,0.,recoil*.055 if fired else 0.);gun.rotation=Vector3(recoil*.15 if fired else 0.,0.,0.)
+		gun.position=Vector3(dual_spacing*side,0.,recoil*.055 if fired else 0.);gun.rotation=Vector3(recoil*.15 if fired else 0.,0.,0.)
 		gun.magazine.visible=true
 		if t>=0.:
 			# Each pistol is lowered to a belt magazine station while its firing hand stays on the grip.

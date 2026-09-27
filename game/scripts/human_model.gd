@@ -91,11 +91,8 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 		oval(parent,center+Vector3(-.001,.002,-.0125),Vector3(.0012,.0012,.0006),Color("e5ddd0")).set_meta("surface_kind",4)
 		cord(parent,center+Vector3(-side*.013,.017,-.012),center+Vector3(side*.010,.019,-.009),.0024,hair)
 	if female:OperatorHair.build(parent,which,false)
-	elif which==2:
-		loft(parent,Vector3(0,.012,.014),[Vector4(.067,.094,.10,0),Vector4(.093,.098,.101,0),Vector4(.145,.065,.08,0),Vector4(.155,.008,.014,0)],Color("5c696b"),24)
-	elif which==3:
-		loft(parent,Vector3(0,0,.012),[Vector4(.073,.095,.109,0),Vector4(.112,.094,.109,0),Vector4(.145,.078,.088,.006),Vector4(.164,.010,.014,.008)],Color("bb955c"),28)
-		oval(parent,Vector3(0,.079,-.115),Vector3(.192,.018,.135),Color("a5804f"))
+	# Native head shapes vary: remove the two generic undersized caps rather
+	# than letting them intersect the scalp. Hair and communication gear remain.
 	# Small communication headset leaves the face and human silhouette readable.
 	oval(parent,Vector3(.092,.012,.014),Vector3(.038,.059,.051),Color("414947"))
 	cord(parent,Vector3(.099,-.004,0),Vector3(.061,-.055,-.10),.005,Color("383f3f"))
@@ -134,7 +131,8 @@ static func build(which:int,team:int) -> Node3D:
 		oval(foot,Vector3(0,.025,-.065),Vector3(.155,.14,.27),dark)
 		loft(foot,Vector3(0,0,-.06),[Vector4(-.045,.052,.08,0),Vector4(-.032,.079,.138,0),Vector4(-.015,.079,.136,0)],dark.darkened(.28))
 		for k in range(3):cord(foot,Vector3(-.038,.078,-.035-k*.025),Vector3(.038,.078,-.035-k*.025),.004,Color("9c947b"))
-	loft(hips,Vector3.ZERO,[Vector4(.066,.175,.137,0),Vector4(.103,.165,.124,0)],dark)
+	# Waist belt is painted on the authored body below; the old generic ellipse
+	# intersected its different contour and exposed triangular dark slivers.
 	M.box(hips,Vector3(0,.083,-.13),Vector3(.047,.03,.018),Color("9b9d89"),Vector3.ZERO,.6)
 	loft(chest,Vector3(0,.256,0),[Vector4(-.025,.059,.056,0),Vector4(.07,.055,.054,0)],skin)
 	var head=joint(chest,"Head",Vector3(0,.36,0));face(head,which,skin,hair)

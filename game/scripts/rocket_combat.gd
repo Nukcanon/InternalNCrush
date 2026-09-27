@@ -1,16 +1,20 @@
 class_name RocketCombat
 extends RefCounted
-const SPEED=30.
+const SPEED=36. # 20% faster: retains lead/dodge time with this game's broad splash.
 const GRAVITY=.65
 const RADIUS=9.
+const LIFETIME=10.
 static func launch(g:Node,id:int,w:Dictionary):
 	var p=g.players[id];var a=g.actors[id];var origin=a.muzzle_world()
 	var direction=a.direction();var blocked=g.ray(a.eye(),a.desired_muzzle(),[a.get_rid()],1|4|8)
-	var rocket={"pos":origin,"origin":origin,"velocity":direction*SPEED,"owner":id,"device":0,"until":g.clock+10.,"launcher":true}
+	var rocket={"pos":origin,"origin":origin,"velocity":direction*SPEED,"owner":id,"device":0,"until":g.clock+LIFETIME,"launcher":true}
 	if not blocked.is_empty():explode(g,rocket,blocked)
 	else:g.rockets.append(rocket)
 	p.shot_time=g.clock;g.effect.rpc("rocket_launch",origin,origin+direction,id,g.clock,{"weapon":"h4"})
 static func tick(g:Node,rocket:Dictionary,dt:float):
+	if rocket.until<=g.clock:
+		# Airburst uses the same authoritative splash/visibility and kill identity.
+		rocket.until=0.;explode(g,rocket,{"position":rocket.pos,"normal":Vector3.UP,"collider":null});return
 	var steps=maxi(1,ceili(dt/.016));var step=dt/steps
 	var exclude=[g.actors[rocket.owner].get_rid()] if g.actors.has(rocket.owner) else []
 	for i in range(steps):
@@ -39,7 +43,7 @@ static func explode(g:Node,rocket:Dictionary,hit:Dictionary):
 	for did in g.devices.keys():
 		if rocket.get("construction_hits",{}).has(did):continue # A pass-through direct hit already dealt this rocket's damage.
 		var d=g.devices[did];var point=d.pos+Vector3.UP*.8;var distance=point.distance_to(pos)
-		var direct=hit.collider.has_meta("device") and int(hit.collider.get_meta("device"))==int(did)
+		var direct=is_instance_valid(hit.collider) and hit.collider.has_meta("device") and int(hit.collider.get_meta("device"))==int(did)
 		var exclude=[g.device_nodes[did].get_rid()] if g.device_nodes.has(did) else []
 		if direct or (distance<=RADIUS and g.clear_line(pos,point,exclude)):g.damage_device(did,(60. if direct else lerpf(45.,15.,clampf(distance/RADIUS,0.,1.))),owner)
 	for prop in g.arena.props.values():

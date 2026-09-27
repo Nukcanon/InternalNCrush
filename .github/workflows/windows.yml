@@ -89,6 +89,7 @@ jobs:
             game/validation/*.png
       - name: Verify complete equipment thumbnails and target HUD
         run: |
+          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_kill_icons.gd
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_thumbnails.gd -- --v124
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
           xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v124.gd -- --no-save-profile --no-update-check
@@ -148,6 +149,7 @@ jobs:
           web_name="game-${GITHUB_SHA:0:12}"
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
           mv "web/build/$web_name.html" web/build/index.html
+          python3 web/test_webgl_handles.py "web/build/$web_name.js"
           mkdir -p web/build/guide
           for screen in controls touch settings lan internet; do cp "validation/v117/$screen.jpg" "web/build/guide/$screen.jpg"; done
           python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.2.4.zip", include_config=False)'

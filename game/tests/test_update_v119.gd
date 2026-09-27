@@ -43,11 +43,19 @@ func run():
 	g.grenades.clear();p.cooking=0.;p.role=0;p.slot=0;p.shield=0.;p.slow=0.;p.slide_ready=0.;a.position=Vector3.ZERO;a.velocity=Vector3.ZERO;a.input_state.jump=false;a.input_state.yaw=0.
 	for i in range(30):a.simulate(.016,g.clock,true);await physics_frame
 	expect(g.begin_slide(1,false,Vector2(-1,0)) and p.slide_direction.x<-.9,"double-tap slide follows requested left direction from rest")
+	expect(is_equal_approx(p.slide_until-g.clock,.95) and Rules.SLIDE_SPEED>8. and Rules.SLIDE_TAP_MS==550,"longer and faster slide with a forgiving tap window")
+	p.slide_until=0.;p.slide_ready=0.;a.velocity=Vector3(0,0,-.8)
+	expect(g.begin_slide(1),"slide does not require a full running acceleration first")
+	p.slide_until=0.;p.slide_ready=0.;a.velocity=Vector3.ZERO
+	expect(g.begin_slide(1,true),"double Shift can start a forward slide from rest")
 	p.slide_until=0.;p.slide_ready=0.
 	var touch=TouchControls.new();touch.game=g;g.add_child(touch);touch.movement=Vector2(0,-1);touch.track_swipe();touch.movement=Vector2.ZERO;touch.track_swipe();touch.movement=Vector2(.1,-1);touch.track_swipe()
 	expect(p.slide_direction.z<-.9,"neutral then matching swipe starts forward slide")
 	expect(not touch.buttons.has("slide"),"mobile slide button removed")
 	expect(RocketCombat.RADIUS==9. and RocketCombat.GRAVITY<1. and Catalog.get_weapon("h4").damage==60,"launcher balance")
+	var expired={"launcher":true,"owner":1,"device":0,"pos":Vector3(0,360,0),"origin":Vector3.ZERO,"velocity":Vector3.UP*RocketCombat.SPEED,"until":g.clock}
+	g.rockets.append(expired);g.add_device("cover",Vector3(40,0,40),1,100.)
+	TurretLogic.tick_rockets(g,.016);expect(g.rockets.is_empty() and expired.until==0.,"ten-second aerial rocket explodes and is removed even with devices present")
 	expect(AbilityBalance.COOLDOWNS[3]==30. and AbilityBalance.SLOW_RADIUS==15.,"turret and control balance")
 	# An unfinished cover cannot absorb a shot, but receives its own damage.
 	p.team=0;q.team=1;p.primary="a1";p.slot=0;p.protect=0.;p.invulnerable=0.;p.hp=100.;q.hp=100.;q.protect=0.;q.invulnerable=0.;q.armor=0.;p.placing="";p.slide_until=0.

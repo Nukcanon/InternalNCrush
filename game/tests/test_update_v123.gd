@@ -85,11 +85,42 @@ func run():
 	p.primary="r1"
 	for i in range(20):MarkerTracker.tick(g,1,.1)
 	expect(q.mark>g.clock,"two seconds of scope dwell marks target")
+	expect(is_equal_approx(MarkerTracker.HALF_ANGLE_DEGREES,1.25),"marker cone and ring diameter reduced to one quarter")
+	g.actors[1].aim_yaw=deg_to_rad(2.);MarkerTracker.tick(g,1,.1)
+	expect(p.marker_target==0 and p.marker_progress==0.,"previous broad-cone target no longer acquires outside narrowed cone")
+	g.actors[1].aim_yaw=0.
+	g.actors[2].ensure_character()
+	TargetReveal.apply(g.actors[2],q)
+	var shown=g.actors[2].character.get_meta("silhouette_meshes",[])
+	expect(not shown.is_empty(),"marked opponent has visibility-gated silhouette assembly")
+	for mesh in shown:
+		expect(mesh.material_overlay!=null and mesh.material_overlay.next_pass==TargetReveal.outline_for(1),"marked enemy gets its own team outline and occluded silhouette")
+	g.local_id=2;TargetReveal.apply(g.actors[2],q)
+	for mesh in shown:expect(mesh.material_overlay==null,"unrelated observer gets neither outline nor through-wall fill")
+	g.local_id=1;TargetReveal.apply(g.actors[2],q)
+	var reticle=load("res://scripts/reticle.gd").new();root.add_child(reticle);reticle.position=Vector2(80,40);reticle.scale=Vector2(.7,.7)
+	var camera=g.actors[1].camera;camera.position=Vector3(0,1.6,0);camera.look_at(g.actors[2].character.head.global_position)
+	var marker=reticle.marker_position(g.actors[2],camera)
+	var projected=camera.unproject_position(g.actors[2].character.head.global_position+Vector3.UP*.26)
+	expect((reticle.get_global_transform_with_canvas()*marker).distance_to(projected)<.01,"countdown remains above animated head under scaled/offset HUD")
+	reticle.free()
+	p.hp=100.;p.armor=0.;p.protect=0.;p.invulnerable=0.;p.shield=g.clock+6.;g.actors[1].aim_pitch=.8
+	g.damage(1,10.,2,false,"pistol");expect(is_equal_approx(p.hp,98.5),"frontal shield covers head-height attacks independently of camera pitch")
+	g.actors[2].position.z=25.;g.damage(1,10.,2,false,"pistol");expect(is_equal_approx(p.hp,88.5),"shield preserves rear vulnerability")
+	p.shield=0.;g.actors[1].aim_pitch=0.;g.actors[2].position.z=-25.
+
 	for key in ["door","reload","magazine","throw","bounce","deploy","melee_swing"]:expect(GameAudio.audible_range(key)==40.,"non-strategic audio range "+key)
 	for key in ["explosion","flash","smoke"]:expect(GameAudio.audible_range(key)==220.,"strategic blast audio range "+key)
 	g.options.mode=0;g.ui.practice_menu()
 	for mode in range(5):
 		g.options.mode=mode;ModeOptions.refresh(g.ui)
 		for row in g.ui.mode_fields.get_children():expect(row.visible==(mode in row.get_meta("modes")),"mode-specific settings "+str(mode))
-	g.ui.clear_panel();g.free();await process_frame
+	g.ui.clear_panel();g.options.mode=0;g.phase="combat";p.alive=false
+	if not is_instance_valid(g.kill_replay):g.kill_replay=KillReplay.new();g.kill_replay.game=g;g.add_child(g.kill_replay)
+	g.kill_replay.active=true
+	var gear_key=InputEventAction.new();gear_key.action="gear";gear_key.pressed=true;g._unhandled_input(gear_key)
+	expect(g.ui.screen=="gear" and not g.kill_replay.active,"B skips replay and opens loadout in non-purchase modes")
+	g.ui.clear_panel();g.ui.screen="hud";g.options.mode=4;g.kill_replay.active=true;g._unhandled_input(gear_key)
+	expect(g.ui.screen=="hud" and g.kill_replay.active,"replay B cannot bypass purchase-mode restrictions")
+	g.kill_replay.active=false;g.ui.clear_panel();g.free();await process_frame
 	print("V123_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

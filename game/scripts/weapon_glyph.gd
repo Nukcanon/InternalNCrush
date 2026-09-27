@@ -2,6 +2,12 @@ extends Control
 class_name WeaponGlyph
 var weapon="a1"
 var ink=Color("eff6fa")
+static var silhouettes={}
+static func prepare():
+	# Fixed catalogue, loaded once at HUD setup. No viewport or mesh at kill time.
+	for id in Catalog.weapons:
+		var path="res://assets/kill_icons/"+str(id)+".png"
+		if not silhouettes.has(id) and ResourceLoader.exists(path):silhouettes[id]=load(path)
 func _ready():
 	custom_minimum_size=Vector2(88,27);mouse_filter=Control.MOUSE_FILTER_IGNORE
 func shape(points:Array):
@@ -9,6 +15,8 @@ func shape(points:Array):
 	for point in points:polygon.append(Vector2(point[0],point[1]))
 	draw_colored_polygon(polygon,ink)
 func _draw():
+	if silhouettes.has(weapon):
+		var fitted=Vector2(72,27);draw_texture_rect(silhouettes[weapon],Rect2((size-fitted)*.5,fitted),false,ink);return
 	draw_set_transform(Vector2((size.x-88)/2.,(size.y-27)/2.))
 	if weapon=="knife":
 		shape([[9,11],[34,11],[34,8],[74,8],[83,12],[72,17],[34,17],[34,14],[9,14]])

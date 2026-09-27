@@ -15,7 +15,7 @@ func run():
 	for variant in range(3):jobs.append(["armor"+str(variant),3,0,"a1",variant])
 	var generated=0
 	for job in jobs:
-		if "--v124" in OS.get_cmdline_user_args() and not str(job[0]).begins_with("role"):continue
+		if "--v124" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("gadget") or (job[1]==1 and Catalog.get_weapon(job[3]).slot==1)):continue
 		if "--v123" in OS.get_cmdline_user_args() and job[0] not in ["role1","role5","dual_pistols"]:continue
 		if "--v122" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("armor")):continue
 		if "--v121" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or job[0] in ["gadget4_0","gadget4_1","gadget2_0"]):continue

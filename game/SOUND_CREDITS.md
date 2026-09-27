@@ -31,3 +31,7 @@ Blue/Orange team victory phrases are locally generated Microsoft Zira Desktop
 SAPI speech, with the same provenance as the bomb announcements. No game audio
 or voice engine is redistributed. Existing gun recipes and source ordering stay
 unchanged; DUET is appended as a new weapon.
+
+## 1.2.4 contact separation
+
+Wrench repair uses high-passed Kenney plate/metal recordings for a bright ringing strike. Wrench wall/body impacts use the existing dry low-mid impact/cloth layers; knife body contact uses a shorter soft-impact mix, and knife wall contact retains the clear metal layer. All five mixes are CC0-1.0, reproduced by `tools/build_audio.py`. Contact feedback is local to the striking player.

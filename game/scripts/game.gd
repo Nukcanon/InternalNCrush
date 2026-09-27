@@ -273,6 +273,8 @@ func setup_input():
 	for k in binds:
 		if not InputMap.has_action(k):InputMap.add_action(k)
 		var ev=InputEventKey.new();ev.physical_keycode=binds[k];InputMap.action_add_event(k,ev)
+	for pair in [["left",KEY_LEFT],["right",KEY_RIGHT],["forward",KEY_UP],["back",KEY_DOWN]]:
+		var ev=InputEventKey.new();ev.physical_keycode=pair[1];InputMap.action_add_event(pair[0],ev)
 func build_world():
 	if render_actors and not dedicated:CombatFX.prepare_devices()
 	if is_instance_valid(kill_replay):kill_replay.reset()
@@ -576,7 +578,8 @@ func _unhandled_input(event):
 		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
 			capture_pointer(true);get_viewport().set_input_as_handled();return
 	if is_instance_valid(kill_replay) and kill_replay.active:
-		if event is InputEventKey and event.pressed and event.keycode in [KEY_SPACE,KEY_ESCAPE]:kill_replay.finish()
+		if event.is_action_pressed("gear") and not event.is_echo() and int(options.mode)!=4:ui.gear()
+		elif event is InputEventKey and event.pressed and event.keycode in [KEY_SPACE,KEY_ESCAPE]:kill_replay.finish()
 		get_viewport().set_input_as_handled();return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_F6,KEY_F7]:
 		command("vote",{"yes":event.keycode==KEY_F6});get_viewport().set_input_as_handled();return
@@ -605,11 +608,11 @@ func _unhandled_input(event):
 		if event.is_action_pressed("item"+str(index)):command("slot",{"slot":index-1})
 	if event.is_action_pressed("sprint") and not event.is_echo():
 		var stamp=Time.get_ticks_msec()
-		if stamp-last_shift_ms<=300:command("slide",{});last_shift_ms=-1000
+		if stamp-last_shift_ms<=R.SLIDE_TAP_MS:command("slide",{"forward":Vector2(a.velocity.x,a.velocity.z).length()<.5});last_shift_ms=-1000
 		else:last_shift_ms=stamp
-	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode in [KEY_W,KEY_A,KEY_S,KEY_D]:
-		var key=event.physical_keycode;var stamp=Time.get_ticks_msec()
-		if stamp-int(direction_taps.get(key,-2000))<=350:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode in [KEY_W,KEY_A,KEY_S,KEY_D,KEY_UP,KEY_LEFT,KEY_DOWN,KEY_RIGHT]:
+		var key={KEY_UP:KEY_W,KEY_LEFT:KEY_A,KEY_DOWN:KEY_S,KEY_RIGHT:KEY_D}.get(event.physical_keycode,event.physical_keycode);var stamp=Time.get_ticks_msec()
+		if stamp-int(direction_taps.get(key,-2000))<=R.SLIDE_TAP_MS:
 			var direction={KEY_W:Vector2(0,-1),KEY_A:Vector2(-1,0),KEY_S:Vector2(0,1),KEY_D:Vector2(1,0)}[key]
 			command("slide",{"x":direction.x,"z":direction.y});direction_taps[key]=-2000
 		else:direction_taps[key]=stamp
@@ -1033,7 +1036,8 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 	if players.has(source) and target!=source and not enemies(players[source],p) and not options.friendly:return
 	if weapon_id!="fall" and p.shield>clock and actors.has(source):
 		var dir=(actors[source].position-actors[target].position).normalized()
-		if actors[target].direction().dot(dir)>.4:amount*=.15
+		dir.y=0.;dir=dir.normalized()
+		if (Basis(Vector3.UP,actors[target].aim_yaw)*Vector3.FORWARD).dot(dir)>.4:amount*=.15
 	var armored=p.armor>0 and weapon_id!="fall"
 	var absorb=minf(p.armor,amount) if weapon_id!="fall" else 0.;p.armor-=absorb;p.hp-=amount-absorb;p.last_hit=clock
 	if target<0 and bot_navigation:bot_navigation.danger(actors[target].position)
@@ -1558,7 +1562,9 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	if kind=="melee_wall":
 		if owner==local_id:play_sound("wrench_wall" if shot_state.get("wrench",false) else "knife_wall",from,false)
 		return
-	if kind=="melee_flesh" and owner!=local_id:return
+	if kind=="melee_flesh":
+		if owner==local_id:play_sound("wrench_flesh" if shot_state.get("wrench",false) else "knife_flesh",from,false)
+		return
 	if kind in ["grenade_throw","grenade_bounce"]:play_sound(kind.trim_prefix("grenade_"),from,owner!=local_id);return
 	if kind=="bomb_explosion":
 		combat_fx.explosion(from,true,to.x/4.)
@@ -1571,7 +1577,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 			p.shot_time=shot_at;p.bloom=shot_state.bloom;p.spray_phase=shot_state.spray_phase;p.spray_index=int(p.spray_phase)
 	if kind=="shot" and is_instance_valid(kill_replay):kill_replay.record_shot(from,to,owner)
 	if kind=="turret_detect":play_sound("turret_detect",from,true);return
-	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_wall","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"deploy","skill":"skill","smoke":"smoke"}.get(kind,"")
+	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_repair","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"deploy","skill":"skill","smoke":"smoke"}.get(kind,"")
 	if kind=="shot":sound="gun_"+(players[owner].primary if players[owner].slot==0 else players[owner].secondary) if players.has(owner) else "gun_a1"
 	if kind not in ["heal","repair"] or clock-float(heal_sound_times.get(owner,-100))>.22:
 		if not sound.is_empty() and (kind not in ["heal","repair","melee_repair"] or owner==local_id):play_sound(sound,from,owner!=local_id or kind in ["explosion","flash","smoke","turret_break","cover_break"])
@@ -1689,8 +1695,8 @@ func wall_mark(pos:Vector3,normal:Vector3):
 func begin_slide(id:int,forward:bool=false,direction:Vector2=Vector2.ZERO) -> bool:
 	if not players.has(id) or phase!="combat":return false
 	var p=players[id];var a=actors[id];var velocity=Vector3(a.velocity.x,0,a.velocity.z)
-	if not p.alive or p.shield>clock or p.slow>clock or p.get("cooking",0)>0 or not a.is_on_floor() or (not forward and direction.length()<.5 and velocity.length()<4.) or clock<float(p.get("slide_ready",0)):return false
+	if not p.alive or p.shield>clock or p.slow>clock or p.get("cooking",0)>0 or not a.is_on_floor() or (not forward and direction.length()<.5 and velocity.length()<.5) or clock<float(p.get("slide_ready",0)):return false
 	if direction.length()>=.5:velocity=Basis(Vector3.UP,a.aim_yaw)*Vector3(direction.x,0,direction.y).normalized()
 	elif forward:velocity=Basis(Vector3.UP,a.aim_yaw)*Vector3.FORWARD
-	p.slide_until=clock+.72;p.slide_ready=clock+1.8;p.slide_direction=velocity.normalized();p.slide_started=clock
+	p.slide_until=clock+R.SLIDE_DURATION;p.slide_ready=clock+1.8;p.slide_direction=velocity.normalized();p.slide_started=clock
 	return true

@@ -530,6 +530,7 @@ func sensitivity_control(title:String,value:float,low:float,high:float,callback:
 func gear():
 	if int(game.options.mode)==4 and not DefusalEconomy.can_buy(game,game.local_id):notice("구매 시간이 종료되었거나 현재 구매할 수 없는 상태입니다.");return
 	if not bot_setup and not game.players.has(game.local_id):return
+	if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish()
 	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
 	make_panel("오퍼레이터 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
 	# Hidden selectors preserve one canonical loadout state for networking and menus.

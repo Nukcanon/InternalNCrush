@@ -13,6 +13,10 @@ static func step_length(sprint:bool,crouch:bool) -> float:return 2.1 if sprint e
 const WALK_SPEED = 3.2
 const RUN_SPEED = 6.2
 const CROUCH_SPEED = 1.55
+const SLIDE_TAP_MS = 550
+const SLIDE_DURATION = .95
+const SLIDE_SPEED = 8.6
+const SLIDE_DECAY = 4.4
 const REGEN_DELAY = 10.0
 const REGEN_RATE = 1.0
 const SPAWN_PROTECTION = 1.5

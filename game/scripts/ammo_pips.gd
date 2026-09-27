@@ -1,9 +1,18 @@
 class_name AmmoPips
 extends Control
 var game:Node
+var last_state:Array=[]
 func _ready():
 	custom_minimum_size=Vector2(228,52);mouse_filter=Control.MOUSE_FILTER_IGNORE
-func _process(_dt):queue_redraw()
+func refresh_state() -> bool:
+	var next:Array=[]
+	if is_instance_valid(game) and game.players.has(game.local_id):
+		var p=game.players[game.local_id];var id=p.primary if p.slot==0 else p.secondary
+		next=[p.slot,id,int(p.mag.get(id,0)),int(p.reserve.get(id,0)),bool(game.options.infinite),int(p.get("energy",0)),int(p.get("repair_energy",0)),p.reload>game.clock,p.get("cooking",0)>0,MeleeCombat.shown(p,game.clock)]
+	if next==last_state:return false
+	last_state=next;return true
+func _process(_dt):
+	if is_visible_in_tree() and refresh_state():queue_redraw()
 func _draw():
 	if not game or not game.players.has(game.local_id):return
 	var p=game.players[game.local_id]

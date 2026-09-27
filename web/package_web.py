@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import zipfile
+from patch_webgl_handles import patch_file
 
 ROOT=Path(__file__).resolve().parents[1]
 BUILD=ROOT/'web/build'
@@ -13,6 +14,8 @@ version=re.search(r'config/version="([^"]+)"',(ROOT/'game/project.godot').read_t
 html=(BUILD/'index.html').read_text(encoding='utf-8')
 config=json.loads(re.search(r'const GODOT_CONFIG = (\{[^\n]+\});',html).group(1))
 executable=config['executable']
+assert re.fullmatch(r'[A-Za-z0-9_-]+',executable),'Unsafe export basename'
+patch_file(BUILD/(executable+'.js'))
 updater=(ROOT/'web/update_client.js').read_text(encoding='utf-8')
 html=html.replace('const engine = new Engine(GODOT_CONFIG);',updater+'\nconst engine = new Engine(GODOT_CONFIG);')
 html=html.replace('(function () {', '(async function () {\n await window.incUpdateReady;')

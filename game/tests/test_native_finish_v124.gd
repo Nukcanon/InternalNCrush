@@ -9,12 +9,67 @@ class NavigationFixture extends Node:
 	var actors={}
 	var clock=0.
 	var bot_navigation=FailedNavigation.new()
+class HudFixture extends Node:
+	var players={}
+	var local_id=1
+	var options={"infinite":false}
+	var clock=0.
 func _initialize():call_deferred("run")
 func expect(ok:bool,message:String):
 	checks+=1
 	if not ok:failures+=1;printerr("FAIL ",message)
 func run():
 	Catalog.load_all()
+	for role in HumanModel.FEMALE_ROLES:
+		var crown=OperatorHair.point(0.,1.,role,false)
+		expect(crown.y<.15 and crown.y>.12,"native hair crown fits authored skull rather than oversized cap")
+		var rig=CartoonModel.build(role,0);root.add_child(rig)
+		var head=rig.get_node("Hips/Chest/Head");var painted=false
+		for mesh in head.find_children("*","MeshInstance3D",true,false):
+			if mesh.material_override is ShaderMaterial:
+				var colors=mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+				if colors!=null and colors.size()>0:
+					var dark=false;var skin=false
+					for color in colors:dark=dark or color.r<.1;skin=skin or color.r>.2
+					painted=dark and skin
+		expect(painted,"web hairline shares the original head surface with preserved skin/hair colors")
+		rig.free()
+	var hud_game=HudFixture.new();root.add_child(hud_game)
+	var p={"primary":"a1","secondary":"pistol","slot":0,"mag":{"a1":30,"pistol":12},"reserve":{"a1":90},"reload":0.,"energy":180}
+	hud_game.players[1]=p;var pips=AmmoPips.new();pips.game=hud_game
+	expect(pips.refresh_state() and not pips.refresh_state(),"unchanged ammunition retains existing draw geometry")
+	hud_game.clock=1.;expect(not pips.refresh_state(),"simulation time alone does not rebuild ammo polygons")
+	p.mag.a1-=1;expect(pips.refresh_state(),"firing redraws the removed round")
+	p.reload=3.;expect(pips.refresh_state(),"reload starts hiding ammunition")
+	hud_game.clock=4.;expect(pips.refresh_state(),"reload completion restores ammunition")
+	p.slot=1;expect(pips.refresh_state(),"switching guns refreshes the magazine")
+	p.slot=2;expect(pips.refresh_state(),"equipping a gadget clears ammunition")
+	p.energy=120;expect(pips.refresh_state(),"healing energy updates its bar")
+	hud_game.players.clear();expect(pips.refresh_state(),"leaving the match invalidates cached ammunition")
+	pips.free();hud_game.free()
+	var duet=WeaponVisual.new();root.add_child(duet);duet.build(Catalog.get_weapon("dual_pistols"))
+	expect(duet.dual_guns[0].position.x-duet.dual_guns[1].position.x>=.59,"first-person DUET leaves a clear center gap")
+	duet.animate_reload(.4,.5,.02)
+	expect(duet.dual_guns[0].position.x-duet.dual_guns[1].position.x>=.59,"DUET reload preserves widened hand spacing")
+	duet.free()
+	var max_diagonal=0.
+	for index in range(Rules.MAPS.size()):
+		var extent=DefusalLayout.spec(index).size if DefusalLayout.enabled(index) else Vector2(44,48) if index==PracticeLayout.INDEX else MapLayouts.extent(index)
+		max_diagonal=maxf(max_diagonal,extent.length()*2.)
+	expect(RocketCombat.SPEED*RocketCombat.LIFETIME>max_diagonal*1.2,"rocket lifespan spans every map with at least 20 percent range margin")
+	print("ROCKET_RANGE diagonal=",max_diagonal," lifetime_distance=",RocketCombat.SPEED*RocketCombat.LIFETIME)
+	for web in [false,true]:
+		ProjectSettings.set_setting("application/config/web_assets",web)
+		for item in [[1,0],[4,0],[4,1],[5,0],[0,8],[0,9]]:
+			var a=Node3D.new();var b=Node3D.new();root.add_child(a);root.add_child(b)
+			EquipmentPreview.gadget_model(a,item[0],item[1]);EquipmentPreview.gadget_model(b,item[0],item[1])
+			var meshes=a.find_children("*","MeshInstance3D",true,false);var copies=b.find_children("*","MeshInstance3D",true,false)
+			expect(meshes.size()==1 and copies.size()==1,"small held gadget stays one merged draw mesh")
+			expect(meshes[0].mesh==copies[0].mesh,"held gadgets reuse cached immutable geometry")
+			expect(a.find_children("*","Light3D",true,false).is_empty(),"held gadgets add no dynamic lights")
+			a.free();b.free()
+	ProjectSettings.set_setting("application/config/web_assets",false)
+	expect(EquipmentPreview.gadget_templates.size()<=80,"gadget scene cache remains bounded")
 	var fixture=NavigationFixture.new();root.add_child(fixture)
 	var actor=Node3D.new();fixture.add_child(actor);fixture.actors[-1]=actor
 	var brain=BotAgent.new();brain.game=fixture;brain.id=-1
@@ -60,7 +115,16 @@ func run():
 			for index in face:lo=minf(lo,data.vertices[index][1]);hi=maxf(hi,data.vertices[index][1])
 			if lo<1.47999 and hi>1.48001:crossed+=1
 		expect(crossed==0,"skin and shirt have a real cut neckline, role "+str(role))
-		expect(data.faces.size()<=27000,"native anatomical triangle budget remains below 27k")
+		expect(data.faces.size()<=27200,"neck and waist seams add fewer than 1.5 percent native triangles")
+		var crossed_waist=0
+		for face in data.faces:
+			var lo=INF;var hi=-INF;var torso=true
+			for index in face:
+				lo=minf(lo,data.vertices[index][1]);hi=maxf(hi,data.vertices[index][1])
+				for influence in data.weights[index]:
+					if int(influence[0]) in [3,4,5,6,7,8] and influence[1]>.5:torso=false
+			if torso and lo<1.02499 and hi>1.02501:crossed_waist+=1
+		expect(crossed_waist==0,"shirt and trousers do not interpolate across the waistline")
 		var rig=CharacterVisual.make_rig(role,0);root.add_child(rig);OperatorSkin.install(rig,str(role)+"_finish")
 		expect(rig.get_node("DeformSkeleton").get_bone_count()==15,"existing skeletal budget preserved")
 		rig.free()

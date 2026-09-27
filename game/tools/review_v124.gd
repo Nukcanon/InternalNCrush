@@ -8,9 +8,9 @@ func capture(name:String):
 func run():
 	root.size=Vector2i(1100,800);DisplayServer.window_set_size(root.size);DirAccess.make_dir_recursive_absolute(OUT);Catalog.load_all()
 	var preview=EquipmentPreview.new();root.add_child(preview);preview.size=Vector2(1100,800)
-	for web in [false]:
+	for web in [false,true]:
 		ProjectSettings.set_setting("application/config/web_assets",web)
-		for role in range(6):
+		for role in ([1,5] if web else range(6)):
 			preview.display(0,role,0,Catalog.first(role),0,0)
 			for c in preview.model.get_children():c.free()
 			var rig=CharacterVisual.make_rig(role,0);preview.model.add_child(rig);OperatorSkin.install(rig,str(role)+("_web" if web else "_native"));WebMaterials.apply(rig)

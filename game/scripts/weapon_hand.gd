@@ -55,12 +55,14 @@ void vertex() {
  float original_y=VERTEX.y;
  if(original_y < -lengths.x-lengths.y) { vec3 pivot=vec3(0,-lengths.x-lengths.y,0);mat3 r=bend(curl.z);VERTEX=pivot+r*(VERTEX-pivot);NORMAL=r*NORMAL; }
  if(original_y < -lengths.x) { vec3 pivot=vec3(0,-lengths.x,0);mat3 r=bend(curl.y);VERTEX=pivot+r*(VERTEX-pivot);NORMAL=r*NORMAL; }
- mat3 r=bend(curl.x);VERTEX=r*VERTEX;NORMAL=r*NORMAL;
+ // Leave a short embedded root inside the palm while the phalanges bend.
+ mat3 r=bend(curl.x*smoothstep(.010,-.012,original_y));VERTEX=r*VERTEX;NORMAL=r*NORMAL;
  // A geometric grip constraint keeps bent fingertips outside the receiver,
  // grip and moving magazine. It does not change the weapon or gameplay shape.
+ vec3 anchored=VERTEX;
  vec3 p=(hand_to_weapon*vec4(VERTEX,1.0)).xyz;
  for(int i=0;i<3;i++){if(i<contact_count)p=outside_contact(p,contact_min[i],contact_max[i]);}
- VERTEX=(weapon_to_hand*vec4(p,1.0)).xyz;
+ VERTEX=mix(anchored,(weapon_to_hand*vec4(p,1.0)).xyz,smoothstep(.008,-.022,original_y));
  paint_normal=normalize(MODEL_NORMAL_MATRIX*NORMAL);
 }
 void fragment() {
@@ -75,10 +77,10 @@ void fragment() {
 		var lengths=Vector3(.033,.022,.017)*[.97,1.06,1.,.80,1.][index]
 		finger.position=Vector3((index-1.5)*.019,-.035,0)
 		if index==4:
-			finger.position=Vector3(.036,.014,-.006);finger.rotation=Vector3(.22,0,-.82);lengths=Vector3(.030,.021,.016)
+			finger.position=Vector3(.026,.014,-.004);finger.rotation=Vector3(.22,0,-.70);lengths=Vector3(.030,.021,.016)
 		var radius=.0085 if index<3 else .0074 if index==3 else .010
 		var length=lengths.x+lengths.y+lengths.z
-		var mesh=HumanModel.loft(finger,Vector3.ZERO,[Vector4(-length,.001,.001,0),Vector4(-length+.005,radius*.78,radius*.66,0),Vector4(-lengths.x-lengths.y,radius*.83,radius*.74,0),Vector4(-lengths.x,radius*.94,radius*.83,0),Vector4(-.007,radius,radius*.87,0),Vector4(.002,radius*.9,radius*.8,0)],skin,6)
+		var mesh=HumanModel.loft(finger,Vector3.ZERO,[Vector4(-length,.001,.001,0),Vector4(-length+.005,radius*.78,radius*.66,0),Vector4(-lengths.x-lengths.y,radius*.83,radius*.74,0),Vector4(-lengths.x,radius*.94,radius*.83,0),Vector4(-.007,radius,radius*.87,0),Vector4(.012 if index==4 else .002,radius*1.12 if index==4 else radius*.9,radius*.9 if index==4 else radius*.8,0)],skin,6)
 		var material=ShaderMaterial.new();material.shader=finger_shader;material.set_shader_parameter("tint",skin);material.set_shader_parameter("lengths",lengths);mesh.material_override=material;mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		# Nail sits on the dorsal tip and uses the same joint deformation as its finger.
 		var nail=HumanModel.loft(finger,Vector3.ZERO,[Vector4(-length+.003,radius*.32,.0012,radius*.64),Vector4(-length+.010,radius*.65,.0014,radius*.72),Vector4(-length+.016,radius*.45,.001,radius*.72)],skin.lightened(.12),6)
@@ -109,7 +111,9 @@ func pose(release:float,trigger:float):
 static func forearm(parent:Node3D,role:int) -> Node3D:
 	var arm=Node3D.new();parent.add_child(arm)
 	var fabric=Color("68787c") if role!=5 else Color("aeb3a5")
-	HumanModel.loft(arm,Vector3.ZERO,[Vector4(0.,.063,.056,0),Vector4(.065,.068,.058,.005),Vector4(.15,.057,.047,.006),Vector4(.23,.041,.032,.003),Vector4(.29,.029,.023,0),Vector4(.32,.026,.021,0)],fabric,10)
+	# Continue the sleeve behind the elbow into the camera-side body. A short
+	# forearm ended visibly in mid-air when the launcher hand reached its breech.
+	HumanModel.loft(arm,Vector3.ZERO,[Vector4(-.28,.064,.057,-.003),Vector4(-.14,.069,.059,0),Vector4(0.,.063,.056,0),Vector4(.065,.068,.058,.005),Vector4(.15,.057,.047,.006),Vector4(.23,.041,.032,.003),Vector4(.29,.029,.023,0),Vector4(.32,.026,.021,0)],fabric,10)
 	HumanModel.loft(arm,Vector3.ZERO,[Vector4(.28,.030,.025,0),Vector4(.307,.031,.026,0),Vector4(.326,.027,.022,0)],fabric.darkened(.14),8)
 	for mesh in arm.get_children():
 		if mesh is MeshInstance3D:mesh.material_override=SurfaceFinish.hand_material(fabric,1)

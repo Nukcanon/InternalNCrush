@@ -23,14 +23,13 @@ def rotate_to_down(v,axis):
     a=unit(axis);b=[0,-1,0];c=dot(a,b);k=cross(a,b)
     return add(add(v,cross(k,v)),mul(cross(k,cross(k,v)),1/max(1+c,1e-8)))
 
-def finish_neck(data):
-    """Cut a real neckline instead of blending skin and cloth within a triangle.
+def finish_material_seam(data, height, lower_kind, upper_kind, name):
+    """Cut a real garment edge instead of blending regions within a triangle.
 
     Done offline, with interpolated bind weights and UVs. The seam adds no draw
     call or material and is identical for both genders' shared shoulder rig.
     """
-    height=1.480
-    data['source_vertex_count']=len(data['vertices'])
+    data.setdefault('source_vertex_count',len(data['vertices']))
     points=data['vertices']; kinds=data['kinds']; facial=data['face_coordinates']; weights=data['weights']
     result=[]; result_uvs=[]; cuts={}
     def crossing(a,b,ua,ub,kind):
@@ -47,7 +46,9 @@ def finish_neck(data):
         return cuts[key],mix(ua,ub,t)
     for face,uv in zip(data['faces'],data['face_uvs']):
         ys=[points[i][1] for i in face]
-        if min(ys)<height<max(ys):
+        # Waist cuts belong to the torso, never the forearm/sleeve passing it.
+        torso=all(max(weights[i],key=lambda w:w[1])[0] not in (3,4,5,6,7,8) for i in face)
+        if min(ys)<height<max(ys) and (name=='neckline' or torso):
             for upper in (False,True):
                 polygon=[]
                 for n,a in enumerate(face):
@@ -55,18 +56,21 @@ def finish_neck(data):
                     inside_a=(points[a][1]>=height) if upper else (points[a][1]<=height)
                     inside_b=(points[b][1]>=height) if upper else (points[b][1]<=height)
                     if inside_a:polygon.append((a,ua))
-                    if inside_a!=inside_b:polygon.append(crossing(a,b,ua,ub,0 if upper else 1))
+                    if inside_a!=inside_b:polygon.append(crossing(a,b,ua,ub,upper_kind if upper else lower_kind))
                 for n in range(1,len(polygon)-1):
                     triangle=[polygon[0],polygon[n],polygon[n+1]]
                     result.append([v[0] for v in triangle]);result_uvs.append([v[1] for v in triangle])
         else:result.append(face);result_uvs.append(uv)
     for i,p in enumerate(points):
-        if p[1]>height:kinds[i]=0
-        elif p[1]>1.405:kinds[i]=1
+        if name=='neckline':
+            if p[1]>height:kinds[i]=upper_kind
+            elif p[1]>1.405:kinds[i]=lower_kind
+        elif max(weights[i],key=lambda w:w[1])[0] not in (3,4,5,6,7,8) and .97<p[1]<1.08:
+            kinds[i]=upper_kind if p[1]>=height else lower_kind
     # Cut vertices belong to separate skin/cloth faces even at the same position.
     for (_,_,kind),i in cuts.items():kinds[i]=kind
-    data['faces']=result;data['face_uvs']=result_uvs;data['neckline_height']=height
-    print('Neckline:',len(cuts),'seam vertices;',len(result),'triangles')
+    data['faces']=result;data['face_uvs']=result_uvs;data[name+'_height']=height
+    print(name+':',len(cuts),'seam vertices;',len(result),'triangles')
 
 def bake(gender):
     vertices=[];faces=[];face_uvs=[];uvs=[];groups={};group=''
@@ -211,5 +215,6 @@ if __name__=='__main__':
     (ROOT/'female.json').write_text(json.dumps(female,separators=(',',':')))
     print('Female: male body/neck/shoulders and skin weights; female face above jaw')
     for gender,anatomy in [('male',male),('female',female)]:
-        finish_neck(anatomy)
+        finish_material_seam(anatomy,1.480,1,0,'neckline')
+        finish_material_seam(anatomy,1.025,2,1,'waistline')
         (ROOT/f'{gender}.json').write_text(json.dumps(anatomy,separators=(',',':')))

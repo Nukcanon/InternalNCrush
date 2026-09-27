@@ -10,7 +10,7 @@ var feedback_voices=[]
 var movement_voices=[]
 var blast_voices=[]
 signal played(key:String,world:bool)
-const FEEDBACK=["hit","confirm","hurt","armor_hurt","hurt_female","armor_hurt_female","deploy"]
+const FEEDBACK=["hit","confirm","hurt","armor_hurt","hurt_female","armor_hurt_female","deploy","knife_wall","wrench_wall","knife_flesh","wrench_flesh","wrench_repair"]
 func stop_all():
 	for voice in spatial+local+feedback_voices+movement_voices+blast_voices:
 		if is_instance_valid(voice):voice.stop();voice.stream=null

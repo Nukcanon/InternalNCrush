@@ -634,9 +634,33 @@
   "wrench_wall": {
     "file": "res://assets/audio/wrench_wall.wav",
     "category": "combat",
-    "gain_db": -4,
-    "sha256": "880ffc714ec7c4f00d968382a78bdb810c8673a12ba45e7f0af5b398323a1a3f",
+    "gain_db": 1,
+    "sha256": "228cf33de2454092b824732a48d4bb940c7ba99f346be951013d6788a23c7249",
     "license": "CC0-1.0",
-    "duration": 0.3
+    "duration": 0.24
+  },
+  "wrench_flesh": {
+    "file": "res://assets/audio/wrench_flesh.wav",
+    "category": "combat",
+    "gain_db": 1,
+    "sha256": "749810c9f8840ab6cb961fdf07875c3ca8f95f5aa58cbff5df4025c215892625",
+    "license": "CC0-1.0",
+    "duration": 0.25
+  },
+  "knife_flesh": {
+    "file": "res://assets/audio/knife_flesh.wav",
+    "category": "combat",
+    "gain_db": 2,
+    "sha256": "d8d8c0a5cb40287ae6df49a4183f41acaf928a8b88d69275fdd67f6e904645f5",
+    "license": "CC0-1.0",
+    "duration": 0.2
+  },
+  "wrench_repair": {
+    "file": "res://assets/audio/wrench_repair.wav",
+    "category": "combat",
+    "gain_db": -1,
+    "sha256": "9be746985454c69facfa2f96fad525b37519d54594a4694d449c7b68a1cec56e",
+    "license": "CC0-1.0",
+    "duration": 0.4
   }
 }

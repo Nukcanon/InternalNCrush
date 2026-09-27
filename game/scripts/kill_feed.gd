@@ -13,6 +13,7 @@ static func compact_name(value:String) -> String:
 	var base=value.left(split) if split>=0 else value
 	return (base.left(8)+"…" if base.length()>10 else base)+suffix
 func _ready():
+	WeaponGlyph.prepare()
 	position=Vector2(949,78);custom_minimum_size.x=425;scale=Vector2(.72,.72);mouse_filter=Control.MOUSE_FILTER_IGNORE;add_theme_constant_override("separation",5)
 func refresh(events:Array,local_id:int,now:int):
 	var visible_events=events.filter(func(event):return now-int(event.received)<LIFETIME_MS)

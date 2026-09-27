@@ -1,10 +1,11 @@
 class_name MarkerTracker
 extends RefCounted
 const DWELL_SECONDS=2.
+const HALF_ANGLE_DEGREES=1.25
 static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)==0 and GadgetLoadout.has_item(p)
 static func select_target(game:Node,id:int) -> int:
 	var p=game.players[id];var a=game.actors[id];var w=game.current_weapon(p)
-	var best=cos(deg_to_rad(5.));var target=0
+	var best=cos(deg_to_rad(HALF_ANGLE_DEGREES));var target=0
 	for other in game.players:
 		var q=game.players[other]
 		if other==id or not q.alive or not game.enemies(p,q) or q.get("cleanse",0)>game.clock:continue

@@ -5,11 +5,11 @@
   },
   {
     "path": "female.json",
-    "sha256": "55a3336a585b73ca1e9e0d3c876ee6eaaa96f59e886cf378f2c633bc2d938815"
+    "sha256": "9da54e855b26ee4164734f9a4b1a617b38e85f8e73b891b6c52f7693f1793664"
   },
   {
     "path": "male.json",
-    "sha256": "a278cf8255c9bb4cc984d196fe0f32840c00b173add61eae7261c06c6bc35dac"
+    "sha256": "934b80cda7f3ec6e329369b0c4633159ddab693e62586ded0e93da08e2adfe14"
   },
   {
     "path": "source/.gdignore",

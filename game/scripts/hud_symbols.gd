@@ -2,14 +2,22 @@ extends Control
 class_name HudSymbols
 var game:Node
 var ui:Node
+var redraw_timer=0.
+var cached_key_style:StyleBoxFlat
+var cached_key_opacity=-1.
 const WHITE=Color("f1f4f6")
 const GOLD=Color("ffc66b")
 static func key_style(opacity=.38) -> StyleBoxFlat:
 	var s=StyleBoxFlat.new();s.bg_color=Color(.12,.16,.20,opacity);s.border_color=Color("b7c5cf");s.set_border_width_all(1);s.border_width_bottom=3;s.set_corner_radius_all(4);return s
 func _ready():mouse_filter=Control.MOUSE_FILTER_IGNORE
-func _process(_dt):queue_redraw()
+func _process(dt):
+	if not is_visible_in_tree():return
+	redraw_timer-=dt
+	if redraw_timer<=0.:redraw_timer=.05;queue_redraw()
 func keycap(text:String,pos:Vector2,width:float=26.):
-	draw_style_box(key_style(float(game.profile.get("hud_opacity",.38))),Rect2(pos,Vector2(width,25)))
+	var opacity=float(game.profile.get("hud_opacity",.38))
+	if not is_instance_valid(cached_key_style) or opacity!=cached_key_opacity:cached_key_style=key_style(opacity);cached_key_opacity=opacity
+	draw_style_box(cached_key_style,Rect2(pos,Vector2(width,25)))
 	var font=get_theme_default_font();var baseline=(25.+font.get_ascent(13)-font.get_descent(13))*.5
 	draw_string(font,pos+Vector2(1,baseline),text,HORIZONTAL_ALIGNMENT_CENTER,width-2,13,WHITE)
 func icon(role:int,center:Vector2,radius:float,color:Color):

@@ -47,7 +47,7 @@ static func contact(g:Node,id:int,hit:Dictionary,origin:Vector3,direction:Vector
 		var zone=str(hit.get("zone","torso"))
 		var before=float(g.players[collider.pid].hp)+float(g.players[collider.pid].armor)
 		g.damage(collider.pid,base*float(ZONES.get(zone,1.)),id,zone=="head",wid,origin,hit.position)
-		if float(g.players[collider.pid].hp)+float(g.players[collider.pid].armor)<before:g.effect.rpc("melee_flesh",hit.position,Vector3.ZERO,id)
+		if float(g.players[collider.pid].hp)+float(g.players[collider.pid].armor)<before:g.effect.rpc("melee_flesh",hit.position,Vector3.ZERO,id,-100.,{"wrench":tool})
 	elif collider.has_meta("device"):
 		var did=int(collider.get_meta("device"))
 		if not g.devices.has(did):return
@@ -57,8 +57,12 @@ static func contact(g:Node,id:int,hit:Dictionary,origin:Vector3,direction:Vector
 			d.hp+=gain
 			if gain>0.:
 				g.feedback(id,"","포탑 수리 +%d"%roundi(gain));g.effect.rpc("melee_repair",origin,hit.position,id)
-		else:g.damage_device(did,base,id)
-	elif collider is InteractiveProp:collider.hit(hit.position,direction,base)
+		else:
+			g.damage_device(did,base,id)
+			g.effect.rpc("melee_wall",hit.position,Vector3.ZERO,id,-100.,{"wrench":tool})
+	elif collider is InteractiveProp:
+		collider.hit(hit.position,direction,base)
+		g.effect.rpc("melee_wall",hit.position,Vector3.ZERO,id,-100.,{"wrench":tool})
 	elif not p.get("melee_wall",false):
 		p.melee_wall=true;g.melee_mark.rpc(hit.position,hit.normal,direction,tool)
 		g.effect.rpc("melee_wall",hit.position,Vector3.ZERO,id,-100.,{"wrench":tool})

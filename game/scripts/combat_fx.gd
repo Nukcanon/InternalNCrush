@@ -132,7 +132,9 @@ static func device(parent:Node3D,kind:String,team:int):
 	if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
 	if device_templates.has(key):
 		var baked=device_templates[key].instantiate()
-		for child in baked.get_children():baked.remove_child(child);parent.add_child(child)
+		for child in baked.get_children():
+			MeshFactory.own_recursive(child,null);child.owner=null
+			baked.remove_child(child);parent.add_child(child)
 		baked.free();return
 	# Editable source fallback only; release builds always contain baked assemblies.
 	build_device(parent,kind,team)
@@ -341,7 +343,11 @@ func sync_status(game:Node,now:float):
 				var node=Node3D.new();add_child(node);status_nodes[key]=node
 				var color=Color("67d4ff") if p.team==0 else Color("ffc36d")
 				if status=="shield":
-					var shield=M.sphere(node,Vector3(0,1.,-.3),Vector3(1.15,1.65,.28),color);shield.material_override=glow(Color(color,.22));shield.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					var shield=M.box(node,Vector3(0,1.36,-.78),Vector3(1.6,2.55,.10),color,Vector3.ZERO,.12);shield.material_override=glow(Color(color,.12));shield.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					for side in [-1,1]:
+						var edge=M.box(node,Vector3(side*.8,1.36,-.78),Vector3(.022,2.55,.022),color);edge.material_override=glow(Color(color,.72))
+					for y in [.085,2.635]:
+						var edge=M.box(node,Vector3(0,y,-.78),Vector3(1.6,.022,.022),color);edge.material_override=glow(Color(color,.72))
 				else:
 					for y in [.14,1.1]:ring(node,.52,Color(color,.62)).position.y=y
 			var node=status_nodes[key];node.position=game.actors[id].position;node.rotation.y=game.actors[id].aim_yaw

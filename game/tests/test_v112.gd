@@ -24,7 +24,11 @@ func run():
 	for index in range(Rules.MAPS.size()):
 		var map=Arena.new();root.add_child(map);map.build(index)
 		for mesh in map.find_children("*","MeshInstance3D",true,false):
-			if mesh.has_meta("fixture_point"):expect(ArenaLighting.fixture_clear(map,mesh.get_meta("fixture_point"),mesh.get_meta("fixture_indoor")),"fixture clearance map %d"%index)
+			if mesh.has_meta("fixture_point"):
+				expect(ArenaLighting.fixture_clear(map,mesh.get_meta("fixture_point"),mesh.get_meta("fixture_indoor")),"fixture clearance map %d"%index)
+				expect(mesh.get_meta("fixture_attachment","") in ["ceiling","pole"],"fixture has a physical attachment map %d"%index)
+				var anchor=float(mesh.get_meta("fixture_anchor_y",INF))
+				expect(is_finite(anchor) and (anchor>mesh.position.y if mesh.get_meta("fixture_attachment","")=="ceiling" else anchor<mesh.position.y),"fixture anchor reaches roof or ground map %d"%index)
 		map.free();await process_frame
 	var game=load("res://scripts/game.gd").new();root.add_child(game);game.set_physics_process(false)
 	game.ui.practice_menu();expect(game.options.bots==7,"bot battle defaults to seven bots")
@@ -46,6 +50,13 @@ func run():
 	game.clock+=1.;game.cycle_weapon(1);expect(game.players[1].slot==1,"wheel advances to secondary")
 	game.clock+=1.;game.cycle_weapon(-1);expect(game.players[1].slot==0,"reverse wheel returns to primary")
 	var did=game.add_device("turret",Vector3(0,0,10),1,180.)
+	for level in range(1,5):
+		game.devices[did].level=level;game.update_world_visuals(0.)
+		var node=game.device_nodes[did];var top=-INF
+		for mesh in node.find_children("*","MeshInstance3D",true,false):
+			if mesh.visible:top=maxf(top,(mesh.global_transform*mesh.get_aabb()).end.y)
+		expect(node.get_node("HealthLabel").global_position.y>top,"level %d health label clears the turret model"%level)
+		expect(is_equal_approx(node.get_node("HealthLabel").global_transform.basis.get_scale().y,1.),"upgrade preserves label text size")
 	var other=game.add_device("turret",Vector3(0,0,-10),-1,180.)
 	game.players[1].protect=0.;game.damage(1,100000.,1,false,"redeploy")
 	expect(not game.devices.has(did) and game.devices.has(other),"owner death destroys only their turret")

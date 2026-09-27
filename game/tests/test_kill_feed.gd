@@ -21,6 +21,12 @@ func run():
 	expect(g.kill_events.back().weapon=="heavy_pistol","secondary weapon is identified independently of primary")
 	g.spawn(2);g.players[2].protect=0;g.damage(2,1000,1,false,"turret")
 	expect(g.kill_events.back().weapon=="turret" and g.kill_events.back().attacker==1,"turret kill identifies its owner and turret")
+	g.spawn(2);g.players[2].protect=0;g.players[2].hp=50.;g.players[2].armor=0.;g.players[1].primary="a1"
+	RocketCombat.explode(g,{"owner":1,"origin":Vector3.ZERO,"velocity":Vector3(0,0,-RocketCombat.SPEED)},{"position":g.actors[2].position,"normal":Vector3.UP,"collider":g.actors[2]})
+	expect(g.kill_events.back().weapon=="h4","rocket kill retains launcher identity after shooter changes weapon")
+	expect(RocketCombat.SPEED==36.,"launcher uses the reviewed twenty-percent speed increase")
+	WeaponGlyph.prepare();expect(WeaponGlyph.silhouettes.size()==Catalog.weapons.size(),"every firearm has an offline model silhouette")
+	var cached=WeaponGlyph.silhouettes.h4;WeaponGlyph.prepare();expect(WeaponGlyph.silhouettes.h4==cached,"kill feed reuses its immutable texture cache")
 	g.spawn(2);g.players[2].protect=0;g.damage(2,1000,0)
 	expect(g.kill_events.back().weapon=="world" and g.kill_events.back().attacker_name=="환경","world damage has a neutral source instead of a misleading gun")
 	g.players[2].nick="변경한 이름";expect(g.kill_events[0].victim_name==first.victim_name,"renaming cannot change names captured at the time of a kill")
