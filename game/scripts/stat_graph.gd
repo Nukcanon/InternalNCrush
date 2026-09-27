@@ -17,7 +17,7 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 	elif kind==1:
 		rows=[["회복 / 초" if w.kind=="heal" else "수리 / 초",float(w.get("heal_rate",30.)),100.,str(int(w.get("heal_rate",30.)))],["작동 거리",w.reach,20.,"%d m"%w.reach],["에너지",w.mag,180.,str(w.mag)]]
 	elif kind==2 and variant==9:
-		rows=[["해체 시간",10.,30.,"10초 / 기본 30초"],["구매 비용",400.,1000.,"400 크레딧"]]
+		rows=[["해체 시간",5.,15.,"5초 / 기본 15초"],["구매 비용",400.,1000.,"400 크레딧"]]
 	elif kind==2 and (variant==8 or (role==0 and variant==1)):
 		rows=[["폭발 피해",145. if variant==1 else 120.,150.,"145" if variant==1 else "120"],["반경",10. if variant==1 else 8.,12.,"10 m" if variant==1 else "8 m"],["소지량",2.,3.,"2개"]]
 	elif kind==2:

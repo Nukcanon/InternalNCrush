@@ -43,6 +43,8 @@ class RoomInput(BaseModel):
     starting_cash: int = Field(default=800, ge=0, le=8000)
     prep_seconds: int = Field(default=30, ge=5, le=120)
     round_minutes: int = Field(default=5, ge=1, le=60)
+    bomb_seconds: int = Field(default=45, ge=30, le=120)
+    buy_seconds: int = Field(default=60, ge=0, le=300)
     lives: int = Field(default=0, ge=0, le=10)
     next_teams: int = Field(default=2, ge=0, le=2)
     scope: str = Field(default="internet", pattern="^(internet|lan)$")
@@ -50,6 +52,8 @@ class RoomInput(BaseModel):
 
     @model_validator(mode="after")
     def check_map(self):
+        if self.buy_seconds > self.round_minutes * 60:
+            raise ValueError("purchase window exceeds round duration")
         if self.rounds % 2:
             raise ValueError("진행 라운드 수는 짝수여야 합니다.")
         if self.capacity % 2 or self.capacity > CAPACITIES[self.map]:

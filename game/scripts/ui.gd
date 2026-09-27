@@ -17,6 +17,8 @@ var health_bar:ColorRect
 var armor_bar:ColorRect
 var gear_detail:Label
 var gear_price:Label
+var gear_cash:Label
+var gear_buy_status:Label
 var gear_submit:Button
 var mode_fields:VBoxContainer
 var game:Node
@@ -71,6 +73,7 @@ var scoreboard:MatchScoreboard
 var kill_feed:KillFeed
 var damage_indicator:DamageIndicator
 var bomb_hint:Label
+var cash_hint:Label
 var interaction_hint:Label
 var lan_lobby:LanLobby
 var navigation_confirm:ConfirmationDialog
@@ -525,7 +528,7 @@ func sensitivity_control(title:String,value:float,low:float,high:float,callback:
 	slider.value_changed.connect(func(v):number.set_value_no_signal(v);callback.call(v))
 	number.value_changed.connect(func(v):slider.set_value_no_signal(v);callback.call(v))
 func gear():
-	if int(game.options.mode)==4 and game.phase!="buy":notice("준비 시간에 장비를 구매할 수 있습니다.");return
+	if int(game.options.mode)==4 and not DefusalEconomy.can_buy(game,game.local_id):notice("구매 시간이 종료되었거나 현재 구매할 수 없는 상태입니다.");return
 	if not bot_setup and not game.players.has(game.local_id):return
 	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
 	make_panel("오퍼레이터 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
@@ -564,7 +567,13 @@ func gear():
 		button("사망 후 즉시 적용 · −25점",func():
 			var selection=selected_loadout();selection["immediate"]=true;game.command("loadout",selection),actions)
 	button("돌아가기",exit_gear,actions)
-	gear_price=label("",17,actions);gear_price.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	var spacer=Control.new();spacer.size_flags_horizontal=Control.SIZE_EXPAND_FILL;actions.add_child(spacer)
+	if int(game.options.mode)==4:
+		gear_buy_status=label("",14,actions);gear_buy_status.custom_minimum_size.x=125
+		gear_price=economy_box(actions,"선택 장비 가격",Color.WHITE)
+		gear_cash=economy_box(actions,"보유 금액",Color("ffda73"))
+	else:
+		gear_price=label("장비 선택 무료",17,actions);gear_cash=null;gear_buy_status=null
 	notice_label=label("",14);notice_label.modulate=Color("80cfef")
 	refresh_weapons()
 	var wanted=queued.get("primary",p.primary)
@@ -576,6 +585,25 @@ func submit_loadout():
 		var dialog=ConfirmationDialog.new();dialog.title="구매 장비 변경";dialog.dialog_text="병과를 변경하면 구매한 장비를 잃습니다. 선택한 장비로 변경하시겠습니까?" if int(selection.role)!=int(p.role) else "현재 장비를 교체하고 새 장비를 구매하시겠습니까?"
 		root.add_child(dialog);dialog.confirmed.connect(func():selection.confirmed=true;game.command("loadout",selection);dialog.queue_free());dialog.canceled.connect(dialog.queue_free);dialog.popup_centered(Vector2i(560,170))
 	else:game.command("loadout",selection)
+func economy_box(parent:Node,title:String,color:Color) -> Label:
+	var box=PanelContainer.new();box.custom_minimum_size=Vector2(158,66);parent.add_child(box)
+	var style=StyleBoxFlat.new();style.bg_color=Color("142330");style.border_color=Color("596c7a");style.set_border_width_all(1);style.content_margin_left=12;style.content_margin_right=12;style.content_margin_top=5;style.content_margin_bottom=5;box.add_theme_stylebox_override("panel",style)
+	var content=VBoxContainer.new();content.add_theme_constant_override("separation",0);box.add_child(content)
+	var caption=label(title,14,content);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	var value=label("0",32,content);value.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;value.add_theme_color_override("font_color",color)
+	return value
+func refresh_gear_economy():
+	if screen!="gear" or not is_instance_valid(gear_price) or weapon_ids.is_empty() or bot_setup:return
+	if int(game.options.mode)!=4:return
+	var p=game.players.get(game.local_id,{})
+	if p.is_empty():return
+	var cost=game.loadout_cost(p,selected_loadout())
+	gear_price.text=str(cost);gear_cash.text=str(int(p.cash))
+	gear_price.tooltip_text="현재 선택한 무기·가젯·방어구의 실제 구매 합계입니다. 이미 보유한 장비는 중복 청구하지 않습니다."
+	var allowed=DefusalEconomy.can_buy(game,game.local_id)
+	gear_submit.disabled=not allowed or cost>int(p.cash)
+	gear_submit.text="구매하기" if allowed else "구매 종료"
+	gear_buy_status.text=("준비 시간" if game.phase=="buy" else "구매 가능")+"\n%d초"%ceili(DefusalEconomy.purchase_seconds(game)) if allowed else "구매 불가"
 func exit_gear():
 	if bot_setup:bot_choice.merge(selected_loadout(),true);bot_choice.armor_max=bot_choice.armor*25;bot_setup=false;practice_menu();return
 	if game.phase=="lobby":lobby()
@@ -665,7 +693,7 @@ func refresh_gear_detail():
 		preview_caption.text=gear_gadget.get_item_text(gear_gadget.selected);gear_detail.text=Rules.GADGET_HELP[role]+"\n\n3 가젯 선택 · 클릭 사용 · G 즉시 사용"
 		if gear_gadget.get_selected_id()==8 or (role==0 and gear_gadget.selected==1):gear_detail.text="G 또는 3번 선택 후 클릭을 누르면 안전핀 해제.\n놓으면 투척 · 핀 해제 2.5초 후 폭발 · 계속 들면 자신도 피해.\n벽 뒤에는 폭발 피해가 전달되지 않습니다."
 		if role==3 and gear_gadget.get_selected_id() in [0,1,2]:gear_detail.text+="\n내구도 %d · 소지 %d개 · 동시 설치 %d개\n사망 후 유지 · 다음 라운드 시작 시 제거"%[AbilityBalance.COVER_HP[gear_gadget.selected],GadgetLoadout.COVER_STOCK[gear_gadget.selected],GadgetLoadout.COVER_LIMIT[gear_gadget.selected]]
-		if gear_gadget.get_selected_id()==9:gear_detail.text="해체 시간 30초 → 10초\n400 크레딧 · 기존 병과 가젯 대신 장착\n장치 앞에서 E를 계속 누르면 자동 사용합니다."
+		if gear_gadget.get_selected_id()==9:gear_detail.text="해체 시간 15초 → 5초\n400 크레딧 · 기존 병과 가젯 대신 장착\n폭탄 앞에서 E를 계속 누르면 자동 사용합니다."
 	elif preview_kind==3:
 		preview_caption.text=["기본 복장","경량 방어구 · +25","중량 방어구 · +50"][gear_armor.selected];gear_detail.text="방어구는 체력보다 먼저 피해를 흡수합니다.\n기본 방어구 0\n경량: 이동 −6% / 조준 준비 +10%\n중량: 이동 −12% / 조준 준비 +20%\n"+("비용 %d 크레딧"%[0,300,600][gear_armor.selected] if game.options.mode==4 else "장비 선택은 무료입니다.")
 	elif preview_kind==4:
@@ -675,9 +703,10 @@ func refresh_gear_detail():
 	var primary=Catalog.get_weapon(weapon_ids[gear_primary.selected])
 	role_detail.text="%s  /  %s\n%s"%[Rules.CLASSES[role],"주무기 없음" if weapon_ids[gear_primary.selected].is_empty() else primary.name,"선택한 장비는 다음 부활에 적용" if game.phase=="combat" and not game.options.get("practice",false) else "장비를 선택하세요."]
 	var cost=game.loadout_cost(p,selected_loadout())
-	gear_price.text="비용 %d / 보유 %d"%[cost,p.cash] if game.options.mode==4 else "장비 선택 무료"
+	gear_price.text=str(cost) if game.options.mode==4 else "장비 선택 무료"
 	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id(),gear_armor.selected)
 	gear_submit.text="선택한 장비로 연습 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "준비 시간에 구매 가능"
+	refresh_gear_economy()
 func toggle_pause():
 	if is_instance_valid(panel):clear_panel();game.capture_pointer();return
 	make_panel("일시 메뉴",480,true)
@@ -715,6 +744,7 @@ func show_hud():
 	interaction_hint=hud_label("",Vector2(440,449),18);interaction_hint.size=Vector2(400,36);interaction_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	bomb_hint=hud_label("",Vector2(790,490),27)
 	bomb_hint.size=Vector2(450,76);bomb_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;bomb_hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;bomb_hint.add_theme_color_override("font_color",Color("ffda8a"));bomb_hint.hide()
+	cash_hint=hud_label("",Vector2(32,530),28);cash_hint.size=Vector2(250,42);cash_hint.add_theme_color_override("font_color",Color.WHITE);cash_hint.hide()
 	upgrade_hint=hud_label("",Vector2(320,505),20);upgrade_hint.size=Vector2(640,36);upgrade_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;upgrade_hint.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;upgrade_hint.add_theme_color_override("font_outline_color",Color.BLACK);upgrade_hint.add_theme_constant_override("outline_size",6);upgrade_hint.hide()
 	banner=hud_label("",Vector2(34,96),17)
 	info=hud_label("",Vector2(305,686),16)
@@ -746,15 +776,15 @@ func notice(message:String):
 	if is_instance_valid(banner):banner.text=message
 func refresh():
 	if lan_lobby:lan_lobby.refresh_connection()
+	refresh_gear_economy()
 	refresh_vote();refresh_members()
 	if screen in ["lobby","teams"]:refresh_teams()
 	if not is_instance_valid(hud) or not game.players.has(game.local_id):return
 	var p=game.players[game.local_id];var a=game.actors[game.local_id];var wid=p.primary if p.slot==0 else p.secondary;var w=Catalog.get_weapon(wid)
 	var bomb_action=BombLogic.action(game,game.local_id)
-	bomb_hint.visible=not bomb_action.is_empty()
+	bomb_hint.text=BombLogic.hint(game,game.local_id,TouchControls.supported());bomb_hint.visible=not bomb_hint.text.is_empty()
 	bomb_hint.position.y=280 if TouchControls.supported() else 490
-	var use_key="상호작용 버튼" if TouchControls.supported() else "E키"
-	bomb_hint.text=use_key+"를 길게 눌러\n폭탄 "+("설치 · 3초" if bomb_action=="plant" else "해체 · %d초"%(10 if int(p.gadget)==9 else 30))
+	cash_hint.visible=int(game.options.mode)==4;cash_hint.text="%d 크레딧"%int(p.cash);cash_hint.position.y=190 if TouchControls.supported() else 530
 	var door=InteractiveDoor.target(game,game.local_id) if p.alive and bomb_action.is_empty() else null
 	interaction_hint.text="[ E ]  문 닫기" if door and door.opened else "[ E ]  문 열기" if door else ""
 	interaction_hint.visible=door!=null

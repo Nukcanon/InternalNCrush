@@ -15,6 +15,8 @@ func tick_for(seconds:float):
 	return {"frames":frames,"average_ms":total/1000./maxi(1,frames),"max_ms":longest/1000.}
 func run():
 	g=load("res://scripts/game.gd").new();g.render_actors=true;add_child(g)
+	if "--soak-low" in OS.get_cmdline_user_args():
+		g.profile.merge(GraphicsOptions.PRESETS[0],true);g.profile.display_mode=0;g.profile.width=1280;g.profile.height=720;g.profile.frame_limit=60;g.apply_display_settings();GraphicsOptions.apply(g)
 	g.profile.menu_animation=false;g.options.map_random=false;g.options.map_rotation=false;g.options.map=19;g.options.mode=4;g.options.bots=7;g.options.max_players=8
 	g.host_game(OfflineMultiplayerPeer.new());g.start_match()
 	expect(g.players.size()==8,"eight rendered actors")
@@ -42,7 +44,10 @@ func run():
 		await tick_for(.15)
 		sample.merge({"cycle":cycle,"nodes":int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),"resources":int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),"static_bytes":int(Performance.get_monitor(Performance.MEMORY_STATIC)),"video_bytes":int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)),"loft_cache":HumanModel.loft_meshes.size(),"effect_pool":g.combat_fx.explosion_pool.size(),"replays":replay_count})
 		samples.append(sample);print("SESSION_SAMPLE ",JSON.stringify(sample))
-		if OS.has_feature("web"):JavaScriptBridge.eval("document.body.dataset.probe="+JSON.stringify(JSON.stringify(sample)))
+		if OS.has_feature("web"):
+			sample.js_heap_bytes=JavaScriptBridge.eval("performance.memory ? performance.memory.usedJSHeapSize : -1")
+			sample.wasm_capacity_bytes=JavaScriptBridge.eval("window.probeWasm ? window.probeWasm.buffer.byteLength : -1")
+			JavaScriptBridge.eval("document.body.dataset.probe="+JSON.stringify(JSON.stringify(sample)))
 	expect(replay_count>=8,"kill replay exercised repeatedly")
 	expect(samples[-1].nodes<samples[3].nodes+400,"round/replay nodes bounded after warm-up")
 	expect(samples[-1].resources<samples[3].resources+160,"round/replay resources bounded after warm-up")

@@ -11,3 +11,7 @@
 - 저사양에서는 원거리 모델의 세부 수준과 벽·바닥의 재질 계산을 줄이며, 해상도·충돌·전투 규칙은 유지합니다. 인텔 10~11세대 내장 그래픽의 실제 FPS는 아직 검증하지 못했습니다.
 
 실제 실행·메모리 측정과 남은 한계는 [VALIDATION_V124.md](https://github.com/Nukcanon/InternalNCrush/blob/main/VALIDATION_V124.md)에 기록합니다. 무료 에셋을 추가한다고 성능 비용이 없어지는 것은 아니며, 임의의 고해상도 에셋을 실행 중에 불러오는 방식은 사용하지 않습니다.
+
+## Defusal economy and bomb usability
+
+Owner-requested additions: separate large store price (white) and balance (yellow) boxes in the fixed footer; larger in-game white balance; yellow carrier hint replaced by E planting prompt at a site; bomb carried vertically with its lamp facing outward. Default fuse 45 seconds, configurable 30–120 seconds (owner’s contradictory “maximum 2 seconds” interpreted as 2 minutes). Defuse 15 seconds / owned kit 5 seconds, including UI/help/stat graph. Purchases allowed during preparation plus the first 60 combat seconds per round, configurable 0–300 and capped to round duration; zero permits preparation purchases only. The authority enforces alive state, deadline, price and replacement confirmation. LAN/WebRTC/Docker/Worker schemas share both new settings. 52 behavior checks pass; directory 9, allocator 10 and Worker 3 test groups pass locally.

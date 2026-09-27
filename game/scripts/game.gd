@@ -757,6 +757,7 @@ func server_tick(dt:float):
 		remaining-=dt
 		if phase=="buy" and remaining<=0:
 			phase="combat";remaining=ModeOptions.seconds(options);announce("라운드 시작")
+			bomb.buy_until=clock+clampf(float(options.get("buy_seconds",60)),0.,minf(300.,remaining))
 			if not dedicated and ui.screen=="gear":ui.show_hud();capture_pointer()
 			if round_no==1:
 				for player in players.values():
@@ -865,10 +866,10 @@ func loadout_cost(p:Dictionary,d:Dictionary) -> int:
 
 func apply_loadout(id:int,d:Dictionary):
 	var p=players[id]
-	if int(options.mode)==4 and phase!="buy":feedback(id,"","준비 시간에만 장비를 구매할 수 있습니다.");return
+	if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","현재 장비를 구매할 수 없습니다. 구매 시간과 생존 상태를 확인하세요.");return
 	if int(options.mode)==4 and DefusalEconomy.replacement(p,d) and not d.get("confirmed",false):feedback(id,"","기존 장비 교체를 먼저 확인하세요.");return
 	if not valid_loadout(p,d):feedback(id,"","이 병과에서 선택할 수 없는 무기입니다.");return
-	if phase not in ["lobby","buy"] and not options.get("practice",false):
+	if phase not in ["lobby","buy"] and int(options.mode)!=4 and not options.get("practice",false):
 		p.pending_loadout=d.duplicate();loadout_accepted(id)
 		if bool(d.get("immediate",false)) and int(options.mode) in [0,1,3] and phase=="combat":
 			if p.alive:p.protect=0.;p.invulnerable=0.;damage(id,100000.,id,false,"redeploy")
@@ -877,14 +878,14 @@ func apply_loadout(id:int,d:Dictionary):
 	commit_loadout(id,d)
 func commit_loadout(id:int,d:Dictionary):
 	var p=players[id]
-	if int(options.mode)==4 and (phase!="buy" or (DefusalEconomy.replacement(p,d) and not d.get("confirmed",false))):return
+	if int(options.mode)==4 and (not DefusalEconomy.can_buy(self,id) or (DefusalEconomy.replacement(p,d) and not d.get("confirmed",false))):return
 	if not valid_loadout(p,d):return
 	var role=clampi(int(d.get("role",p.role)),0,5)
 	if role==5 and p.role!=5 and options.classes and medic_count(p.team)>=R.medic_cap(team_count(p.team)):feedback(id,"","메딕 정원이 차서 이전 장비를 유지합니다.");return
 	var wid=str(d.get("primary",C.first(role)));var sec=str(d.get("secondary",R.SECONDARIES[role]))
 	if role==3 and d.get("repair",false):sec="repair"
 	var armor=clampi(int(d.get("armor",0)),0,2)*25;var gadget=-1 if int(options.mode)==4 and int(d.get("gadget",0))<0 else 9 if int(options.mode)==4 and int(d.get("gadget",0))==9 else 8 if int(d.get("gadget",0))==8 else clampi(int(d.get("gadget",0)),0,2)
-	var cost=loadout_cost(p,d) if phase=="buy" or (int(options.mode)==4 and gadget==9) else 0
+	var cost=loadout_cost(p,d)
 	if p.cash<cost:feedback(id,"","구매 실패 · 필요 %d / 보유 %d 크레딧"%[cost,p.cash]);return
 	p.cash-=cost
 	if p.role!=role:
@@ -1192,7 +1193,7 @@ func use_skill(id:int):
 	feedback(id,"",["기동: 5초 고속이동 / 3초 빠른이동","하드비트센서 · 4초","방호 · 6초 / 전방 피해 85% 감소","설치 위치 선택","둔화 구역 · 반경 15m / 65% 둔화","무적 보호"][int(p.role)])
 func use_gadget(id:int):
 	if MeleeCombat.active(players[id],clock):return
-	if int(players[id].gadget)==9:feedback(id,"","해체 키트 · 장치 앞에서 E를 10초 유지");return
+	if int(players[id].gadget)==9:feedback(id,"","해체 키트 · 폭탄 앞에서 E를 5초 유지");return
 	var p=players[id];var a=actors[id]
 	if p.get("placing","")=="cover":Deployment.begin(self,id,"cover");return
 	if MarkerTracker.equipped(p):feedback(id,"","표식기 자동 추적 · 무기 조준경으로 적을 2초간 추적하세요.");return
@@ -1291,14 +1292,14 @@ func interact(id:int,dt:float):
 				if bomb.actor!=id:bomb.actor=id;bomb.progress=0
 				bomb.last_touch=clock;bomb.progress+=dt
 				if bomb.progress>=3:
-					bomb.planted=true;bomb.carrier=0;bomb.dropped=false;bomb.site=i;bomb.position=a.position+Vector3.UP*.015;bomb.time=150. if R.MAP_PLAYERS[int(options.map)]>=12 else 120.;bomb.total_time=bomb.time;bomb.actor=0;bomb.progress=0;p.objective+=3
+					bomb.planted=true;bomb.carrier=0;bomb.dropped=false;bomb.site=i;bomb.position=a.position+Vector3.UP*.015;bomb.time=float(options.get("bomb_seconds",45));bomb.total_time=bomb.time;bomb.actor=0;bomb.progress=0;p.objective+=3
 					for q in players.values():
 						if q.team==p.team:q.cash=mini(8000,q.cash+300)
 					announce("폭탄 설치 완료 · %d초 내 해체"%int(bomb.time));bomb_announcement.rpc("bomb_planted");return
 	elif bomb.planted and p.team!=attackers and a.position.distance_to(bomb.position)<1.8:
 		if bomb.actor!=id:bomb.actor=id;bomb.progress=0
 		bomb.last_touch=clock;bomb.progress+=dt
-		if bomb.progress>=(10. if int(p.gadget)==9 and GadgetLoadout.has_item(p) else 30.):
+		if bomb.progress>=BombLogic.defuse_seconds(p):
 			p.objective+=5;bomb.defused=true;bomb.actor=0;bomb.progress=0.;bomb_announcement.rpc("bomb_defused");finish_round(p.team,"폭탄 해체 완료")
 func check_objectives(dt:float):
 	match int(options.mode):

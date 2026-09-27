@@ -386,10 +386,15 @@ func sync_bomb(game:Node):
 	bomb_visual.rotation=Vector3.ZERO
 	bomb_visual.scale=Vector3.ONE*(.52 if carrier else .72)
 	if carrier and game.actors.has(carrier):
-		var actor=game.actors[carrier];bomb_visual.position=actor.position+Vector3.UP*.9+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,.33);bomb_visual.rotation.y=actor.aim_yaw
-		if BombHandling.active(actor):bomb_visual.position=actor.position+Vector3.UP*.65+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,-.43)
+		var actor=game.actors[carrier]
+		var height=float(HumanModel.HEIGHTS[int(game.players[carrier].role)])/1.8
+		bomb_visual.position=actor.position+Vector3.UP*(.95*height-(.42 if actor.input_state.crouch else 0.))+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,.24)
+		# Flat underside against the back; the former upward beacon now faces out.
+		bomb_visual.basis=(Basis(Vector3.UP,actor.aim_yaw)*Basis(Vector3.RIGHT,PI/2.)).scaled(Vector3.ONE*.52)
+		if BombHandling.active(actor):
+			bomb_visual.position=actor.position+Vector3.UP*.65+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,-.43);bomb_visual.rotation=Vector3(0,actor.aim_yaw,0)
 	else:bomb_visual.position=game.bomb.position
-	var interval=BombLogic.beep_interval(game.bomb.time,float(game.bomb.get("total_time",120.))) if game.bomb.planted else .6
+	var interval=BombLogic.beep_interval(game.bomb.time,float(game.bomb.get("total_time",float(game.options.get("bomb_seconds",45))))) if game.bomb.planted else .6
 	var lamp=bomb_visual.get_node("Beacon");lamp.visible=fmod(game.clock,interval)<interval*.4
 	if game.bomb.planted and game.phase=="combat" and game.clock>=bomb_beep_at:
 		bomb_beep_at=game.clock+interval;game.play_sound("bomb_beep",game.bomb.position,true)

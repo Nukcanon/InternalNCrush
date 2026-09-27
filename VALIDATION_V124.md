@@ -38,3 +38,7 @@ An empty bot path also bypassed its retry timer, and fully blocked steering rese
 Low quality uses a 2.5 px distance-LOD threshold and bypasses world material texture/mortar calculations. Medium/high preserve them. No automatic resolution change. Unchanged HUD font styles are no longer re-applied every physics tick.
 
 `game/tests/profile_native_v124.gd` is a reproducible 60-second rendered workload. Release executables do not expose Godot static allocation bytes (zero means unavailable); use Windows process private bytes / working set and browser heap/WASM evidence alongside resource counts. Do not call a zero allocation counter proof of no leak.
+
+## Defusal economy and bomb usability
+
+Owner-requested additions: separate large store price (white) and balance (yellow) boxes in the fixed footer; larger in-game white balance; yellow carrier hint replaced by E planting prompt at a site; bomb carried vertically with its lamp facing outward. Default fuse 45 seconds, configurable 30–120 seconds (owner’s contradictory “maximum 2 seconds” interpreted as 2 minutes). Defuse 15 seconds / owned kit 5 seconds, including UI/help/stat graph. Purchases allowed during preparation plus the first 60 combat seconds per round, configurable 0–300 and capped to round duration; zero permits preparation purchases only. The authority enforces alive state, deadline, price and replacement confirmation. LAN/WebRTC/Docker/Worker schemas share both new settings. 52 behavior checks pass; directory 9, allocator 10 and Worker 3 test groups pass locally.

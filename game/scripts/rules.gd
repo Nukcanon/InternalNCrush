@@ -44,7 +44,7 @@ static func score(p:Dictionary) -> int:
 static func rating(p:Dictionary) -> float:
 	return float(score(p)) / maxf(1.0,p.get("played",60.0)/60.0)
 static func default_options() -> Dictionary:
-	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":2,"lives":0,"shared_lives":true,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":4,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":30,"team_respawns":60,"capture_hold":60,"starting_cash":800,"round_minutes":5}
+	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":2,"lives":0,"shared_lives":true,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":4,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":30,"team_respawns":60,"capture_hold":60,"starting_cash":800,"round_minutes":5,"bomb_seconds":45,"buy_seconds":60}
 static func balanced_ids(ps:Dictionary) -> Dictionary:
 	var ids=ps.keys()
 	ids.sort_custom(func(a,b):return rating(ps[a])>rating(ps[b]))
@@ -76,6 +76,8 @@ static func sanitize_room(options:Dictionary):
 	options.capture_hold=clampi(int(options.get("capture_hold",60)),1,3600)
 	options.starting_cash=clampi(int(options.get("starting_cash",800)),0,8000)
 	options.round_minutes=clampi(int(options.get("round_minutes",5)),1,60)
+	options.bomb_seconds=clampi(int(options.get("bomb_seconds",45)),30,120)
+	options.buy_seconds=clampi(int(options.get("buy_seconds",60)),0,mini(300,int(options.round_minutes)*60))
 	options.lives=clampi(int(options.get("lives",0)),0,10)
 static func random_map(options:Dictionary,avoid:int=-1) -> int:
 	var choices=maps_for_size(int(options.get("map_size",8)),int(options.mode))

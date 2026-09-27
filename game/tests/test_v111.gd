@@ -33,7 +33,7 @@ func run():
 		g.players[1].protect=0.;g.damage(1,999.,7);expect(g.players[1].hp==100. and not g.can_attack(g.players[1]),"preparation blocks attack and incoming damage %d"%index)
 		g.phase="combat";MatchFlow.update_gate(g);g.actors[1].position=g.arena.sites[0];g.bomb={"carrier":1,"planted":false,"site":-1,"actor":0,"progress":0.,"position":Vector3.ZERO,"time":0.}
 		g.interact(1,3.1)
-		expect(g.bomb.planted and g.bomb.time==(120. if index<25 else 150.),"map %d uses the requested bomb countdown"%index)
+		expect(g.bomb.planted and g.bomb.time==45.,"map %d uses the requested bomb countdown"%index)
 		await physics_frame
 	var own=MatchFlow.spawn_rect(g,0);var defender=MatchFlow.spawn_rect(g,1)
 	g.phase="buy";MatchFlow.update_gate(g)
@@ -50,15 +50,15 @@ func run():
 	var center=Vector3(own.get_center().x,1.5,own.get_center().y)
 	expect(not g.ray(center,center+Vector3.FORWARD*15.,[],1).is_empty(),"spawn boundary blocks fire even when its team can walk through")
 	expect(BombLogic.beep_interval(100,120)==1.2 and BombLogic.beep_interval(50,120)==.75 and BombLogic.beep_interval(20,120)==.4 and BombLogic.beep_interval(5,120)==.16,"bomb beeps accelerate through four stages")
-	var p=g.players[7];p.cash=800;p.protect=0.;p.owned_primary=true;g.phase="buy"
+	var p=g.players[7];p.cash=800;p.protect=0.;p.owned_primary=true;g.phase="buy";g.remaining=30.
 	var request={"role":p.role,"primary":p.primary,"armor":0,"gadget":9}
 	expect(g.loadout_cost(p,request)==400,"defuse kit costs 400 credits instead of the class gadget")
 	g.commit_loadout(7,request);expect(p.gadget==9 and p.cash==400,"purchase equips the kit in the gadget slot")
 	var stock=p.gadget_count;g.phase="combat";g.use_gadget(7);expect(p.gadget_count==stock,"kit does not invoke or consume the replaced class gadget")
-	g.actors[7].position=g.bomb.position;g.bomb.actor=0;g.bomb.progress=0.;g.interact(7,9.9);expect(g.phase=="combat","kit cannot defuse before ten seconds")
-	g.interact(7,.11);expect(g.phase!="combat","kit completes defuse at ten seconds")
-	g.phase="combat";p.gadget=0;g.bomb.actor=0;g.bomb.progress=0.;g.interact(7,29.9);expect(g.phase=="combat","without kit defuse takes thirty seconds")
-	g.interact(7,.11);expect(g.phase!="combat","normal defuse completes at thirty seconds")
+	g.actors[7].position=g.bomb.position;g.bomb.actor=0;g.bomb.progress=0.;g.interact(7,4.9);expect(g.phase=="combat","kit cannot defuse before five seconds")
+	g.interact(7,.11);expect(g.phase!="combat","kit completes defuse at five seconds")
+	g.phase="combat";p.gadget=0;g.bomb.actor=0;g.bomb.progress=0.;g.interact(7,14.9);expect(g.phase=="combat","without kit defuse takes fifteen seconds")
+	g.interact(7,.11);expect(g.phase!="combat","normal defuse completes at fifteen seconds")
 	g.phase="combat";g.bomb.planted=false;BombLogic.assign(g)
 	var carrier=int(g.bomb.carrier)
 	expect(carrier!=0 and g.players[carrier].team==MatchFlow.attackers(g),"exactly one living attacker receives the bomb")

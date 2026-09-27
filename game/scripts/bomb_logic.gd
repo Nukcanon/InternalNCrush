@@ -1,5 +1,14 @@
 extends RefCounted
 class_name BombLogic
+static func defuse_seconds(p:Dictionary) -> float:
+	return 5. if int(p.get("gadget",-1))==9 and GadgetLoadout.has_item(p) else 15.
+static func hint(game:Node,id:int,touch:bool=false) -> String:
+	if int(game.options.mode)!=4 or not game.players.has(id) or not game.players[id].alive or game.phase not in ["buy","combat"]:return ""
+	var key="상호작용 버튼" if touch else "E키"
+	var kind=action(game,id)
+	if kind=="plant":return key+"를 눌러 폭탄 설치\n3초 동안 누르기"
+	if kind=="defuse":return key+"를 눌러 폭탄 해체\n%d초 동안 누르기"%int(defuse_seconds(game.players[id]))
+	return "폭탄 보유 중" if int(game.bomb.get("carrier",0))==id and not game.bomb.planted else ""
 static func action(game:Node,id:int) -> String:
 	if int(game.options.mode)!=4 or game.phase!="combat" or not game.players.has(id) or not game.players[id].alive:return ""
 	var p=game.players[id];var pos=game.actors[id].position

@@ -53,7 +53,6 @@ func _draw():
 	if p.primary in ["m2","m3"]:details.append("C 범위 회복 · "+("준비" if p.heal_ready<=game.clock else "%.1f초"%(p.heal_ready-game.clock)))
 	if p.get("mounted",0)>game.clock:details.append("거치 %.0f초"%(p.mounted-game.clock))
 	if p.shield>game.clock:details.append("방호 활성")
-	if game.options.mode==4:details.append("%d 크레딧"%p.cash)
 	if not p.get("pending_loadout",{}).is_empty():details.append("다음 부활 장비 예약")
 	if not p.alive:details=["마우스 · 관전 시점", "클릭 · 대상 전환", "B · 다음 병과/장비"]
 	draw_string(font,Vector2(309,609),"   ·   ".join(details),HORIZONTAL_ALIGNMENT_LEFT,550,14,WHITE)
