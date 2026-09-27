@@ -73,7 +73,14 @@ func _process(dt):
 			availability[action]=ActionState.equipment_ready(game,game.local_id,int(action.trim_prefix("slot"))) if action.begins_with("slot") else ActionState.available(game,game.local_id,action)
 		queue_redraw()
 func layout_actions(p:Dictionary):
-	var actions=["gadget","use"]
+	var actions=["use"]
+	if GadgetLoadout.selectable(p) or p.get("cooking",0)>0 or p.get("placing","")=="cover":actions.push_front("gadget")
+	else:buttons.erase("gadget");held.gadget=false
+	var font=game.ui.theme.default_font
+	for action in ["sprint","auto_fire"]:
+		var title=("달리기 " if action=="sprint" else "자동 발사 ")+("OFF" if not held.get(action,false) else "ON")
+		var width=font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,22).x+22
+		buttons[action]=Rect2(190.-width*.5,350. if action=="sprint" else 260.,width,70.)
 	if int(p.role)==5 and p.primary in ["m2","m3"]:actions.append("medical")
 	else:buttons.erase("medical");held.medical=false
 	actions.append("skill")
@@ -91,6 +98,9 @@ func press(action:String,on:bool):
 		return
 	held[action]=on
 	if action=="gadget":game.command("gadget_press" if on else "gadget_release",{});return
+	if action=="fire" and not on:
+		if game.actors.has(game.local_id):game.actors[game.local_id].input_state.fire=false
+		game.command("trigger_release",{})
 	if not on:return
 	if action.begins_with("slot"):game.command("slot",{"slot":int(action.trim_prefix("slot"))});return
 	match action:
@@ -98,7 +108,8 @@ func press(action:String,on:bool):
 		"fire":
 			if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish();return
 			if not game.players[game.local_id].alive:game.cycle_spectator();return
-			game.trigger_seq+=1;game.actors[game.local_id].input_state.trigger_seq=game.trigger_seq
+			game.trigger_seq+=1;game.actors[game.local_id].input_state.trigger_seq=game.trigger_seq;game.actors[game.local_id].input_state.fire=true
+			if game.players[game.local_id].slot==2 and GrenadeLogic.equipped(game.players[game.local_id]):game.command("trigger_press",{"seq":game.trigger_seq})
 		"reload","skill","melee":game.command(action,{})
 		"slide":
 			held.crouch=false;game.command("slide",{"forward":true})

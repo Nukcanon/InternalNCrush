@@ -1,6 +1,8 @@
 extends RefCounted
 class_name MatchFlow
-static func attackers(game) -> int:return maxi(0,game.round_no-1)%2
+static func attackers(game) -> int:
+	if game.round_no>int(game.options.rounds):return int(game.overtime_attacker)
+	return 0 if game.round_no<=int(game.options.rounds)/2 else 1
 static func rotate(game):
 	if not (game.options.get("map_random",false) or game.options.get("map_rotation",false)):return
 	game.options.map=Rules.random_map(game.options,int(game.options.map));game.build_world()
@@ -53,10 +55,14 @@ static func update_gate(game):
 			var size=Vector3(rect.size.x+1.6,12.,1.6) if along_x else Vector3(1.6,12.,rect.size.y)
 			var pos=Vector3(center.x,6.,center.y)+Vector3(0,0,sign_axis*half.y) if along_x else Vector3(center.x+sign_axis*half.x,6.,center.y)
 			var collision=CollisionShape3D.new();var box=BoxShape3D.new();box.size=size;collision.shape=box;collision.position=pos;body.add_child(collision)
-			MeshFactory.box(body,pos,size,color)
-		for sign_axis in [-1,1]:game.arena.text3d("출입 가능 · 아군 전용" if unlocked and viewer==team else "준비 중 · 출입 대기" if not unlocked and viewer==team else "상대 시작 구역 · 진입 불가",Vector3(center.x,2.7,center.y+sign_axis*(half.y+1.)),Color("8ce9b2") if unlocked and viewer==team else Color("ff9b87"),27,body)
+			var visual=MeshInstance3D.new();var plane=PlaneMesh.new();plane.size=Vector2(size.x if along_x else size.z,12.);plane.orientation=PlaneMesh.FACE_Z;visual.mesh=plane
+			var material=StandardMaterial3D.new();material.albedo_color=color;material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;material.cull_mode=BaseMaterial3D.CULL_DISABLED
+			visual.material_override=material;visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;visual.position=pos
+			if not along_x:visual.rotation.y=PI/2.
+			body.add_child(visual)
 	for id in game.players:
 		if game.actors.has(id):preparation(game,id)
-static func at_limit(game) -> bool:return int(game.options.rounds)>0 and game.completed_games>=int(game.options.rounds)
+static func at_limit(game) -> bool:return int(game.options.mode)==4 and game.round_no>=int(game.options.rounds) and game.scores[0]!=game.scores[1]
 static func return_to_lobby(game):
+	RoundCleanup.clear(game)
 	game.phase="lobby";game.announce("설정한 경기 수를 완료했습니다.");game.ui.lobby();game.broadcast_state(true)

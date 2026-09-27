@@ -12,3 +12,8 @@ static func list_for(c:int, classes:bool=true) -> Array:
 	return out
 static func first(c:int) -> String:
 	return list_for(c)[0]
+static func secondaries_for(role:int) -> Array:
+	var ids=["pistol","heavy_pistol","auto_pistol","dual_pistols"]
+	if Rules.SECONDARIES[role] not in ids:ids.append(Rules.SECONDARIES[role])
+	if role==3:ids.append("repair")
+	return ids

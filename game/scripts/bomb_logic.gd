@@ -5,11 +5,20 @@ static func action(game:Node,id:int) -> String:
 	var p=game.players[id];var pos=game.actors[id].position
 	if game.bomb.get("defused",false) or game.bomb.get("exploded",false):return ""
 	if game.bomb.planted:
-		return "defuse" if p.team!=MatchFlow.attackers(game) and pos.distance_to(game.bomb.position)<5. else ""
+		return "defuse" if p.team!=MatchFlow.attackers(game) and pos.distance_to(game.bomb.position)<1.8 else ""
 	if int(game.bomb.get("carrier",0))==id and p.team==MatchFlow.attackers(game):
 		for site in game.arena.sites:
 			if pos.distance_to(site)<5.:return "plant"
 	return ""
+static func busy(game:Node,id:int) -> bool:
+	return game.actors.has(id) and game.actors[id].input_state.get("use",false) and not action(game,id).is_empty()
+static func tap(game:Node,id:int):
+	if int(game.options.mode)!=4 or game.phase!="combat" or int(game.bomb.get("carrier",0))!=id or action(game,id)=="plant":return
+	var p=game.players[id]
+	if not p.alive:return
+	if game.clock-float(p.get("bomb_tap_at",-10.))<=.45:
+		p.bomb_tap_at=-10.;drop(game,id)
+	else:p.bomb_tap_at=game.clock
 static func use_label(game:Node,id:int) -> String:
 	if int(game.options.mode)==4 and int(game.bomb.get("carrier",0))==id:return "폭탄 설치"
 	return "폭탄 해체" if action(game,id)=="defuse" else "상호작용"
@@ -25,10 +34,12 @@ static func drop(game:Node,id:int):
 	game.bomb.carrier=0;game.bomb.dropped=true
 	game.bomb.position=game.actors[id].position+Vector3.UP*.45
 	game.bomb.velocity=game.actors[id].velocity*.35+Vector3.UP
+	game.bomb.resting=false;game.bomb.pickup_after=game.clock+.75
 	game.bomb.actor=0;game.bomb.progress=0.
 	game.bomb_announcement.rpc("bomb_dropped")
 static func pickup(game:Node,id:int) -> bool:
 	if game.bomb.planted or not game.bomb.get("dropped",false):return false
+	if game.clock<float(game.bomb.get("pickup_after",0.)):return false
 	if not game.players[id].alive or int(game.players[id].team)!=MatchFlow.attackers(game):return false
 	if game.actors[id].position.distance_to(game.bomb.position)>2.2:return false
 	var point:Vector3=game.bomb.position+Vector3.UP*.2
@@ -37,11 +48,14 @@ static func pickup(game:Node,id:int) -> bool:
 	game.feedback(id,"","폭탄 회수 · A 또는 B 구역에서 E를 3초 유지");return true
 static func tick(game:Node,dt:float):
 	if game.bomb.planted or not game.bomb.get("dropped",false):return
+	if game.bomb.get("resting",false):return
 	var velocity:Vector3=game.bomb.get("velocity",Vector3.ZERO)
 	velocity.y-=18.*dt
 	var from:Vector3=game.bomb.position;var to=from+velocity*dt
 	var hit=game.ray(from,to,[],1|4|8)
-	if not hit.is_empty():to=hit.position+hit.normal*.12;velocity=Vector3.ZERO
+	if not hit.is_empty():
+		to=hit.position+hit.normal*.015;velocity=velocity.slide(hit.normal)*.35
+		if hit.normal.y>.55:velocity=Vector3.ZERO;game.bomb.resting=true
 	game.bomb.position=to;game.bomb.velocity=velocity
 static func beep_interval(remaining:float,total:float) -> float:
 	var fraction=remaining/maxf(1.,total)

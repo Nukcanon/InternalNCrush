@@ -18,6 +18,7 @@ var armor_bar:ColorRect
 var gear_detail:Label
 var gear_price:Label
 var gear_submit:Button
+var mode_fields:VBoxContainer
 var game:Node
 var root:Control
 var panel:PanelContainer
@@ -271,12 +272,15 @@ func practice_menu():
 	option("난이도",["하 · 반응과 조준을 완화","중 · 목표와 지원 역할 수행","상 · 빠른 반응, 사격·후퇴 판단 강화"],game.options.get("bot_difficulty",1),func(i):game.options.bot_difficulty=i)
 	option("봇 인원",["3명","5명","7명","15명","31명"],maxi(0,[3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[3,5,7,15,31][i])
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):
-		game.options.mode=i
+		game.options.mode=i;ModeOptions.refresh(self)
 		if map_refresh.is_valid():map_refresh.call())
 	map_selector()
+	ModeOptions.install(self)
 	label("장애물 우회 · 목표 수행 · 회복/수리 · 가젯/스킬 사용\n체력, 탄약, 최근 교전 상황에 따라 행동을 바꿉니다.",16)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
-	button("병과 · 무기 선택",func():bot_setup=true;gear(),actions)
+	button("다음 · 경기 시작",func():
+		if int(game.options.mode)==4:game.start_bot_match(bot_choice)
+		else:bot_setup=true;gear(),actions)
 	button("메인메뉴",menu,actions);pin_actions(actions)
 func section_tabs(names:Array) -> Array:
 	var tabs=TabContainer.new();tabs.custom_minimum_size.y=340;tabs.size_flags_horizontal=Control.SIZE_EXPAND_FILL;stack.add_child(tabs)
@@ -292,20 +296,15 @@ func host_settings():
 	edit("방 이름",game.options.room,func(t):game.options.room=t.left(40))
 	edit("비밀번호 (선택)",str(game.options.get("password","")),func(t):game.options.password=t,true)
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):
-		game.options.mode=i
+		game.options.mode=i;ModeOptions.refresh(self)
 		if map_refresh.is_valid():map_refresh.call())
 	map_selector()
-	option("경기 시간",["5분","10분","15분","20분"],[5,10,15,20].find(game.options.minutes),func(i):game.options.minutes=[5,10,15,20][i])
-	option("목표 점수",["30","60","100","200"],[30,60,100,200].find(game.options.target),func(i):game.options.target=[30,60,100,200][i])
-	option("진행 경기 수",["무한","2판","4판","6판","10판"],maxi(0,[0,2,4,6,10].find(int(game.options.rounds))),func(i):game.options.rounds=[0,2,4,6,10][i])
-	option("설치·해체 준비 시간",["30초","45초","60초"],maxi(0,[30,45,60].find(int(game.options.get("prep_seconds",45)))),func(i):game.options.prep_seconds=[30,45,60][i])
+	ModeOptions.install(self)
 	stack=groups[1]
 	label("경기 탭에서 참가 정원을 짝수로 선택합니다. 맵 정원이 참가 정원보다 작을 수 없습니다.",17)
 	option("진행 중 참가",["금지","관전만","참가 허용 · 폭탄은 다음 라운드"],game.options.join,func(i):game.options.join=i)
 	option("다음 경기 팀",["현재 팀 유지","무작위","기록으로 균형 편성"],game.options.next_teams,func(i):game.options.next_teams=i)
 	label("입장할 때 인원에 맞춰 자동 배치합니다.\n대기실에서는 각자 팀을 고르고 방장은 모든 참가자를 이동시킬 수 있습니다.\n경기 중에는 방장만 팀을 변경할 수 있습니다.",16)
-	check("제한 부활: 팀 공용 목숨",game.options.shared_lives,func(v):game.options.shared_lives=v)
-	option("제한 부활 횟수",["1","3","5","10"],[1,3,5,10].find(game.options.lives),func(i):game.options.lives=[1,3,5,10][i])
 	stack=groups[2]
 	check("병과 사용",game.options.classes,func(v):game.options.classes=v)
 	check("특수 스킬 사용",game.options.skills,func(v):game.options.skills=v)
@@ -638,7 +637,7 @@ func refresh_gear_detail():
 	gear_detail.text="피해 %d%s    /    %s · 분당 %d발\n탄창 %d · 예비탄 %d    /    재장전 %.1f초\n안정성 %d / 100    /    조준 속도 %d ms\n무게 %.2f kg    /    휴대성 %d / 100\n기본 퍼짐 %.2f°    /    조준 시 %.2f°\n피해 감소 시작 %.0f m"%[w.damage," × "+str(int(w.pellets)) if w.pellets>1 else "",mode,60./maxf(.01,float(w.interval)),w.mag,w.reserve,w.reload,w.get("stability",0),w.get("ads_ms",250),w.get("weight_kg",0),w.get("portability",0),w.spread,w.get("ads_spread",0),w.reach]
 	gear_detail.tooltip_text="안정성↑: 연속 사격 퍼짐 감소 · 조준 시간↓: 더 빠른 조준\n무게↑ / 휴대성↓: 이동 중 퍼짐 증가 · 퍼짐은 반각 기준"
 	gear_detail.text="머리 ×%.2f · 몸통 ×1 · 다리 ×%.2f\n조준 이동 %.2f m/s · 비조준 %.1f° / 조준 %.1f°"%[w.zone_multipliers.head,w.zone_multipliers.legs,float(w.get("ads_speed",4.4))*.5,w.spread,w.ads_spread]
-	if w.name=="MONOLITH":gear_detail.text="머리 300 · 몸통·팔·다리 150 · 손·발 90 피해\n방어구 및 120m 이후 거리 감소 적용\n4발 · 사격 간격 2.35초 · 재장전 3.8초"
+	if w.name=="MONOLITH":gear_detail.text="머리 300 · 몸통 120 · 팔/다리 90 · 손/발 80 피해\n방어구 및 120m 이후 거리 감소 적용\n4발 · 사격 간격 2.35초 · 재장전 3.8초"
 	if float(w.get("structure_damage_scale",1.))<1.:gear_detail.text+="\n포탑·엄폐물 피해 %d%%"%roundi(float(w.structure_damage_scale)*100.)
 	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 20/초\n유효 거리 15 m · 에너지 180\n클릭 유지: 연결한 아군 지속 치료 · 조준 이탈 ±100° 허용.\n벽·사거리 이탈 시 연결 해제 · 여러 LINK 중첩 불가."
 	if float(w.get("heal_per_pellet",0.))>0:gear_detail.text=str(w.get("description",""))+"\n아군은 치료, 적군은 피해 · 모바일 자동 사격 지원"
@@ -791,12 +790,14 @@ func refresh():
 	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 설정"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
 	if not p.get("pending_loadout",{}).is_empty():info.text+="   ·   다음 부활 장비 예약됨"
-	if MarkerTracker.equipped(p):slots[2].text="표식기 · 자동"
+	if not GadgetLoadout.selectable(p):slots[2].text=""
+	if not p.get("owned_primary",true):slots[0].text=""
 	if not p.alive:info.text="마우스: 관전 시점   ·   클릭: 관전 대상 변경   ·   B 다음 병과/장비"
 	reticle.queue_redraw()
 	flash_overlay.color.a=clampf((p.flash-game.clock)/.7,0,1.)
 	if p.flash>game.clock and float(p.flash)>float(hud.get_meta("last_flash",0))+.15:
 		hud.set_meta("last_flash",p.flash);game.play_sound("flash_ring",Vector3.ZERO,false)
+	if p.flash<=game.clock:game.audio_bank.stop_key("flash_ring")
 	if p.alive and p.protect>game.clock:banner.text="부활 보호 %.1f초 · 공격 대기"%(p.protect-game.clock)
 	elif p.flash>game.clock:banner.text="섬광 · 시야 회복 중"
 	elif game.phase=="buy":banner.text="준비 %.0f초 · B 병과/장비 · 공격팀 대기 / 수비팀 배치"%game.remaining
@@ -879,15 +880,15 @@ func internet_create():
 	var title=edit("방 이름",str(game.profile.nick)+"의 경기",func(_v):pass)
 	edit("방 비밀번호 · 선택",str(game.options.get("password","")),func(value):game.options.password=value,true)
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):
-		game.options.mode=i
+		game.options.mode=i;ModeOptions.refresh(self)
 		if map_refresh.is_valid():map_refresh.call())
 	map_selector()
-	option("진행 경기 수",["무한","2판","4판","6판","10판"],maxi(0,[0,2,4,6,10].find(int(game.options.rounds))),func(i):game.options.rounds=[0,2,4,6,10][i])
-	option("설치·해체 준비 시간",["30초","45초","60초"],maxi(0,[30,45,60].find(int(game.options.get("prep_seconds",45)))),func(i):game.options.prep_seconds=[30,45,60][i])
+	ModeOptions.install(self)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);pin_actions(actions)
 	button("방 만들고 참가",func():
 		Rules.sanitize_room(game.options)
-		var result=await game.internet.request("/v1/rooms",{"name":title.text.left(40),"mode":int(game.options.mode),"map":int(game.options.map),"capacity":int(game.options.max_players),"map_random":bool(game.options.map_random),"map_rotation":bool(game.options.map_rotation),"rounds":int(game.options.rounds),"prep_seconds":int(game.options.prep_seconds),"scope":game.internet.scope,"locked":not str(game.options.password).is_empty()})
+		var payload=ModeOptions.network(game.options);payload.merge({"name":title.text.left(40),"mode":int(game.options.mode),"map":int(game.options.map),"capacity":int(game.options.max_players),"map_random":bool(game.options.map_random),"map_rotation":bool(game.options.map_rotation),"rounds":int(game.options.rounds),"prep_seconds":int(game.options.prep_seconds),"scope":game.internet.scope,"locked":not str(game.options.password).is_empty()},true)
+		var result=await game.internet.request("/v1/rooms",payload)
 		if result.has("error"):notice(result.error)
 		else:wait_internet_room(result.id),actions)
 	notice_label=label("방장이 대기실에서 경기를 시작합니다.",17)

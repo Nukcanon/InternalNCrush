@@ -40,7 +40,7 @@ static func score(p:Dictionary) -> int:
 static func rating(p:Dictionary) -> float:
 	return float(score(p)) / maxf(1.0,p.get("played",60.0)/60.0)
 static func default_options() -> Dictionary:
-	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":0,"lives":3,"shared_lives":false,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":0,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":45}
+	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":2,"lives":0,"shared_lives":true,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":4,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":30,"team_respawns":60,"capture_hold":60,"starting_cash":800,"round_minutes":5}
 static func balanced_ids(ps:Dictionary) -> Dictionary:
 	var ids=ps.keys()
 	ids.sort_custom(func(a,b):return rating(ps[a])>rating(ps[b]))
@@ -63,8 +63,16 @@ static func sanitize_room(options:Dictionary):
 		if not choices.is_empty():options.map=choices[0]
 	options.map_size=MAP_PLAYERS[options.map]
 	options.bots=clampi(int(options.get("bots",0)),0,int(options.max_players)-1)
-	options.rounds=maxi(0,int(options.get("rounds",0)))
-	options.prep_seconds=clampi(int(options.get("prep_seconds",45)),30,60)
+	options.rounds=clampi(int(options.get("rounds",4)),2,100)
+	options.rounds+=options.rounds%2
+	options.prep_seconds=clampi(int(options.get("prep_seconds",30)),5,120)
+	options.minutes=clampi(int(options.get("minutes",10)),0,180)
+	options.target=clampi(int(options.get("target",60)),1,10000)
+	options.team_respawns=clampi(int(options.get("team_respawns",60)),0,10000)
+	options.capture_hold=clampi(int(options.get("capture_hold",60)),1,3600)
+	options.starting_cash=clampi(int(options.get("starting_cash",800)),0,8000)
+	options.round_minutes=clampi(int(options.get("round_minutes",5)),1,60)
+	options.lives=clampi(int(options.get("lives",0)),0,10)
 static func random_map(options:Dictionary,avoid:int=-1) -> int:
 	var choices=maps_for_size(int(options.get("map_size",8)),int(options.mode))
 	if choices.size()>1:choices.erase(avoid)

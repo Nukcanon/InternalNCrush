@@ -41,18 +41,27 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 		if not candidate.playing:voice=candidate;break
 	voice.stop();voice.stream=streams[key]
 	voice.set_meta("pain",key in ["hurt","armor_hurt","hurt_female","armor_hurt_female"])
+	voice.set_meta("cue",key)
 	var data=catalog[key];var category=category_gain(str(data.category))
 	if category<=0:return
 	voice.volume_db=linear_to_db(category)+float(data.gain_db)+gain
 	voice.pitch_scale=1.+sin(serial*1.31)*(.025 if key.begins_with("gun_") else .065)
 	if world:
-		voice.position=where;voice.max_distance=40. if key.begins_with("step_") else 160.;voice.unit_size=7. if key.begins_with("step_") else 12.
+		voice.position=where;voice.max_distance=audible_range(key);voice.unit_size=7. if audible_range(key)<=40. else 12.
 		voice.attenuation_model=AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
-		if key in ["explosion","bomb_explosion"]:voice.unit_size=20.;voice.max_distance=220.
-	if world and key=="bomb_beep":voice.max_distance=28.;voice.unit_size=7.;voice.pitch_scale=1.
+		if key in ["explosion","bomb_explosion","flash","smoke"]:voice.unit_size=20.
+	if world and key=="bomb_beep":voice.unit_size=16.;voice.pitch_scale=1.
 	if key in ["bomb_planted","bomb_dropped","bomb_defused"]:voice.pitch_scale=1.
 	if world and key=="bomb_defuse":voice.max_distance=16.;voice.unit_size=3.;voice.pitch_scale=1.
 	voice.play();played.emit(key,world)
 
 func category_gain(category:String) -> float:
 	return clampf(float(profile.get(category,.75)),0,1) if category in ["ui_volume","hit_volume"] else 1.0
+static func audible_range(key:String) -> float:
+	if key in ["explosion","bomb_explosion","flash","smoke"]:return 220.
+	if key=="bomb_beep":return 90.
+	if key.begins_with("gun_") or key in ["rocket_launch","skill","turret_detect"]:return 160.
+	return 40.
+func stop_key(key:String):
+	for voice in spatial+local+feedback_voices+movement_voices+blast_voices:
+		if is_instance_valid(voice) and voice.get_meta("cue","")==key:voice.stop()

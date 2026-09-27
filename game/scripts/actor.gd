@@ -56,6 +56,7 @@ var bob=0.0
 var step_clock=0.0
 var grounded_jump=false
 var shown_weapon=""
+var weapon_models={}
 var recoil=0.0
 var hit_recoil=0.0
 var hit_side=0.0
@@ -83,18 +84,37 @@ func _ready():
 	protected_visual=MeshInstance3D.new();var shield=CapsuleMesh.new();shield.radius=.54;shield.height=2.05;protected_visual.mesh=shield;protected_visual.position.y=1.;render_root.add_child(protected_visual)
 	var mat=StandardMaterial3D.new();mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;mat.albedo_color=Color(.3,.8,1,.25);mat.cull_mode=BaseMaterial3D.CULL_DISABLED;protected_visual.material_override=mat;protected_visual.visible=false;protected_visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func build_gun(wid:String):
-	if is_instance_valid(view_weapon):view_weapon.queue_free()
-	if is_instance_valid(world_weapon):world_weapon.queue_free()
+	if is_instance_valid(view_weapon):view_weapon.hide()
+	if is_instance_valid(world_weapon):world_weapon.hide()
+	var state=game.players.get(pid,{})
+	for key in weapon_models.keys():
+		if key not in [state.get("primary",wid),state.get("secondary",wid)]:
+			for node in weapon_models[key]:
+				if is_instance_valid(node):node.queue_free()
+			weapon_models.erase(key)
+	if weapon_models.has(wid):
+		view_weapon=weapon_models[wid][0];world_weapon=weapon_models[wid][1]
+		if is_instance_valid(world_weapon):
+			world_weapon.show()
+			if is_instance_valid(view_weapon):view_weapon.show()
+			return
+		weapon_models.erase(wid)
+	view_weapon=null;world_weapon=null
 	var w=Catalog.get_weapon(wid)
 	if local:
 		view_weapon=Weapon.new();gun.add_child(view_weapon);view_weapon.build(w);view_weapon.scale=Vector3.ONE*.85
 	world_weapon=Weapon.new();(character.socket if is_instance_valid(character) else render_root).add_child(world_weapon);world_weapon.build(w,false);world_weapon.scale=Vector3.ONE*.85
+	weapon_models[wid]=[view_weapon,world_weapon]
 func set_local(on:bool):
 	local=on;camera.current=on;render_root.visible=not on;tag.visible=not on;gun.visible=on
 func set_team(t:int):
 	if not game.players.has(pid):return
 	var role=int(game.players[pid].role) if game.options.classes else 0
 	if role==shown_role and t==shown_team:return
+	for pair in weapon_models.values():
+		for node in pair:
+			if is_instance_valid(node):node.queue_free()
+	weapon_models.clear();view_weapon=null;world_weapon=null
 	shown_role=role;shown_team=t
 	body_height=HumanModel.HEIGHTS[role];tag.position.y=body_height+.18
 	shape.shape.height=body_height;shape.position.y=body_height*.5
@@ -307,7 +327,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
 	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
-	if p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="":
+	if GadgetLoadout.held_visible(p,now) and (p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!=""):
 		var signature=str([p.role,p.gadget,p.slot,p.get("placing","")])
 		if signature!=item_signature:
 			item_signature=signature
@@ -315,7 +335,7 @@ func visual(dt:float,p:Dictionary,now:float):
 			var held=GadgetVisual.new();item_model.add_child(held);held.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
 			if is_instance_valid(gadget_world):gadget_world.queue_free()
 			gadget_world=GadgetVisual.new();character.socket.add_child(gadget_world);gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
-	var wid=p.primary if p.slot==0 else p.secondary
+	var wid=(p.primary if p.slot==0 else p.secondary) if p.slot<2 or shown_weapon.is_empty() else shown_weapon
 	if shown_weapon!=wid:shown_weapon=wid;build_gun(wid)
 	var w=Catalog.get_weapon(wid);var age=now-float(p.get("shot_time",-100.))
 	if float(p.get("shot_time",-100.))>seen_shot:show_shot(float(p.shot_time))
@@ -338,10 +358,10 @@ func visual(dt:float,p:Dictionary,now:float):
 	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/.72,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	if is_instance_valid(world_weapon):
-		world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if is_instance_valid(gadget_world):
-		gadget_world.visible=(p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
+		gadget_world.visible=GadgetLoadout.held_visible(p,now) and (p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
 		if gadget_world.visible:
 			character.solve_arm(character.right_arm,character.right_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.right_socket)),Vector3(.75,-.8,.25),dt,1.)
 			if gadget_world.two_handed:character.solve_arm(character.left_arm,character.left_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.left_socket)),Vector3(-.75,-.8,.25),dt,1.)
@@ -395,7 +415,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		var payload=gadget_world.get_node_or_null("Payload")
 		if payload:payload.visible=not throwing
 	view_weapon.reload_round_count=int(p.get("reload_count",3))
-	view_weapon.visible=p.slot<2 and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=(p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
+	view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))
 

@@ -1,8 +1,18 @@
 class_name ArmorVisual
 extends RefCounted
 static var fabric:ShaderMaterial
+static var templates={}
 # Shared plate-carrier silhouette; native adds stitched edging, MOLLE and hardware.
 static func build(parent:Node3D,level:int,web:bool) -> Node3D:
+	level=clampi(level,0,2)
+	var key=str([level,web])
+	if templates.has(key):
+		var cached=templates[key].instantiate();parent.add_child(cached);return cached
+	var built=build_geometry(parent,level,web)
+	MeshFactory.own_recursive(built,built)
+	var packed=PackedScene.new();packed.pack(built);templates[key]=packed
+	return built
+static func build_geometry(parent:Node3D,level:int,web:bool) -> Node3D:
 	var root=Node3D.new();root.name="PlateCarrier";parent.add_child(root)
 	var m=MeshFactory;var cloth=Color("7d8b6b") if level<2 else Color("596b56")
 	var trim=cloth.darkened(.28);var stitch=cloth.lightened(.24);var buckle=Color("252d2b")

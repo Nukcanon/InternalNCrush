@@ -50,6 +50,10 @@ var last_shift_ms=-1000
 var preview:Node3D
 var round_no=0
 var completed_games=0
+var overtime_attacker=0
+var capture_team=-1
+var capture_elapsed=0.
+var result={"team":-1,"player":0}
 var control_leg=0
 var next_device=1
 var zone_owner=[-1,-1,-1]
@@ -140,6 +144,7 @@ func _ready():
 	audio_bank=GameAudio.new();add_child(audio_bank);audio_bank.profile=profile
 	version_check=VersionCheck.new();add_child(version_check)
 	ui=UI.new();ui.game=self;add_child(ui);ui.menu();save_profile()
+	var diagnostics=StabilityMonitor.new();diagnostics.game=self;add_child(diagnostics)
 	placement_preview=DeploymentPreview.new();placement_preview.game=self;add_child(placement_preview)
 	if TouchControls.supported():
 		touch=TouchControls.new();touch.game=self;ui.root.add_child(touch)
@@ -393,12 +398,14 @@ func configure(opts:Dictionary):
 	var saved_password=str(options.get("password",""));options=R.default_options();options.merge(opts,true);options.password=saved_password;connection_busy=false;received_sequence=-1;snapshot_buffers.clear();last_snapshot_ms=Time.get_ticks_msec();build_world();phase="lobby";ui.lobby()
 	last_snapshot_ms=Time.get_ticks_msec()
 func add_player(id:int,nick:String,token:String):
+	prune_reconnects()
 	var t=0;var counts=[0,0]
 	for p in players.values():counts[p.team]+=1
 	t=randi()%2 if counts[0]==counts[1] else 0 if counts[0]<counts[1] else 1
 	var role=0 if id>0 or not options.classes else absi(id)%6
 	if role==5 and medic_count(t)>=R.medic_cap(counts[t]+1):role=0
-	var p={"id":id,"nick":nick,"token":token,"team":t,"role":role,"primary":C.first(role),"secondary":R.SECONDARIES[role],"slot":0,"hp":R.CLASS_HP[role],"armor":0.,"armor_max":0,"alive":false,"kills":0,"deaths":0,"assists":0,"objective":0,"healed":0.,"builds":0,"played":0.,"cash":800,"lives":int(options.lives),"respawn":0.,"mag":{},"reserve":{},"reload":0.,"reload_weapon":"","fire_ready":0.,"heal_ready":0.,"heal_mag":3,"heal_reserve":3,"energy":180.,"repair_energy":100.,"skill_ready":clock+30. if role==5 else 0.,"initial_skill_until":clock+30.,"gadget_count":1,"gadget":0,"protect":0.,"shield":0.,"slow":0.,"dash":0.,"mark":0.,"flash":0.,"last_hit":-20.,"contributors":{},"input_time":clock,"gadget_ready":0.,"last_pos":Vector3.ZERO,"spectator":false,"round_bonus":0,"can_respawn":true,"smoke":2,"flash_count":1}
+	var p={"id":id,"nick":nick,"token":token,"team":t,"role":role,"primary":C.first(role),"secondary":R.SECONDARIES[role],"slot":0,"hp":R.CLASS_HP[role],"armor":0.,"armor_max":0,"alive":false,"kills":0,"match_kills":0,"deaths":0,"assists":0,"objective":0,"healed":0.,"builds":0,"played":0.,"cash":800,"lives":int(options.lives),"respawn":0.,"mag":{},"reserve":{},"reload":0.,"reload_weapon":"","fire_ready":0.,"heal_ready":0.,"heal_mag":3,"heal_reserve":3,"energy":180.,"repair_energy":100.,"skill_ready":clock+30. if role==5 else 0.,"initial_skill_until":clock+30.,"gadget_count":1,"gadget":0,"protect":0.,"shield":0.,"slow":0.,"dash":0.,"mark":0.,"flash":0.,"last_hit":-20.,"contributors":{},"input_time":clock,"gadget_ready":0.,"last_pos":Vector3.ZERO,"spectator":false,"round_bonus":0,"can_respawn":true,"smoke":2,"flash_count":1}
+	if int(options.mode)==4:DefusalEconomy.reset(p,int(options.starting_cash))
 	if reconnects.has(token):
 		p=reconnects[token].duplicate(true);p.id=id;p.nick=nick;p.alive=false;p.respawn=clock+3;reconnects.erase(token)
 	elif phase!="lobby":
@@ -428,10 +435,13 @@ func spawn(id:int):
 	if not p.get("pending_loadout",{}).is_empty():
 		var requested=p.pending_loadout.duplicate();p.pending_loadout={};commit_loadout(id,requested)
 	var best=choose_spawn(id)
-	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.cooking=0;p.slide_until=0.;p.hp=R.max_hp(p);p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;GadgetLoadout.reset(p);p.last_hit=clock;p.contributors={};p.spectator=false
+	var armor_before=float(p.armor)
+	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.cooking=0;p.slide_until=0.;p.hp=R.max_hp(p);p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;p.last_hit=clock;p.contributors={};p.spectator=false
+	if int(options.mode)==4:p.armor=armor_before
+	else:p.owned_primary=true;p.owned_secondary=true;p.owned_gadget=true;GadgetLoadout.reset(p)
 	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.;p.reveal_to={}
 	p.hand=-1 if randf()<.12 else 1
-	a.reset_view((0. if p.team==MatchFlow.attackers(self) else PI) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else 0. if options.get("practice",false) and id==1 else 0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
+	a.reset_view((0. if p.team==MatchFlow.attackers(self) else PI) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else 0. if options.get("practice",false) and id==1 else 0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0 if p.get("owned_primary",true) else 1;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
 	if id==local_id:capture_pointer()
 func choose_spawn(id:int) -> Vector3:
 	if options.get("practice",false):return PracticeSession.spawn_point(id)
@@ -453,7 +463,7 @@ func choose_spawn(id:int) -> Vector3:
 		var score=minf(enemy_distance,100.)*1.5-ally_distance*.35-exposed+randf()*7
 		if score>best_score:best_score=score;best=pos
 	return best
-func can_attack(p:Dictionary) -> bool:return not (int(options.mode)==4 and phase=="buy") and p.alive and float(p.get("protect",0))<=clock
+func can_attack(p:Dictionary) -> bool:return not (int(options.mode)==4 and phase=="buy") and p.alive and float(p.get("protect",0))<=clock and not BombLogic.busy(self,int(p.id))
 func passive_regen(p:Dictionary,dt:float):
 	if options.autoheal and p.alive and clock-maxf(p.last_hit,float(p.get("shot_time",-100.)))>=R.REGEN_DELAY:p.hp=minf(R.max_hp(p),p.hp+R.REGEN_RATE*dt)
 func kick_player(requester:int,target:int,by_vote=false) -> bool:
@@ -492,12 +502,16 @@ func disconnected(id:int):
 	if not players.has(id):return
 	if server:
 		BombLogic.drop(self,id)
-		var p=players[id];p.alive=false;reconnects[p.token]=p.duplicate(true)
+		var p=players[id];p.alive=false;prune_reconnects();reconnects[p.token]=p.duplicate(true);reconnects[p.token].disconnected_at=clock
 		for did in devices.keys():
 			if devices[did].owner==id:remove_device(did)
 	players.erase(id);bot_agents.erase(id)
 	if actors.has(id):actors[id].queue_free();actors.erase(id)
 	if server:call_deferred("broadcast_state",true)
+func prune_reconnects():
+	for token in reconnects.keys():
+		if clock-float(reconnects[token].get("disconnected_at",clock))>300.:reconnects.erase(token)
+	while reconnects.size()>=64:reconnects.erase(reconnects.keys()[0])
 func leave_game(message:String=""):
 	if is_instance_valid(rtc):rtc.close()
 	var return_to_lan=phase=="menu" and ui.screen=="join"
@@ -573,6 +587,9 @@ func _unhandled_input(event):
 			spectator_yaw-=event.relative.x*sensitivity;spectator_pitch=clampf(spectator_pitch-event.relative.y*sensitivity,-1.2,1.2)
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT and players[local_id].alive:
 		trigger_seq+=1;a.input_state.trigger_seq=trigger_seq
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and players[local_id].alive:
+		a.input_state.fire=event.pressed
+		if players[local_id].slot==2 and GrenadeLogic.equipped(players[local_id]):command("trigger_press" if event.pressed else "trigger_release",{"seq":trigger_seq})
 	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and players[local_id].alive:
 		if SniperScope.active(self):SniperScope.change(self,1 if event.button_index==MOUSE_BUTTON_WHEEL_UP else -1)
 		else:cycle_weapon(-1 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1)
@@ -590,6 +607,7 @@ func _unhandled_input(event):
 			command("slide",{"x":direction.x,"z":direction.y});direction_taps[key]=-2000
 		else:direction_taps[key]=stamp
 	if event.is_action_pressed("melee") and not event.is_echo():command("melee",{})
+	if event.is_action_pressed("use") and not event.is_echo():command("bomb_tap",{})
 	if event.is_action_pressed("reload"):command("reload",{})
 	if event.is_action_pressed("primary"):command("slot",{"slot":0})
 	if event.is_action_pressed("secondary"):command("slot",{"slot":1})
@@ -601,7 +619,7 @@ func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT and not players[local_id].alive:cycle_spectator()
 func cycle_weapon(direction:int):
 	var p=players[local_id];var available=[0,1]
-	if options.classes:available.append(2)
+	if options.classes and GadgetLoadout.selectable(p):available.append(2)
 	if false:available.append(3)
 	available.append(MeleeCombat.SLOT)
 	command("slot",{"slot":available[posmod(available.find(int(p.slot))+direction,available.size())]})
@@ -658,7 +676,7 @@ func _physics_process(dt:float):
 	else:
 		if actors.has(local_id) and players[local_id].alive:
 			AimModel.recover(players[local_id],current_weapon(players[local_id]),dt,clock)
-			actors[local_id].simulate(dt,clock,phase in ["combat","lobby","buy"])
+			actors[local_id].simulate(dt,clock,phase in ["combat","lobby","buy"] and not BombLogic.busy(self,local_id))
 			MatchFlow.preparation(self,local_id)
 		ping_timer-=dt
 		if ping_timer<=0:ping_request.rpc_id(1,Time.get_ticks_msec());ping_timer=1.
@@ -688,11 +706,13 @@ func server_tick(dt:float):
 		elif clock-p.input_time> .5:
 			a.input_state.x=0.;a.input_state.z=0.;a.input_state.fire=false;a.input_state.melee=false;a.input_state.alt=false;a.input_state.use=false
 		if not p.alive:
-			if phase=="combat" and clock>=p.respawn and not p.spectator and int(options.mode)!=4 and (int(options.mode)!=2 or (p.can_respawn if options.shared_lives else p.lives>0)):spawn(id)
+			if phase=="combat" and clock>=p.respawn and not p.spectator and (int(options.mode) not in [2,4] or p.can_respawn):spawn(id)
 			continue
 		AimModel.recover(p,current_weapon(p),dt,clock)
 		var before_move=a.position;var grounded_before=a.is_on_floor()
-		a.simulate(dt,clock,phase in ["combat","lobby","buy"])
+		var busy=BombLogic.busy(self,id)
+		if busy:a.input_state.crouch=true;a.input_state.x=0.;a.input_state.z=0.;a.input_state.fire=false;a.input_state.jump=false;a.velocity.x=0.;a.velocity.z=0.
+		a.simulate(dt,clock,phase in ["combat","lobby","buy"] and not busy)
 		MatchFlow.preparation(self,id)
 		p.gait=a.gait
 		p.step_distance=float(p.get("step_distance",0))+(Vector2(a.position.x-before_move.x,a.position.z-before_move.z).length() if a.is_on_floor() else 0.)
@@ -729,7 +749,8 @@ func server_tick(dt:float):
 	if phase in ["buy","combat","result","round_end"]:
 		remaining-=dt
 		if phase=="buy" and remaining<=0:
-			phase="combat";remaining=150.;announce("라운드 시작")
+			phase="combat";remaining=ModeOptions.seconds(options);announce("라운드 시작")
+			if not dedicated and ui.screen=="gear":ui.show_hud();capture_pointer()
 			if round_no==1:
 				for player in players.values():
 					player.initial_skill_until=clock+30.
@@ -753,7 +774,7 @@ func team_count(team:int) -> int:
 		if p.team==team:n+=1
 	return n
 func handle_command(id:int,action:String,data:Dictionary):
-	if action not in ["start","slot","reload","loadout","kick","vote_kick","vote","team","team_swap","team_policy","slide","skill","gadget","gadget_press","gadget_release","gadget_mode","melee"] or data.size()>16:return
+	if action not in ["start","slot","reload","loadout","kick","vote_kick","vote","team","team_swap","team_policy","slide","skill","gadget","gadget_press","gadget_release","gadget_mode","melee","trigger_press","trigger_release","bomb_tap"] or data.size()>16:return
 	for key in data:
 		if not (key is String or key is StringName) or str(key).length()>32:return
 		var value=data[key]
@@ -768,7 +789,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 		"slot":
 			var slot=clampi(int(data.get("slot",0)),0,4)
 			if slot in [2,3] and not options.classes:return
-			if slot==3:return
+			if slot==3 or (slot==2 and not GadgetLoadout.selectable(p)) or (slot==0 and not p.get("owned_primary",true)):return
 			if MeleeCombat.active(p,clock):return
 			if slot==p.slot:return
 			GrenadeLogic.release(self,id)
@@ -795,6 +816,12 @@ func handle_command(id:int,action:String,data:Dictionary):
 			if GrenadeLogic.equipped(p):GrenadeLogic.begin(self,id)
 			else:use_gadget(id)
 		"gadget_release":GrenadeLogic.release(self,id)
+		"trigger_press":
+			var seq=int(data.get("seq",0))
+			if p.slot==2 and seq>int(p.get("grenade_click_seq",-1)):
+				p.grenade_click_seq=seq;GrenadeLogic.begin(self,id,"direct")
+		"trigger_release":GrenadeLogic.release(self,id)
+		"bomb_tap":BombLogic.tap(self,id)
 		"gadget_mode":
 			pass # Only the selected loadout can be used; no mixed smoke/flash pack.
 func change_team(requester:int,target:int,team:int) -> bool:
@@ -821,22 +848,22 @@ func finish_team_change(target:int):
 	actors[target].set_team(p.team)
 func valid_loadout(p:Dictionary,d:Dictionary) -> bool:
 	var role=clampi(int(d.get("role",p.role)),0,5);var wid=str(d.get("primary",C.first(role)))
-	if not C.weapons.has(wid) or C.get_weapon(wid).slot!=0:return false
-	if options.classes and int(C.get_weapon(wid).role)!=role:return false
-	if not options.classes and C.get_weapon(wid).kind!="gun":return false
-	return true
+	if not (int(options.mode)==4 and wid.is_empty()):
+		if not C.weapons.has(wid) or C.get_weapon(wid).slot!=0:return false
+		if options.classes and int(C.get_weapon(wid).role)!=role:return false
+		if not options.classes and C.get_weapon(wid).kind!="gun":return false
+	var secondary=str(d.get("secondary","repair" if role==3 and d.get("repair",false) else R.SECONDARIES[role]))
+	if secondary not in C.secondaries_for(role):return false
+	var allowed=[0,8]+([1] if role in [0,4] else [1,2] if role==3 else [])
+	if int(options.mode)==4:allowed.append(-1);allowed.append(9)
+	return int(d.get("gadget",p.gadget)) in allowed
 func loadout_cost(p:Dictionary,d:Dictionary) -> int:
-	if int(options.mode)!=4:return 0
-	var cost=0;var wid=str(d.get("primary",p.primary));var role=int(d.get("role",p.role));var armor=clampi(int(d.get("armor",0)),0,2)*25
-	if wid!=p.primary or not p.get("owned_primary",false):cost+=int(C.get_weapon(wid).price)
-	if armor>p.armor:cost+=300 if armor==25 else 600
-	if int(d.get("gadget",0))==9:cost+=400
-	elif int(d.get("gadget",0))==8:cost+=300
-	elif role==3:cost+=[300,600,1000][clampi(int(d.get("gadget",0)),0,2)]
-	elif role==4:cost+=400
-	return cost
+	return DefusalEconomy.cost(p,d) if int(options.mode)==4 else 0
+
 func apply_loadout(id:int,d:Dictionary):
 	var p=players[id]
+	if int(options.mode)==4 and phase!="buy":feedback(id,"","준비 시간에만 장비를 구매할 수 있습니다.");return
+	if int(options.mode)==4 and DefusalEconomy.replacement(p,d) and not d.get("confirmed",false):feedback(id,"","기존 장비 교체를 먼저 확인하세요.");return
 	if not valid_loadout(p,d):feedback(id,"","이 병과에서 선택할 수 없는 무기입니다.");return
 	if phase not in ["lobby","buy"] and not options.get("practice",false):
 		p.pending_loadout=d.duplicate();loadout_accepted(id)
@@ -847,12 +874,13 @@ func apply_loadout(id:int,d:Dictionary):
 	commit_loadout(id,d)
 func commit_loadout(id:int,d:Dictionary):
 	var p=players[id]
+	if int(options.mode)==4 and (phase!="buy" or (DefusalEconomy.replacement(p,d) and not d.get("confirmed",false))):return
 	if not valid_loadout(p,d):return
 	var role=clampi(int(d.get("role",p.role)),0,5)
 	if role==5 and p.role!=5 and options.classes and medic_count(p.team)>=R.medic_cap(team_count(p.team)):feedback(id,"","메딕 정원이 차서 이전 장비를 유지합니다.");return
-	var wid=str(d.get("primary",C.first(role)));var sec=R.SECONDARIES[role]
+	var wid=str(d.get("primary",C.first(role)));var sec=str(d.get("secondary",R.SECONDARIES[role]))
 	if role==3 and d.get("repair",false):sec="repair"
-	var armor=clampi(int(d.get("armor",0)),0,2)*25;var gadget=9 if int(options.mode)==4 and int(d.get("gadget",0))==9 else 8 if int(d.get("gadget",0))==8 else clampi(int(d.get("gadget",0)),0,2)
+	var armor=clampi(int(d.get("armor",0)),0,2)*25;var gadget=-1 if int(options.mode)==4 and int(d.get("gadget",0))<0 else 9 if int(options.mode)==4 and int(d.get("gadget",0))==9 else 8 if int(d.get("gadget",0))==8 else clampi(int(d.get("gadget",0)),0,2)
 	var cost=loadout_cost(p,d) if phase=="buy" or (int(options.mode)==4 and gadget==9) else 0
 	if p.cash<cost:feedback(id,"","구매 실패 · 필요 %d / 보유 %d 크레딧"%[cost,p.cash]);return
 	p.cash-=cost
@@ -864,7 +892,7 @@ func commit_loadout(id:int,d:Dictionary):
 		if p.skill_ready>0.:p.skill_ready=clock+maxf(0.,AbilityBalance.COOLDOWNS[role]-elapsed)
 		if role==5:p.skill_ready=maxf(p.skill_ready,float(p.get("initial_skill_until",clock+30.)))
 	var health_fraction=clampf(float(p.hp)/R.max_hp(p),0.,1.)
-	p.role=role;p.hp=R.max_hp(p)*health_fraction;p.primary=wid;p.secondary=sec;p.armor_max=armor;p.armor=armor;p.slot=0;p.gadget=gadget;GadgetLoadout.reset(p);p.reload=0.;p.owned_primary=true;p.burst_left=0;p.trigger_until=0.;p.switch_until=clock+.32;p.fire_ready=clock+.32;equip_ammo(p)
+	p.role=role;p.hp=R.max_hp(p)*health_fraction;p.primary=wid;p.secondary=sec;p.armor_max=armor;p.armor=armor;p.slot=0 if not wid.is_empty() else 1;p.gadget=gadget;GadgetLoadout.reset(p);p.owned_gadget=gadget>=0;p.owned_secondary=sec!="pistol";p.reload=0.;p.owned_primary=not wid.is_empty();p.burst_left=0;p.trigger_until=0.;p.switch_until=clock+.32;p.fire_ready=clock+.32;equip_ammo(p)
 	loadout_accepted(id)
 	feedback(id,"","구매 완료 · %d 크레딧 사용"%cost if cost>0 else "장비 적용 완료")
 func loadout_accepted(id:int):
@@ -899,8 +927,9 @@ func process_trigger(id:int):
 		if pressed:grant_invulnerability(id,invulnerability_target(id))
 		return
 	if p.slot==2 and GrenadeLogic.equipped(p):
-		if pressed:GrenadeLogic.begin(self,id,"mouse")
-		if not held and p.get("cook_input","")=="mouse":GrenadeLogic.release(self,id)
+		if pressed and seq>int(p.get("grenade_click_seq",-1)):
+			p.grenade_click_seq=seq;GrenadeLogic.begin(self,id,"mouse")
+		if not held and not pressed and p.get("cook_input","")=="mouse":GrenadeLogic.release(self,id)
 		return
 	if p.get("cooking",0)>0:return
 	if p.slot>=2:
@@ -1008,7 +1037,7 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 	var push=(actors[target].position-origin).normalized() if origin.distance_squared_to(actors[target].position)>.001 else Vector3.FORWARD
 	var point=hit_point if hit_point.is_finite() else actors[target].eye()-Vector3.UP*.35
 	if absorb>0:impact.rpc(point,push,false,int(p.team))
-	if amount>absorb:flesh_hit.rpc(point,push,amount-absorb,target)
+	if amount>absorb:flesh_hit.rpc(point,push,amount-absorb,target,source)
 	hit_reaction.rpc(target,push)
 	if target==local_id:damage_notice(target,origin,amount,armored)
 	elif target>0 and target in multiplayer.get_peers():damage_notice.rpc_id(target,target,origin,amount,armored)
@@ -1020,21 +1049,23 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 		for did in devices.keys():
 			if devices[did].kind=="turret" and int(devices[did].owner)==target:
 				event_fx.rpc("turret_break",devices[did].pos+Vector3.UP*.6,Vector3.ZERO,target);remove_device(did)
-		p.hp=0;p.alive=false;p.deaths+=1;p.lives-=1;p.respawn=clock+(3. if options.get("practice",false) else 5.2);
-		p.can_respawn=p.lives>0
-		if int(options.mode)==2 and options.shared_lives:
+		p.hp=0;p.alive=false;p.deaths+=1;
+		p.can_respawn=int(p.lives)>0
+		if int(options.mode)==4 and p.can_respawn:p.lives-=1
+		p.respawn=clock+(3. if options.get("practice",false) else 5.2);
+		if int(options.mode)==2:
 			p.can_respawn=tickets[p.team]>0
 			if p.can_respawn:tickets[p.team]-=1
-		p.owned_primary=false
 		actors[target].collision_layer=0
 		var wid=p.secondary if p.slot==1 else p.primary;drops.append({"pos":actors[target].position+Vector3.UP*.18,"yaw":actors[target].aim_yaw,"amount":int(p.mag.get(wid,0))+int(p.reserve.get(wid,0)),"weapon":wid,"until":clock+40})
-		if players.has(source) and source!=target:
-			players[source].kills+=1
+		if int(options.mode)==4:DefusalEconomy.reset(p);equip_ammo(p)
+		if players.has(source) and source!=target and enemies(players[source],p):
+			players[source].kills+=1;players[source].match_kills=int(players[source].get("match_kills",0))+1
 			if int(options.mode)==0:scores[players[source].team]+=1
 			var reward=mini(100,600-int(players[source].round_bonus));players[source].cash=mini(8000,players[source].cash+reward);players[source].round_bonus+=reward
 			feedback(source,"confirm",str(p.nick)+" 처치")
 		for aid in p.contributors:
-			if aid!=source and players.has(aid) and clock-p.contributors[aid]<8:players[aid].assists+=1
+			if aid!=source and players.has(aid) and enemies(players[aid],p) and clock-p.contributors[aid]<8:players[aid].assists+=1
 		var attacker=players.get(source,{})
 		kill_event.rpc({"attacker":source,"attacker_name":str(attacker.get("nick","환경")),"attacker_team":int(attacker.get("team",-1)),"victim":target,"victim_name":str(p.nick),"victim_team":int(p.team),"weapon":weapon_id,"critical":critical,"origin":origin,"hit_point":hit_point if hit_point.is_finite() else actors[target].eye()-Vector3.UP*.3,"victim_pos":actors[target].position})
 @rpc("authority","call_local","reliable",0)
@@ -1062,7 +1093,8 @@ func heal_target(id:int,tid:int,amount:float,weapon_heal:bool=false,visual:bool=
 	if tid==0:return
 	var p=players[id];var q=players[tid];var healed=minf(maxf(0.,R.max_hp(q)-q.hp),amount*(1. if weapon_heal else .5 if clock-q.last_hit<2 else 1.))
 	if q.get("healing_until",0)>clock and q.get("healer",id)!=id:return
-	q.hp+=healed;q.healing_until=clock+.12;q.healer=id;p.healed+=healed
+	q.hp+=healed;q.healing_until=clock+.12;q.healer=id
+	if tid!=id and not enemies(p,q):p.healed+=healed
 	if healed>0 and visual:effect.rpc("heal",actors[id].muzzle_world(),actors[tid].position+Vector3.UP*(.90 if actors[tid].input_state.crouch else 1.15)*actors[tid].body_height/1.8,id,-100.,{"target":tid})
 func continuous_heal(id:int):
 	# Compatibility entry point; normal input uses delta-integrated MedicLink.tick.
@@ -1256,14 +1288,14 @@ func interact(id:int,dt:float):
 				if bomb.actor!=id:bomb.actor=id;bomb.progress=0
 				bomb.last_touch=clock;bomb.progress+=dt
 				if bomb.progress>=3:
-					bomb.planted=true;bomb.carrier=0;bomb.dropped=false;bomb.site=i;bomb.position=arena.sites[i];bomb.time=150. if R.MAP_PLAYERS[int(options.map)]>=12 else 120.;bomb.total_time=bomb.time;bomb.actor=0;bomb.progress=0;p.objective+=3
+					bomb.planted=true;bomb.carrier=0;bomb.dropped=false;bomb.site=i;bomb.position=a.position+Vector3.UP*.015;bomb.time=150. if R.MAP_PLAYERS[int(options.map)]>=12 else 120.;bomb.total_time=bomb.time;bomb.actor=0;bomb.progress=0;p.objective+=3
 					for q in players.values():
 						if q.team==p.team:q.cash=mini(8000,q.cash+300)
-					announce("폭탄 설치 완료 · %d초 내 해체"%int(bomb.time));bomb_announcement.rpc("bomb_planted")
-	elif bomb.planted and p.team!=attackers and a.position.distance_to(bomb.position)<5:
+					announce("폭탄 설치 완료 · %d초 내 해체"%int(bomb.time));bomb_announcement.rpc("bomb_planted");return
+	elif bomb.planted and p.team!=attackers and a.position.distance_to(bomb.position)<1.8:
 		if bomb.actor!=id:bomb.actor=id;bomb.progress=0
 		bomb.last_touch=clock;bomb.progress+=dt
-		if bomb.progress>=(10. if int(p.gadget)==9 else 30.):
+		if bomb.progress>=(10. if int(p.gadget)==9 and GadgetLoadout.has_item(p) else 30.):
 			p.objective+=5;bomb.defused=true;bomb.actor=0;bomb.progress=0.;bomb_announcement.rpc("bomb_defused");finish_round(p.team,"폭탄 해체 완료")
 func check_objectives(dt:float):
 	match int(options.mode):
@@ -1308,57 +1340,53 @@ func check_objectives(dt:float):
 				if alive[attackers]==0 and team_count(attackers)>0:finish_round(1-attackers,"공격팀 전원 Dead");return
 				if alive[1-attackers]==0 and team_count(1-attackers)>0:finish_round(attackers,"수비팀 전원 Dead")
 func start_match(reset_series:bool=true):
-	if reset_series:completed_games=0;control_leg=0
-	if server and arena:arena.reset_props()
-	kill_events.clear()
-	if is_instance_valid(ui.damage_indicator):ui.damage_indicator.clear_hits()
 	if not server:return
+	if reset_series:completed_games=0;control_leg=0
+	RoundCleanup.clear(self)
+	if arena:arena.reset_props()
+	result={"team":-1,"player":0};capture_team=-1;capture_elapsed=0.
 	for p in players.values():
-		p.kills=0;p.builds=0;p.deaths=0;p.assists=0;p.objective=0;p.healed=0.;p.played=0.;p.lives=int(options.lives);p.cash=800;p.skill_ready=clock+30. if p.role==5 else 0.;p.initial_skill_until=clock+30.;p.spectator=false;p.can_respawn=true
-		if int(options.mode)==4:p.owned_primary=false;p.armor_max=0;p.primary="pistol"
-	enforce_medics();tickets=[int(options.lives),int(options.lives)];scores=[0,0];losses=[0,0];round_no=0;zone_owner=[-1,-1,-1];zone_capture=[0.,0.,0.]
+		p.match_kills=0;p.lives=int(options.lives);p.skill_ready=clock+30. if p.role==5 else 0.;p.initial_skill_until=clock+30.;p.spectator=false;p.can_respawn=true
+		if int(options.mode)==4:DefusalEconomy.reset(p,int(options.starting_cash))
+	enforce_medics();tickets=[int(options.team_respawns),int(options.team_respawns)];scores=[0,0];losses=[0,0];round_no=0;zone_owner=[-1,-1,-1];zone_capture=[0.,0.,0.]
 	if int(options.mode)==4:begin_round()
 	else:
-		phase="combat";remaining=float(options.minutes)*60
+		phase="combat";remaining=ModeOptions.seconds(options)
 		for id in players:spawn(id)
 	ui.show_hud();broadcast_state(true)
+
 func enforce_medics():
 	for team in [0,1]:
 		var n=0
 		for p in players.values():
 			if p.team==team and p.role==5:
 				n+=1
-				if n>R.medic_cap(team_count(team)):p.role=0;p.primary="a1";p.secondary="pistol";equip_ammo(p)
-func begin_round():
-	if round_no>0 and round_no%2==0:MatchFlow.rotate(self)
-	if server and arena:arena.reset_props()
-	round_no+=1;bot_attack_site=randi()%2;phase="buy";remaining=float(options.get("prep_seconds",45));bomb={"planted":false,"site":-1,"time":0.,"actor":0,"progress":0.,"position":Vector3.ZERO}
-	for did in devices.keys():remove_device(did)
-	fields.clear();grenades.clear();rockets.clear();drops.clear()
-	if round_no>1 and (round_no-1)%2==0:
-		losses=[0,0]
-		for p in players.values():p.cash=800;p.owned_primary=false;p.armor_max=0;p.primary="pistol"
-	for id in players:
-		var p=players[id];p.round_bonus=0
-		if not p.get("owned_primary",false):p.primary="pistol";p.slot=0;p.armor_max=0
-		spawn(id)
-	BombLogic.assign(self)
-	MatchFlow.update_gate(self);announce("준비 시간 · 공격팀 대기 구역 / 수비팀 거점 배치 · B 병과/장비")
-func finish_round(winner:int,reason:String):
+				if n>R.medic_cap(team_count(team)):
+					p.role=0
+					if int(options.mode)==4:DefusalEconomy.reset(p)
+					else:p.primary="a1";p.secondary="pistol"
+					equip_ammo(p)
+func begin_round():DefusalMatch.begin(self)
+func open_buy_menu():
+	if not dedicated and phase=="buy" and players.has(local_id):ui.gear()
+
+func finish_round(winner:int,reason:String):DefusalMatch.finish(self,winner,reason)
+
+func finish_match(message:String,winner:int=-2,player:int=0):
 	if phase!="combat":return
-	scores[winner]+=1;losses[winner]=maxi(0,losses[winner]-1);losses[1-winner]+=1
-	for p in players.values():p.cash=mini(8000,p.cash+(3500 if p.team==winner else R.loss_reward(losses[p.team])))
-	announce(reason+" · "+("BLUE" if winner==0 else "ORANGE")+" 승리")
-	completed_games+=1;phase="round_end";remaining=7
-func finish_match(message:String):
-	completed_games+=1
+	if winner==-2:winner=0 if message.begins_with("BLUE") else 1 if message.begins_with("ORANGE") else -1
+	result={"team":winner,"player":player};completed_games+=1
+	if winner>=0:winner_voice.rpc(winner)
 	phase="result";remaining=12;announce(message+" · 다음 경기까지 12초")
+@rpc("authority","call_local","reliable",0)
+func winner_voice(team:int):
+	if not dedicated and team in [0,1]:play_sound("win_blue" if team==0 else "win_orange",Vector3.ZERO,false)
+
 func next_match():
 	if MatchFlow.at_limit(self):MatchFlow.return_to_lobby(self);return
 	if int(options.mode)==3:control_leg=1-control_leg
 	if int(options.mode)!=3 or control_leg==0:MatchFlow.rotate(self)
-	for did in devices.keys():remove_device(did)
-	fields.clear();grenades.clear();rockets.clear();drops.clear()
+	RoundCleanup.clear(self)
 	if int(options.next_teams)==2:
 		var split=R.balanced_ids(players)
 		for t in [0,1]:
@@ -1374,7 +1402,7 @@ func broadcast_state(force:bool,target_peer:int=0):
 		var p=players[id];var a=actors[id];var d=p.duplicate();d.erase("token");d.erase("contributors");d.erase("melee_hits");d.pos=a.position;d.yaw=a.aim_yaw;d.pitch=a.aim_pitch;d.crouch=a.input_state.crouch;d.velocity=a.velocity;d.grounded=a.is_on_floor();d.sprint=a.last_sprint;d.ads=a.input_state.ads;d.spread_angle=a.spread_angle;list.append(d)
 	var supplies=[]
 	for s in arena.supplies:supplies.append(s.ready)
-	var state={"map":options.map,"completed_games":completed_games,"control_leg":control_leg,"clock":clock,"phase":phase,"remaining":remaining,"scores":scores,"tickets":tickets,"round":round_no,"players":list,"devices":devices,"fields":fields,"drops":drops,"zones":zone_owner,"supplies":supplies,"bomb":bomb,"props":arena.prop_states(),"doors":arena.door_states(),"grenades":grenades,"rockets":rockets}
+	var state={"map":options.map,"result":result,"overtime_attacker":overtime_attacker,"capture_elapsed":capture_elapsed,"completed_games":completed_games,"control_leg":control_leg,"clock":clock,"phase":phase,"remaining":remaining,"scores":scores,"tickets":tickets,"round":round_no,"players":list,"devices":devices,"fields":fields,"drops":drops,"zones":zone_owner,"supplies":supplies,"bomb":bomb,"props":arena.prop_states(),"doors":arena.door_states(),"grenades":grenades,"rockets":rockets}
 	if multiplayer.get_peers().size()>0:
 		snapshot_sequence+=1;state.sequence=snapshot_sequence
 		state.team_policy={"teams":options.teams,"next_teams":options.next_teams};state.vote=vote
@@ -1418,6 +1446,9 @@ func receive_state(s:Dictionary):
 	if s.has("team_policy"):options.merge(s.team_policy,true)
 	if int(s.get("map",options.map))!=int(options.map):options.map=int(s.map);build_world()
 	completed_games=int(s.get("completed_games",0));control_leg=int(s.get("control_leg",0))
+	var old_round=round_no
+	if int(s.round)!=old_round:RoundCleanup.clear(self)
+	result=s.get("result",{"team":-1,"player":0});overtime_attacker=int(s.get("overtime_attacker",0));capture_elapsed=float(s.get("capture_elapsed",0.))
 	vote=s.get("vote",{});clock=s.clock;var old_phase=phase;phase=s.phase;remaining=s.remaining;scores=s.scores;tickets=s.tickets;round_no=s.round;bomb=s.bomb;zone_owner=s.zones;fields=s.fields;drops=s.drops;MatchFlow.update_gate(self)
 	var present=[]
 	for p in s.players:
@@ -1433,9 +1464,10 @@ func receive_state(s:Dictionary):
 	arena.receive_props(s.get("props",[]))
 	arena.receive_doors(s.get("doors",[]))
 	for i in range(mini(s.supplies.size(),arena.supplies.size())):arena.supplies[i].ready=s.supplies[i]
-	if old_phase!=phase:
+	if phase=="buy" and (old_phase!=phase or old_round!=round_no):call_deferred("open_buy_menu")
+	elif old_phase!=phase:
 		if phase=="lobby":ui.lobby()
-		elif phase in ["buy","combat"]:ui.show_hud();capture_pointer()
+		elif phase=="combat":ui.show_hud();capture_pointer()
 func update_world_visuals(dt:float):
 	if arena==null:return
 	var upgrade_target=TurretSelection.target(self,local_id)
@@ -1508,7 +1540,11 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	if kind=="melee_swing":
 		if players.has(owner):players[owner].melee_started=maxf(shot_at,float(players[owner].get("melee_started",-100.)))
 		play_sound("melee_swing",from,owner!=local_id);return
-	if kind=="melee_wall":play_sound("wrench_wall" if shot_state.get("wrench",false) else "knife_wall",from,owner!=local_id);return
+	if kind=="melee_wall":
+		if owner==local_id:play_sound("wrench_wall" if shot_state.get("wrench",false) else "knife_wall",from,false)
+		return
+	if kind=="melee_flesh" and owner!=local_id:return
+	if kind in ["grenade_throw","grenade_bounce"]:play_sound(kind,from,owner!=local_id);return
 	if kind=="bomb_explosion":
 		combat_fx.explosion(from,true,to.x/4.)
 		play_sound("bomb_explosion",from,true)
@@ -1523,7 +1559,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_wall","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"deploy","skill":"skill","smoke":"smoke"}.get(kind,"")
 	if kind=="shot":sound="gun_"+(players[owner].primary if players[owner].slot==0 else players[owner].secondary) if players.has(owner) else "gun_a1"
 	if kind not in ["heal","repair"] or clock-float(heal_sound_times.get(owner,-100))>.22:
-		if not sound.is_empty():play_sound(sound,from,owner!=local_id or kind in ["explosion","flash","smoke","turret_break","cover_break"])
+		if not sound.is_empty() and (kind not in ["heal","repair","melee_repair"] or owner==local_id):play_sound(sound,from,owner!=local_id or kind in ["explosion","flash","smoke","turret_break","cover_break"])
 		if kind in ["heal","repair"]:heal_sound_times[owner]=clock
 	if kind in ["shot","heal","repair"] and arena:
 		if actors.has(owner) and players[owner].alive and players[owner].slot<2:from=actors[owner].visual_muzzle()
@@ -1572,10 +1608,10 @@ func damage_notice(target:int,origin:Vector3,amount:float,armored:bool):
 	play_sound("armor_hurt_female" if armored and female else "hurt_female" if female else "armor_hurt" if armored else "hurt",Vector3.ZERO,false);last_hurt_sound=now
 
 @rpc("authority","call_local","unreliable",2)
-func flesh_hit(point:Vector3,push:Vector3,amount:float,victim:int):
+func flesh_hit(point:Vector3,push:Vector3,amount:float,victim:int,shooter:int=0):
 	if dedicated or not is_instance_valid(arena):return
 	combat_fx.blood_hit(point,push,amount)
-	if victim!=local_id:play_sound("body_impact",point,true)
+	if shooter==local_id and victim!=local_id:play_sound("body_impact",point,false)
 	if actors.has(victim) and is_instance_valid(actors[victim].character) and is_instance_valid(actors[victim].character.dynamics):actors[victim].character.dynamics.impulse(push,point)
 
 func cycle_spectator():

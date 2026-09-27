@@ -1,25 +1,30 @@
 class_name MeleeMark
 extends RefCounted
 static var materials={}
+static var meshes={}
 static func make(web:bool,wrench:bool) -> MeshInstance3D:
 	var key=str(web)+str(wrench)
 	if not materials.has(key):
 		var shader=Shader.new();shader.code=CODE
 		var mat=ShaderMaterial.new();mat.shader=shader;mat.set_shader_parameter("fine",not web);mat.set_shader_parameter("blunt",wrench);materials[key]=mat
-	var mesh=PlaneMesh.new();mesh.size=Vector2(.20,.16) if wrench else Vector2(.48,.065)
-	var mark=MeshInstance3D.new();mark.mesh=mesh;mark.material_override=materials[key];mark.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if not meshes.has(key):
+		var mesh=PlaneMesh.new();mesh.size=Vector2(.20,.16) if wrench else Vector2(.48,.065);meshes[key]=mesh
+	var mark=MeshInstance3D.new();mark.mesh=meshes[key];mark.material_override=materials[key];mark.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	if not web:
-		var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		# Lit edges outline a long blade gouge, or an angular tool dent.
-		for i in range(12):
-			var x=-.20+i*.034 if not wrench else cos(i*TAU/12.)*.062
-			var next_x=x+.034 if not wrench else cos((i+1)*TAU/12.)*.062
-			var z=.007+sin(i*1.7)*.002 if not wrench else sin(i*TAU/12.)*.042
-			var next_z=.007+sin((i+1)*1.7)*.002 if not wrench else sin((i+1)*TAU/12.)*.042
-			for side in [-1,1]:
-				for v in [Vector3(x,.001,z*side),Vector3(next_x,.004,next_z*side),Vector3(x,.004,(z+.006)*side)]:st.add_vertex(v)
-		st.generate_normals();var edge=MeshFactory.instance(mark,st.commit(),Vector3.ZERO,Color("8c887d"));edge.material_override.cull_mode=BaseMaterial3D.CULL_DISABLED;edge.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if not meshes.has(wrench):meshes[wrench]=relief(wrench)
+		var edge=MeshFactory.instance(mark,meshes[wrench],Vector3.ZERO,Color("8c887d"));edge.material_override.cull_mode=BaseMaterial3D.CULL_DISABLED;edge.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mark
+static func relief(wrench:bool) -> ArrayMesh:
+	var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Lit edges outline a long blade gouge, or an angular tool dent.
+	for i in range(12):
+		var x=-.20+i*.034 if not wrench else cos(i*TAU/12.)*.062
+		var next_x=x+.034 if not wrench else cos((i+1)*TAU/12.)*.062
+		var z=.007+sin(i*1.7)*.002 if not wrench else sin(i*TAU/12.)*.042
+		var next_z=.007+sin((i+1)*1.7)*.002 if not wrench else sin((i+1)*TAU/12.)*.042
+		for side in [-1,1]:
+			for v in [Vector3(x,.001,z*side),Vector3(next_x,.004,next_z*side),Vector3(x,.004,(z+.006)*side)]:st.add_vertex(v)
+	st.generate_normals();return st.commit()
 const CODE="""
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;

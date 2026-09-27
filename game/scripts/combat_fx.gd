@@ -200,16 +200,21 @@ var scuffs:Array=[]
 const MAX_CASINGS=72
 const CASING_LIFETIME=8.0
 const MAX_SCUFFS=36
+static var casing_template:PackedScene
 func eject_case(origin:Vector3,right:Vector3,up:Vector3,ground_y:float,seed_value:int=0):
 	while casings.size()>=[18,40,MAX_CASINGS][GraphicsOptions.detail]:
 		var old=casings.pop_front()
 		if is_instance_valid(old.node):old.node.queue_free()
-	var node=Node3D.new();add_child(node);node.position=origin
-	var mesh=M.cylinder(node,Vector3.ZERO,.012,.054,Color("b99449"),Vector3(0,0,PI/2),.010,12);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	M.cylinder(node,Vector3(-.027,0,0),.014,.004,Color("e0c784"),Vector3(0,0,PI/2),-1,12)
-	M.cylinder(node,Vector3(.028,0,0),.009,.002,Color("453d2a"),Vector3(0,0,PI/2),-1,12)
-	M.cylinder(node,Vector3(-.030,0,0),.005,.002,Color("716c57"),Vector3(0,0,PI/2),-1,10)
-	M.merge_children(node)
+	if casing_template==null:
+		var source=Node3D.new()
+		M.cylinder(source,Vector3.ZERO,.012,.054,Color("b99449"),Vector3(0,0,PI/2),.010,12)
+		M.cylinder(source,Vector3(-.027,0,0),.014,.004,Color("e0c784"),Vector3(0,0,PI/2),-1,12)
+		M.cylinder(source,Vector3(.028,0,0),.009,.002,Color("453d2a"),Vector3(0,0,PI/2),-1,12)
+		M.cylinder(source,Vector3(-.030,0,0),.005,.002,Color("716c57"),Vector3(0,0,PI/2),-1,10)
+		M.merge_children(source)
+		for mesh in source.get_children():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		M.own_recursive(source,source);casing_template=PackedScene.new();casing_template.pack(source);source.free()
+	var node=casing_template.instantiate();add_child(node);node.position=origin
 	var variation=sin(float(seed_value)*2.31)
 	casings.append({"node":node,"velocity":right*(1.55+variation*.22)+up*(1.15+variation*.12),"floor":ground_y+.025,"age":0.,"bounced":false,"spin":Vector3(8,12,9+variation*3)})
 func _process(dt:float):

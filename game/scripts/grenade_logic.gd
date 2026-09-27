@@ -25,6 +25,7 @@ static func release(g:Node,id:int):
 	for item in g.grenades:
 		if item.id!=serial:continue
 		var a=g.actors[id];item.held=false;item.released=g.clock;item.pos=a.muzzle_world();item.velocity=a.direction()*15.+Vector3.UP*3.+a.velocity*.35
+		g.event_fx.rpc("grenade_throw",item.pos,Vector3.ZERO,id)
 		return
 static func tick(g:Node,dt:float):
 	for item in g.grenades.duplicate():
@@ -45,6 +46,8 @@ static func tick(g:Node,dt:float):
 				else:
 					item.pos=hit.position+hit.normal*.095
 					var normal_speed=item.velocity.dot(hit.normal)
+					if absf(normal_speed)>1.2 and g.clock>=float(item.get("bounce_ready",0.)):
+						item.bounce_ready=g.clock+.12;g.event_fx.rpc("grenade_bounce",item.pos,Vector3.ZERO,id)
 					var tangent=item.velocity-hit.normal*normal_speed
 					item.velocity=tangent*exp(-step*1.1)-hit.normal*normal_speed*.35
 					if hit.normal.y>.6 and absf(item.velocity.y)<.6:item.velocity.y=0.

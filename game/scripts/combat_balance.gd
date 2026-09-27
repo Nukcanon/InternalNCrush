@@ -11,7 +11,8 @@ static func hit_zone(height:float,body_height:float,crouch:bool) -> String:
 	if height<( .53 if crouch else .78)*scale:return "legs"
 	return "torso"
 static func damage_at(w:Dictionary,distance:float,zone:String="torso") -> float:
-	return float(w.damage)*range_factor(w,distance)*float(w.get("zone_multipliers",{}).get(zone,w.get("zone_multipliers",{}).get("legs",1.) if zone=="feet" else 1.))
+	var base=float(w.get("head_damage_base",w.damage)) if zone=="head" else float(w.damage)
+	return base*range_factor(w,distance)*float(w.get("zone_multipliers",{}).get(zone,w.get("zone_multipliers",{}).get("legs",1.) if zone=="feet" else 1.))
 static func structure_damage(w:Dictionary,distance:float) -> float:
 	return damage_at(w,distance)*float(w.get("structure_damage_scale",1.))
 static func sustained_rpm(w:Dictionary) -> float:

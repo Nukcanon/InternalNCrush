@@ -12,7 +12,7 @@ func build(owner_arena:Node,id:int,pos:Vector3,yaw:float):
 	var metal=Color("354954");var paint=Color("3faaa4")
 	for side in [-1,1]:
 		MeshFactory.box(self,Vector3(side*1.28,1.40,0),Vector3(.18,2.8,.36),metal)
-		var leaf=AnimatableBody3D.new();leaf.collision_layer=1;leaf.collision_mask=0;leaf.set_meta("door_id",id);leaf.set_meta("door",self);add_child(leaf);leaf.position=Vector3(side*WIDTH*.25,1.4,0)
+		var leaf=AnimatableBody3D.new();leaf.collision_layer=1;leaf.collision_mask=0;leaf.sync_to_physics=false;leaf.set_meta("door_id",id);leaf.set_meta("door",self);leaf.position=Vector3(side*WIDTH*.25,1.4,0);add_child(leaf)
 		MeshFactory.box(leaf,Vector3.ZERO,Vector3(WIDTH*.5,2.8,.16),paint)
 		MeshFactory.box(leaf,Vector3(0,.41,-.10),Vector3(.72,.72,.035),Color("233c49"))
 		MeshFactory.box(leaf,Vector3(0,.41,.10),Vector3(.72,.72,.035),Color("233c49"))

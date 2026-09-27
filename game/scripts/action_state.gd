@@ -11,7 +11,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 	var now=float(game.clock);var w=game.current_weapon(p)
 	if action.begins_with("slot"):
 		var slot=int(action.trim_prefix("slot"))
-		return slot==MeleeCombat.SLOT or slot<2 or (game.options.classes and slot==2)
+		return slot==MeleeCombat.SLOT or (slot==0 and p.get("owned_primary",true)) or slot==1 or (game.options.classes and slot==2 and GadgetLoadout.selectable(p))
 	match action:
 		"melee":return MeleeCombat.ready(game,p)
 		"skill":
@@ -33,7 +33,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 				var target=game.aim_player(id,4.,true)
 				return game.players[target if target else id].hp<Rules.max_hp(game.players[target if target else id])
 			return true
-		"bomb":return not BombLogic.action(game,id).is_empty()
+		"bomb":return not BombLogic.action(game,id).is_empty() or (int(game.options.mode)==4 and game.phase=="combat" and int(game.bomb.get("carrier",0))==id)
 		"gadget_mode":return false
 		"reload":
 			var wid=p.primary if p.slot==0 else p.secondary

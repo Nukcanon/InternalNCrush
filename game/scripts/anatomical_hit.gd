@@ -4,8 +4,8 @@ extends RefCounted
 # Combat volumes sit inside the visible body. Movement clearance is independent.
 const LIMBS=[
 	["Hips/Chest/LeftArm/Elbow/Hand",.095,.035,"hands"], ["Hips/Chest/RightArm/Elbow/Hand",.095,.035,"hands"],
-	["Hips/Chest/LeftArm",.28,.050,"torso"], ["Hips/Chest/RightArm",.28,.050,"torso"],
-	["Hips/Chest/LeftArm/Elbow",.275,.038,"torso"], ["Hips/Chest/RightArm/Elbow",.275,.038,"torso"],
+	["Hips/Chest/LeftArm",.28,.050,"arms"], ["Hips/Chest/RightArm",.28,.050,"arms"],
+	["Hips/Chest/LeftArm/Elbow",.275,.038,"arms"], ["Hips/Chest/RightArm/Elbow",.275,.038,"arms"],
 	["Hips/LeftLeg",.415,.074,"legs"], ["Hips/RightLeg",.415,.074,"legs"],
 	["Hips/LeftLeg/Knee",.415,.053,"legs"], ["Hips/RightLeg/Knee",.415,.053,"legs"]]
 

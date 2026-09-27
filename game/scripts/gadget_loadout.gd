@@ -6,6 +6,7 @@ static func cluster(p:Dictionary) -> bool:return int(p.role)==0 and int(p.gadget
 const COVER_STOCK=[4,3,2]
 const COVER_LIMIT=[3,2,1]
 static func count(p:Dictionary) -> int:
+	if int(p.gadget)<0:return 0
 	if frag(p):return 2
 	if int(p.role)==3 and int(p.gadget) in [0,1,2]:return COVER_STOCK[int(p.gadget)]
 	return 3 if int(p.role)==4 else 1
@@ -17,4 +18,10 @@ static func label(p:Dictionary) -> String:
 	if frag(p):return "파편 수류탄"
 	if int(p.role)==4:return "섬광탄" if int(p.gadget)==1 else "연막탄"
 	return Rules.GADGETS[int(p.role)]
-static func mounted(p:Dictionary,crouch:bool) -> bool:return int(p.role)==2 and int(p.gadget)==0 and crouch and int(p.slot)<2
+static func mounted(p:Dictionary,crouch:bool) -> bool:return has_item(p) and int(p.role)==2 and int(p.gadget)==0 and crouch and int(p.slot)<2
+static func passive(p:Dictionary) -> bool:return int(p.gadget)==9 or (int(p.role) in [1,2] and int(p.gadget)==0)
+static func has_item(p:Dictionary) -> bool:
+	if not bool(p.get("owned_gadget",true)) or int(p.gadget)<0:return false
+	return passive(p) or int(p.get("gadget_count",0))>0
+static func selectable(p:Dictionary) -> bool:return has_item(p) and not passive(p)
+static func held_visible(p:Dictionary,now:float) -> bool:return p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="" or selectable(p)

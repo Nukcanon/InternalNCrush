@@ -54,7 +54,9 @@ func build(which:int,side:int):
 	role=which;team=side
 	var key=str(role)+"_"+str(team)
 	var path="res://assets/models/operator_"+key+".scn"
-	if ResourceLoader.exists(path):rig=load(path).instantiate()
+	if ResourceLoader.exists(path):
+		if not templates.has(key):templates[key]=load(path)
+		rig=templates[key].instantiate()
 	else:
 		if not templates.has(key):
 			var source=make_rig(role,team);M.own_recursive(source,source);var packed=PackedScene.new();packed.pack(source);templates[key]=packed;source.free()
@@ -355,4 +357,3 @@ func slide_pose(phase:float):
 	left.rotation.x=lerpf(left.rotation.x,1.18,weight);left.get_node("Knee").rotation.x=lerpf(left.get_node("Knee").rotation.x,-.35,weight)
 	right.rotation.x=lerpf(right.rotation.x,.7,weight);right.get_node("Knee").rotation.x=lerpf(right.get_node("Knee").rotation.x,-1.65,weight)
 	sync_deform()
-
