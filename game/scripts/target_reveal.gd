@@ -5,10 +5,20 @@ static func outline_for(team:int) -> ShaderMaterial:
 	if outlines.has(team):return outlines[team]
 	var material=ShaderMaterial.new();var shader=Shader.new()
 	shader.code="""shader_type spatial;
-render_mode unshaded, cull_front, depth_draw_never, shadows_disabled;
+render_mode unshaded, cull_front, depth_test_disabled, depth_draw_never, shadows_disabled;
 uniform vec4 team_color : source_color;
-void vertex(){VERTEX+=NORMAL*0.055;}
-void fragment(){ALBEDO=team_color.rgb;}
+uniform sampler2D world_depth : hint_depth_texture, repeat_disable, filter_nearest;
+void vertex(){VERTEX+=NORMAL*0.045;}
+void fragment(){
+ float depth=texture(world_depth,SCREEN_UV).r;
+ vec3 ndc=vec3(SCREEN_UV*2.0-1.0,depth);
+ if(OUTPUT_IS_SRGB){ndc.z=depth*2.0-1.0;}
+ vec4 scene=INV_PROJECTION_MATRIX*vec4(ndc,1.0);
+ // Overlay next passes run after opaque depth. Reject the original model
+ // interior explicitly as well as foreground walls, preserving its surface.
+ if(-VERTEX.z+.12>=-scene.z/scene.w)discard;
+ ALBEDO=team_color.rgb;ALPHA=.96;
+}
 """
 	material.shader=shader;material.set_shader_parameter("team_color",Color("48baff") if team==0 else Color("ff983e"));outlines[team]=material;return material
 static func observer_key(game:Node,id:int) -> String:

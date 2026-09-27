@@ -69,3 +69,12 @@ Native finish/cache 233/233, all-map fixture clearance/attachment and turret lab
 The largest map extents are 200 × 180 m (269.07 m diagonal). A 36 m/s rocket has 360 m horizontal lifetime range before its 10 s airburst; the diagonal takes approximately 7.48 s in unobstructed flight. Gravity/obstacles still limit a level shot and require elevation compensation. This is not a claim of an unobstructed sight line across each arena.
 
 Marker/visibility/HUD-coordinate/shield integration: 160/160. Real rendered native and Web female face reviews revealed and corrected a coarse Web cap intersection during iteration; Web now splits/paints the existing head surface with no separate cap. Native hair is projected onto authored skull triangles only during baking, with 2.5 mm shell offset.
+
+
+## Completed browser candidate soak and memory bounds
+
+The sparse-handle Web candidate completed 120 death/replay/round/effect cycles (~19.6 minutes), SESSION_RESULT failures=0. Across cycles 10–39 / 40–79 / 80–119, sampled JavaScript heap ranges were 96.39–158.61 / 97.11–167.57 / 96.26–169.05 MiB; collection floors stayed around 96–97 MiB instead of retaining every historical ID. WASM capacity remained 95.81 MiB. Final combat GPU allocation was 47.51 MiB; 16 loft entries / 3 effect groups / 597 resources. Actual GL IDs exceeded 13 million but table entries followed live handles and were deleted, rather than array lengths growing to that counter. This stress candidate predates the last presentation changes; final release startup is separately verified. One PagedAllocator WorkerThreadPool Group warning remains at shutdown.
+
+Native external warm samples (>=120 s): private bytes 557.12–580.91 MiB, median 565.72, final 565.81; working set 393.21–402.45 MiB. This bounds the observed session, not all possible play or the historical missing crash dump.
+
+Final native finish regression: 237/237. Native and Web SERA/MINA front/oblique/profile hair captures were reviewed. Rendered marker review covers fully visible, partly occluded, and unauthorized observer states. Explicit depth rejection in the outline pass preserves original surfaces instead of painting the model interior. The source revision before this final outline correction was not published.
