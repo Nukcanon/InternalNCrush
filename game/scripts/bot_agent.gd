@@ -195,8 +195,10 @@ func set_goal(pos:Vector3):
 func navigate(destination:Vector3,dt:float):
 	var a=game.actors[id];var now=game.clock
 	if a.position.distance_to(destination)<1.6:return
-	if now>=next_path or path.is_empty():
-		path=game.bot_navigation.route(a.position,destination);waypoint=0;next_path=now+1.4+rng.randf()*.4;stats.repaths+=1
+	if now>=next_path and game.bot_navigation.request_route(now):
+		path=game.bot_navigation.route(a.position,destination);waypoint=0
+		# Unreachable goals must obey backoff too; an empty path used to retry at 60 Hz.
+		next_path=now+(.35+rng.randf()*.12 if path.is_empty() else 1.4+rng.randf()*.4);stats.repaths+=1
 	if path.is_empty():return
 	while waypoint<path.size()-1 and a.position.distance_to(path[waypoint])<.45:waypoint+=1
 	var toward=path[waypoint]-a.position;toward.y=0
@@ -211,7 +213,7 @@ func navigate(destination:Vector3,dt:float):
 			var candidate=Basis(Vector3.UP,angle)*desired
 			query.to=a.position+Vector3.UP*.65+candidate*1.4
 			if a.get_world_3d().direct_space_state.intersect_ray(query).is_empty():desired=candidate;found=true;break
-		if not found:next_path=0.;return
+		if not found:next_path=minf(next_path,now+.25);return
 	var local_dir=Basis(Vector3.UP,float(a.input_state.yaw)).inverse()*desired
 	a.input_state.x=local_dir.x;a.input_state.z=local_dir.z
 	progress_time+=dt

@@ -38,6 +38,8 @@ static func apply(game:Node):
 
 static func apply_viewport(viewport:Viewport):
 	viewport.msaa_3d=[Viewport.MSAA_DISABLED,Viewport.MSAA_2X,Viewport.MSAA_4X,Viewport.MSAA_8X][antialias]
+	# Pixel error for distance LOD; output resolution and all collision stay intact.
+	viewport.mesh_lod_threshold=[2.5,1.5,1.0][detail]
 	# Point lights never cast shadows; do not allocate an unused local atlas.
 	viewport.positional_shadow_atlas_size=0
 
@@ -85,6 +87,7 @@ static func apply_world(root:Node):
 				for i in range(mesh.mesh.get_surface_count()):materials.append(mesh.get_active_material(i))
 			for material in materials:
 				if material is ShaderMaterial and "rich_detail" in material.shader.code:material.set_shader_parameter("rich_detail",detail==2)
+				if material is ShaderMaterial and "texture_detail" in material.shader.code:material.set_shader_parameter("texture_detail",detail>0)
 	var points=0
 	for light in root.find_children("*","Light3D",true,false):
 		if not light.has_meta("quality_shadow"):light.set_meta("quality_shadow",light.shadow_enabled)

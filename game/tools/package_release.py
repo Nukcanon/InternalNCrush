@@ -24,6 +24,10 @@ def validate_native_pack(path: Path):
             offset, size = struct.unpack('<QQ', pack.read(16))
             pack.read(20)
             entries[name] = (offset + base, size)
+
+        for kind in ('turret', 'cover'):
+            for team in range(2):
+                assert f'assets/models/device_{kind}{team}.scn' in entries, 'Missing baked deployment geometry'
         for gender in ('male', 'female'):
             name = f'assets/human/textures/{gender}.png.import'
             assert name in entries, 'Missing native face import: ' + name

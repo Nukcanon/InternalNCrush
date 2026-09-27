@@ -16,7 +16,7 @@ The Windows Application event log has an access violation (`c0000005`, engine of
 
 ## Validation in progress
 
-- New native finish/resource regression: 147/147. Forty warmed hand rebuilds reuse the exact same mesh; roughly 0.32–0.48 ms per hand in the headless fixture. Thirty batches of eight explosions keep the resource counter constant at 68 in that fixture. Leaving frees the pool and its decorative physics bodies.
+- New native finish/resource regression: 181/181. Forty warmed hand rebuilds reuse the exact same mesh; roughly 0.32–0.48 ms per hand in the headless fixture. Thirty batches of eight explosions keep the resource counter constant at 101 in that fixture. Leaving frees the pool and its decorative physics bodies.
 - Final build, rendered pose/face review, longer Windows soak and public artifact verification will be recorded below after completion. No universal FPS, crash-free or reference-equivalent art claim.
 
 ## Asset policy and references
@@ -26,3 +26,15 @@ Use CC0 or verified redistributable source assets, retopologize/bake offline, pr
 - [Godot 4.4 mesh LOD](https://docs.godotengine.org/en/4.4/tutorials/3d/mesh_lod.html)
 - [Godot stutter guidance](https://docs.godotengine.org/en/latest/tutorials/rendering/jitter_stutter.html): Compatibility can still compile shaders on first visibility; Forward+/Mobile pipeline precompilation guarantees do not apply to this renderer.
 - [Godot 4.4 pipeline compilation](https://docs.godotengine.org/en/4.4/tutorials/performance/pipeline_compilations.html)
+
+## Integrated graphics target and measured long frames
+
+Target hardware supplied by the owner: Intel 10th–11th generation integrated graphics. UHD and Iris Xe differ substantially; use the lower UHD class as the conservative target. Minimum target: 1280×720 low at stable 30 FPS. **Not yet measured on that hardware**; the RTX 4080 SUPER cannot establish this claim.
+
+A rendered 8-player low-quality Windows run reproduced a 201–204 ms frame. CPU instrumentation attributed 163.832 ms to world visual creation when a device first appeared; GPU rendering in adjacent samples was below 1 ms. Isolated exported-EXE reproduction then measured turret mesh assembly at 50–60 ms and construction-edge extraction at 175–179 ms. Both now happen in the offline asset baker. The four bounded scenes are loaded during map setup, preserving independent aiming and collisions. Warmed creation measured 0.05–0.09 ms plus 0.89–1.09 ms for the construction display. First file loads were 3.6–4.9 ms in this machine. This identifies a real CPU stall; it does not attribute every long frame to this one cause.
+
+An empty bot path also bypassed its retry timer, and fully blocked steering reset its retry deadline every tick. Failed paths now back off 0.35–0.47 seconds; blocked movement waits at least 0.25 seconds; at most two route searches begin in one simulation tick. Targeting, firing and authoritative physics retain their update rate. Navigation regressions include leaving spawn, capturing, planting and defusing.
+
+Low quality uses a 2.5 px distance-LOD threshold and bypasses world material texture/mortar calculations. Medium/high preserve them. No automatic resolution change. Unchanged HUD font styles are no longer re-applied every physics tick.
+
+`game/tests/profile_native_v124.gd` is a reproducible 60-second rendered workload. Release executables do not expose Godot static allocation bytes (zero means unavailable); use Windows process private bytes / working set and browser heap/WASM evidence alongside resource counts. Do not call a zero allocation counter proof of no leak.

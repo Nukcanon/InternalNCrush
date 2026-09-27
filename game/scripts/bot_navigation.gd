@@ -9,6 +9,14 @@ var static_solid={}
 var dynamic_solid={}
 var heat={}
 var next_refresh=0.
+var route_window=-1
+var route_count=0
+func request_route(now:float) -> bool:
+	# Spread simultaneous requests across simulation ticks; targeting/fire keep full rate.
+	var window=int(floor(now*60.+.001))
+	if window!=route_window:route_window=window;route_count=0
+	if route_count>=2:return false
+	route_count+=1;return true
 var arena:Node
 func build(world:Node):
 	arena=world;grid.region=Rect2i(0,0,100,90);grid.cell_size=Vector2(2,2);grid.offset=Vector2(-99,-89);grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.default_compute_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.default_estimate_heuristic=AStarGrid2D.HEURISTIC_OCTILE;grid.update()

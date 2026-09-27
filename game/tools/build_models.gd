@@ -29,5 +29,16 @@ func run():
 		if art_source:
 			var document=GLTFDocument.new();var state=GLTFState.new();document.append_from_scene(model,state);document.write_to_filesystem(state,"res://assets/models/weapon_"+id+".glb")
 		manifest.weapons.append({"id":id,"name":model.name});model.queue_free();visual.queue_free();await process_frame
+	for kind in ["turret","cover"]:
+		for team in range(2):
+			var model=Node3D.new();root.add_child(model);CombatFX.build_device(model,kind,team)
+			for visual in model.find_children("*","MeshInstance3D",true,false):
+				if not visual.mesh is ArrayMesh:continue
+				var importer=ImporterMesh.new()
+				for surface in range(visual.mesh.get_surface_count()):importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,visual.mesh.surface_get_arrays(surface),[],{},visual.mesh.surface_get_material(surface))
+				importer.generate_lods(60.,60.,[]);visual.mesh=importer.get_mesh()
+			for visual in model.find_children("*","MeshInstance3D",true,false):visual.set_meta("construction_wire",Construction.edge_geometry(visual.mesh))
+			WebMaterials.apply(model);MeshFactory.own_recursive(model,model);var packed=PackedScene.new();packed.pack(model)
+			ResourceSaver.save(packed,"res://assets/models/device_"+kind+str(team)+".scn",ResourceSaver.FLAG_COMPRESS);model.free();await process_frame
 	var file=FileAccess.open("res://assets/models/manifest.json",FileAccess.WRITE);file.store_string(JSON.stringify(manifest,"\t"));file.close()
 	print("MODELS_BUILT operators=12 weapons=",Catalog.weapons.size()," clips=17_per_operator");quit()

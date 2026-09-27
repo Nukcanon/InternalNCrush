@@ -63,10 +63,18 @@ static func labels(g:Node,node:Node3D,d:Dictionary):
 	timer.text="%.1f"%maxf(0.,float(d.get("building_until",0))-g.clock);timer.modulate=Color.WHITE
 
 static func add_edges(mesh:MeshInstance3D,team:int):
+	var lines=mesh.get_meta("construction_wire",null)
+	if lines==null:lines=edge_geometry(mesh.mesh);mesh.set_meta("construction_wire",lines)
+	var wire=MeshInstance3D.new();wire.name="ConstructionEdges";wire.mesh=lines;wire.set_meta("construction_edge",true);mesh.add_child(wire)
+	var ink=StandardMaterial3D.new();ink.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;ink.albedo_color=Color("48baff") if team==0 else Color("ff983e");wire.material_override=ink;wire.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+static var edge_builds=0
+static func edge_geometry(source:Mesh) -> ArrayMesh:
+	# Release device scenes store this result. Triangle adjacency belongs in the baker.
+	edge_builds+=1
 	var edges={}
-	for surface in range(mesh.mesh.get_surface_count()):
-		if mesh.mesh.surface_get_primitive_type(surface)!=Mesh.PRIMITIVE_TRIANGLES:continue
-		var arrays=mesh.mesh.surface_get_arrays(surface);var vertices=arrays[Mesh.ARRAY_VERTEX];var indices=arrays[Mesh.ARRAY_INDEX]
+	for surface in range(source.get_surface_count()):
+		if source.surface_get_primitive_type(surface)!=Mesh.PRIMITIVE_TRIANGLES:continue
+		var arrays=source.surface_get_arrays(surface);var vertices=arrays[Mesh.ARRAY_VERTEX];var indices=arrays[Mesh.ARRAY_INDEX]
 		var count=indices.size() if indices!=null and not indices.is_empty() else vertices.size()
 		for triangle in range(0,count-2,3):
 			var points=[]
@@ -78,9 +86,9 @@ static func add_edges(mesh:MeshInstance3D,team:int):
 				if not edges.has(key):edges[key]={"a":a,"b":b,"normal":normal,"edge":true}
 				else:
 					var entry=edges[key];entry.edge=entry.normal.dot(normal)<.85;entry.normal=(entry.normal+normal).normalized()
-	var lines=ImmediateMesh.new();lines.surface_begin(Mesh.PRIMITIVE_LINES)
+	var vertices=PackedVector3Array()
 	for entry in edges.values():
-		if entry.edge:lines.surface_add_vertex(entry.a+entry.normal*.003);lines.surface_add_vertex(entry.b+entry.normal*.003)
-	lines.surface_end()
-	var wire=MeshInstance3D.new();wire.name="ConstructionEdges";wire.mesh=lines;wire.set_meta("construction_edge",true);mesh.add_child(wire)
-	var ink=StandardMaterial3D.new();ink.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;ink.albedo_color=Color("48baff") if team==0 else Color("ff983e");wire.material_override=ink;wire.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if entry.edge:vertices.append(entry.a+entry.normal*.003);vertices.append(entry.b+entry.normal*.003)
+	var lines=ArrayMesh.new();var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices
+	if not vertices.is_empty():lines.add_surface_from_arrays(Mesh.PRIMITIVE_LINES,arrays)
+	return lines

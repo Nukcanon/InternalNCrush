@@ -782,11 +782,13 @@ func refresh():
 	if w.kind=="repair":ammo.text="%d / 100"%p.repair_energy;weapon_title.text="FIX  /  수리 에너지"
 	if p.slot>=2:weapon_title.text=Rules.GADGETS[p.role] if p.role!=4 else "섬광탄" if p.slot==3 else "연막탄";ammo.text="스코프로 2초 추적 · 자동" if MarkerTracker.equipped(p) else "클릭하여 사용"
 	if p.reload>game.clock:ammo.text="재장전 %.1f"%(p.reload-game.clock)
-	health.add_theme_color_override("font_color",Color("6bc7ff") if p.team==0 else Color("ffa35f"))
+	var health_color=Color("6bc7ff") if p.team==0 else Color("ffa35f")
+	if health.get_theme_color("font_color")!=health_color:health.add_theme_color_override("font_color",health_color)
 	var skill="준비" if p.skill_ready<=game.clock else "%.0f초"%ceil(p.skill_ready-game.clock)
 	if GrenadeLogic.equipped(p) and p.slot==2:weapon_title.text=GadgetLoadout.label(p);ammo.text="누르고 준비 · 놓아 투척"
 	if p.get("cooking",0)>0:weapon_title.text="수류탄 안전핀 해제";ammo.text="%.1f초 · 놓아 투척"%maxf(0.,GrenadeLogic.FUSE-game.clock+float(p.grenade_started))
-	ammo.add_theme_font_size_override("font_size",16 if p.slot>=2 or p.get("cooking",0)>0 else 26 if p.reload>game.clock else 30)
+	var ammo_size=16 if p.slot>=2 or p.get("cooking",0)>0 else 26 if p.reload>game.clock else 30
+	if ammo.get_theme_font_size("font_size")!=ammo_size:ammo.add_theme_font_size_override("font_size",ammo_size)
 	ammo.visible=p.slot>=2 or p.get("cooking",0)>0 or p.reload>game.clock
 	skill_label.text="F  "+Rules.SKILLS[p.role]+"  ·  "+skill if game.options.skills and game.options.classes else "특수 스킬 OFF"
 	if p.primary in ["m2","m3"]:skill_label.text+="     C 범위 회복 · %s"%("준비" if p.heal_ready<=game.clock else "%.1f초"%(p.heal_ready-game.clock))

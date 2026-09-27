@@ -1,12 +1,54 @@
 extends SceneTree
 var checks=0
 var failures=0
+class FailedNavigation extends BotNavigation:
+	var calls=0
+	func route(_from:Vector3,_to:Vector3) -> PackedVector3Array:
+		calls+=1;return PackedVector3Array()
+class NavigationFixture extends Node:
+	var actors={}
+	var clock=0.
+	var bot_navigation=FailedNavigation.new()
 func _initialize():call_deferred("run")
 func expect(ok:bool,message:String):
 	checks+=1
 	if not ok:failures+=1;printerr("FAIL ",message)
 func run():
 	Catalog.load_all()
+	var fixture=NavigationFixture.new();root.add_child(fixture)
+	var actor=Node3D.new();fixture.add_child(actor);fixture.actors[-1]=actor
+	var brain=BotAgent.new();brain.game=fixture;brain.id=-1
+	for i in range(120):fixture.clock=i/60.;brain.navigate(Vector3(30,0,0),1./60.)
+	expect(fixture.bot_navigation.calls>=4 and fixture.bot_navigation.calls<=6,"unreachable routes retry at bounded intervals instead of every tick")
+	var nav=BotNavigation.new()
+	expect(nav.request_route(1.) and nav.request_route(1.) and not nav.request_route(1.),"simultaneous path queries have a per-tick budget")
+	expect(nav.request_route(1.+1./60.),"pending bots can request a path on the next simulation tick")
+	fixture.free()
+	CombatFX.prepare_devices()
+	expect(CombatFX.device_templates.size()==4,"all deployment assemblies load from baked assets")
+	var edge_builds=Construction.edge_builds
+	for kind in ["turret","cover"]:
+		for team in range(2):
+			var a=Node3D.new();var b=Node3D.new();root.add_child(a);root.add_child(b)
+			CombatFX.device(a,kind,team);CombatFX.device(b,kind,team)
+			var meshes=a.find_children("*","MeshInstance3D",true,false)
+			var copies=b.find_children("*","MeshInstance3D",true,false)
+			expect(not meshes.is_empty() and meshes.size()==copies.size(),"deployment retains its baked parts")
+			for i in range(meshes.size()):
+				expect(meshes[i].mesh==copies[i].mesh,"deployment instances share immutable GPU geometry")
+				expect(meshes[i].get_meta("construction_wire",null) is ArrayMesh,"construction edge extraction is baked offline")
+				Construction.add_edges(meshes[i],team)
+			if kind=="turret":
+				a.get_node("TurretHead").rotation.y=1.
+				expect(b.get_node("TurretHead").rotation.y==0.,"shared turret geometry preserves independent aiming")
+			a.free();b.free()
+	expect(Construction.edge_builds==edge_builds,"spawning all deployment types never scans triangle adjacency")
+	var viewport=SubViewport.new();root.add_child(viewport);GraphicsOptions.detail=0;GraphicsOptions.antialias=0;GraphicsOptions.apply_viewport(viewport)
+	expect(viewport.mesh_lod_threshold==2.5 and viewport.scaling_3d_scale==1. and viewport.msaa_3d==Viewport.MSAA_DISABLED,"low quality reduces distant geometry without changing resolution")
+	var scenery=Node3D.new();root.add_child(scenery);var wall=MeshFactory.box(scenery,Vector3.ZERO,Vector3.ONE,Color.WHITE);wall.material_override=SurfaceFinish.world_material()
+	GraphicsOptions.apply_world(scenery);expect(wall.material_override.get_shader_parameter("texture_detail")==false,"low world shader skips texture detail")
+	GraphicsOptions.detail=1;GraphicsOptions.apply_world(scenery);expect(wall.material_override.get_shader_parameter("texture_detail")==true,"medium world shader restores texture detail")
+	scenery.free();viewport.free()
 	var male_texture=SurfaceFinish.human_material(0).get_shader_parameter("anatomy_detail")
 	expect(male_texture==SurfaceFinish.human_material(2).get_shader_parameter("anatomy_detail"),"male roles share one detail texture")
 	var female_texture=SurfaceFinish.human_material(1).get_shader_parameter("anatomy_detail")

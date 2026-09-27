@@ -117,12 +117,16 @@ static func world_material() -> ShaderMaterial:
 shader_type spatial;
 uniform bool rich_detail=false;
 uniform sampler2D material_atlas:source_color,filter_linear_mipmap_anisotropic;
+uniform bool texture_detail=true;
 varying vec3 p;varying vec3 n;
 void vertex(){p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;n=normalize(MODEL_NORMAL_MATRIX*NORMAL);}
 float hash(vec3 x){return fract(sin(dot(x,vec3(127.1,311.7,74.7)))*43758.5453);}
 float noise(vec3 x){vec3 i=floor(x);vec3 f=fract(x);f=f*f*(3.0-2.0*f);
 return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
 void fragment(){
+ if(!texture_detail){
+   ALBEDO=COLOR.rgb;ROUGHNESS=clamp(UV2.x,.28,.98);METALLIC=max(0.,UV2.y);SPECULAR=.15;
+ }else{
  vec3 normal=abs(n);bool floor_face=normal.y>.65;
  vec2 uv=floor_face?p.xz:(normal.x>normal.z?p.zy:p.xy);
  vec2 tiles=floor_face?uv*.25:vec2(uv.x*1.3+mod(floor(uv.y*2.8),2.0)*.5,uv.y*2.8);
@@ -141,6 +145,7 @@ void fragment(){
  float tactile=clamp(detail/max(midpoint,.08),.48,1.45);
  ALBEDO=COLOR.rgb*mix(1.,tactile,.32)*patina*mix(1.,mortar,step(.85,rough)*(1.-metal)*.3);
  ROUGHNESS=clamp(rough+(large-.5)*.10+(detail-midpoint)*.20,.28,.98);METALLIC=metal;SPECULAR=.30;
+ }
 }
 """
 	architecture=ShaderMaterial.new();architecture.shader=shader;architecture.set_shader_parameter("material_atlas",load("res://assets/textures/field_materials_v103.png"));return architecture

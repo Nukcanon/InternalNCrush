@@ -274,6 +274,7 @@ func setup_input():
 		if not InputMap.has_action(k):InputMap.add_action(k)
 		var ev=InputEventKey.new();ev.physical_keycode=binds[k];InputMap.action_add_event(k,ev)
 func build_world():
+	if render_actors and not dedicated:CombatFX.prepare_devices()
 	if is_instance_valid(kill_replay):kill_replay.reset()
 	if arena:remove_child(arena);arena.queue_free()
 	arena=W.new();arena.props_authoritative=server or demo_mode;add_child(arena);arena.build(int(options.map))

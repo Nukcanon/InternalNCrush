@@ -120,7 +120,23 @@ func sync_fields(fields:Array,now:float):
 		else:node.rotation.y=sin(now*.6)*.015
 	for key in field_nodes.keys():
 		if not live.has(key):field_nodes[key].queue_free();field_nodes.erase(key)
+static var device_templates={}
+static func prepare_devices():
+	# Load the four small, baked assemblies while the map is loading.
+	for kind in ["turret","cover"]:
+		for team in range(2):
+			var key=kind+str(team);var path="res://assets/models/device_"+key+".scn"
+			if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
 static func device(parent:Node3D,kind:String,team:int):
+	var key=kind+str(team);var path="res://assets/models/device_"+key+".scn"
+	if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
+	if device_templates.has(key):
+		var baked=device_templates[key].instantiate()
+		for child in baked.get_children():baked.remove_child(child);parent.add_child(child)
+		baked.free();return
+	# Editable source fallback only; release builds always contain baked assemblies.
+	build_device(parent,kind,team)
+static func build_device(parent:Node3D,kind:String,team:int):
 	var color=Color("378fb2") if team==0 else Color("ba7440");var metal=Color("354d5c")
 	if kind=="cover":
 		M.box(parent,Vector3(0,.64,0),Vector3(3.4,1.25,.55),metal)
