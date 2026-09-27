@@ -1,0 +1,35 @@
+# 1.2.3 recovery and validation ledger
+
+Public baseline: game `fb6c32aafc1bb5a5467ae45346fa87fe51e05472`, site `f320788e6850dafd500d5281e0908ce3fe29abdf` (1.2.2).
+Uncommitted previous 1.2.3 work was absent after environment restoration. Previous test results are historical and **do not validate this checkout**. All reconstructed changes require fresh validation.
+Work is checkpointed on `work/v1.2.3-stability-20260927`; release remains unchanged until gates pass.
+
+## Stability
+- [ ] Native and Web repeated combat / round changes: resource counts, allocations and frame-time spikes.
+- [ ] Reuse bounded tracer nodes/materials and immutable healing ribbon geometry.
+- [ ] Refresh scoreboard rows only when displayed data changes.
+- [ ] Bound disconnected-player records; clean round effects, marks, dropped gear and replay.
+- [ ] Investigate actual native crashes separately from memory-growth suspicions; no unverified crash-free claims.
+
+## Requested gameplay and presentation
+- [ ] Non-strategic remote audio max 40m; suppress other players' flesh/surface-hit feedback.
+- [ ] New swing/equip/deploy/throw/bounce/UI sounds; equal flash/smoke/grenade blast; flash 18m, 5s center to 2s edge.
+- [ ] Door physics origin and mobile autofire/sprint button widths.
+- [ ] MONOLITH head 150×normal head multiplier, torso 120, limbs 90, hands/feet 80.
+- [ ] Scope-only passive marker, 10-degree total cone, yellow outline/countdown/reset. Passive/empty items unselectable, empty labels/models.
+- [ ] Hold/release grenade cook with mouse/touch, including last grenade.
+- [ ] All classes CHIME/SPARK + DUET dual pistols, matching first/third-person hands/reload; DUET twice SIDE rate/magazine and stronger bloom.
+- [ ] Native/Web female faces from provided image, softer chin, fitted hair; remove ill-fitting female hats; preserve native detail and Web budget.
+- [ ] Mode-specific numeric options, irrelevant fields hidden; defaults: TDM/FFA 10min/60 kills, team reserve 60, domination hold 60s, defusal even 4 rounds, prep 30s, round 5min, cash 800, personal respawns 0..10. Non-defusal 0min = unlimited.
+- [ ] Defusal halftime switch/reset, random-side one-round tiebreak, exact bomb location, close stationary interruptible defuse, stable drops/double-use outside site, smaller back bomb and handling poses.
+- [ ] Defusal pistol-only start, paid LINK 800, death loses gear, survivors keep gear, auto purchase window each prep, owned-slot/class replacement confirmation, lobby gear hidden.
+- [ ] Every round clear devices/marks/effects; spawn walls team colors/no text/flicker; louder beeps; each round winner voice, final series lineup only.
+- [ ] Host moves self/bots only, humans choose themselves, balanced limits, odd count auto hard bot, default next-match rating balance.
+- [ ] Support score breakdown and room-persistent stats, separate match kills; domination majority at timeout or hold all zones; winner portraits/names above scoreboard.
+
+## Release gates
+- [ ] Godot parse + targeted tests + legacy functional/network checks.
+- [ ] Native/Web model rendering and gameplay visual review.
+- [ ] Long-running stability measurements; real browser check and native runtime check.
+- [ ] 1.2.3 Windows/Web/NAS build, exact source/manifest match, site deployment and public download audit.
+- [ ] Preserve unchanged homepage images and descriptions.

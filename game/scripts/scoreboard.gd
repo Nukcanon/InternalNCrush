@@ -3,6 +3,7 @@ class_name MatchScoreboard
 var game:Node
 var columns:HBoxContainer
 var timer=0.
+var last_signature=""
 func _ready():
 	position=Vector2(65,108);custom_minimum_size=Vector2(1150,520);mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var style=StyleBoxFlat.new();style.bg_color=Color("101e2c");style.set_corner_radius_all(16);style.set_content_margin_all(20);style.border_color=Color("344d62");style.set_border_width_all(1);add_theme_stylebox_override("panel",style)
@@ -12,6 +13,11 @@ func refresh_scores(dt=.016):
 	timer-=dt
 	if timer>0:return
 	timer=.3
+	var state=[game.options.mode,game.scores]
+	for p in game.players.values():state.append([p.id,p.nick,p.team,p.role,p.alive,p.kills,p.deaths,p.assists,p.healed,p.get("builds",0),p.get("objective",0)])
+	var signature=str(state)
+	if signature==last_signature:return
+	last_signature=signature
 	for c in columns.get_children():columns.remove_child(c);c.queue_free()
 	var players=game.players.values();players.sort_custom(func(a,b):return Rules.score(a)>Rules.score(b) if Rules.score(a)!=Rules.score(b) else a.deaths<b.deaths)
 	for side in range(2):

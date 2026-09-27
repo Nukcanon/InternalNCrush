@@ -8,12 +8,18 @@ var rocket_nodes=[]
 var status_nodes={}
 var ragdolls=[]
 var active_lights=0
+const MAX_TRACERS=96
+var tracers:Array=[]
+var tracer_cursor=0
+var tracer_mesh:CylinderMesh
+var tracer_materials:Array=[]
 var blood:BloodFX
 static var cloud_shader:Shader
 const M=preload("res://scripts/mesh_factory.gd")
 func clear():
 	for child in get_children():child.queue_free()
 	field_nodes.clear();transients.clear();casings.clear();scuffs.clear();healing.clear();grenade_nodes.clear();status_nodes.clear();ragdolls.clear();rocket_nodes.clear();active_lights=0
+	tracers.clear();tracer_cursor=0
 	blood=null;bomb_visual=null;bomb_beep_at=0.
 func blood_hit(point:Vector3,direction:Vector3,amount:float):
 	if not GraphicsOptions.blood_enabled:return
@@ -53,12 +59,20 @@ func ring(parent:Node3D,radius:float,color:Color) -> MeshInstance3D:
 func beam(from:Vector3,to:Vector3,heal=false):
 	var length=from.distance_to(to)
 	if length<.02:return
-	var node=group((from+to)*.5);node.look_at(to)
-	var mesh=M.cylinder(node,Vector3.ZERO,.018 if heal else .010,length,Color("65edc2") if heal else Color("ffecc0"),Vector3(PI/2,0,0),-1.,6)
-	mesh.material_override=glow(Color(.3,1,.73,.85) if heal else Color(1,.81,.40,.72));mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	finish(node,.10 if heal else .048)
-	if heal:
-		var end=group(to);var halo=ring(end,.19,Color(.3,1,.75,.55));halo.rotation.x=PI/2;finish(end,.12)
+	# Fixed geometry and a bounded pool avoid per-shot mesh uploads and tweens.
+	if tracer_mesh==null:
+		tracer_mesh=CylinderMesh.new();tracer_mesh.height=1.;tracer_mesh.top_radius=1.;tracer_mesh.bottom_radius=1.;tracer_mesh.radial_segments=6
+		tracer_materials=[glow(Color(1,.81,.40,.72)),glow(Color(.3,1,.73,.85))]
+	if tracers.size()<MAX_TRACERS:
+		var mesh=MeshInstance3D.new();mesh.mesh=tracer_mesh;mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(mesh)
+		tracers.append({"node":mesh,"until":0})
+		tracer_cursor=tracers.size()-1
+	var item=tracers[tracer_cursor];tracer_cursor=(tracer_cursor+1)%MAX_TRACERS
+	var node:MeshInstance3D=item.node
+	node.position=(from+to)*.5;node.quaternion=Quaternion(Vector3.UP,(to-from)/length)
+	var width=.018 if heal else .010
+	node.scale=Vector3(width,length,width);node.material_override=tracer_materials[1 if heal else 0];node.show()
+	item.until=Time.get_ticks_msec()+(100 if heal else 48)
 func burst(kind:String,pos:Vector3,color:Color):
 	if kind in ["explosion","turret_break","cover_break"]:explosion(pos,kind!="cover_break");return
 	var node=group(pos+Vector3.UP*.15);var explosive=kind=="explosion";var radius=5.5 if explosive else 1.9 if kind=="flash" else 1.15
@@ -199,6 +213,9 @@ func eject_case(origin:Vector3,right:Vector3,up:Vector3,ground_y:float,seed_valu
 	var variation=sin(float(seed_value)*2.31)
 	casings.append({"node":node,"velocity":right*(1.55+variation*.22)+up*(1.15+variation*.12),"floor":ground_y+.025,"age":0.,"bounced":false,"spin":Vector3(8,12,9+variation*3)})
 func _process(dt:float):
+	var stamp=Time.get_ticks_msec()
+	for item in tracers:
+		if item.node.visible and stamp>=int(item.until):item.node.hide()
 	update_healing(dt)
 	for item in casings.duplicate():
 		if not is_instance_valid(item.node):casings.erase(item);continue
