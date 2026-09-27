@@ -1,0 +1,10 @@
+{
+  "creator": "Kenney",
+  "source": "https://kenney.nl/assets/watercraft-kit",
+  "license": "CC0-1.0",
+  "archive_sha256": "cd1470c1cf441c7f46d0944ae6d0d897242365dc97677c5079b3238965d659f3",
+  "models": [
+    "boat-fishing-small",
+    "boat-tug-c"
+  ]
+}

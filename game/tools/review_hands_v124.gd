@@ -18,7 +18,7 @@ func run():
 		mount.position=Vector3(0,-.19,-.56) if id=="dual_pistols" else Vector3(.255,-.255,-.46)
 		for handed in [-1,1]:
 			mount.scale.x=handed
-			var gun=WeaponVisual.new();mount.add_child(gun);gun.build(Catalog.get_weapon(id));gun.scale=Vector3.ONE*.85
+			var gun=WeaponVisual.new();mount.add_child(gun);gun.build(Catalog.get_weapon(id),true,false);gun.scale=Vector3.ONE*.85
 			for phase in [-1.,.2,.4,.65,.85]:
 				gun.animate_reload(phase,0.,10.);await capture("hands-%s-%s-%s"%[id,handed,phase])
 			gun.free()

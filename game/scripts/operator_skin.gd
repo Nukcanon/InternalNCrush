@@ -17,6 +17,7 @@ static func install(rig:Node3D,key:String) -> Skeleton3D:
 		for i in range(PATHS.size()):_append_geometry(rig.get_node(PATHS[i]),rig,i,rest,st)
 		var fabric=SurfaceFinish.human_material(int(key.split("_")[0]))
 		st.index();st.set_material(fabric);templates[key]=st.commit()
+		if RenderStyle.web():templates[key]=OperatorMeshBudget.web_mesh(templates[key])
 	for path in PATHS:_hide_geometry(rig.get_node(path))
 	var skin=Skin.new()
 	for i in range(PATHS.size()):skin.add_bind(i,rest[i].affine_inverse())

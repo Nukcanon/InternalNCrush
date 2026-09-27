@@ -40,16 +40,18 @@ func run():
 		expect(rectangular.size()==1,"one rectangular map remains for %d players"%size)
 	for index in range(19):
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
-		expect(arena.district_surfaces.size()>=6 and arena.navigation_goals.any(func(p):return p.y>4.) and arena.navigation_goals.any(func(p):return p.y< -4.),"map %d has ramps, ground, upper floor and underground"%index)
+		DistrictLayout.route_spec(index)
+		var spec=DistrictLayout.specs[index]
+		expect(arena.navigation_goals.any(func(p):return p.y>1.)==not spec.upper_path.is_empty() and arena.navigation_goals.any(func(p):return p.y< -1.)==not spec.lower_path.is_empty(),"map %d uses its authored combination of levels"%index)
 		for team in [0,1]:
 			var start=arena.spawn_points[team][3]
 			for goal in arena.navigation_goals:
 				var route=nav.route(start,goal)
 				expect(route.size()>1 and route[-1].distance_to(goal)<2.1,"map %d team %d reaches %s"%[index,team,str(goal)])
 		await physics_frame;await physics_frame
-		var basement=arena.navigation_goals.filter(func(p):return p.y< -4.)[0]
-		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(basement+Vector3.UP*.5,basement-Vector3.UP*.5,1))
-		expect(not hit.is_empty() and absf(hit.position.y-basement.y)<.05,"map %d basement has actual walkable floor"%index)
+		for floor_point in arena.navigation_goals.filter(func(p):return absf(p.y)>1.):
+			var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(floor_point+Vector3.UP*.5,floor_point-Vector3.UP*.5,1))
+			expect(not hit.is_empty() and absf(hit.position.y-floor_point.y)<.05,"map %d authored level has actual walkable floor"%index)
 		arena.free();await process_frame
 	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=0;g.build_world();g.add_player(1,"TEST","v101_test")
 	var actor=g.actors[1];var p=g.players[1]

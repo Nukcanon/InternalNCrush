@@ -1,0 +1,11 @@
+{
+  "creator": "Kenney",
+  "source": "https://kenney.nl/assets/nature-kit",
+  "license": "CC0-1.0",
+  "archive_sha256": "fa7974a0d342bfe63c38664ba9f8ec1a4aab8ea25f099bdc56870e33588c4d9d",
+  "models": [
+    "tree_oak",
+    "tree_pineTallA",
+    "rock_largeA"
+  ]
+}

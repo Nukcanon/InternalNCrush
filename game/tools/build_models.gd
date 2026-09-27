@@ -3,7 +3,7 @@ func _initialize():call_deferred("run")
 func run():
 	Catalog.load_all();DirAccess.make_dir_recursive_absolute("res://assets/models")
 	var art_source="--with-art-source" in OS.get_cmdline_user_args()
-	var manifest={"license":"Original equipment + CC0 MakeHuman-derived anatomy; see assets/human/source/LICENSE.md","style":"Original low-poly comic operators, three paint bands" if RenderStyle.web() else "CC0 anatomical operators with original clothing, painted skin and GPU skinning","operators":[],"weapons":[],"animations":["idle","walk","run","crouch","crouch_walk","jump","fall","fire","reload","hit","land","death","fall_back","fall_front","fall_left","fall_right","fall_fold"]}
+	var manifest={"license":"Original equipment + CC0 MakeHuman-derived anatomy; see assets/human/source/LICENSE.md","style":"Shared anatomy with reduced body geometry and protected facial detail" if RenderStyle.web() else "CC0 anatomical operators with original clothing, painted skin and GPU skinning","operators":[],"weapons":[],"animations":["idle","walk","run","crouch","crouch_walk","jump","fall","fire","reload","hit","land","death","fall_back","fall_front","fall_left","fall_right","fall_fold"]}
 	for role in range(6):
 		for team in range(2):
 			var node=CharacterVisual.make_rig(role,team);root.add_child(node)
@@ -14,6 +14,7 @@ func run():
 			importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,body.mesh.surface_get_arrays(0),[],{},SurfaceFinish.human_material(role))
 			importer.generate_lods(60.,60.,[]);body.mesh=importer.get_mesh();body.set_meta("lod_count",importer.get_surface_lod_count(0))
 			print("OPERATOR_LOD ",role,"/",team," levels=",importer.get_surface_lod_count(0))
+			print("OPERATOR_BUDGET ",role,"/",team," vertices=",body.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()," triangles=",body.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size()/3)
 			if node.has_meta("pose_nodes"):node.remove_meta("pose_nodes")
 			if node.has_meta("pose_owner"):node.remove_meta("pose_owner")
 			MeshFactory.own_recursive(node,node)

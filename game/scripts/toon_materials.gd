@@ -26,6 +26,7 @@ varying vec3 paint;
 varying vec3 world_normal;
 void vertex() {
     paint = mix(tint.rgb, COLOR.rgb, vertex_color);
+    if(OUTPUT_IS_SRGB && vertex_color > 0.5)paint=pow(max(paint,vec3(0.)),vec3(.454545));
     world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 }
 void fragment() {

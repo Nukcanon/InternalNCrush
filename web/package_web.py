@@ -31,6 +31,9 @@ assert '$GODOT_' not in html,'Unexpanded shell placeholder'
 licenses=BUILD/'licenses';licenses.mkdir(exist_ok=True)
 for source in [ROOT/'game/LICENSE.txt',ROOT/'game/SOUND_CREDITS.md',ROOT/'game/GODOT_LICENSE.txt',ROOT/'game/assets/human/CREDITS.md',ROOT/'game/assets/human/source/LICENSE.ASSETS.md',ROOT/'game/assets/FONT_LICENSE.txt',ROOT/'game/assets/fonts/rajdhani-OFL.txt',ROOT/'game/assets/fonts/dohyeon-OFL.txt',ROOT/'game/assets/AUDIO_KOKORO_LICENSE.txt',ROOT/'game/assets/AUDIO_KENNEY_LICENSE.txt',ROOT/'game/assets/AUDIO_Q009_LICENSE.txt']:
     shutil.copy2(source,licenses/source.name)
+shutil.copy2(ROOT/'game/ART_CREDITS.md',licenses/'ART_CREDITS.md')
+for pack in ['industrial','car','nature','watercraft']:
+    shutil.copy2(ROOT/f'game/assets/models/{pack}/LICENSE.txt',licenses/f'KENNEY_{pack}_LICENSE.txt')
 metadata={'version':version,'threads':False,'source_commit':os.environ.get('GITHUB_SHA',''),'executable':executable,'transport':'WebRTC','touch':'coarse-pointer/mobile detection; landscape','files':[]}
 for p in sorted(BUILD.rglob('*')):
     if p.is_file() and p.name!='build.json':metadata['files'].append({'path':p.relative_to(BUILD).as_posix(),'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})

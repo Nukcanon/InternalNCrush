@@ -33,26 +33,35 @@ static func build(a:Node,index:int):
 		var rect=Rect2(surface.rings[0][0],Vector2.ZERO)
 		for point in surface.rings[0]:rect=rect.expand(point)
 		surface.rect=rect;a.district_surfaces.append(surface)
-	var palette=[Color("b8b0a0"),Color("91a4ab"),Color("b6a084"),Color("98aaa1")]
 	for group in plan.groups:
 		var origin=Vector3(group.origin[0],0,group.origin[2])
 		var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		for point in group.vertices:st.add_vertex(Vector3(point[0],point[1],point[2])-origin)
-		st.generate_normals();st.index();var mesh=st.commit()
+		# Flat normals avoid smoothing across unrelated triangles after indexing.
+		for i in range(0,group.vertices.size(),3):
+			var points=[]
+			for k in range(3):
+				var p=group.vertices[i+k];points.append(Vector3(p[0],p[1],p[2]))
+			var normal=(points[2]-points[0]).cross(points[1]-points[0]).normalized()
+			for point in points:st.set_normal(normal);st.add_vertex(point-origin)
+		st.index();var mesh=st.commit()
 		var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;a.architecture.add_child(body);body.position=origin
-		var visual=MeshInstance3D.new();visual.mesh=mesh
-		var color=Color("c6ad8c") if index in [7,9,12,17,19,22,24,30] else palette[index%palette.size()]
-		if group.kind=="ground":color=Color("858f8e")
-		elif group.kind=="upper":color=Color("8ca0aa")
-		elif group.kind in ["lower","tunnel"]:color=Color("6f858a")
-		elif group.kind=="water":color=Color("397784")
-		elif group.kind=="roof":color=Color("976956") if index in [7,9,12,17,19,22,24,30] else color.darkened(.2)
-		visual.material_override=a.mat(color)
-		if group.kind=="ceiling":
-			visual.material_override=visual.material_override.duplicate();visual.material_override.cull_mode=BaseMaterial3D.CULL_DISABLED
-		body.add_child(visual)
-		if group.kind=="water":continue
+		var visual=MeshInstance3D.new();visual.mesh=mesh;visual.material_override=WorldSurface.material(group.kind,index);body.add_child(visual)
+		if group.kind in ["water","stair_detail"]:continue
 		var collision=CollisionShape3D.new();var shape=ConcavePolygonShape3D.new();shape.set_faces(mesh.get_faces());shape.backface_collision=true;collision.shape=shape;body.add_child(collision)
+	# Vertical fascia gives elevated paths visible thickness without changing cover.
+	var edges=SurfaceTool.new();edges.begin(Mesh.PRIMITIVE_TRIANGLES);var edge_count=0
+	for source in plan.surfaces:
+		if source.layer!="upper":continue
+		for points in source.rings:
+			for i in range(points.size()-1):
+				var p=points[i];var q=points[i+1]
+				var v=Vector3(p[0],source.plane[0]*p[0]+source.plane[1]*p[1]+source.plane[2],p[1]);var w=Vector3(q[0],source.plane[0]*q[0]+source.plane[1]*q[1]+source.plane[2],q[1])
+				if maxf(v.y,w.y)<.4:continue
+				var normal=(w-v).cross(Vector3.DOWN).normalized()
+				for point in [v,w,v+Vector3.DOWN*.18,w,w+Vector3.DOWN*.18,v+Vector3.DOWN*.18]:edges.set_normal(normal);edges.add_vertex(point)
+				edge_count+=1
+	if edge_count>0:
+		edges.index();var fascia=MeshInstance3D.new();fascia.mesh=edges.commit();fascia.material_override=WorldSurface.material("trim",index);a.architecture.add_child(fascia)
 	for team in range(2):
 		var p=plan.spawns[team]
 		for slot in range(16):
@@ -63,12 +72,23 @@ static func build(a:Node,index:int):
 	for point in plan.targets:a.zones.append(Vector3(point[0],0,point[1]))
 	a.sites=[a.zones[0],a.zones[1]]
 	if a.zones.size()==2:
-		var middle=(a.zones[0]+a.zones[1])*.5;var found=a.point_clear(middle)
-		for radius in range(2,61,2):
-			if found:break
-			for step in range(16):
-				var candidate=middle+Vector3(cos(step*TAU/16.),0,sin(step*TAU/16.))*radius
-				if a.point_clear(candidate):middle=candidate;found=true;break
+		# Select a real ground-floor route, not an arbitrary clear point in a
+		# basement opening. Defusal layouts also supply capture-mode previews.
+		var midpoint=(a.zones[0]+a.zones[1])*.5;var middle=a.zones[0];var best=INF
+		route_spec(index)
+		var spec=specs[index];var offset=Vector2(spec.dimensions[0],spec.dimensions[1])*.5
+		for path in spec.paths:
+			for i in range(path.size()-1):
+				var start=Vector2(path[i][0],path[i][1])-offset;var end=Vector2(path[i+1][0],path[i+1][1])-offset
+				var steps=maxi(1,ceili(start.distance_to(end)))
+				for step in range(steps+1):
+					var point=start.lerp(end,float(step)/steps);var candidate=Vector3(point.x,0,point.y)
+					var distance=candidate.distance_squared_to(midpoint)
+					if distance>=best or not a.navigation_clear(candidate) or absf(a.walk_height(candidate))>.05:continue
+					var clear=true
+					for side in [Vector3.LEFT,Vector3.RIGHT,Vector3.FORWARD,Vector3.BACK]:
+						if not a.navigation_clear(candidate+side*1.2) or absf(a.walk_height(candidate+side*1.2))>.05:clear=false;break
+					if clear:middle=candidate;best=distance
 		a.zones.insert(1,middle)
 	for point in plan.goals:a.navigation_goals.append(Vector3(point[0],point[1],point[2]))
 	a.navigation_goals.append_array(a.sites)

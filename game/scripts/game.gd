@@ -30,6 +30,8 @@ var grenades=[]
 var rockets=[]
 var placement_preview:DeploymentPreview
 var next_grenade=1
+const DROP_LIFETIME=180.0
+const MAX_DROPS=96
 var drops=[]
 var reconnects={}
 var arena:Arena
@@ -1074,7 +1076,7 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 			p.can_respawn=tickets[p.team]>0
 			if p.can_respawn:tickets[p.team]-=1
 		actors[target].collision_layer=0
-		var wid=p.secondary if p.slot==1 else p.primary;drops.append({"pos":actors[target].position+Vector3.UP*.18,"yaw":actors[target].aim_yaw,"amount":int(p.mag.get(wid,0))+int(p.reserve.get(wid,0)),"weapon":wid,"until":clock+40})
+		var wid=p.secondary if p.slot==1 else p.primary;drops.append({"pos":actors[target].position+Vector3.UP*.18,"yaw":actors[target].aim_yaw,"amount":int(p.mag.get(wid,0))+int(p.reserve.get(wid,0)),"weapon":wid,"until":clock+DROP_LIFETIME})
 		if int(options.mode)==4:DefusalEconomy.reset(p);equip_ammo(p)
 		if players.has(source) and source!=target and enemies(players[source],p):
 			players[source].kills+=1;players[source].match_kills=int(players[source].get("match_kills",0))+1
@@ -1273,7 +1275,8 @@ func update_fields(dt:float):
 			for id in players:
 				if players[id].alive and players[id].team!=f.team and players[id].get("cleanse",0)<clock and actors[id].position.distance_to(f.pos)<AbilityBalance.SLOW_RADIUS and clear_line(f.pos+Vector3.UP*.35,actors[id].position+Vector3.UP*.8,[actors[id].get_rid()]):players[id].slow=clock+.2
 func update_pickups():
-	drops=drops.filter(func(d):return d.until>clock and d.amount>0)
+	drops=drops.filter(func(d):return d.until>clock)
+	while drops.size()>MAX_DROPS:drops.pop_front()
 	for id in players:
 		var p=players[id]
 		if not p.alive:continue
@@ -1527,7 +1530,8 @@ func update_world_visuals(dt:float):
 		var key=str(d.until)+str(d.pos)+d.weapon;live_drops[key]=true
 		if not drop_nodes.has(key):
 			var n=WeaponVisual.new();add_child(n);n.build(Catalog.get_weapon(d.weapon),false);n.position=d.pos;n.rotation=Vector3(0,float(d.get("yaw",0)),PI/2);drop_nodes[key]=n
-			var tag=arena.text3d(Catalog.get_weapon(d.weapon).name+" · E",Vector3(0,.4,0),Color("d7e8ef"),24,n);tag.top_level=true;tag.global_position=d.pos+Vector3.UP*.5;tag.visibility_range_end=12;tag.visibility_range_end_margin=1.5;tag.pixel_size=.004
+			for mesh in n.find_children("*","GeometryInstance3D",true,false):mesh.visibility_range_end=55. if RenderStyle.web() else 80.;mesh.visibility_range_end_margin=5.
+			var tag=arena.text3d(Catalog.get_weapon(d.weapon).name,Vector3(0,.4,0),Color("d7e8ef"),24,n);tag.top_level=true;tag.global_position=d.pos+Vector3.UP*.5;tag.visibility_range_end=12;tag.visibility_range_end_margin=1.5;tag.pixel_size=.004
 	for key in drop_nodes.keys():
 		if not live_drops.has(key):drop_nodes[key].queue_free();drop_nodes.erase(key)
 func feedback(id:int,sound:String,message:String):

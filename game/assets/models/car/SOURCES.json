@@ -1,0 +1,11 @@
+{
+  "creator": "Kenney",
+  "source": "https://kenney.nl/assets/car-kit",
+  "license": "CC0-1.0",
+  "archive_sha256": "fac7dacac5c7874348cf19729af3ef205f3d366493edaf0a827d93f4fdf3d0c4",
+  "models": [
+    "sedan",
+    "taxi",
+    "van"
+  ]
+}

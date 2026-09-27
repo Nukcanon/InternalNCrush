@@ -1,4 +1,19 @@
 {
+  "development_work": {
+    "target_version": "1.2.7",
+    "branch": "work/v1.2.7-visual-readability",
+    "status": "candidate_validation_in_progress",
+    "handoff": "VISUAL_REWORK_V127_PARTIAL.md",
+    "map_cache_revision": 131,
+    "native_arenas_baked": 32,
+    "route_checks_passed": 304,
+    "physical_spawn_exit_checks_passed": 48,
+    "drop_retention_test": "passed",
+    "web_graphics_policy_checks_passed": 19,
+    "intel_igpu_verified": false,
+    "actual_browser_runtime_verified": false,
+    "complete_art_overhaul": false
+  },
   "published_version": "1.2.6",
   "source_commit": "5d035e5586950741134bb54ba870f9f116fd96f6",
   "release_tag": "internal-n-crush-v1.2.6",

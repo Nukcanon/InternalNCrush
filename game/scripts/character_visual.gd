@@ -193,7 +193,7 @@ func sync_deform():
 static func joint(parent:Node,name:String,pos:Vector3) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;parent.add_child(n);return n
 static func make_rig(which:int,side:int) -> Node3D:
-	var root=CartoonModel.build(which,side) if RenderStyle.web() else HumanModel.build(which,side);root.name=ROLE_NAMES[which]
+	var root=HumanModel.build(which,side);root.name=ROLE_NAMES[which]
 	M.merge_rig(root);add_clips(root)
 	return root
 static func role_badge(parent:Node3D,which:int,pos:Vector3,factor:float):

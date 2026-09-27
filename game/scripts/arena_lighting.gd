@@ -5,8 +5,8 @@ static func build(a:Node):
 	var world=WorldEnvironment.new();world.name="Environment";var env=Environment.new();env.background_mode=Environment.BG_SKY
 	var sky=Sky.new();var sky_mat=ProceduralSkyMaterial.new()
 	sky_mat.sky_top_color=Color("101f3d") if night else Color("6d94b4");sky_mat.sky_horizon_color=Color("43567a") if night else Color("dad4c1");sky_mat.ground_horizon_color=sky_mat.sky_horizon_color;sky_mat.ground_bottom_color=Color("1e2c37") if night else Color("746b58");sky.sky_material=sky_mat;env.sky=sky
-	env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color("9bafcb") if night else Color("c8d5e2");env.ambient_light_energy=.48 if indoor else .34 if night else .38
-	env.tonemap_mode=Environment.TONE_MAPPER_FILMIC;env.tonemap_exposure=1.15
+	env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color("bcc9df") if night else Color("e1e8ef");env.ambient_light_energy=.8 if indoor else .65 if night else .75
+	env.tonemap_mode=Environment.TONE_MAPPER_LINEAR;env.tonemap_exposure=1.15
 	env.fog_enabled=not indoor;env.fog_density=.0009 if night else .00045;env.fog_light_color=Color("596f91") if night else Color("bdc9ce");env.fog_sky_affect=.35
 	world.environment=env;a.add_child(world)
 	var sun=DirectionalLight3D.new();sun.name="Sun";sun.rotation_degrees=Vector3(-38,-32,0) if night else Vector3(-48,-28,0);sun.light_color=Color("90b4ff") if night else Color("ffedce");sun.light_energy=.58 if a.get_meta("hybrid",false) else .18 if indoor else .32 if night else 1.1;sun.shadow_enabled=not indoor or bool(a.get_meta("hybrid",false));sun.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS;sun.directional_shadow_max_distance=90.;sun.shadow_bias=.25;sun.shadow_normal_bias=1.5;a.add_child(sun)
@@ -32,6 +32,8 @@ static func build(a:Node):
 				var bounds=panel.global_transform*panel.get_aabb()
 				if bounds.size.y<.8 and bounds.size.x>1. and bounds.size.z>.4 and bounds.position.y>point.y+.10 and bounds.position.y<point.y+12. and point.x>bounds.position.x+.4 and point.x<bounds.end.x-.4 and point.z>bounds.position.z+.1 and point.z<bounds.end.z-.1:ceiling=minf(ceiling,bounds.position.y)
 			if not is_finite(ceiling):continue # No roof/beam: never leave a hanging light unattached.
+		var floor_y=a.walk_height(point+Vector3(.6,0,0))
+		if not is_finite(ceiling) and (not is_finite(floor_y) or floor_y>=point.y-.3):continue
 		var warm=i%2==0;var color=Color("ffd49a") if warm else Color("a3d9ed")
 		var light=OmniLight3D.new();light.position=point;light.name="Practical"+str(i);light.light_color=color;light.light_energy=1.8 if indoor else 2.2;light.omni_range=18. if point.y>0 else 8.;light.omni_attenuation=1.3;light.shadow_enabled=i<4;light.distance_fade_enabled=true;light.distance_fade_begin=55.;light.distance_fade_length=12.;a.add_child(light)
 		var fixture=MeshFactory.box(a,point,Vector3(1.1,.13,.40),Color("354452"));fixture.name="Luminaire";fixture.set_meta("fixture_point",point);fixture.set_meta("fixture_indoor",indoor)
@@ -41,11 +43,11 @@ static func build(a:Node):
 			for x in [-.33,.33]:MeshFactory.cylinder(a,Vector3(point.x+x,(ceiling+point.y)*.5,point.z),.017,ceiling-point.y,Color("415361"),Vector3.ZERO,-1,6)
 			fixture.set_meta("fixture_attachment","ceiling");fixture.set_meta("fixture_anchor_y",ceiling)
 		else:
-			var floor_y=a.walk_height(point+Vector3(.6,0,0))
 			MeshFactory.cylinder(a,Vector3(point.x+.6,(point.y+floor_y)*.5,point.z),.06,point.y-floor_y,Color("415361"))
 			MeshFactory.box(a,point+Vector3(.31,0,0),Vector3(.64,.09,.11),Color("415361"))
 			fixture.set_meta("fixture_attachment","pole");fixture.set_meta("fixture_anchor_y",floor_y)
 	a.set_meta("practical_lights",points.size())
+	var nearby=PracticalLights.new();nearby.name="NearbyLighting";nearby.fixtures=a.get_meta("wall_fixtures",[]);a.add_child(nearby)
 
 	GraphicsOptions.apply_world(a)
 

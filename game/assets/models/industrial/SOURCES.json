@@ -1,0 +1,14 @@
+{
+  "creator": "Kenney",
+  "pack": "City Kit Industrial 2.0",
+  "source": "https://kenney.nl/assets/city-kit-industrial",
+  "license": "CC0-1.0",
+  "archive_sha256": "5b381164e5760f3830a2dbee43b972deee38b2a695d091b56e238ab2910c96d2",
+  "models": [
+    "detail-tank",
+    "detail-tank-large",
+    "shipping-container-a",
+    "shipping-container-b",
+    "water-tower"
+  ]
+}

@@ -95,7 +95,9 @@ void fragment(){
  float weave=rich_detail?sin(p.x*410.0)*sin(p.y*405.0):0.;
  float cloth=step(.75,UV2.x)*(1.0-clamp(UV2.y,0.,1.));
  float detail=mix(grain*.022,weave*.025,cloth)*clamp(1.0-footprint*140.0,0.0,1.0);
- ALBEDO=COLOR.rgb*(1.0+detail);
+ vec3 paint=OUTPUT_IS_SRGB?pow(max(COLOR.rgb,vec3(0.)),vec3(.454545)):COLOR.rgb;
+ ALBEDO=paint*(1.0+detail);
+ EMISSION=paint*.10;
  ROUGHNESS=clamp(UV2.x+detail,.24,.96);METALLIC=clamp(UV2.y,0.,1.);
  if(finish_roughness>=0.0){ROUGHNESS=finish_roughness;}
  if(finish_metallic>=0.0){METALLIC=finish_metallic;}

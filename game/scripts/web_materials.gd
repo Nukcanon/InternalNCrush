@@ -2,6 +2,8 @@ class_name WebMaterials
 extends RefCounted
 static var cache={}
 static func simplify(material:Material) -> Material:
+	if material.has_meta("authored_world"):return material
+	if material is ShaderMaterial and "district_surface" in material.shader.code:return material
 	if cache.has(material):return cache[material]
 	MeshFactory.bound_cache(cache,256)
 	if material is StandardMaterial3D:

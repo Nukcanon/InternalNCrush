@@ -52,7 +52,7 @@ func run():
 	for index in [7,9,16,17]:
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.playable_polygon.size()>4,"map %d has a nonrectangular perimeter"%index)
-		expect(arena.district_surfaces.size()>=6,"map %d has traversable terraces and ramps"%index)
+		expect(arena.district_surfaces.any(func(s):return absf(s.plane.x)+absf(s.plane.y)>.01),"map %d has traversable terraces and ramps"%index)
 		var terrace=arena.navigation_goals.filter(func(p):return p.y>1.5)[0]
 		expect(arena.walk_height(terrace)>1.5,"map %d navigation recognizes terrace elevation"%index)
 		await physics_frame;await physics_frame

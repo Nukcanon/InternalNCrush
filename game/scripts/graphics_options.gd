@@ -89,13 +89,15 @@ static func apply_world(root:Node):
 				if material is ShaderMaterial and "rich_detail" in material.shader.code:material.set_shader_parameter("rich_detail",detail==2)
 				if material is ShaderMaterial and "texture_detail" in material.shader.code:material.set_shader_parameter("texture_detail",detail>0)
 	for mesh in root.find_children("*","MeshInstance3D",true,false):
+		if mesh.material_override is ShaderMaterial and "district_surface" in mesh.material_override.shader.code:mesh.material_override.set_shader_parameter("dynamic_lighting",lighting>0)
 		if mesh.has_meta("district_detail"):
-			mesh.visible=detail>0;mesh.visibility_range_end=([0.,40.,65.] if RenderStyle.web() else [0.,65.,100.])[detail];mesh.visibility_range_end_margin=5.
-	var points=0
+			mesh.visible=true;mesh.visibility_range_end=([28.,65.,100.] if RenderStyle.web() else [28.,65.,100.])[detail];mesh.visibility_range_end_margin=5.
+	var points=0;var pooled=not root.find_children("NearbyLighting","",true,false).is_empty()
 	for light in root.find_children("*","Light3D",true,false):
+		if light.has_meta("pooled_practical"):continue
 		if not light.has_meta("quality_shadow"):light.set_meta("quality_shadow",light.shadow_enabled)
 		if light is OmniLight3D or light is SpotLight3D:
-			light.visible=lighting==2 and points<4;light.shadow_enabled=false;points+=1
+			light.visible=lighting==2 and points<4 and not pooled;light.shadow_enabled=false;points+=1
 		elif light is DirectionalLight3D:
 			light.visible=lighting>0;light.shadow_enabled=lighting>0 and shadows>0 and bool(light.get_meta("quality_shadow"))
 			light.directional_shadow_max_distance=35. if shadows==1 else 65.

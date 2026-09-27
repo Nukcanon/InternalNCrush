@@ -65,6 +65,7 @@ func build_layers():
 				if not layer_cells.has(cell_id):layer_cells[cell_id]=[]
 				layer_cells[cell_id].append(id)
 				if absf(height)<.1:layer_ground[id]=cell_id;layers.set_point_disabled(id,grid.is_point_solid(cell_id))
+	if arena.has_meta("district"):add_authored_lanes()
 	for cell_id in layer_cells:
 		for offset in [Vector2i(1,0),Vector2i(0,1)]:
 			var other=cell_id+offset
@@ -73,6 +74,34 @@ func build_layers():
 				for next in layer_cells[other]:
 					var from=layers.get_point_position(id);var to=layers.get_point_position(next)
 					if connects_surface(from,to):layers.connect_points(id,next)
+func add_authored_lanes():
+	# A 2m grid can miss a perfectly walkable 2.7m diagonal passage. Add
+	# centre-line samples only along authored routes instead of quadrupling
+	# the grid density (and memory) across an entire 360m map.
+	DistrictLayout.route_spec(arena.map_index)
+	var spec=DistrictLayout.specs[arena.map_index];var offset=Vector2(spec.dimensions[0],spec.dimensions[1])*.5
+	var routes=[]
+	for path in spec.paths:routes.append([path,0.])
+	routes.append([spec.upper_path,float(spec.get("upper_height",4.2))]);routes.append([spec.lower_path,float(spec.get("lower_height",-4.2))])
+	for route_data in routes:
+		var path=route_data[0];var peak:float=route_data[1];var total=0.;var travelled=0.;var previous=-1
+		if path.size()<2:continue
+		for i in range(path.size()-1):total+=Vector2(path[i][0],path[i][1]).distance_to(Vector2(path[i+1][0],path[i+1][1]))
+		var run=minf(absf(peak)*3.5,total*.33)
+		for i in range(path.size()-1):
+			var a=Vector2(path[i][0],path[i][1])-offset;var b=Vector2(path[i+1][0],path[i+1][1])-offset;var length=a.distance_to(b);var count=maxi(1,ceili(length/.8))
+			for k in range(count+1):
+				var t=float(k)/count;var p=a.lerp(b,t);var d=travelled+length*t;var height=peak*minf(1.,minf(d/run,(total-d)/run)) if run>.001 else 0.
+				var pos=Vector3(p.x,height,p.y)
+				if not arena.navigation_clear(pos):previous=-1;continue
+				var id=layers.get_available_point_id();layers.add_point(id,pos);var bucket=cell(pos)
+				if not layer_cells.has(bucket):layer_cells[bucket]=[]
+				for other in layer_cells[bucket]:
+					if not layers.is_point_disabled(other) and connects_surface(pos,layers.get_point_position(other)):layers.connect_points(id,other)
+				layer_cells[bucket].append(id)
+				if previous>=0 and connects_surface(layers.get_point_position(previous),pos):layers.connect_points(previous,id)
+				previous=id
+			travelled+=length
 func connects_surface(from:Vector3,to:Vector3) -> bool:
 	if absf(from.y-to.y)>1.1:return false
 	# Authored stairs slope along Z. Their sides are vertical slab edges, not
@@ -109,8 +138,8 @@ func route(from:Vector3,to:Vector3) -> PackedVector3Array:
 		if arena.building:
 			for id in layer_ground:layers.set_point_disabled(id,grid.is_point_solid(layer_ground[id]) or layer_dynamic.has(id))
 		if layers.get_point_count()==0:return PackedVector3Array()
-		var start_id=reachable_entry(from);var end_id=layers.get_closest_point(to)
-		if start_id<0:return PackedVector3Array()
+		var start_id=reachable_entry(from);var end_id=reachable_entry(to)
+		if start_id<0 or end_id<0:return PackedVector3Array()
 		return layers.get_point_path(start_id,end_id)
 	var start=nearest(from);var end=nearest(to);var out=PackedVector3Array()
 	if grid.is_point_solid(start) or grid.is_point_solid(end):return out

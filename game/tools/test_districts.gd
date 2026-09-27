@@ -4,7 +4,7 @@ func run():
 	var failed=0;var checks=0
 	for index in range(31):
 		var a=Arena.new();root.add_child(a);a.build(index);var nav=BotNavigation.new();nav.build(a)
-		var goals=a.sites+a.navigation_goals
+		var goals=a.zones+a.sites+a.navigation_goals
 		for team in range(2):
 			for goal in goals:
 				checks+=1;var route=nav.route(a.spawn_points[team][0],goal)

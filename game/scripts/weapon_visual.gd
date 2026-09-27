@@ -27,9 +27,9 @@ var grip_boxes:Array=[]
 var length=.7
 var reload_style="rifle"
 var reload_round_count=3
-var metal=Color("202b33")
-var edge=Color("586773")
-var light=Color("9baeb6")
+var metal=Color("39444d")
+var edge=Color("71808a")
+var light=Color("b1bec3")
 var accent=Color("62bcb3")
 const LENGTHS={"VECTOR-24":.66,"RAPID-9":.59,"ATLAS":.76,"TRIAD":.68,"SCOUT":.88,"MONOLITH":1.06,"ECHO":.79,"LARK":.7,"KESTREL":.84,"ANCHOR":.78,"BASTION":.9,"PULSE":.83,"TIDAL":.68,"FOLD":.44,"SWIFT":.43,"FLUX":.42,"LINE":.53,"HIVE":.55,"PIPER":.59,"MENDER":.83,"COMET":.95}
 func build_pose(w:Dictionary):
@@ -54,8 +54,9 @@ func build_pose(w:Dictionary):
 func block(parent:Node,pos:Vector3,size:Vector3,color:Color,tilt=0.) -> MeshInstance3D:return M.box(parent,pos,size,color,Vector3(tilt,0,0),.48)
 func tube(parent:Node,pos:Vector3,radius:float,depth:float,color:Color) -> MeshInstance3D:return M.cylinder(parent,pos,radius,depth,color,Vector3(PI/2,0,0))
 func shell(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstance3D:
-	var rings=[Vector4(-size.z*.5,size.x*.33,size.y*.34,0),Vector4(-size.z*.42,size.x*.49,size.y*.48,0),Vector4(size.z*.30,size.x*.50,size.y*.50,0),Vector4(size.z*.5,size.x*.37,size.y*.39,0)]
-	var mesh=HumanModel.loft(parent,pos,rings,color,20);mesh.rotation.x=PI/2;return mesh
+	# Machined receivers/handguards have planar faces and small edge chamfers,
+	# not the oval inflated sections used for anatomical limbs.
+	return M.box(parent,pos,size,color,Vector3.ZERO,.18)
 func piece(name:String,pos=Vector3.ZERO) -> Node3D:
 	var n=Node3D.new();n.name=name;n.position=pos;add_child(n);return n
 func rail(z:float,count:int):

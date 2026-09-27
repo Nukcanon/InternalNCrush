@@ -23,6 +23,6 @@ func run():
 	host.free()
 	var model=CharacterVisual.make_rig(0,0);root.add_child(model);OperatorSkin.install(model,"0_split")
 	var body=model.get_node("ContinuousBody");var count=body.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size()
-	expect(count<18000 if RenderStyle.web() else count>18000,"platform selects its own operator geometry")
+	expect(count<60000 if RenderStyle.web() else count>60000,"Web retains the face while reducing body triangles; native preserves the detailed body")
 	model.free()
 	print("RENDER_SPLIT_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

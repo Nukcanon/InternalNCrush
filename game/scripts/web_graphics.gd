@@ -6,7 +6,7 @@ const AUTO_MIN_SCALE=1.
 const PRESETS=[
 	{"lighting_quality":0,"shadow_quality":0,"antialias":0,"decor_quality":0,"fog_enabled":false},
 	{"lighting_quality":0,"shadow_quality":0,"antialias":0,"decor_quality":1,"fog_enabled":false},
-	{"lighting_quality":1,"shadow_quality":0,"antialias":1,"decor_quality":2,"fog_enabled":false}]
+	{"lighting_quality":2,"shadow_quality":1,"antialias":1,"decor_quality":2,"fog_enabled":false}]
 const NAMES=["낮음","중간","높음"]
 signal changed(description:String)
 var game:Node
@@ -28,7 +28,7 @@ static func resolve(profile:Dictionary,auto_level:int=1) -> Dictionary:
 	var mode=quality(profile)
 	var settings=PRESETS[clampi(auto_level if mode<0 else 1 if mode==3 else mode,0,2)].duplicate()
 	if mode==3:settings.merge(profile.get("web_options",{}),true)
-	settings.lighting_quality=clampi(int(settings.lighting_quality),0,1)
+	settings.lighting_quality=clampi(int(settings.lighting_quality),0,2)
 	settings.shadow_quality=clampi(int(settings.shadow_quality),0,1)
 	settings.antialias=clampi(int(settings.antialias),0,2)
 	settings.decor_quality=clampi(int(settings.decor_quality),0,2)
@@ -122,7 +122,7 @@ static func build(ui:Node):
 			profile.web_render_scale=render_scale(profile,ui.game.web_graphics.scale_3d if is_instance_valid(ui.game.web_graphics) else 1.)
 		profile.web_quality=3;preset.select(4)
 	var initial=resolve(profile,ui.game.web_graphics.level if is_instance_valid(ui.game.web_graphics) else 1)
-	for spec in [["lighting_quality","광원",["고정 카툰 명암","주 광원 1개"]],["shadow_quality","그림자",["사용 안 함","1024 · 가까운 그림자"]],["antialias","안티앨리어싱",["사용 안 함","MSAA 2×","MSAA 4×"]],["decor_quality","장식 효과",["최소","중간","풍부하게"]]]:
+	for spec in [["lighting_quality","광원",["고정 카툰 명암","주 광원 1개","주 광원 + 가까운 조명 4개"]],["shadow_quality","그림자",["사용 안 함","1024 · 가까운 그림자"]],["antialias","안티앨리어싱",["사용 안 함","MSAA 2×","MSAA 4×"]],["decor_quality","장식 효과",["최소","중간","풍부하게"]]]:
 		var key:String=spec[0]
 		var control=ui.option(spec[1],spec[2],int(initial[key]),func(i):make_custom.call();profile.web_options[key]=i;refresh_controls.call();apply_settings(ui.game))
 		controls.append({"key":key,"control":control})

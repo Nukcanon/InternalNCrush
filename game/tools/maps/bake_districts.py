@@ -30,12 +30,20 @@ for plan in plans:
     envelope=box(1,1,w-1,h-1)
     floor=floor.intersection(envelope);border=border.intersection(box(0,0,w,h))
     architecture_floor=floor
-    surfaces=[];groups={};goals=[]
+    surfaces=[];groups={};goals=[];pending_faces={}
     def emit(points,kind):
         cx=sum(p[0] for p in points)/3-ox;cz=sum(p[2] for p in points)/3-oz
         key=(math.floor(cx/24),math.floor(cz/24),kind)
         groups.setdefault(key,[]).extend([[round(x-ox,4),round(y,4),round(z-oz,4)] for x,y,z in points])
     def face(poly,plane,kind,walk=True):
+        key=(kind,tuple(round(v,8) for v in plane),walk)
+        pending_faces.setdefault(key,[]).append(poly)
+    def flush_faces():
+        # Adjacent corridor strips overlap at corners. Union each plane before
+        # triangulating so a visible pixel never has two coplanar floor faces.
+        for (kind,plane,walk),pieces in pending_faces.items():
+            emit_face(unary_union(pieces),plane,kind,walk)
+    def emit_face(poly,plane,kind,walk=True):
         # y = ax + bz + c, in centred world coordinates.
         def height(x,z):return plane[0]*(x-ox)+plane[1]*(z-oz)+plane[2]
         for p in polygons(poly):
@@ -46,18 +54,16 @@ for plan in plans:
                 a,b,c=t
                 if (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])<0:b,c=c,b
                 emit([(x,height(x,z),z) for x,z in [a,b,c]],kind)
-                if kind=='ceiling':emit([(x,height(x,z),z) for x,z in [c,b,a]],kind)
     def walls(poly,low,high,kind):
         for p in polygons(poly):
             for ring in rings(p):
                 for a,b in zip(ring,ring[1:]):
                     first=[(a[0],low,a[1]),(b[0],low,b[1]),(a[0],high,a[1])]
                     second=[(b[0],low,b[1]),(b[0],high,b[1]),(a[0],high,a[1])]
-                    for tri in [first,second]:emit(tri,kind);emit(tri[::-1],kind)
+                    for tri in [first,second]:emit(tri,kind)
     def level(path,height,width):
         # Two graded entrances and a level middle, with a maximum 1:3 slope.
         line=LineString(path)
-        if line.length<45:line=LineString(max(plan['paths'],key=lambda p:LineString(p).length))
         length=line.length;run=min(abs(height)*3.5,length*.33)
         cuts=sorted(set([0.,run,length-run,length]+[line.project(__import__('shapely').geometry.Point(p)) for p in path]))
         strips=[];cuts_ground=[]
@@ -72,6 +78,19 @@ for plan in plans:
             plane=[slope*dx/distance,slope*dz/distance,0.]
             plane[2]=ya-plane[0]*(a.x-ox)-plane[1]*(a.y-oz)
             face(p,plane,'upper' if height>0 else 'lower');strips.append(p)
+            if plan.get('stairs_enabled',False) and abs(yb-ya)>.03:
+                # Visible stair treads over the smooth walking collision ramp.
+                # The small offset avoids coplanar flicker at step/ramp edges.
+                steps=max(1,math.ceil(abs(yb-ya)/.17))
+                for step in range(steps):
+                    t0,t1=step/steps,(step+1)/steps
+                    x0,z0=a.x+dx*t0,a.y+dz*t0;x1,z1=a.x+dx*t1,a.y+dz*t1
+                    y0,y1=ya+(yb-ya)*t0,ya+(yb-ya)*t1;top=max(y0,y1)+.012
+                    tread=Polygon([(x0+nx,z0+nz),(x1+nx,z1+nz),(x1-nx,z1-nz),(x0-nx,z0-nz)])
+                    face(tread,[0,0,top],'stair_detail',False)
+                    rx,rz=(x0,z0) if y1>y0 else (x1,z1)
+                    emit([(rx+nx,min(y0,y1),rz+nz),(rx-nx,min(y0,y1),rz-nz),(rx+nx,top,rz+nz)],'stair_detail')
+                    emit([(rx-nx,min(y0,y1),rz-nz),(rx-nx,top,rz-nz),(rx+nx,top,rz+nz)],'stair_detail')
             # The complete descending entrance stays open, never a ground slab
             # cutting across the player's head halfway down the stairs.
             if height<0 and (start<run+.01 or end>length-run-.01):cuts_ground.append(p)
@@ -94,8 +113,8 @@ for plan in plans:
         mid=line.interpolate(length*.5);goals.append([mid.x-ox,height,mid.y-oz])
         return unary_union(cuts_ground),full
     if plan['id']!=32:
-        cut,lower=level((plan['lower_path'][1:-1] if len(plan['lower_path'])>3 else plan['lower_path']),-4.2,max(4.4,plan['corridor_m']*.65))
-        _,upper=level((plan['upper_path'][1:-1] if len(plan['upper_path'])>3 else plan['upper_path']),4.2,max(4.8,plan['corridor_m']*.70))
+        cut,lower=level(plan['lower_path'],plan.get('lower_height',-4.2),max(2.7,plan['corridor_m']*.65)) if plan['lower_path'] else (Polygon(),Polygon())
+        _,upper=level(plan['upper_path'],plan.get('upper_height',4.2),max(2.7,plan['corridor_m']*.70)) if plan['upper_path'] else (Polygon(),Polygon())
         floor=floor.difference(cut)
     else:
         # Existing four-storey target range stays in the centre, new outdoor
@@ -105,8 +124,10 @@ for plan in plans:
         architecture_floor=floor
         lower=Polygon();upper=Polygon()
     face(floor,[0,0,0],'ground')
-    if plan['id']-1 in [2,3,8,11,14,15]:
-        face(architecture_floor,[0,0,6.8],'ceiling',False)
+    indoor=plan['id']-1 in [2,3,8,11,14,15]
+    wall_height=max(6.8,plan.get('upper_height',4.2)+2.6) if indoor else 3.1
+    if indoor:
+        face(architecture_floor,[0,0,wall_height],'ceiling',False)
     water=Polygon()
     if plan['id']-1 in [0,1,5,21,23,28]:
         holes=[Polygon(r) for p in polygons(shape(plan['floor'])) for r in p.interiors if Polygon(r).area>45]
@@ -115,14 +136,15 @@ for plan in plans:
     # real occlusion. Open courtyards remain roofless; selected side rooms get
     # ceilings at runtime, never across the stair entrances.
     for p in polygons(architecture_floor):
-        walls(Polygon(p.exterior),0,3.1,'wall')
+        walls(Polygon(p.exterior),0,wall_height,'wall')
         for hole in p.interiors:
-            island=Polygon(hole);walls(island,0,.45 if island.equals(water) else 3.1,'wall')
-    face(border.difference(architecture_floor).difference(water),[0,0,3.1],'roof',False)
+            island=Polygon(hole);walls(island,0,.45 if island.equals(water) else wall_height,'wall')
+    face(border.difference(architecture_floor).difference(water),[0,0,wall_height],'roof',False)
     if not water.is_empty:
         face(water,[0,0,-.6],'lower')
         face(water,[0,0,-.35],'water',False)
-    walls(border,0,7.2,'perimeter')
+    walls(border,0,max(7.2,wall_height),'perimeter')
+    flush_faces()
     def centered(p):return [round(p[0]-ox,4),round(p[1]-oz,4)]
     routes=unary_union([LineString(path) for path in plan['paths']])
     props=[]
@@ -165,12 +187,44 @@ for plan in plans:
                 if not floor.contains(Point(x+nx*.3,z+nz*.3)):nx,nz=-nx,-nz
                 # Front detail is clipped to the wall, never across an entrance.
                 facades.append([*centered((x+nx*.04,z+nz*.04)),math.atan2(nx,nz),min(6,length-1)])
+    # A new descending entrance may cut through a former ground objective.
+    # Move that objective onto nearby clear ground, never leave it in a hole.
+    def safe_target(point):
+        p=Point(point)
+        if not floor.contains(p.buffer(1.2)):return False
+        for surface in surfaces:
+            if surface['layer']!='upper':continue
+            local=Point(point[0]-ox,point[1]-oz)
+            if Polygon(surface['rings'][0],surface['rings'][1:]).contains(local):
+                a,b,c=surface['plane'];height=a*local.x+b*local.y+c
+                if .28<height<2.1:return False
+        return True
+    targets=[]
+    for target in plan['targets']:
+        candidates=[target]+[(target[0]+radius*math.cos(angle*math.tau/32),target[1]+radius*math.sin(angle*math.tau/32)) for radius in range(1,21) for angle in range(32)]
+        targets.append(next(p for p in candidates if safe_target(p)))
+    supports=[]
+    if plan['id']!=32 and plan['upper_path']:
+        line=LineString(plan['upper_path']);height=plan.get('upper_height',4.2)
+        run=min(abs(height)*3.5,line.length*.33);deck_width=max(2.7,plan['corridor_m']*.70)
+        for distance in range(6,int(line.length)-5,9):
+            top=height*min(1,distance/run,(line.length-distance)/run)
+            if top<3.2:continue
+            p=line.interpolate(distance);q=line.interpolate(min(line.length,distance+.2));dx,dz=q.x-p.x,q.y-p.y
+            size=math.hypot(dx,dz)
+            if size<.001:continue
+            nx,nz=-dz/size,dx/size
+            for side in [-1,1]:
+                x,z=p.x+side*nx*deck_width*.43,p.y+side*nz*deck_width*.43
+                if not floor.contains(Point(x,z).buffer(.35)):continue
+                if min(math.dist((x,z),v) for v in plan['spawns']+targets)<5:continue
+                supports.append([*centered((x,z)),round(top,4)])
     data={'index':plan['id']-1,'name':plan['name'],'dimensions':[w,h],
           'rectangle':plan['rectangle'],'surfaces':surfaces,'groups':[{'kind':key[2],'origin':[key[0]*24+12,0,key[1]*24+12],'vertices':v} for key,v in groups.items()],
           'border':[[centered(p) for p in ring] for ring in rings(max(polygons(border),key=lambda p:p.area))],
-          'spawns':[centered(p) for p in plan['spawns']], 'targets':[centered(p) for p in plan['targets']],
+          'spawns':[centered(p) for p in plan['spawns']], 'targets':[centered(p) for p in targets],
           'goals':goals,'corridor_m':plan['corridor_m'],'capacity':plan['capacity'],
-          'props':[centered(p) for p in props], 'loose_props':[centered(p) for p in loose], 'facades':facades,
+          'props':[centered(p) for p in props], 'loose_props':[centered(p) for p in loose], 'facades':facades,'supports':supports,
           'water':[[centered(p) for p in ring] for ring in rings(water)] if not water.is_empty else [],
           'water_boat':centered((water.representative_point().x,water.representative_point().y)) if not water.is_empty else []}
     (OUT/('map_%02d.json'%data['index'])).write_text(json.dumps(data,ensure_ascii=False,separators=(',',':')),encoding='utf-8')

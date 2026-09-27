@@ -12,7 +12,13 @@ def main():
     assert STAGE.resolve().is_relative_to((ROOT / 'web/staging').resolve())
     if STAGE.exists():
         shutil.rmtree(STAGE)
-    shutil.copytree(SOURCE, STAGE, ignore=shutil.ignore_patterns('.godot', '*.glb', '*.uid', '__pycache__'))
+    shutil.copytree(SOURCE, STAGE, ignore=shutil.ignore_patterns('.godot', '*.glb', '*.scn', '*.uid', '__pycache__'))
+    # Selected small CC0 models are needed while baking the shared map geometry.
+    # Packed arenas embed their mesh/material data; source GLBs stay export-excluded.
+    for pack in ['industrial', 'car', 'nature', 'watercraft']:
+        models = SOURCE / 'assets/models' / pack
+        if models.exists():
+            shutil.copytree(models, STAGE / 'assets/models' / pack, dirs_exist_ok=True)
     project = STAGE / "project.godot"
     project.write_text(project.read_text().replace("[application]", "[application]\nconfig/web_assets=true"))
     # Comic operators/hands no longer load photo atlases. Remove only assets
@@ -29,7 +35,7 @@ def main():
         with Image.open(p) as source:
             picture = source.convert('RGBA' if 'A' in source.getbands() else 'RGB')
             before = picture.size
-            limit = 1920 if 'menu_slides' in p.parts else 192 if 'thumbnails' in p.parts else 128
+            limit = 1920 if 'menu_slides' in p.parts else 256 if 'world' in p.parts else 192 if 'thumbnails' in p.parts else 128
             picture.thumbnail((limit, limit), Image.Resampling.LANCZOS)
             picture.save(p, optimize=True)
             converted.append({'path': str(p.relative_to(STAGE)), 'before': before, 'after': picture.size})

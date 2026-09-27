@@ -2,6 +2,7 @@ import json,math,html
 from pathlib import Path
 from shapely.geometry import LineString,Point,box,Polygon
 from shapely.ops import unary_union
+from vertical_districts import select as vertical_routes,COMPOSITIONS,STAIR_MAPS
 r=Path(__file__).resolve().parents[3];out=r/'game/assets/arenas';old=[{'players':c,'name':str(i+1)} for i,c in enumerate([32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16])]
 # Authored district paths: each chain is a room/courtyard sequence, not a repeated open-field template.
 chains=[
@@ -76,7 +77,7 @@ for i,m in enumerate(old):
  # Convert normalized district coordinates to metre geometry; corridors keep human-scale widths.
  def world(p):return (p[0]*dim[0]/100,p[1]*dim[1]/100)
  paths=[[world(p) for p in chain] for chain in paths]
- width=(16 if cap==32 else 12 if cap==16 else 9 if cap==8 else 7.5) if i<19 or i==31 else (9 if cap==8 else 11)
+ width=(8 if cap==32 else 6 if cap==16 else 4.5 if cap==8 else 3.75) if i<19 or i==31 else (4.5 if cap==8 else 5.5)
  # Break long sightlines with offset vestibules; do not scale corridor widths with map area.
  authored_paths=paths
  bent=[]
@@ -90,7 +91,8 @@ for i,m in enumerate(old):
    new.append(b)
   bent.append(new)
  paths=bent
- rooms=list(dict.fromkeys(p for ch in paths for p in ch));floors=[]
+ # Bend points are passage corners, not additional oversized courtyards.
+ rooms=list(dict.fromkeys(p for ch in authored_paths for p in ch));floors=[]
  for chain in paths:floors.append(LineString(chain).buffer(width/2,join_style=2,cap_style=2))
  for j,(x,y) in enumerate(rooms):
   rw=(28 if cap==32 else 22 if cap==16 else 18 if cap==12 else 15 if cap==8 else 13)+(j%3)*2;rh=(24 if cap==32 else 20 if cap>=12 else 13 if cap==8 else 11)+(j%4)*1.5
@@ -106,18 +108,24 @@ for i,m in enumerate(old):
   b=(x+vx*(offset+span),y+vy*(offset+span))
   cc=(x+vx*offset+vy*span,y+vy*offset-vx*span)
   branch=[(x,y),a,b,cc,(x,y)]
-  floors.append(LineString(branch).buffer(2.7,join_style=2,cap_style=2))
+  floors.append(LineString(branch).buffer(1.35,join_style=2,cap_style=2))
   for bx,by in [a,b,cc]:floors.append(box(bx-6,by-5,bx+6,by+5))
   districts+=3
  floor=unary_union(floors).buffer(0)
  # Irregular perimeter follows connected districts rather than clipping rectangle corners.
  border=box(0,0,*dim) if i in rects else floor.buffer(7 if cap>=16 else 4,join_style=2).simplify(2,preserve_topology=True)
- upper_chain=paths[1] if i<19 or i==31 else paths[-2];upper=LineString(upper_chain[1:-1] if len(upper_chain)>3 else upper_chain).buffer(width*.38,join_style=2)
- lower_chain=paths[0] if i<19 or i==31 else paths[-3];lower=LineString(lower_chain[1:-1] if len(lower_chain)>3 else lower_chain).buffer(width*.35,join_style=2)
+ if i<31:
+  (upper_chain,upper_height),(lower_chain,lower_height)=vertical_routes(i,paths)
+ else:upper_chain,lower_chain,upper_height,lower_height=paths[1],paths[0],4.2,-4.2
+ upper=LineString(upper_chain).buffer(max(2.7,width*.70)/2,join_style=2) if upper_chain else Polygon()
+ lower=LineString(lower_chain).buffer(max(2.7,width*.65)/2,join_style=2) if lower_chain else Polygon()
  spawn=paths[0][0] if i<19 or i==31 else world(pts[0]);enemy=paths[0][-1] if i<19 or i==31 else world(pts[1])
  targets=[paths[0][len(paths[0])//2],paths[1][len(paths[1])//2],paths[2][len(paths[2])//2]] if i<19 or i==31 else [world(pts[2]),world(pts[3])]
- item={'paths':paths,'upper_path':upper_chain,'lower_path':lower_chain,'id':i+1,'name':m['name'],'capacity':cap,'dimensions':dim,'rectangle':i in rects,'identity':ident,'floor':polys(floor),'border':polys(border),'upper':polys(upper),'lower':polys(lower),'stairs':[list(upper_chain[1]),list(upper_chain[-2]),list(lower_chain[1]),list(lower_chain[-2])],'spawns':[spawn,enemy],'targets':targets,'corridor_m':width,'side_corridor_m':5.4,'rooms':len(rooms)+districts,'connected':floor.geom_type=='Polygon','mode':'연습장' if i==31 else '설치/해체' if i>=19 else '일반전'}
+ item={'paths':paths,'upper_path':upper_chain,'lower_path':lower_chain,'id':i+1,'name':m['name'],'capacity':cap,'dimensions':dim,'rectangle':i in rects,'identity':ident,'floor':polys(floor),'border':polys(border),'upper':polys(upper),'lower':polys(lower),'stairs':[list(p) for chain in [upper_chain,lower_chain] if chain for p in [chain[0],chain[-1]]],'spawns':[spawn,enemy],'targets':targets,'corridor_m':width,'side_corridor_m':2.7,'rooms':len(rooms)+districts,'connected':floor.geom_type=='Polygon','mode':'연습장' if i==31 else '설치/해체' if i>=19 else '일반전'}
  result.append(item)
+ item['upper_height']=upper_height;item['lower_height']=lower_height
+ item['composition']=COMPOSITIONS[i] if i<31 else 'practice_towers';item['stairs_enabled']=i in STAIR_MAPS
+ item['identity']=('지상 연결 동선' + (' · 상층 우회로' if upper_chain else '') + (' · 하층 통로' if lower_chain else '') + (' · 계단' if i in STAIR_MAPS else ''))
 assert all(m['connected'] for m in result)
 assert len([m for m in result if m['rectangle']])==5
 names=['항구','조선소','제철소','연구소','사막 기지','운하','중앙역','구시가지','정비 공장','산동네','과수원','발전소','분수 광장','물류 창고','실험 단지','폐공장','고층 빌딩','재래시장','채석장','요새','원전','수로교','도서관','폐선장','수도원','용광로','온실','지하 금고','해안 기지','서버 센터','산성','훈련장']

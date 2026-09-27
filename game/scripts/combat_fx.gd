@@ -173,8 +173,7 @@ static func build_device(parent:Node3D,kind:String,team:int):
 		for side in [-1,1]:M.box(parent,Vector3(side*.28,1.42,.04),Vector3(.10,.43,.25),metal,Vector3(0,0,side*.10))
 		for i in range(3):
 			var angle=TAU*i/3.
-			var anchor=Vector3(cos(angle)*.38,.42,sin(angle)*.38)
-			M.cylinder(parent,anchor,.048,.64,Color("b3c2bd"),Vector3(sin(angle)*.6,0,cos(angle)*.6),-1,12)
+			# Removed protruding pale braces; the broad base and dark legs carry the turret.
 			M.box(parent,Vector3(cos(angle)*.57,.07,sin(angle)*.57),Vector3(.24,.12,.26),metal)
 		M.merge_children(head)
 	else:

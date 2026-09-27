@@ -5,23 +5,26 @@ static var scalp_triangles={}
 static var fitted_points={}
 static func build(parent:Node3D,role:int,web:bool):
 	var color=Color("393a43") if role==1 else Color("453b3e")
-	var sides=16 if web else 32
-	var rings=5 if web else 9
 	var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES);st.set_smooth_group(0)
-	for row in range(rings):
-		for col in range(sides):
-			var a=point(float(col)/sides,float(row)/rings,role,web)
-			var b=point(float(col+1)/sides,float(row)/rings,role,web)
-			var c=point(float(col)/sides,float(row+1)/rings,role,web)
-			var d=point(float(col+1)/sides,float(row+1)/rings,role,web)
-			for p in [a,b,c,b,d,c]:
-				st.set_color(color.lightened(.04*maxf(0.,sin(col*.65))).srgb_to_linear());st.add_vertex(p)
+	# Follow the actual scalp triangles. The older radial grid could miss a ray
+	# intersection and leave a pointed wedge sticking out of the forehead.
+	var anatomy=AuthoredHuman.source(role)
+	for face in anatomy.faces:
+		var vertices=[];var keep=true
+		for index in face:
+			var p=AuthoredHuman.surface_point(role,anatomy,index)
+			var hem=.070 if p.z<-.040 else .047 if absf(p.x)>.055 else .005
+			if p.y<hem:keep=false;break
+			vertices.append(p)
+		if not keep:continue
+		for p in vertices:
+			st.set_color(color.srgb_to_linear());st.add_vertex(p+(p-Vector3(0,.04,0)).normalized()*.0015)
 	st.generate_normals();st.index()
 	if not web:MeshFactory.instance(parent,st.commit(),Vector3.ZERO,color)
 	# Web paints the hairline directly onto the exact head triangles; an extra
 	# coarse cap would intersect or hover between differently spaced rings.
 	# A tapered ponytail follows the skull; no floating beret or cap.
-	var back=point(.25,.2,role,web).z+.009
+	var back=point(.25,.2,role,false).z+.009
 	var tail=HumanModel.loft(parent,Vector3(0,.015,back),[Vector4(-.18,.012,.017,.036),Vector4(-.12,.025,.028,.035),Vector4(-.04,.036,.034,.023),Vector4(.065,.029,.034,0)],color,8 if web else 16)
 	tail.rotation.z=.12 if role==1 else -.10
 	MeshFactory.cylinder(parent,Vector3(0,.05,back+.004),.033,.016,Color("676271"),Vector3.ZERO,-1.,8)

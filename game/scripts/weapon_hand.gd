@@ -67,9 +67,9 @@ void vertex() {
 }
 void fragment() {
  float light=dot(normalize(paint_normal),normalize(vec3(.35,.85,.4)));
- float band=light<.05?.52:(light<.58?.76:1.0);
+ float band=.66+.34*smoothstep(-.25,.85,light);
  float ink=smoothstep(.08,.20,abs(dot(normalize(NORMAL),normalize(VIEW))));
- ALBEDO=tint.rgb*mix(.2,band,ink);
+ ALBEDO=tint.rgb*mix(.62,band,ink);
 }
 """
 	for index in range(5):

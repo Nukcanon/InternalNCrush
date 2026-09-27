@@ -90,7 +90,7 @@ static func face(parent:Node,which:int,skin:Color,hair:Color):
 		oval(parent,center+Vector3(0,0,-.012),Vector3(.004,.004,.001),Color("182023")).set_meta("surface_kind",4)
 		oval(parent,center+Vector3(-.001,.002,-.0125),Vector3(.0012,.0012,.0006),Color("e5ddd0")).set_meta("surface_kind",4)
 		cord(parent,center+Vector3(-side*.013,.017,-.012),center+Vector3(side*.010,.019,-.009),.0024,hair)
-	if female:OperatorHair.build(parent,which,false)
+	if female:OperatorHair.build(parent,which,RenderStyle.web())
 	# Native head shapes vary: remove the two generic undersized caps rather
 	# than letting them intersect the scalp. Hair and communication gear remain.
 	# Small communication headset leaves the face and human silhouette readable.

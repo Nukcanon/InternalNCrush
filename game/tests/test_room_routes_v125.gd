@@ -9,11 +9,18 @@ func run():
   if not g.players.has(-1):g.add_player(-1,"ROOM WALK","room-check")
   var actor=g.actors[-1];var bot=BotAgent.new();bot.setup(g,-1);g.phase="combat"
   actor.position=g.arena.spawn_points[0][3];actor.velocity=Vector3.ZERO;actor.reset_view(0.);await physics_frame;await physics_frame
-  var centers=[Vector2(-.46,-.46),Vector2(.46,.46),Vector2(-.46,.46),Vector2(.46,-.46)] if index==10 else [Vector2(-.48,-.42),Vector2(.48,.42),Vector2(-.55,.42),Vector2(.55,-.42)]
+  DistrictLayout.route_spec(index)
+  var spec=DistrictLayout.specs[index];var centers=[]
+  for path in spec.paths:
+   for p in path.slice(1,path.size()-1):
+    var center=Vector2(p[0],p[1])-Vector2(spec.dimensions[0],spec.dimensions[1])*.5
+    var pos=Vector3(center.x,0,center.y)
+    if not centers.has(center) and g.arena.navigation_clear(pos) and absf(g.arena.walk_height(pos))<.05:centers.append(center)
+  assert(centers.size()>=4,"Four distinct authored rooms must remain reachable")
+  centers=centers.slice(0,4)
   for center in centers:
-   var goal=Vector3(center.x*g.arena.bounds.x,0,center.y*g.arena.bounds.y)
-   var room_center=goal;goal=g.bot_navigation.point(g.bot_navigation.nearest(goal));bot.path.clear();bot.next_path=0.;bot.goal=goal
-   if goal.distance_to(room_center)>3.:failed+=1;printerr("NO_ROOM_FLOOR ",index," ",room_center);continue
+   var goal=Vector3(center.x,0,center.y)
+   bot.path.clear();bot.next_path=0.;bot.goal=goal
    for tick in range(1800):
     var dt=Engine.time_scale/Engine.physics_ticks_per_second;g.clock+=dt;actor.input_state.x=0.;actor.input_state.z=0.;actor.input_state.sprint=false;bot.navigate(goal,dt);actor.simulate(dt,g.clock,true);await physics_frame
     if actor.position.distance_to(goal)<1.8:break

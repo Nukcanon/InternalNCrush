@@ -1,3 +1,20 @@
+# Active work: 1.2.7 visual rework — partial, not released
+
+Continue `work/v1.2.7-visual-readability`, based on the published 1.2.6 below.
+Read [VISUAL_REWORK_V127_PARTIAL.md](VISUAL_REWORK_V127_PARTIAL.md) first. It records
+the user's complete art/model/map scope, implemented changes, real validation,
+asset licensing, screenshots and unfinished work. Do not claim this is a
+finished art overhaul or deploy it under the old 1.2.6 version.
+
+The latest request requires map-specific materials, lamps and props, with
+genuinely different topology; not every map may have an underground waterway and
+an elevated deck. Optional levels, 11 CC0 texture sources, initial themed props,
+supported decks, stairs, narrower corridors and two-sided geometry are now in
+source. Character anatomy is now shared across editions with a reduced Web body
+and protected face; native hair fitting, faceted weapon shells and hand shading
+also changed. Full visual/performance validation is in progress. Intel iGPU and
+physical-phone performance is unverified.
+
 # Internal N Crush 1.2.6 — published, 2026-09-27
 
 The requested enlarged-map, map-viewer, capture-feedback and louder-announcer update is implemented and published. The user authorized deployment. Do not restart the old 1.2.6 partial work or restore 1.1.x files.

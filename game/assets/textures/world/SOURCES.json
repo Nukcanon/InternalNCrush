@@ -1,0 +1,112 @@
+[
+  {
+    "file": "brick.png",
+    "asset": "brick_wall_001",
+    "source": "https://polyhaven.com/a/brick_wall_001",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brick_wall_001/brick_wall_001_diffuse_1k.jpg",
+    "source_sha256": "6a1233ec0186703de830354d89f122991e61e67fb67e0846c7eaf6c5aefea902",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "stone.png",
+    "asset": "rock_wall_02",
+    "source": "https://polyhaven.com/a/rock_wall_02",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_wall_02/rock_wall_02_diff_1k.jpg",
+    "source_sha256": "4f1d2f80c07e502f5a5ecb4e58388cbf7f4cb33f507e39d024a17ea6d24539b5",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "paving.png",
+    "asset": "cobblestone_floor_01",
+    "source": "https://polyhaven.com/a/cobblestone_floor_01",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cobblestone_floor_01/cobblestone_floor_01_diff_1k.jpg",
+    "source_sha256": "7630d6a59501cab4d2295b2be47bad892b8dae49895b4bee6bc26fd45c423e05",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "wood.png",
+    "asset": "wood_planks",
+    "source": "https://polyhaven.com/a/wood_planks",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks/wood_planks_diff_1k.jpg",
+    "source_sha256": "3b0669f683e4bf10f5a55a381cfa9669a7b8dfd921901829daa3b35acc2bbdec",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "concrete.png",
+    "asset": "concrete_floor_02",
+    "source": "https://polyhaven.com/a/concrete_floor_02",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg",
+    "source_sha256": "6db84a6d87dc50508b9d134d6fbd2b7e876b8081a5f43a118a249ca18de73af5",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "earth.png",
+    "asset": "brown_mud_02",
+    "source": "https://polyhaven.com/a/brown_mud_02",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_02/brown_mud_02_diff_1k.jpg",
+    "source_sha256": "058b6f12493305ec6b47cb5ea77f013c9e7e58216b34af3700a3d3d7d821732d",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "plaster.png",
+    "asset": "white_plaster_rough_01",
+    "source": "https://polyhaven.com/a/white_plaster_rough_01",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_plaster_rough_01/white_plaster_rough_01_diff_1k.jpg",
+    "source_sha256": "8d3b209ec5bbcee3db7a883c6c2eee982b7c18a268e6f43766ee540c7c28ebcb",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "sandstone.png",
+    "asset": "large_sandstone_blocks",
+    "source": "https://polyhaven.com/a/large_sandstone_blocks",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/large_sandstone_blocks/large_sandstone_blocks_diff_1k.jpg",
+    "source_sha256": "2ad242551c841b0c3227bdaec693acc4a4fff3fee6a9576aa501310af2595ee9",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "rust.png",
+    "asset": "rusty_corrugated_iron",
+    "source": "https://polyhaven.com/a/rusty_corrugated_iron",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rusty_corrugated_iron/rusty_corrugated_iron_diff_1k.jpg",
+    "source_sha256": "2525deb17323eefe39e8a90c6384033e31832b6aa9736bea27f81f4148508087",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "painted.png",
+    "asset": "painted_concrete",
+    "source": "https://polyhaven.com/a/painted_concrete",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/painted_concrete/painted_concrete_diff_1k.jpg",
+    "source_sha256": "eac7181921fdafb99aa46be75b664b32387c203e11e11b69ef352ad2aaae1203",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  },
+  {
+    "file": "moss.png",
+    "asset": "mossy_sandstone",
+    "source": "https://polyhaven.com/a/mossy_sandstone",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mossy_sandstone/mossy_sandstone_diff_1k.jpg",
+    "source_sha256": "61ccd3b5ec1f8d27ceee79bef9ced8064c7555570ea53d86ebac35fc337e2997",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Diffuse only, resized to 512x512; Web build downsamples."
+  }
+]
