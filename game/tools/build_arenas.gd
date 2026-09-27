@@ -11,7 +11,12 @@ func physics_signature(node:Node3D) -> String:
 func run():
 	DirAccess.make_dir_recursive_absolute("res://assets/arenas/geometry")
 	DirAccess.make_dir_recursive_absolute("res://assets/arenas/complete")
-	for index in range(Rules.MAPS.size()):
+	var indices=range(Rules.MAPS.size())
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--maps="):
+			indices=[]
+			for entry in arg.trim_prefix("--maps=").split(","):indices.append(int(entry))
+	for index in indices:
 		var started=Time.get_ticks_msec();var arena=Arena.new();arena.bake_geometry=true;root.add_child(arena);arena.build(index)
 		MeshFactory.own_recursive(arena.architecture,arena.architecture)
 		var packed=PackedScene.new();var result=packed.pack(arena.architecture)
@@ -23,4 +28,4 @@ func run():
 		if ArenaCache.save(arena,"res://assets/arenas/complete/map_%02d.scn"%index)!=OK:quit(2);return
 		print("ARENA_BAKED ",index," ms=",Time.get_ticks_msec()-started)
 		arena.free();await process_frame
-	print("ARENAS_BUILT ",Rules.MAPS.size());quit()
+	print("ARENAS_BUILT ",indices.size());quit()

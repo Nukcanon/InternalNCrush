@@ -159,13 +159,25 @@ static func build_sized(a:Node,which:int):
 	for x in [-b.x*.72,0,b.x*.72]:a.detail(Vector3(x,.016,0),Vector3(3,.025,b.y*2-5),walls[theme].darkened(.12))
 	for z in [-b.y*.66,0,b.y*.66]:a.detail(Vector3(0,.018,z),Vector3(b.x*2-4,.027,3),walls[theme].darkened(.12))
 	var index=0
-	for row in SIZED_LAYOUTS[which-6]:
+	var rows=SIZED_LAYOUTS[which-6]
+	if which in [10,13]:
+		rows=[[-.46,-.46,.28,.27],[.46,.46,.28,.27],[-.46,.46,.24,.23],[.46,-.46,.24,.23]] if which==10 else [[-.48,-.42,.32,.26],[.48,.42,.32,.26],[-.55,.42,.22,.22],[.55,-.42,.22,.22]]
+	for row in rows:
 		var pos=Vector3(row[0]*b.x,0,row[1]*b.y);var size=Vector3(row[2]*b.x,1.6 if index%3==0 else 3.2,row[3]*b.y)
 		var too_close=false
 		for objective in a.zones:
 			if Rect2(Vector2(pos.x-size.x*.5,pos.z-size.z*.5),Vector2(size.x,size.z)).grow(3.5).has_point(Vector2(objective.x,objective.z)):too_close=true
 		if too_close:pos.z+=signf(pos.z if pos.z!=0 else 1.)*4.
-		if theme in [0,2]:
+		if which in [10,13]:
+			# Open market sheds / cargo offices replace impassable crate islands.
+			# Four corner rooms provide indoor flanks around the central court.
+			for side in [-1,1]:
+				a.box(pos+Vector3(side*(size.x*.5-.15),1.7,0),Vector3(.30,3.4,size.z),walls[theme])
+				var segment=maxf(.2,(size.x-2.8)*.5)
+				for edge in [-1,1]:a.box(pos+Vector3(edge*(1.4+segment*.5),1.7,side*(size.z*.5-.15)),Vector3(segment,3.4,.30),walls[theme])
+			a.box(pos+Vector3(0,3.55,0),Vector3(size.x+.12,.3,size.z+.12),accent[theme])
+			a.set_meta("renewed_level_rooms",4)
+		elif theme in [0,2]:
 			a.box(pos+Vector3.UP*size.y*.5,size,accent[theme]);a.detail(pos+Vector3(0,size.y+.10,0),Vector3(size.x+.15,.20,size.z+.15),walls[theme])
 			for x in [-size.x*.35,size.x*.35]:a.detail(pos+Vector3(x,size.y*.5,-size.z*.5-.025),Vector3(.08,size.y-.2,.07),Color("e0dcc7"))
 		elif theme==1 or theme==4:a.crate(pos,size)

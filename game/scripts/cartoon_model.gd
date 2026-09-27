@@ -62,7 +62,7 @@ static func build(role:int,team:int) -> Node3D:
 	form(chest,[Vector3(-.21,.145,.11),Vector3(.10,.20,.13),Vector3(.22,.10,.09)],shirt)
 	form(chest,[Vector3(.20,.055,.05),Vector3(.30,.055,.05)],skin)
 	var female=role in HumanModel.FEMALE_ROLES
-	form(head,[Vector3(-.073,.041,.048),Vector3(-.033,.065,.067),Vector3(.055,.081,.083),Vector3(.13,.08,.078),Vector3(.18,.052,.053)],skin,12,role) if female else form(head,[Vector3(-.09,.055,.065),Vector3(-.04,.085,.085),Vector3(.10,.087,.088),Vector3(.18,.055,.055)],skin)
+	form(head,[Vector3(-.073,.036,.055),Vector3(-.052,.049,.069),Vector3(-.022,.061,.067),Vector3(.055,.081,.083),Vector3(.13,.08,.078),Vector3(.18,.052,.053)],skin,12,role) if female else form(head,[Vector3(-.09,.055,.065),Vector3(-.04,.085,.085),Vector3(.10,.087,.088),Vector3(.18,.055,.055)],skin)
 	# Flat painted eyes/brows and one small nose, no glossy eyeballs or skin maps.
 	for side in [-1,1]:
 		box(head,Vector3(side*.038,.045,-.083),Vector3(.026,.012,.009),ink)

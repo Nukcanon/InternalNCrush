@@ -139,16 +139,26 @@ static func build(which:int,team:int) -> Node3D:
 	if which in FEMALE_ROLES:
 		pass # Authored female anatomy shares the animation skeleton.
 	# Role-specific soft gear: radio, scout scarf, padded vest, tool roll, satchel, medical bag.
-	if which==2:oval(chest,Vector3(0,-.015,.16),Vector3(.34,.40,.19),Color("6a715e"))
+	if which==2:carry_pack(chest,Vector3(0,-.015,.16),Vector3(.34,.40,.19),Color("6a715e"),false)
 	if which==3:
-		oval(hips,Vector3(.213,-.105,.028),Vector3(.10,.19,.19),Color("987851"))
+		carry_pack(hips,Vector3(.213,-.105,.028),Vector3(.10,.19,.19),Color("987851"),false)
 		for i in range(3):cord(hips,Vector3(.26,-.12,.0+i*.04),Vector3(.26,.07,.0+i*.04),.011,Color("a8aa9b"))
-	if which==4:oval(chest,Vector3(-.10,-.1,.167),Vector3(.26,.31,.16),Color("797970"))
+	if which==4:carry_pack(chest,Vector3(-.10,-.1,.167),Vector3(.26,.31,.16),Color("797970"),false)
 	if which==5:
-		oval(chest,Vector3(0,-.04,.17),Vector3(.32,.36,.18),Color("bbb8a0"))
+		carry_pack(chest,Vector3(0,-.04,.17),Vector3(.32,.36,.18),Color("bbb8a0"),true)
 	if which in [0,4]:
 		oval(chest,Vector3(.16,.06,.133),Vector3(.09,.16,.085),dark)
 		cord(chest,Vector3(.16,.13,.14),Vector3(.16,.29,.14),.004,dark)
 	joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
 	AuthoredHuman.install(root,which,team,skin,shirt,trousers)
 	return root
+static func carry_pack(parent:Node,position:Vector3,size:Vector3,color:Color,medical:bool):
+	# Boxed fabric shell, folded flap and webbing read as equipment at a distance.
+	M.box(parent,position,size,color,Vector3.ZERO,.15)
+	M.box(parent,position+Vector3(0,size.y*.30,size.z*.51),Vector3(size.x*1.03,size.y*.29,.018),color.lightened(.08))
+	for side in [-1,1]:
+		M.box(parent,position+Vector3(side*size.x*.29,0,size.z*.53),Vector3(size.x*.10,size.y*.95,.016),Color("3c4946"))
+		M.box(parent,position+Vector3(side*size.x*.29,size.y*.15,size.z*.59),Vector3(size.x*.17,.034,.015),Color("a2a49a"))
+	if medical:
+		M.box(parent,position+Vector3(0,0,size.z*.54),Vector3(.033,.14,.014),Color("538e7e"))
+		M.box(parent,position+Vector3(0,0,size.z*.56),Vector3(.12,.033,.014),Color("538e7e"))

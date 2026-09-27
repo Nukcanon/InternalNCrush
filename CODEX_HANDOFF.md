@@ -1,3 +1,7 @@
+# 1.2.5 candidate in progress — 2026-09-27
+
+Latest user request: fix free-loadout footer, carried equipment silhouettes, SERA/MINA jaw profiles and competitive map structure. Candidate code and rebuilt local assets are in this checkout; see VALIDATION_V125.md. Public 1.2.4 remains the published baseline until the new exact packages are verified. Do not revert these changes or confuse native and Web staging.
+
 # Internal N Crush 1.2.4 published handoff — 2026-09-27
 
 **1.2.4 is published.** Immutable runtime source/tag: `8c9e3572ac9e00d387eb6c57f83cdaa7c061942c`. [Windows/Web/NAS release](https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.4) · [live page](https://nukcanon.github.io/nukcanon/internal-n-crush.html). Later main commits update documentation/CI artifact handling only. Start from current main and preserved branch `work/v1.2.3-stability-20260927`; never restore old 1.1.x files. This work continues the fetched 1.2.2 baseline and recovered/published 1.2.3.

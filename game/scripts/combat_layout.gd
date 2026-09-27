@@ -62,4 +62,34 @@ static func build(a:Node):
 		for x in [-a.bounds.x*.6,0.,a.bounds.x*.6]:
 			a.detail(Vector3(x,height-.24,0),Vector3(.45,.42,a.bounds.y*1.9),trim)
 		a.set_meta("enclosed_roof_height",height)
-	a.set_meta("sight_blockers",count)
+	# Partition the large ground-floor halls into staggered rooms. Keep the
+	# centre door-to-door path and both stairs clear; teams receive half-turn
+	# equivalents, while each map uses its own wing depth and corridor rhythm.
+	var partitions=0
+	if a.vertical_map:
+		var depth=float(a.get_meta("wing_depth",16.));var width=clampf(a.bounds.x*.30,10.,22.)
+		for wing in a.get_meta("main_wings",[]):
+			var side=signf(wing.x);var offset=maxf(2.0,width*.25)
+			var length=depth*(.30+float(a.map_index%3)*.04)
+			for section in [-1,1]:
+				var p=Vector3(wing.x+section*offset,1.8,wing.z+section*side*depth*.19)
+				a.box(p,Vector3(.32,3.6,length),wall)
+				# Open end of each L faces the opposite side of the hall.
+				var return_width=maxf(.9,width*.5-offset-.6)
+				a.box(p+Vector3(section*return_width*.5,0,-section*side*length*.5),Vector3(return_width,3.6,.32),wall)
+				partitions+=2
+	else:
+		# Level arenas gain dogleg passages rather than an extra vertical layer.
+		for fraction in [.28,.44,.60,.76]:
+			for depth in [-.58,-.36,-.12,.12,.36,.58]:
+				var point=Vector3(a.bounds.x*fraction,0,a.bounds.y*depth)
+				var half=Vector2(2.6,2.6)
+				if partitions>=8 or not valid(a,point,half) or not valid(a,-point,half):continue
+				for side in [-1,1]:
+					var p=point*side
+					a.box(p+Vector3(0,1.9,0),Vector3(.4,3.8,4.8),wall)
+					a.box(p+Vector3(side*1.1,1.9,-side*2.2),Vector3(2.6,3.8,.4),wall)
+					a.box(p+Vector3(side*1.1,4.,0),Vector3(2.6,.25,4.8),trim)
+					partitions+=2
+	a.set_meta("room_partitions",partitions)
+	a.set_meta("sight_blockers",count+partitions)

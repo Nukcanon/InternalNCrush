@@ -13,10 +13,10 @@ def coords(ring):return [[round(x,5),round(z,5)] for x,z in ring.coords]
 for key,s in specs.items():
     shapes=[]
     for i,(x,z) in enumerate(s['points']):
-        rx,rz=(10,7) if i==0 else (7,7) if i in (2,3) else (5,5)
+        rx,rz=s['radii'][i]
         shapes.append(box(x-rx,z-rz,x+rx,z+rz))
     for a,b in s['links']:
-        shapes.append(LineString([s['points'][a],s['points'][b]]).buffer(3.5,quad_segs=3))
+        shapes.append(LineString([s['points'][a],s['points'][b]]).buffer(s['lane_width'],quad_segs=3))
     x,z=s['points'][3 if s['style'] in (1,8) or s['style']%2 else 2]
     shapes.append(box(x-4,z-6,x+2,z+17))
     bounds=Polygon(s['perimeter'])

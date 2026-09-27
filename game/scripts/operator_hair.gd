@@ -51,7 +51,7 @@ static func fit_scalp(point:Vector3,role:int) -> Vector3:
 			if data.vertices[face[0]][1]<1.52 or data.vertices[face[1]][1]<1.52 or data.vertices[face[2]][1]<1.52:continue
 			var vertices=[]
 			for index in face:
-				var p=data.vertices[index];vertices.append(AuthoredHuman.face_point(role,Vector3(p[0],p[1]-1.6,p[2])))
+				vertices.append(AuthoredHuman.surface_point(role,data,index))
 			triangles.append(vertices)
 		scalp_triangles[role]=triangles
 	var center=Vector3(0,.04,0);var direction=(point-center).normalized();var best=INF;var fitted=point

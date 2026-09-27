@@ -574,7 +574,7 @@ func gear():
 		gear_price=economy_box(actions,"선택 장비 가격",Color.WHITE)
 		gear_cash=economy_box(actions,"보유 금액",Color("ffda73"))
 	else:
-		gear_price=label("장비 선택 무료",17,actions);gear_cash=null;gear_buy_status=null
+		gear_price=economy_box(actions,"장비 선택",Color("ffdc76"));gear_price.text="무료";gear_cash=null;gear_buy_status=null
 	notice_label=label("",14);notice_label.modulate=Color("80cfef")
 	refresh_weapons()
 	var wanted=queued.get("primary",p.primary)
@@ -590,8 +590,8 @@ func economy_box(parent:Node,title:String,color:Color) -> Label:
 	var box=PanelContainer.new();box.custom_minimum_size=Vector2(158,66);parent.add_child(box)
 	var style=StyleBoxFlat.new();style.bg_color=Color("142330");style.border_color=Color("596c7a");style.set_border_width_all(1);style.content_margin_left=12;style.content_margin_right=12;style.content_margin_top=5;style.content_margin_bottom=5;box.add_theme_stylebox_override("panel",style)
 	var content=VBoxContainer.new();content.add_theme_constant_override("separation",0);box.add_child(content)
-	var caption=label(title,14,content);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	var value=label("0",32,content);value.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;value.add_theme_color_override("font_color",color)
+	var caption=label(title,14,content);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;caption.autowrap_mode=TextServer.AUTOWRAP_OFF
+	var value=label("0",32,content);value.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;value.autowrap_mode=TextServer.AUTOWRAP_OFF;value.add_theme_color_override("font_color",color)
 	return value
 func refresh_gear_economy():
 	if screen!="gear" or not is_instance_valid(gear_price) or weapon_ids.is_empty() or bot_setup:return
@@ -704,7 +704,7 @@ func refresh_gear_detail():
 	var primary=Catalog.get_weapon(weapon_ids[gear_primary.selected])
 	role_detail.text="%s  /  %s\n%s"%[Rules.CLASSES[role],"주무기 없음" if weapon_ids[gear_primary.selected].is_empty() else primary.name,"선택한 장비는 다음 부활에 적용" if game.phase=="combat" and not game.options.get("practice",false) else "장비를 선택하세요."]
 	var cost=game.loadout_cost(p,selected_loadout())
-	gear_price.text=str(cost) if game.options.mode==4 else "장비 선택 무료"
+	gear_price.text=str(cost) if game.options.mode==4 else "무료"
 	if is_instance_valid(preview_widget):preview_widget.display(preview_kind,role,int(p.team),preview_id,gear_armor.selected if preview_kind==3 else gear_gadget.get_selected_id(),gear_armor.selected)
 	gear_submit.text="선택한 장비로 연습 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활에 적용 예약" if game.options.mode!=4 else "준비 시간에 구매 가능"
 	refresh_gear_economy()

@@ -113,21 +113,31 @@ static func build_gadget_model(parent:Node3D,role:int,variant:int):
 				rod(parent,hinge,knee,.026,dark);rod(parent,knee,foot,.018,Color("68777e"))
 				var spring_a=hinge+Vector3(side*.033,-.025,.035);var spring_b=knee+Vector3(side*.032,.03,.035)
 				rod(parent,spring_a,spring_b,.012,light)
-				for i in range(12):
-					var pt=spring_a.lerp(spring_b,i/11.)
+				for i in range(3 if RenderStyle.web() else 12):
+					var pt=spring_a.lerp(spring_b,i/(2. if RenderStyle.web() else 11.))
 					var coil=m.cylinder(parent,pt,.018,.006,dark);coil.quaternion=Quaternion(Vector3.UP,(spring_b-spring_a).normalized())
 				m.box(parent,foot,Vector3(.082,.034,.10),Color("202a30"),Vector3(0,0,side*.12),.3)
 
 		3:
 			var cover=Node3D.new();parent.add_child(cover);CombatFX.device(cover,"cover",0);cover.scale=Vector3.ONE*.32
 		4:
-			m.cylinder(parent,Vector3(0,.2,0),.10,.35,Color("d4c691") if variant==1 else Color("81a292"));m.box(parent,Vector3(0,.4,0),Vector3(.12,.07,.12),dark)
+			# Flash grenade: vented steel cage. Smoke: squat painted canister.
+			var flash=variant==1;var paint=Color("d4c691") if flash else Color("81a292")
+			m.cylinder(parent,Vector3(0,.2,0),.087 if flash else .105,.35,paint,Vector3.ZERO,-1,8 if RenderStyle.web() else 16)
+			m.box(parent,Vector3(0,.4,0),Vector3(.12,.07,.12),dark)
+			for side in [-1,1]:
+				m.box(parent,Vector3(side*.088,.20,0),Vector3(.025,.25,.14),light if flash else dark)
+				if flash:
+					for y in [.12,.19,.26]:m.box(parent,Vector3(side*.103,y,0),Vector3(.006,.025,.10),dark)
+			m.box(parent,Vector3(0,.21,-.107),Vector3(.12,.12,.008),Color("eee6c6"))
+			m.box(parent,Vector3(0,.21,-.113),Vector3(.07,.018,.008),dark)
 		5:
 			m.box(parent,Vector3(0,.22,0),Vector3(.55,.4,.18),light,Vector3.ZERO,.5);m.box(parent,Vector3(0,.22,-.1),Vector3(.07,.25,.025),accent);m.box(parent,Vector3(0,.22,-.101),Vector3(.25,.07,.025),accent)
 static func grenade_model(parent:Node3D):
 	var m=MeshFactory;var shell=Color("657350");var steel=Color("889895")
-	HumanModel.loft(parent,Vector3(0,.16,0),[Vector4(-.14,.04,.04,0),Vector4(-.10,.09,.09,0),Vector4(.06,.095,.095,0),Vector4(.13,.065,.065,0)],shell,24)
-	for y in [.08,.16,.24]:m.cylinder(parent,Vector3(0,y,0),.098,.015,Color("36473c"),Vector3.ZERO,-1,24)
+	var sides=8 if RenderStyle.web() else 16
+	HumanModel.loft(parent,Vector3(0,.16,0),[Vector4(-.14,.04,.04,0),Vector4(-.10,.09,.09,0),Vector4(.06,.095,.095,0),Vector4(.13,.065,.065,0)],shell,sides)
+	for y in [.08,.16,.24]:m.cylinder(parent,Vector3(0,y,0),.098,.015,Color("36473c"),Vector3.ZERO,-1,sides)
 	m.cylinder(parent,Vector3(0,.31,0),.042,.055,steel)
 	m.box(parent,Vector3(.071,.20,0),Vector3(.022,.26,.047),steel,Vector3(0,0,.16))
 	var ring=TorusMesh.new();ring.inner_radius=.025;ring.outer_radius=.032;ring.rings=16;ring.ring_segments=6;m.instance(parent,ring,Vector3(-.05,.32,0),steel,Vector3(PI/2,0,0))

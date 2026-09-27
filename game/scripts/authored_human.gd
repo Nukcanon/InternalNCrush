@@ -3,6 +3,14 @@ class_name AuthoredHuman
 # CC0 anatomical mesh data, retargeted offline. See assets/human/source/LICENSE.md.
 static var data={}
 static var meshes={}
+static func surface_point(which:int,info:Dictionary,index:int) -> Vector3:
+	var v=info.vertices[index];var p=Vector3(v[0],v[1]-1.6,v[2])
+	if which in HumanModel.FEMALE_ROLES and p.y>-.14:
+		# Undo the older offline elongated-chin morph before applying identity.
+		# The original face coordinates retain the anatomical lip/chin relationship.
+		var q=info.face_coordinates[index]
+		p=p.lerp(Vector3(q[0],q[1],q[2]),smoothstep(-.14,-.07,p.y))
+	return face_point(which,p)
 static func source(which:int) -> Dictionary:
 	var gender="female" if which in HumanModel.FEMALE_ROLES else "male"
 	if not data.has(gender):data[gender]=JSON.parse_string(FileAccess.get_file_as_string("res://assets/human/"+gender+".json"))
@@ -81,7 +89,7 @@ static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trouse
 				st.set_bones(bones);st.set_weights(weights);st.set_color(color.srgb_to_linear());st.set_uv2(Vector2(.67 if surface_kind==0 else .9,float(surface_kind)+.01))
 				var point=Vector3(p[0],p[1]-.94,p[2])
 				if p[1]>1.45:
-					var shaped=face_point(which,Vector3(p[0],p[1]-1.6,p[2]))
+					var shaped=surface_point(which,info,index)
 					point=shaped+Vector3(0,.66,0)
 				st.add_vertex(point)
 		st.generate_normals();st.index();meshes[key]=st.commit()

@@ -38,22 +38,35 @@ static func spec(index:int) -> Dictionary:
 		[[0,4],[0,6],[0,5],[4,7],[7,2],[6,8],[8,3],[5,7],[5,8],[2,1],[3,1]],
 		[[0,4],[0,6],[0,5],[4,2],[5,7],[7,2],[6,3],[7,8],[8,3],[8,1],[2,1]]
 	][k]
-	return {"points":points,"links":links,"size":Vector2(32,40) if k<6 else Vector2(38,46),"indoor":k in [1,3,6,8,10],"night":k in [4,9,11],"style":k}
+	var rooms=points.size();var routes=[];var radii=[]
+	for i in range(rooms):radii.append(Vector2(10,7) if i==0 else Vector2(7,7) if i in [2,3] else Vector2(5,5))
+	# Keep spawn/objective identities, but bend long approaches behind solid
+	# building islands. Junction rooms connect the long flank, middle and short
+	# retake routes; no runtime CSG or additional per-frame geometry.
+	for i in range(links.size()):
+		var link=links[i];var start:Vector2=points[link[0]];var end:Vector2=points[link[1]]
+		if start.distance_to(end)<18. or link[0] in [0,1] or link[1] in [0,1]:routes.append(link);continue
+		var side=1. if (i+k)%2==0 else -1.
+		var normal=(end-start).normalized().orthogonal()*side*(3.5+float(k%3))
+		var first=points.size();points.append(start.lerp(end,.38)+normal);radii.append(Vector2(2.7,2.7))
+		var second=points.size();points.append(start.lerp(end,.70)+normal);radii.append(Vector2(2.7,2.7))
+		routes.append_array([[link[0],first],[first,second],[second,link[1]]])
+	return {"points":points,"links":routes,"radii":radii,"rooms":rooms,"lane_width":2.7,"size":Vector2(32,40) if k<6 else Vector2(38,46),"indoor":k in [1,3,6,8,10],"night":k in [4,9,11],"style":k}
 static func inside(p:Vector2,s:Dictionary) -> bool:
 	var upper=s.points[3 if s.style in [1,8] or s.style%2==1 else 2]
 	if Rect2(upper+Vector2(-4.,-6.),Vector2(6.,23.)).has_point(p):return true
 	for i in range(s.points.size()):
-		var radius=Vector2(10,7) if i==0 else Vector2(7,7) if i in [2,3] else Vector2(5,5)
+		var radius:Vector2=s.radii[i]
 		if Rect2(s.points[i]-radius,radius*2).has_point(p):return true
 	for link in s.links:
-		if Geometry2D.get_closest_point_to_segment(p,s.points[link[0]],s.points[link[1]]).distance_to(p)<3.5:return true
+		if Geometry2D.get_closest_point_to_segment(p,s.points[link[0]],s.points[link[1]]).distance_to(p)<s.lane_width:return true
 	return false
 static func build(a:Node,index:int):
 	var s=spec(index);a.bounds=s.size;a.indoors=s.indoor;a.has_water=false;a.vertical_map=true;a.set_meta("night",s.night)
 	var wall=[Color("cab38d"),Color("91a9ae"),Color("b8b2a0"),Color("acb4af"),Color("86959b"),Color("c0b7a0"),Color("8f9e9b"),Color("a7bca8"),Color("93a7ae"),Color("91acba"),Color("bdc9c8"),Color("b7ad9b")][s.style]
 	a.box(Vector3(0,-.4,0),Vector3(a.bounds.x*2,.8,a.bounds.y*2),Color("a2acaa"));a.build_perimeter(index)
 	a.set_meta("route_spec",s);shell(a,index,wall)
-	for i in range(s.points.size()):
+	for i in range(s.rooms):
 		var point=Vector3(s.points[i].x,0,s.points[i].y)
 		if i==0 or i==1:
 			for slot in range(8):

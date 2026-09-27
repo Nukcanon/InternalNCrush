@@ -181,5 +181,16 @@
   "validation_document": "VALIDATION_V124.md",
   "request_audit_document": "V124_REQUEST_AUDIT.md",
   "performance_document": "PERFORMANCE_V124_KO.md",
-  "handoff_document": "CODEX_HANDOFF.md"
+  "handoff_document": "CODEX_HANDOFF.md",
+  "pending_update": {
+    "version": "1.2.5",
+    "status": "candidate_under_validation",
+    "validation": "VALIDATION_V125.md",
+    "scope": [
+      "free-equipment footer",
+      "female face profile",
+      "carried equipment",
+      "competitive map routes"
+    ]
+  }
 }
