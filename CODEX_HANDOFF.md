@@ -1,3 +1,7 @@
+# Latest approved update (same 1.3.2)
+
+Source `d8862fd`: QUAD/COMET balance, three separate assault plates, tier-colored cover thickness, passive gadget HUD, uniform human/bot team rows and separated combat/menu notifications. Published native/Web; exports completed, no gameplay tests by request. Current links in PUBLICATION_STATUS.json. Older entries below remain historical.
+
 # Latest publication: 1.3.2 same-version update
 
 Source `9e781e5` is deployed. Web: https://nukcanon.github.io/nukcanon/play/?build=800346d668c1 . See PUBLICATION_STATUS.json and docs/V132_HOTFIX.md. Latest UI and ARC updates exported and published; additional game tests explicitly skipped by user. Earlier test results below are historical. Version-history Word document delivered locally under artifacts/version-history (36 release entries, 30 pages).
