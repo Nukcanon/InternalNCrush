@@ -74,7 +74,7 @@ func _process(dt):
 		queue_redraw()
 func layout_actions(p:Dictionary):
 	var actions=["use"]
-	if GadgetLoadout.selectable(p) or p.get("cooking",0)>0 or p.get("placing","")=="cover":actions.push_front("gadget")
+	if GadgetLoadout.has_item(p) or p.get("cooking",0)>0 or p.get("placing","")=="cover":actions.push_front("gadget")
 	else:buttons.erase("gadget");held.gadget=false
 	var font=game.ui.theme.default_font if is_instance_valid(game) and is_instance_valid(game.ui) else ThemeDB.fallback_font
 	for action in ["sprint","auto_fire"]:
@@ -207,7 +207,7 @@ func _draw():
 			title="설치 취소" if p.get("placing","")=="turret" else "%d초"%ceili(remain) if remain>0 else state.label;font_size=22
 			var fraction=1.-clampf(remain/state.duration,0.,1.)
 			draw_line(rect.position+Vector2(8,rect.size.y-5),rect.position+Vector2(8+(rect.size.x-16)*fraction,rect.size.y-5),Color("6cdfc3"),3.)
-		if action=="gadget":title="표식기 · 자동" if not p.is_empty() and MarkerTracker.equipped(p) else "가젯 ×"+str(p.get("gadget_count",0));font_size=22
+		if action=="gadget":title=GadgetLoadout.label(p)+" · 자동" if not p.is_empty() and GadgetLoadout.passive(p) else "가젯 ×"+str(p.get("gadget_count",0));font_size=22
 		if action=="gadget" and p.get("placing","")=="cover":title="설치 취소"
 		if action=="fire" and p.get("placing","")!="":title="설치 확정";font_size=22
 		if action=="fire" and not p.get("alive",false):title="다음 관전";font_size=22

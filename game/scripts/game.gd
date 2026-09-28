@@ -460,7 +460,7 @@ func spawn(id:int):
 		var requested=p.pending_loadout.duplicate();p.pending_loadout={};commit_loadout(id,requested)
 	var best=choose_spawn(id)
 	var armor_before=float(p.armor)
-	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.laser_heat=0.;p.laser_lock=0.;p.laser_firing=false;p.laser_dt=0.;p.cooking=0;p.slide_until=0.;p.hp=R.max_hp(p);p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;p.last_hit=clock;p.contributors={};p.spectator=false
+	a.collision_layer=2;a.position=best;a.target_pos=best;a.velocity=Vector3.ZERO;p.alive=true;p.plate=0.;p.laser_heat=0.;p.laser_lock=0.;p.laser_firing=false;p.laser_dt=0.;p.cooking=0;p.slide_until=0.;p.hp=R.max_hp(p);p.armor=p.armor_max;p.reload=0.;p.protect=clock+R.SPAWN_PROTECTION;p.energy=180.;p.heal_mag=3;p.heal_reserve=3;p.repair_energy=100.;p.last_hit=clock;p.contributors={};p.spectator=false
 	if int(options.mode)==4:p.armor=armor_before
 	else:p.owned_primary=true;p.owned_secondary=true;p.owned_gadget=true;GadgetLoadout.reset(p)
 	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.;p.reveal_to={}
@@ -493,7 +493,7 @@ func passive_regen(p:Dictionary,dt:float):
 	if options.autoheal and p.alive and clock-maxf(p.last_hit,float(p.get("shot_time",-100.)))>=R.REGEN_DELAY:p.hp=minf(R.max_hp(p),p.hp+R.REGEN_RATE*dt)
 func kick_player(requester:int,target:int,by_vote=false) -> bool:
 	if not server or (not TeamBalance.host(self,requester) and not by_vote) or TeamBalance.host(self,target) or not players.has(target):return false
-	if players[target].get("auto_balance",false):feedback(requester,"","균형 봇은 참가 인원에 맞춰 자동으로 관리됩니다.");return false
+	if players[target].get("auto_balance",false):feedback(requester,"","균형 봇은 참가 인원에 맞춰 자동으로 관리됩니다.",true);return false
 	var name=players[target].nick;var token=players[target].token
 	if target>0:
 		banned_tokens[token]=Time.get_ticks_msec()+180000
@@ -508,7 +508,7 @@ func start_kick_vote(requester:int,target:int) -> bool:
 	var eligible=[]
 	for id in players:
 		if id>0 and id!=target:eligible.append(id)
-	if eligible.size()<2:feedback(requester,"","강퇴 투표는 대상 외 참가자가 2명 이상 있어야 합니다.");return false
+	if eligible.size()<2:feedback(requester,"","강퇴 투표는 대상 외 참가자가 2명 이상 있어야 합니다.",true);return false
 	vote={"target":target,"name":players[target].nick,"eligible":eligible,"votes":{requester:true},"needed":maxi(2,int(ceil(eligible.size()*.6))),"until":clock+25.}
 	vote_cooldowns[requester]=Time.get_ticks_msec()+60000;announce(players[target].nick+" 강퇴 투표 · F6 찬성 / F7 반대");broadcast_state(true);return true
 func cast_kick_vote(id:int,yes:bool) -> bool:
@@ -862,7 +862,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 			pass # Only the selected loadout can be used; no mixed smoke/flash pack.
 func change_team(requester:int,target:int,team:int) -> bool:
 	var ok=TeamBalance.move(self,requester,target,team)
-	if not ok:feedback(requester,"","본인 또는 방장이 관리하는 봇만 인원 균형을 유지하며 이동할 수 있습니다.")
+	if not ok:feedback(requester,"","본인 또는 방장이 관리하는 봇만 인원 균형을 유지하며 이동할 수 있습니다.",true)
 	return ok
 func swap_teams(requester:int,first:int,second:int) -> bool:
 	if first==second or not players.has(first) or not players.has(second) or int(options.mode)==1:return false
@@ -896,12 +896,12 @@ func apply_loadout(id:int,d:Dictionary):
 	d=WeaponRules.selection(options,d)
 	var p=players[id]
 	if bool(d.get("immediate",false)):
-		if not RedeployRules.available(self,p):feedback(id,"","남은 부활 횟수가 없거나 지금은 즉시 적용할 수 없습니다.");return
-		if RedeployRules.wait_seconds(self,p)>0.:feedback(id,"","즉시 적용은 %.1f초 후 다시 사용할 수 있습니다."%RedeployRules.wait_seconds(self,p));return
-		if not d.get("redeploy_confirmed",false):feedback(id,"","사망 및 부활 횟수 소모를 먼저 확인하세요.");return
+		if not RedeployRules.available(self,p):feedback(id,"","남은 부활 횟수가 없거나 지금은 즉시 적용할 수 없습니다.",true);return
+		if RedeployRules.wait_seconds(self,p)>0.:feedback(id,"","즉시 적용은 %.1f초 후 다시 사용할 수 있습니다."%RedeployRules.wait_seconds(self,p),true);return
+		if not d.get("redeploy_confirmed",false):feedback(id,"","사망 및 부활 횟수 소모를 먼저 확인하세요.",true);return
 		if not valid_loadout(p,d):return
 		# Purchases still require the team's spawn and an open buy window.
-		if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","구매 시간 안에 팀 시작 위치에서 변경할 수 있습니다.");return
+		if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","구매 시간 안에 팀 시작 위치에서 변경할 수 있습니다.",true);return
 		p.redeploy_ready=clock+RedeployRules.COOLDOWN;p.protect=0.;p.invulnerable=0.;p.pending_loadout={}
 		damage(id,100000.,id,false,"redeploy")
 		if int(options.mode)==0 and not options.get("practice",false):scores[1-int(p.team)]+=1
@@ -909,12 +909,12 @@ func apply_loadout(id:int,d:Dictionary):
 		var chosen=d.duplicate();chosen.erase("immediate");chosen.confirmed=true
 		commit_loadout(id,chosen)
 		return
-	if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","현재 장비를 구매할 수 없습니다. 구매 시간과 생존 상태를 확인하세요.");return
-	if int(options.mode)==4 and DefusalEconomy.replacement(p,d) and not d.get("confirmed",false):feedback(id,"","기존 장비 교체를 먼저 확인하세요.");return
-	if not valid_loadout(p,d):feedback(id,"","이 병과에서 선택할 수 없는 무기입니다.");return
+	if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","현재 장비를 구매할 수 없습니다. 구매 시간과 생존 상태를 확인하세요.",true);return
+	if int(options.mode)==4 and DefusalEconomy.replacement(p,d) and not d.get("confirmed",false):feedback(id,"","기존 장비 교체를 먼저 확인하세요.",true);return
+	if not valid_loadout(p,d):feedback(id,"","이 병과에서 선택할 수 없는 무기입니다.",true);return
 	if phase not in ["lobby","buy"] and int(options.mode)!=4 and not options.get("practice",false):
 		p.pending_loadout=d.duplicate();loadout_accepted(id)
-		feedback(id,"","선택 예약 완료 · 다음 부활"+(" / 다음 라운드 구매 시간" if int(options.mode)==4 else "")+"에 적용됩니다.");return
+		feedback(id,"","선택 예약 완료 · 다음 부활"+(" / 다음 라운드 구매 시간" if int(options.mode)==4 else "")+"에 적용됩니다.",true);return
 	commit_loadout(id,d)
 func commit_loadout(id:int,d:Dictionary):
 	d=WeaponRules.selection(options,d)
@@ -922,12 +922,12 @@ func commit_loadout(id:int,d:Dictionary):
 	if int(options.mode)==4 and (not DefusalEconomy.can_buy(self,id) or (DefusalEconomy.replacement(p,d) and not d.get("confirmed",false))):return
 	if not valid_loadout(p,d):return
 	var role=clampi(int(d.get("role",p.role)),0,5)
-	if role==5 and p.role!=5 and options.classes and medic_count(p.team)>=R.medic_cap(team_count(p.team)):feedback(id,"","메딕 정원이 차서 이전 장비를 유지합니다.");return
+	if role==5 and p.role!=5 and options.classes and medic_count(p.team)>=R.medic_cap(team_count(p.team)):feedback(id,"","메딕 정원이 차서 이전 장비를 유지합니다.",true);return
 	var wid=str(d.get("primary",C.first(role)));var sec=str(d.get("secondary",R.SECONDARIES[role]))
 	if role==3 and d.get("repair",false):sec="repair"
 	var armor=clampi(int(d.get("armor",0)),0,2)*25;var gadget=-1 if int(options.mode)==4 and int(d.get("gadget",0))<0 else 9 if int(options.mode)==4 and int(d.get("gadget",0))==9 else 8 if int(d.get("gadget",0))==8 else clampi(int(d.get("gadget",0)),0,2)
 	var cost=loadout_cost(p,d)
-	if p.cash<cost:feedback(id,"","구매 실패 · 필요 %d / 보유 %d 크레딧"%[cost,p.cash]);return
+	if p.cash<cost:feedback(id,"","구매 실패 · 필요 %d / 보유 %d 크레딧"%[cost,p.cash],true);return
 	p.cash-=cost
 	if p.role!=role:
 		for did in devices.keys():
@@ -939,7 +939,7 @@ func commit_loadout(id:int,d:Dictionary):
 	var health_fraction=clampf(float(p.hp)/R.max_hp(p),0.,1.)
 	p.role=role;p.hp=R.max_hp(p)*health_fraction;p.primary=wid;p.secondary=sec;p.armor_max=armor;p.armor=armor;p.slot=0 if not wid.is_empty() else 1;p.gadget=gadget;GadgetLoadout.reset(p);p.owned_gadget=gadget>=0;p.owned_secondary=sec!="pistol";p.reload=0.;p.owned_primary=not wid.is_empty();p.burst_left=0;p.trigger_until=0.;p.switch_until=clock+.32;p.fire_ready=clock+.32;equip_ammo(p)
 	loadout_accepted(id)
-	feedback(id,"","구매 완료 · %d 크레딧 사용"%cost if cost>0 else "장비 적용 완료")
+	feedback(id,"","구매 완료 · %d 크레딧 사용"%cost if cost>0 else "장비 적용 완료",true)
 func loadout_accepted(id:int):
 	if id==local_id:close_loadout()
 	elif id>0 and id in multiplayer.get_peers():close_loadout.rpc_id(id)
@@ -1083,10 +1083,12 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 		var dir=(actors[source].position-actors[target].position).normalized()
 		dir.y=0.;dir=dir.normalized()
 		if (Basis(Vector3.UP,actors[target].aim_yaw)*Vector3.FORWARD).dot(dir)>.4:amount*=.15
-	var armored=p.armor>0 and weapon_id!="fall"
+	var armored=(p.armor>0 or float(p.get("plate",0))>0) and weapon_id!="fall"
 	# Bonus consumes armor only; any base damage left after breaking armor remains unscaled.
-	if armored and weapon_id=="h6":amount+=minf(float(p.armor),amount*1.3)*(1.-1./1.3)
-	var absorb=minf(p.armor,amount) if weapon_id!="fall" else 0.;p.armor-=absorb;p.hp-=amount-absorb;p.last_hit=clock
+	if armored and weapon_id=="h6":amount+=minf(float(p.armor)+float(p.get("plate",0)),amount*1.3)*(1.-1./1.3)
+	var plate_absorb=minf(float(p.get("plate",0)),amount) if weapon_id!="fall" else 0.
+	p.plate=float(p.get("plate",0))-plate_absorb
+	var absorb=minf(p.armor,amount-plate_absorb) if weapon_id!="fall" else 0.;p.armor-=absorb;p.hp-=amount-plate_absorb-absorb;p.last_hit=clock
 	if target<0 and bot_navigation:bot_navigation.danger(actors[target].position)
 	var origin=hit_origin if hit_origin.is_finite() else actors[source].position if actors.has(source) and source!=target else actors[target].position
 	var push=(actors[target].position-origin).normalized() if origin.distance_squared_to(actors[target].position)>.001 else Vector3.FORWARD
@@ -1257,8 +1259,8 @@ func use_gadget(id:int):
 		return
 	match int(p.role):
 		0:
-			if p.armor>=50:feedback(id,"","방어구가 이미 가득 찼습니다.");return
-			p.armor=minf(50,p.armor+25)
+			if float(p.get("plate",0))>0:feedback(id,"","하나의 보호판만 사용할 수 있습니다.");return
+			p.plate=25.
 		1:
 			var tid=aim_player(id,160,false)
 			if tid==0:feedback(id,"","표식할 상대를 조준하세요.");return
@@ -1285,7 +1287,7 @@ func use_gadget(id:int):
 			heal_target(id,tid,25)
 	p.gadget_count-=1;p.gadget_ready=clock+.8;p.fire_ready=maxf(p.fire_ready,clock+.4)
 	if p.role!=4:event_fx.rpc("deploy",a.position,Vector3.ZERO,id)
-	feedback(id,"",["방어구 +25","상대 표식 · 6초","거치대 활성 · 15초 동안 정지 사격 정확도 증가","엄폐물 설치 완료","섬광탄 사용" if p.gadget==1 else "연막탄 전개 · 10초","응급 회복 +25"][int(p.role)])
+	feedback(id,"",["보호판 장착 · 내구도 25","상대 표식 · 6초","거치대 활성 · 15초 동안 정지 사격 정확도 증가","엄폐물 설치 완료","섬광탄 사용" if p.gadget==1 else "연막탄 전개 · 10초","응급 회복 +25"][int(p.role)])
 func remove_device(did:int):
 	devices.erase(did)
 	if device_nodes.has(did):device_nodes[did].queue_free();device_nodes.erase(did)
@@ -1534,8 +1536,8 @@ func update_world_visuals(dt:float):
 		var d=devices[did]
 		if not device_nodes.has(did):
 			var b=StaticBody3D.new();b.collision_layer=4;b.collision_mask=0;b.set_meta("device",did);add_child(b);device_nodes[did]=b
-			CombatFX.device(b,d.kind,int(d.team))
-			var c=CollisionShape3D.new();c.name="Collision";var sh=BoxShape3D.new();sh.size=Vector3(3.4,1.25,.65) if d.kind=="cover" else Vector3(.85,2.,1.3);c.shape=sh;c.position=Vector3(0,sh.size.y/2.,-.12 if d.kind=="turret" else 0.);b.add_child(c)
+			CombatFX.device(b,d.kind,int(d.team),Construction.cover_variant(d))
+			var c=CollisionShape3D.new();c.name="Collision";var sh=BoxShape3D.new();sh.size=Construction.cover_size(d) if d.kind=="cover" else Vector3(.85,2.,1.3);c.shape=sh;c.position=Vector3(0,sh.size.y/2.,-.12 if d.kind=="turret" else 0.);b.add_child(c)
 			var top=1.55 if d.kind=="cover" else 2.4
 			var label=arena.text3d("",Vector3(0,top,0),Color.WHITE,25,b);label.name="Label"
 			var health_label=arena.text3d("",Vector3(0,top-.25,0),Color.WHITE,25,b);health_label.name="HealthLabel"
@@ -1571,30 +1573,30 @@ func update_world_visuals(dt:float):
 			var tag=arena.text3d(Catalog.get_weapon(d.weapon).name,Vector3(0,.4,0),Color("d7e8ef"),24,n);tag.top_level=true;tag.global_position=d.pos+Vector3.UP*.5;tag.visibility_range_end=12;tag.visibility_range_end_margin=1.5;tag.pixel_size=.004
 	for key in drop_nodes.keys():
 		if not live_drops.has(key):drop_nodes[key].queue_free();drop_nodes.erase(key)
-func feedback(id:int,sound:String,message:String):
+func feedback(id:int,sound:String,message:String,menu_notice=false):
 	if id<0:return
-	if id==local_id:personal(sound,message)
-	elif id in multiplayer.get_peers():personal.rpc_id(id,sound,message)
+	if id==local_id:personal(sound,message,menu_notice)
+	elif id in multiplayer.get_peers():personal.rpc_id(id,sound,message,menu_notice)
 @rpc("authority","call_remote","reliable",0)
-func personal(sound:String,message:String):
+func personal(sound:String,message:String,menu_notice=false):
 	if not sound.is_empty():play_sound(sound,Vector3.ZERO,false)
-	ui.notice(message)
+	ui.notice(message,not menu_notice)
 	if sound in ["hit","confirm"]:ui.hit_until=Time.get_ticks_msec()+180
 func announce(message:String):
 	announcement.rpc(message)
 @rpc("authority","call_local","reliable",0)
-func announcement(message:String):ui.notice(message)
+func announcement(message:String):ui.notice(message,true)
 @rpc("authority","call_local","reliable",0)
 func zone_announcement(index:int,team:int):
 	if index<0 or index>=3 or team not in [0,1]:return
 	var letter=ControlCapture.LABELS[index]
 	if not dedicated:play_sound("capture_"+("blue" if team==0 else "orange")+"_"+letter.to_lower(),Vector3.ZERO,false)
-	ui.notice(("BLUE" if team==0 else "ORANGE")+" 팀 · "+letter+" 거점 점령")
+	ui.notice(("BLUE" if team==0 else "ORANGE")+" 팀 · "+letter+" 거점 점령",true)
 @rpc("authority","call_local","reliable",0)
 func bomb_announcement(kind:String):
 	if kind not in ["bomb_planted","bomb_dropped","bomb_defused"]:return
 	if not dedicated:play_sound(kind,Vector3.ZERO,false)
-	ui.notice({"bomb_planted":"폭탄이 설치되었습니다.","bomb_dropped":"폭탄을 떨어뜨렸습니다.","bomb_defused":"폭탄 해체가 완료되었습니다."}[kind])
+	ui.notice({"bomb_planted":"폭탄이 설치되었습니다.","bomb_dropped":"폭탄을 떨어뜨렸습니다.","bomb_defused":"폭탄 해체가 완료되었습니다."}[kind],true)
 @rpc("authority","call_local","unreliable",2)
 func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,shot_state:Dictionary={}):
 	if dedicated:return

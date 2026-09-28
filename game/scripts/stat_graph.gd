@@ -24,7 +24,7 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 		rows=[["폭발 피해",145. if variant==1 else 120.,150.,"145" if variant==1 else "120"],["반경",10. if variant==1 else 8.,12.,"10 m" if variant==1 else "8 m"],["소지량",2.,3.,"2개"]]
 	elif kind==2:
 		match role:
-			0:rows=[["폭발 피해",120.,150.,"최대 120"],["반경",5.5,10.,"5.5 m"],["안전핀 후 지연",3.,5.,"3.0초"],["소지량",1.,3.,"1개"]] if variant==1 else [["방어구 회복",25.,50.,"25 / 최대 50"],["소지량",1.,3.,"1개"]]
+			0:rows=[["폭발 피해",120.,150.,"최대 120"],["반경",5.5,10.,"5.5 m"],["안전핀 후 지연",3.,5.,"3.0초"],["소지량",1.,3.,"1개"]] if variant==1 else [["보호판 내구도",25.,50.,"25 · 한 장만 활성"],["소지량",3.,3.,"3개"]]
 			1:rows=[["표식 거리",160.,200.,"160 m"],["지속 시간",6.,15.,"6초"]]
 			2:rows=[["앉기 시 퍼짐 감소",65.,100.,"65%"],["반동 감소",60.,100.,"60%"],["작동 방식",1.,1.,"장착 시 자동"]]
 			3:rows=[["내구도",float(AbilityBalance.COVER_HP[variant]),420.,str(AbilityBalance.COVER_HP[variant])],["소지량",float(GadgetLoadout.COVER_STOCK[variant]),4.,"%d개"%GadgetLoadout.COVER_STOCK[variant]],["최대 설치",float(GadgetLoadout.COVER_LIMIT[variant]),3.,"%d개"%GadgetLoadout.COVER_LIMIT[variant]]]

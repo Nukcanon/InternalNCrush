@@ -16,6 +16,7 @@ var weapon_title:Label
 var skill_label:Label
 var health_bar:ColorRect
 var armor_bar:ColorRect
+var plate_bar:ColorRect
 var gear_detail:Label
 var gear_price:Label
 var gear_cash:Label
@@ -382,8 +383,9 @@ func refresh_teams():
 			if p.team!=side:continue
 			var row=HBoxContainer.new();box.add_child(row)
 			var name=label(p.nick+("  · 나" if p.id==game.local_id else "")+"  /  "+Rules.CLASSES[p.role],15,row);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-			if int(p.id)<0:
-				var bot_controls=HBoxContainer.new();box.add_child(bot_controls);BotSettings.controls(game,bot_controls,p)
+			row.custom_minimum_size.y=48;name.clip_text=true
+			var bot_controls=HBoxContainer.new();bot_controls.custom_minimum_size.y=64;box.add_child(bot_controls)
+			if int(p.id)<0:BotSettings.controls(game,bot_controls,p)
 			var allowed=TeamBalance.allowed(game,game.local_id,int(p.id))
 			if allowed and game.options.mode!=1:
 				var pid=int(p.id);var target=1-side
@@ -737,6 +739,7 @@ func refresh_gear_detail():
 		gear_detail.text=["소총으로 전선을 유지하는 돌격수.","스코프 사격과 표식으로 시야를 확보하는 정찰수.","기관총과 방호로 거점을 지키는 중화기병.","샷건과 엄폐물, 자동 포탑을 운용하는 공병.","기관단총과 연막·섬광으로 경로를 통제하는 지원병.","회복 도구와 의료 카빈으로 팀을 지원하는 메딕."][role]+"\n"+Rules.SKILL_HELP[role]
 	elif preview_kind==2:
 		preview_caption.text=gear_gadget.get_item_text(gear_gadget.selected);gear_detail.text=Rules.GADGET_HELP[role]+"\n\n3 가젯 선택 · 클릭 사용 · G 즉시 사용"
+		if role in [1,2] and gear_gadget.get_selected_id()==0:gear_detail.text=Rules.GADGET_HELP[role]+"\n\n자동 사용"
 		if gear_gadget.get_selected_id()==8 or (role==0 and gear_gadget.selected==1):gear_detail.text="G 또는 3번 선택 후 클릭을 누르면 안전핀 해제.\n놓으면 투척 · 핀 해제 2.5초 후 폭발 · 계속 들면 자신도 피해.\n벽 뒤에는 폭발 피해가 전달되지 않습니다."
 		if role==3 and gear_gadget.get_selected_id() in [0,1,2]:gear_detail.text+="\n내구도 %d · 소지 %d개 · 동시 설치 %d개\n사망 후 유지 · 다음 라운드 시작 시 제거"%[AbilityBalance.COVER_HP[gear_gadget.selected],GadgetLoadout.COVER_STOCK[gear_gadget.selected],GadgetLoadout.COVER_LIMIT[gear_gadget.selected]]
 		if gear_gadget.get_selected_id()==9:gear_detail.text="해체 시간 15초 → 5초\n400 크레딧 · 기존 병과 가젯 대신 장착\n폭탄 앞에서 E를 계속 누르면 자동 사용합니다."
@@ -783,7 +786,7 @@ func show_hud():
 	hud_orange=hud_label("",Vector2(752,24),21);hud_orange.modulate=Color("ffb16b")
 	stats=hud_label("",Vector2(1062,18),17)
 	hud_plate(Vector2(22,595),Vector2(259,98));health=hud_label("",Vector2(40,607),22)
-	health_bar=hud_bar(Vector2(40,648),Color("68dcc0"));armor_bar=hud_bar(Vector2(40,665),Color("7aafdc"))
+	health_bar=hud_bar(Vector2(40,648),Color("68dcc0"));armor_bar=hud_bar(Vector2(40,665),Color("7aafdc"));plate_bar=ColorRect.new();plate_bar.color=Color("a48eb5");plate_bar.position=Vector2(40,665);plate_bar.size=Vector2(0,5);plate_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(plate_bar)
 	hud_plate(Vector2(995,577),Vector2(263,116));weapon_title=hud_label("",Vector2(1012,589),16);ammo=hud_label("",Vector2(1012,615),30)
 	health.size=Vector2(224,32);health.position.y=607;health.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 	health.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -817,13 +820,13 @@ func show_hud():
 	if is_instance_valid(game.touch):
 		root.move_child(game.touch,-1)
 	game.capture_pointer()
-func notice(message:String):
+func notice(message:String,gameplay=false):
 	if message.is_empty():return
-	if lan_lobby:lan_lobby.notice(message)
+	if lan_lobby and not gameplay:lan_lobby.notice(message)
 	notice_until=Time.get_ticks_msec()+3500
 	notice_queue.append({"text":message,"until":notice_until})
 	while notice_queue.size()>3:notice_queue.pop_front()
-	if is_instance_valid(notice_label):notice_label.text=message
+	if not gameplay and is_instance_valid(notice_label):notice_label.text=message
 	if game.phase=="menu" and message.contains("버전"):
 		var dialog=AcceptDialog.new();dialog.title="게임 버전 확인";dialog.dialog_text=message;dialog.ok_button_text="확인";root.add_child(dialog);dialog.add_button("다운로드",false,"download");dialog.custom_action.connect(func(action):
 			if action=="download":OS.shell_open(VersionCheck.PAGE))
@@ -865,7 +868,8 @@ func refresh():
 	if game.options.get("practice",false):status.text="FIELD ACADEMY  ·  자유 연습"
 	health.text=("◆ BLUE  " if p.team==0 else "● ORANGE  ")+"%d HP"%p.hp if p.alive else "Dead · 관전" if game.options.mode==4 or p.spectator else "Dead · 부활 %.0f초"%maxf(0,p.respawn-game.clock)
 	operator_name.text=HumanModel.IDENTITIES[int(p.role)]+"  ·  "+Rules.CLASSES[int(p.role)]
-	health_bar.size.x=220*clampf(p.hp/Rules.max_hp(p),0,1);armor_bar.size.x=220*clampf(p.armor/50.,0,1)
+	health_bar.size.x=220*clampf(p.hp/Rules.max_hp(p),0,1);armor_bar.size.x=220*clampf(p.armor/75.,0,1)
+	plate_bar.position=armor_bar.position+Vector2(armor_bar.size.x,0);plate_bar.size.x=220*clampf(float(p.get("plate",0))/75.,0,1)
 	var fire_mode={"auto":"AUTO","semi":"SEMI","burst":"BURST"}.get(w.get("fire_mode","auto"),"")
 	weapon_title.text=w.name+"   /   "+fire_mode
 	ammo.text=str(int(p.mag.get(wid,0)))+" / "+("∞" if game.options.infinite else str(int(p.reserve.get(wid,0))))
@@ -898,7 +902,9 @@ func refresh():
 	info.text="B 병과/장비   ·   E "+BombLogic.use_label(game,game.local_id)+"   ·   TAB 기록   ·   ESC 게임 메뉴"
 	if game.options.mode==4:info.text+="   ·   %d 크레딧"%p.cash
 	if not p.get("pending_loadout",{}).is_empty():info.text+="   ·   다음 부활 장비 예약됨"
-	if not GadgetLoadout.selectable(p):
+	if GadgetLoadout.has_item(p) and GadgetLoadout.passive(p):
+		slots[2].text=GadgetLoadout.label(p)+" · 자동";slots[2].modulate=Color("b6cbd4");slot_panels[2].self_modulate=Color.WHITE
+	elif not GadgetLoadout.selectable(p):
 		slots[2].text=""
 		if p.slot==2 and not GadgetLoadout.held_visible(p,game.clock):weapon_title.text="";ammo.hide()
 	if not p.get("owned_primary",true):slots[0].text=""

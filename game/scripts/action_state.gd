@@ -24,7 +24,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 			if not combat or not game.options.classes or p.gadget==9 or MarkerTracker.equipped(p):return false
 			if p.get("cooking",0)>0:return true
 			if p.gadget_count<=0 or p.gadget_ready>now:return false
-			if p.role==0 and not GrenadeLogic.equipped(p):return p.armor<50
+			if p.role==0 and not GrenadeLogic.equipped(p):return true # Server explains why a second active plate cannot be used.
 			if GrenadeLogic.equipped(p):return GrenadeLogic.remaining(p)>0
 			if p.role==2:return false
 			if p.role==3:

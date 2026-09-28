@@ -125,7 +125,7 @@ static func build_gadget_model(parent:Node3D,role:int,variant:int):
 				m.box(parent,foot,Vector3(.082,.034,.10),Color("202a30"),Vector3(0,0,side*.12),.3)
 
 		3:
-			var cover=Node3D.new();parent.add_child(cover);CombatFX.device(cover,"cover",0);cover.scale=Vector3.ONE*.32
+			var cover=Node3D.new();parent.add_child(cover);CombatFX.device(cover,"cover",0,variant);cover.scale=Vector3.ONE*.32
 		4:
 			# Flash grenade: vented steel cage. Smoke: squat painted canister.
 			var flash=variant==1;var paint=Color("d4c691") if flash else Color("81a292")

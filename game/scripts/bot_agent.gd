@@ -293,7 +293,7 @@ func utilities():
 	var gadget_before=p.gadget_count;var skill_before=p.skill_ready
 	match int(p.role):
 		0:
-			if p.armor<25 and (visible_target or p.hp<70):game.use_gadget(id)
+			if float(p.get("plate",0))<=0 and (visible_target or p.hp<70):game.use_gadget(id)
 			if not visible_target and a.position.distance_to(goal)>20:game.use_skill(id)
 		1:
 			if visible_target:game.use_skill(id)

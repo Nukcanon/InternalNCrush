@@ -9,9 +9,9 @@ static func count(p:Dictionary) -> int:
 	if int(p.gadget)<0:return 0
 	if frag(p):return 2
 	if int(p.role)==3 and int(p.gadget) in [0,1,2]:return COVER_STOCK[int(p.gadget)]
-	return 3 if int(p.role)==4 else 1
+	return 3 if int(p.role) in [0,4] else 1
 static func reset(p:Dictionary):
-	p.gadget_count=count(p);p.smoke=3 if int(p.role)==4 and int(p.gadget)==0 else 0;p.flash_count=3 if int(p.role)==4 and int(p.gadget)==1 else 0
+	p.plate=0.;p.gadget_count=count(p);p.smoke=3 if int(p.role)==4 and int(p.gadget)==0 else 0;p.flash_count=3 if int(p.role)==4 and int(p.gadget)==1 else 0
 static func label(p:Dictionary) -> String:
 	if int(p.gadget)==9:return "해체 키트"
 	if cluster(p):return "확산 파편 수류탄"

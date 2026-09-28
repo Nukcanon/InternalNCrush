@@ -81,8 +81,8 @@ func refresh_scores(dt=.016):
 			var p=players[i]
 			if (ffa and i/16!=side) or (not ffa and p.team!=side):continue
 			row(box,[(str(i+1)+". " if ffa else "")+p.nick+ ("  · 나" if p.id==game.local_id else ""),Rules.CLASSES[p.role] if game.options.classes else "—",str(p.kills),str(p.deaths),str(Rules.score_parts(p).assists),str(Rules.score_parts(p).healing),str(Rules.score_parts(p).builds),str(Rules.score_parts(p).objectives),str(Rules.score(p))],p.id==game.local_id,false,not p.alive);count+=1
-			if editable() and (int(p.id)<0 or TeamBalance.allowed(game,game.local_id,int(p.id))):
-				var actions=HBoxContainer.new();box.add_child(actions);BotSettings.controls(game,actions,p)
+			if editable():
+				var actions=HBoxContainer.new();actions.custom_minimum_size.y=48;box.add_child(actions);BotSettings.controls(game,actions,p)
 				if not ffa and TeamBalance.allowed(game,game.local_id,int(p.id)):
 					var team_button=Button.new();team_button.text="→ ORANGE" if int(p.team)==0 else "→ BLUE";team_button.custom_minimum_size.y=38;team_button.add_theme_font_size_override("font_size",16);actions.add_child(team_button)
 					team_button.disabled=not TeamBalance.can_move(game,game.local_id,int(p.id),1-int(p.team))

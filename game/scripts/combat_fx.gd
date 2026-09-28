@@ -132,7 +132,13 @@ static func prepare_devices():
 		for team in range(2):
 			var key=kind+str(team);var path="res://assets/models/device_"+key+".scn"
 			if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
-static func device(parent:Node3D,kind:String,team:int):
+static func device(parent:Node3D,kind:String,team:int,variant:int=1):
+	if kind=="cover":
+		var depth=[.30,.55,.80][clampi(variant,0,2)];var finish=Color(["dfbd35","438b50","454950"][clampi(variant,0,2)])
+		M.box(parent,Vector3(0,.625,0),Vector3(3.4,1.25,depth),finish)
+		for x in [-1.1,0,1.1]:
+			M.box(parent,Vector3(x,.64,-depth*.5-.015),Vector3(.96,1.06,.03),finish.lightened(.12))
+		M.merge_children(parent);return
 	var key=kind+str(team);var path="res://assets/models/device_"+key+".scn"
 	if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
 	if device_templates.has(key):

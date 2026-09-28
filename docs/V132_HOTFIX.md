@@ -20,3 +20,11 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - ARC: 60 to 120 DPS, maximum reached at 3 seconds; battery 6 seconds; overheat after 4 seconds. Both overheat and release cooling take 2 seconds from maximum heat to zero.
 - ARC deals 30% extra damage to armor only, without boosting HP spillover. Friendly device repair remains 30 HP/s within 100 m.
 - Windows and Web assets replaced under version 1.3.2. Pages run 36412681984 succeeded. Additional game tests were intentionally skipped at the user's request; preceding test results describe the earlier build only.
+
+
+## Approved rocket / gadget update
+- QUAD: 1 s firing interval, splash 33–11 in 7 m; direct damage remains 45. COMET: direct 80, splash 70–20 in 9 m, interval remains 1.8 s. Direct damage does not stack splash.
+- Light/standard/reinforced covers use yellow/green/charcoal and 0.30/0.55/0.80 m body depth, mirrored by hit bounds.
+- Assault plates: three charges, 25 separate durability per plate, one active at a time; consume before armor, with muted purple HUD segment and duplicate-use warning.
+- Passive gadgets remain visible with automatic-use labels. Human and bot team entries reserve identical name/control rows. Combat notifications no longer overwrite menu help; command responses still appear in menus.
+- Same version, native/Web rebuild; additional gameplay tests omitted as requested.

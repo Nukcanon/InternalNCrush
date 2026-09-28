@@ -1,5 +1,9 @@
 class_name Construction
 extends RefCounted
+static func cover_variant(d:Dictionary) -> int:
+	return 0 if float(d.get("max_hp",300))<240 else 2 if float(d.get("max_hp",300))>360 else 1
+static func cover_size(d:Dictionary) -> Vector3:
+	return Vector3(3.4,1.25,[.30,.55,.80][cover_variant(d)])
 static func active(g:Node,d:Dictionary) -> bool:return float(d.get("building_until",0))>g.clock
 static func advance(g:Node,d:Dictionary):
 	if float(d.get("build_growth",0))<=0.:return
@@ -8,7 +12,7 @@ static func advance(g:Node,d:Dictionary):
 	d.hp=minf(float(d.max_hp),float(d.hp)+float(d.build_growth)*maxf(0.,progress-previous));d.build_progress=progress
 	if progress>=1.:d.build_growth=0.
 static func bounds(d:Dictionary) -> AABB:
-	var size=Vector3(3.4,1.25,.65) if d.kind=="cover" else Vector3(.85,2.,1.3)*TurretLogic.SCALES[int(d.level)-1]
+	var size=cover_size(d) if d.kind=="cover" else Vector3(.85,2.,1.3)*TurretLogic.SCALES[int(d.level)-1]
 	return AABB(Vector3(-size.x*.5,0,-size.z*.5),size)
 static func crossed(g:Node,from:Vector3,to:Vector3) -> Dictionary:
 	var found={}

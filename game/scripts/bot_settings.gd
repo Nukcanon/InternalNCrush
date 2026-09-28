@@ -13,13 +13,13 @@ static func change(g:Node,requester:int,data:Dictionary) -> bool:
 	if difficulty not in [0,1,2] or role<0 or role>=Rules.CLASSES.size():return false
 	if data.has("role") and not g.options.classes:return false
 	if data.has("role") and role==5 and p.role!=5 and g.medic_count(p.team)>=Rules.medic_cap(g.team_count(p.team)):
-		g.feedback(requester,"","이 팀의 메딕 정원이 찼습니다.");return false
+		g.feedback(requester,"","이 팀의 메딕 정원이 찼습니다.",true);return false
 	p.bot_difficulty=difficulty;g.bot_agents[id].difficulty=difficulty
 	if data.has("role"):
 		p.bot_role=role
 		# A live bot keeps its current equipment until its next legitimate spawn.
 		if g.phase=="lobby" or not p.alive:apply_role(g,id)
-		elif role!=int(p.role):g.feedback(requester,"","봇 병과는 다음 부활부터 적용됩니다.")
+		elif role!=int(p.role):g.feedback(requester,"","봇 병과는 다음 부활부터 적용됩니다.",true)
 	g.broadcast_state(true)
 	return true
 

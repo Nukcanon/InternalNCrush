@@ -1449,7 +1449,7 @@
     "name": "COMET",
     "role": 2,
     "slot": 0,
-    "damage": 60,
+    "damage": 80,
     "interval": 1.8,
     "mag": 1,
     "reserve": 12,
@@ -1495,7 +1495,10 @@
     "spray_direction": 1,
     "pattern_recovery": 32.51,
     "rocket": true,
-    "description": "직격 총피해 60 / 폭발 15–45 · 반경 9m · 한 발 장전 1.8초"
+    "description": "직격 총피해 80 · 폭발 70~20 · 반경 9 m · 사격 간격 1.8초 · 장전 1.4초",
+    "splash_max": 70.0,
+    "splash_min": 20.0,
+    "splash_radius": 9.0
   },
   "dual_pistols": {
     "name": "DUET",
@@ -1553,7 +1556,7 @@
     "role": 2,
     "slot": 0,
     "damage": 45,
-    "interval": 0.8,
+    "interval": 1.0,
     "mag": 4,
     "reserve": 16,
     "price": 3900,
@@ -1598,10 +1601,11 @@
     "spray_direction": 1,
     "pattern_recovery": 32.51,
     "rocket": true,
-    "description": "4발 로켓런처 · 직격 45 · 폭발 33.75~11.25 · 반경 9 m · 사격 간격 0.8초 · 1발씩 장전 · 장전 중 사격 가능",
+    "description": "4발 로켓런처 · 직격 45 · 폭발 33~11 · 반경 7 m · 사격 간격 1초 · 1발씩 장전 · 장전 중 사격 가능",
     "single_load": true,
-    "splash_max": 33.75,
-    "splash_min": 11.25
+    "splash_max": 33.0,
+    "splash_min": 11.0,
+    "splash_radius": 7.0
   },
   "h6": {
     "name": "ARC",
