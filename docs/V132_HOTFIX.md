@@ -66,6 +66,8 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 ## Roster readability and automatic salvage
 - Center participant rows and use alternating dark-gray cards in participant, team and result lists; widen bot difficulty controls.
 - Let result records use remaining vertical space, retaining scrolling only for overflowing rosters.
-- PULSE/FOLD require 0.3 seconds to settle after reload completion/interruption; existing shot cooldown is preserved and incomplete shells are not granted.
+- PULSE/FOLD require 0.3 seconds to settle after a partial reload interruption (full reload duration unchanged); existing shot cooldown is preserved and incomplete shells are not granted.
 - Automatically collect nearby dropped guns as ammunition salvage with line-of-sight checking. Each consumed drop gives one 10% chance to restore one owned consumable gadget charge, capped at loadout capacity.
 - Same-version native/web publication; no additional gameplay tests requested.
+
+- PULSE, TIDAL, FOLD and MENDER reserve ammunition increased to at least 50 rounds, in addition to magazine ammunition.

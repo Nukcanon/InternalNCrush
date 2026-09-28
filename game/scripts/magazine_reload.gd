@@ -17,5 +17,7 @@ static func finish(g:Node,id:int):
 	p.reload=0.;p.trigger_until=0.
 	if w.get("single_load",false) and got>0 and int(p.mag[wid])<int(w.mag) and not g.actors[id].input_state.fire:g.begin_reload(id)
 	if p.reload<=0:
-		settle(g,p,w)
+		# Full reload timings already include returning the gun to firing position.
+		# Only an early exit from a partial tube needs the extra settling delay.
+		if int(p.mag[wid])<int(w.mag):settle(g,p,w)
 		if w.get("single_load",false) and g.actors[id].input_state.fire:p.trigger_until=maxf(g.clock+.55,float(p.fire_ready)+.1)
