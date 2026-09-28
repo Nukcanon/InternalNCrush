@@ -94,6 +94,23 @@ var internet_filter=RoomFilters.defaults()
 var internet_rooms=[]
 const MENU_SCALE=.88
 var ACTION_HEIGHT=84 if TouchControls.supported() else 40
+func menu_key(event:InputEvent) -> bool:
+	if not event is InputEventKey or not event.pressed or event.echo:return false
+	if event.keycode not in [KEY_ESCAPE,KEY_ENTER,KEY_KP_ENTER]:return false
+	for window in root.find_children("*","Window",true,false):
+		if window.visible:return false # The focused dialog owns its keyboard.
+	if is_instance_valid(map_viewer):return false
+	if not is_instance_valid(panel):
+		if event.keycode==KEY_ESCAPE and is_instance_valid(scoreboard) and scoreboard.pinned:scoreboard.close();return true
+		return false
+	if event.keycode==KEY_ESCAPE:
+		for control in panel.find_children("*","Button",true,false):
+			if control.is_visible_in_tree() and not control.disabled and control.text in ["돌아가기","메인메뉴","닫기","방 나가기"]:control.pressed.emit();return true
+		return true
+	for control in panel.find_children("*","Button",true,false):
+		if control is OptionButton or not control.is_visible_in_tree() or control.disabled:continue
+		if "시작" in control.text or control.text in ["확인","입장","참가","접속","장비 적용","구매하기","다음 부활부터 적용","방 만들기","서버 연결","빠른 참가","팀 교환 적용","선택 적용"]:control.pressed.emit();return true
+	return false
 func _ready():
 	add_child(preload("res://scripts/button_text_fit.gd").new())
 	lan_lobby=LanLobby.new(self)

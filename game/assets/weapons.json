@@ -1405,7 +1405,7 @@
     "role": 5,
     "slot": 0,
     "damage": 16,
-    "interval": 1.2,
+    "interval": 0.75,
     "mag": 5,
     "reserve": 50,
     "price": 2400,
@@ -1413,7 +1413,7 @@
     "pellets": 8,
     "reach": 22.5,
     "zoom": 62,
-    "reload": 3.1,
+    "reload": 0.7,
     "kind": "gun",
     "fire_mode": "semi",
     "model_index": 28,
@@ -1451,9 +1451,10 @@
     "pattern_recovery": 37.5,
     "heal_per_pellet": 6,
     "heal_cap": 30,
-    "description": "의료 산탄총 · 산탄 8발 · 각 6 회복, 발사당 최대 30 · 50 RPM · 적에게 16 × 8 피해 · 거리에 따라 피해와 회복 감소",
+    "description": "의료 산탄총 · 산탄 8발 · 각 6 회복, 발사당 최대 30 · 80 RPM · 적에게 16 × 8 피해 · 거리에 따라 피해와 회복 감소",
     "pellet_core_angle": 0.18,
-    "pellet_core_fraction": 0.6
+    "pellet_core_fraction": 0.6,
+    "single_load": true
   },
   "h4": {
     "name": "COMET",

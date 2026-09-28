@@ -75,3 +75,11 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - COMET and QUAD reserve rockets increased to 20; other weapon reserves reviewed without additional balance changes.
 
 - MONOLITH total ammunition 24 (4 loaded + 20 reserve); SCOUT total 36 (6 + 30).
+
+## Native cursor ownership, menu shortcuts and MENDER
+- Background demo matches no longer subscribe to native window focus or control global mouse capture. Menus, scoreboards and dialogs enforce a visible native cursor.
+- Escape returns/closes menus and confirms navigation away on an existing leave warning; settings-discard warnings discard on Escape. Enter activates start/confirm actions.
+- MENDER uses PULSE single-shell reloads, spread and range, at 80 RPM. Damage remains 16 x 8 pellets, healing unchanged.
+- Fixed deferred button text fitting on controls destroyed during menu transitions.
+- Windows graphical regression passed 11 checks: startup/menu capture, gameplay capture, native focus departure/return, B menu during respawn, and Escape/Enter navigation. No script/runtime errors in the final regression run.
+- Native/web project separation verified: district building atlas 2720x2720 native vs 680x680 web; web_assets setting only in web staging.

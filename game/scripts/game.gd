@@ -114,7 +114,7 @@ var web_graphics:WebGraphics
 var native_graphics:NativeGraphics
 var join_ticket=""
 func _ready():
-	if not OS.has_feature("web") and DisplayServer.get_name()!="headless":
+	if not demo_mode and not OS.has_feature("web") and DisplayServer.get_name()!="headless":
 		get_window().focus_exited.connect(func():Input.mouse_mode=Input.MOUSE_MODE_VISIBLE)
 		get_window().focus_entered.connect(func():call_deferred("restore_native_pointer"))
 	if demo_mode:
@@ -269,9 +269,21 @@ func start_demo():
 	for id in players:players[id].protect=0.;players[id].fire_ready=0.
 	set_process_unhandled_input(false)
 func restore_native_pointer():
-	if not is_inside_tree() or not get_window().has_focus():return
+	if demo_mode or not is_inside_tree() or not get_window().has_focus():return
 	capture_pointer()
+func pointer_needs_visibility() -> bool:
+	if phase in ["menu","lobby","result"] or not get_window().has_focus():return true
+	if not is_instance_valid(ui):return true
+	if is_instance_valid(ui.panel) or is_instance_valid(ui.map_viewer):return true
+	if is_instance_valid(ui.scoreboard) and ui.scoreboard.visible:return true
+	for window in ui.root.find_children("*","Window",true,false):
+		if window.visible:return true
+	return is_instance_valid(touch)
 func capture_pointer(from_input_event:bool=false):
+	# The background match shares the native Window and global Input singleton.
+	# It must never capture or release the real player's mouse.
+	if demo_mode:return
+	if pointer_needs_visibility():Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;return
 	# Menus and dialogs always own a visible pointer, including respawn/focus callbacks.
 	if phase in ["menu","lobby","result"] or (not OS.has_feature("web") and not get_window().has_focus()):Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;return
 	if is_instance_valid(ui) and (is_instance_valid(ui.panel) or is_instance_valid(ui.map_viewer) or is_instance_valid(ui.navigation_confirm)):
@@ -603,6 +615,8 @@ func network_discovery():
 			if d is Dictionary and d.get("game")=="RelayStrike":
 				d.ping=maxi(0,Time.get_ticks_msec()-room_search_sent);rooms[ip]=d;ui.update_rooms()
 func _input(event):
+	if demo_mode:return
+	if is_instance_valid(ui) and ui.menu_key(event):get_viewport().set_input_as_handled();return
 	if not vote.is_empty() and event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_9,KEY_0,KEY_KP_9,KEY_KP_0]:
 		command("vote",{"yes":event.keycode in [KEY_9,KEY_KP_9]});get_viewport().set_input_as_handled()
 func _unhandled_input(event):
@@ -704,6 +718,7 @@ func collect_input():
 	if server:players[local_id].input_time=clock
 	else:send_input.rpc_id(1,a.input_state)
 func _physics_process(dt:float):
+	if not demo_mode and not dedicated and not OS.has_feature("web") and pointer_needs_visibility() and Input.mouse_mode!=Input.MOUSE_MODE_VISIBLE:Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	expire_web_marks()
 	clock+=dt
 	if is_instance_valid(kill_replay):kill_replay.capture(dt)

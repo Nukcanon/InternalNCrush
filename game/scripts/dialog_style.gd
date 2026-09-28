@@ -2,6 +2,14 @@ class_name DialogStyle
 extends RefCounted
 static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	dialog.theme=theme
+	dialog.window_input.connect(func(event):
+		if not event is InputEventKey or not event.pressed or event.echo:return
+		if event.keycode not in [KEY_ESCAPE,KEY_ENTER,KEY_KP_ENTER]:return
+		dialog.set_input_as_handled()
+		if event.keycode in [KEY_ENTER,KEY_KP_ENTER] or (event.keycode==KEY_ESCAPE and navigation):
+			if not dialog.get_ok_button().disabled:dialog.hide();dialog.confirmed.emit()
+		elif dialog.has_meta("escape_discard"):dialog.hide();dialog.custom_action.emit("discard")
+		else:dialog.hide();dialog.canceled.emit())
 	var positive=dialog.get_ok_button();var row=positive.get_parent();var buttons=[]
 	for child in row.get_children():
 		if child is Button:buttons.append(child)

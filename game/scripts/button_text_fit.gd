@@ -7,7 +7,7 @@ func _watch(node:Node):
 	if node is Button and not node.has_meta("auto_text_fit"):
 		node.set_meta("auto_text_fit",true)
 		_register.call_deferred(node)
-func _register(button:Button):
+func _register(button):
 	if not is_instance_valid(button):return
 	# Text-sized controls keep native sizing. Constrained controls must not use
 	# text width as their minimum, otherwise shrinking feeds back into layout.
@@ -22,7 +22,7 @@ func _register(button:Button):
 	button.theme_changed.connect(refresh)
 	button.draw.connect(refresh)
 	fit(button)
-static func fit(button:Button):
+static func fit(button):
 	if not is_instance_valid(button) or button.size.x<=1. or button.text.is_empty():return
 	var style=button.get_theme_stylebox("normal")
 	var available=maxf(1.,button.size.x-style.get_minimum_size().x-8.)
