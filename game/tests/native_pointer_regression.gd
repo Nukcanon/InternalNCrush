@@ -43,6 +43,6 @@ func run():
 	await create_timer(.2).timeout
 	var event=InputEventKey.new();event.keycode=KEY_ESCAPE;event.pressed=true
 	game.ui.navigation_confirm.window_input.emit(event)
-	await process_frame;check(left[0],"Escape on leave warning confirms leaving")
+	await process_frame;check(not left[0] and not is_instance_valid(game.ui.navigation_confirm),"Escape cancels leave warning")
 	print("POINTER_REGRESSION_RESULT ","PASS" if failures.is_empty() else str(failures))
 	quit(0 if failures.is_empty() else 1)

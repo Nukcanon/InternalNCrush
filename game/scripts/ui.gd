@@ -96,20 +96,28 @@ const MENU_SCALE=.88
 var ACTION_HEIGHT=84 if TouchControls.supported() else 40
 func menu_key(event:InputEvent) -> bool:
 	if not event is InputEventKey or not event.pressed or event.echo:return false
+	if event.alt_pressed or event.ctrl_pressed or event.meta_pressed:return false
 	if event.keycode not in [KEY_ESCAPE,KEY_ENTER,KEY_KP_ENTER]:return false
 	for window in root.find_children("*","Window",true,false):
 		if window.visible:return false # The focused dialog owns its keyboard.
+	if lan_lobby and is_instance_valid(lan_lobby.dialog):
+		if event.keycode==KEY_ESCAPE:lan_lobby.back_from_direct()
+		elif is_instance_valid(lan_lobby.connect_button) and not lan_lobby.connect_button.disabled:lan_lobby.submit_direct()
+		return true
 	if is_instance_valid(map_viewer):return false
 	if not is_instance_valid(panel):
 		if event.keycode==KEY_ESCAPE and is_instance_valid(scoreboard) and scoreboard.pinned:scoreboard.close();return true
 		return false
 	if event.keycode==KEY_ESCAPE:
-		for control in panel.find_children("*","Button",true,false):
-			if control.is_visible_in_tree() and not control.disabled and control.text in ["돌아가기","메인메뉴","닫기","방 나가기"]:control.pressed.emit();return true
+		# Footer reparenting changes tree order. A destructive leave action must
+		# never outrank the current menu's Back button.
+		for caption in ["돌아가기","닫기","메인메뉴","방 나가기"]:
+			for control in panel.find_children("*","Button",true,false):
+				if control.is_visible_in_tree() and not control.disabled and control.text==caption:control.pressed.emit();return true
 		return true
 	for control in panel.find_children("*","Button",true,false):
 		if control is OptionButton or not control.is_visible_in_tree() or control.disabled:continue
-		if "시작" in control.text or control.text in ["확인","입장","참가","접속","장비 적용","구매하기","다음 부활부터 적용","방 만들기","서버 연결","빠른 참가","팀 교환 적용","선택 적용"]:control.pressed.emit();return true
+		if "시작" in control.text or control.text in ["확인","입장","참가","접속","장비 적용","구매하기","다음 부활부터 적용","방 만들기","방 만들고 참가","서버 연결","빠른 참가","팀 교환 적용","선택 적용"]:control.pressed.emit();return true
 	return false
 func _ready():
 	add_child(preload("res://scripts/button_text_fit.gd").new())
@@ -211,6 +219,12 @@ func confirm_navigation(callback:Callable,destination:String):
 		var dialog=navigation_confirm;navigation_confirm=null;dialog.queue_free();callback.call())
 	navigation_confirm.canceled.connect(func():navigation_confirm.queue_free();navigation_confirm=null)
 	DialogStyle.apply(navigation_confirm,theme,true);navigation_confirm.popup_centered(Vector2i(440,160))
+func confirm_room_leave():
+	if is_instance_valid(navigation_confirm):return
+	confirm_navigation(func():game.request_leave(),"메인메뉴")
+	navigation_confirm.title="방 나가기"
+	navigation_confirm.dialog_text="현재 방에서 나가 메인메뉴로 이동할까요?"
+	navigation_confirm.ok_button_text="나가기"
 func confirm_practice():
 	confirm_navigation(func():clear_panel();PracticeSession.start(game),"연습장")
 	if is_instance_valid(navigation_confirm):
@@ -375,7 +389,7 @@ func lobby():
 	actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);pin_actions(actions)
 	if TeamBalance.host(game,game.local_id):button("경기 시작",func():game.command("start",{}),actions)
 	else:label("방장이 경기를 시작하면 참여합니다.",15)
-	button("방 나가기",func():game.request_leave(),actions);notice_label=label("",14)
+	button("방 나가기",confirm_room_leave,actions);notice_label=label("",14)
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 func teams_menu():
 	make_panel("팀 편성",940,true);screen="teams"
@@ -772,14 +786,14 @@ func toggle_pause():
 	if screen=="settings" and settings_exit.is_valid():settings_exit.call();return
 	if is_instance_valid(map_viewer):map_viewer.dismiss();return
 	if is_instance_valid(panel):clear_panel();game.capture_pointer();return
-	make_panel("게임 메뉴",480,true)
+	make_panel("게임 메뉴",480,true);screen="pause"
 	label("경기는 계속 진행됩니다.",17)
 	if game.phase=="lobby":button("돌아가기",lobby)
 	else:button("돌아가기",func():clear_panel();game.capture_pointer())
 	button("병과 · 장비",gear)
 	if TouchControls.supported():button("맵 보기",show_current_map)
 	else:add_map_card(stack,Vector2(380,155))
-	button("팀 편성",teams_menu);button("참가자 관리",members_menu);button("환경 설정",settings);button("방 나가기",func():game.request_leave())
+	button("팀 편성",teams_menu);button("참가자 관리",members_menu);button("환경 설정",settings);button("방 나가기",confirm_room_leave)
 func hud_label(text:String,pos:Vector2,size:int=20) -> Label:
 	var l=Label.new();l.text=text;l.position=pos;l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_shadow_color",Color(0,0,0,.8));l.add_theme_constant_override("shadow_offset_x",1);l.add_theme_constant_override("shadow_offset_y",2);hud.add_child(l);return l
 func hud_plate(pos:Vector2,size:Vector2) -> Panel:
@@ -963,7 +977,7 @@ func internet_menu(scope:String="internet"):
 		if result.has("error"):notice(result.error)
 		else:internet_menu(scope),footer)
 	if service.token.is_empty():
-		label("운영 중인 로비 서버 주소를 입력하세요.\n서버 운영자는 저장소의 Docker/NAS 구성을 사용할 수 있습니다.",17)
+		label("운영 중인 로비 서버 주소를 입력하세요.\n연결되면 아래의 방 만들기 버튼이 활성화됩니다.",17)
 	else:
 		RoomFilters.build(self,stack,internet_filter,render_internet_rooms)
 		var selected_mode=[-1]
@@ -974,7 +988,6 @@ func internet_menu(scope:String="internet"):
 			var result=await service.matchmake(selected_mode[0])
 			if result.has("error"):notice(result.error)
 			elif result.get("pending",false):wait_internet_room(result.room.id),actions)
-		button("공개 방 만들기",internet_create,actions)
 		button("목록 새로고침",refresh_internet_rooms)
 		label("예상 핑은 로비까지의 왕복 시간과 방장 응답 시간을 합친 값입니다. 게임에서는 직접 연결 핑을 표시합니다.",16)
 		room_list=VBoxContainer.new();stack.add_child(room_list)
@@ -983,6 +996,8 @@ func internet_menu(scope:String="internet"):
 	# Connected rooms need start/create/back; reconnect lives above the list.
 	if not service.token.is_empty():
 		var connect=footer.get_child(0);connect.reparent(stack);stack.move_child(connect,3)
+	var create=button("방 만들기" if scope=="lan" else "공개 방 만들기",internet_create,footer)
+	create.name="CreateRoom";create.disabled=service.token.is_empty();create.tooltip_text="로비 서버에 연결하면 방을 만들 수 있습니다." if create.disabled else "새 방을 만들고 방장으로 참가합니다."
 	button("메인메뉴",menu,footer)
 func refresh_internet_rooms():
 	if screen!="internet" or game.internet.token.is_empty():return

@@ -12,7 +12,6 @@ static func confirm_exit(ui:Node,read_display:Callable,leave:Callable):
 	if is_instance_valid(ui.settings_dialog):return
 	var dialog=ConfirmationDialog.new();ui.settings_dialog=dialog;ui.root.add_child(dialog)
 	dialog.title="변경한 설정";dialog.dialog_text="화면·그래픽 설정이 변경되었습니다. 적용하고 나갈까요?"
-	dialog.set_meta("escape_discard",true)
 	dialog.ok_button_text="적용하고 나가기";dialog.cancel_button_text="계속 설정"
 	dialog.add_button("적용하지 않고 나가기",false,"discard")
 	dialog.confirmed.connect(func():
