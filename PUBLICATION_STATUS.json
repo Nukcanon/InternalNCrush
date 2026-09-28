@@ -1,49 +1,39 @@
 {
-  "published_version": "1.3.2",
-  "release_tag": "internal-n-crush-v1.3.2",
-  "source_commit": "3dccae06294163925a3693681ffc9f908ee2103c",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.2",
-  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=bc65b8fcdae9",
-  "published_at": "2026-09-28T14:21:45.556413+00:00",
-  "status": "published_same_version_cursor_regression_passed",
-  "previous_publication_record": "PUBLICATION_STATUS_V132_INITIAL.json",
-  "site_commit": "80fea3a41958ab46d9aa06ada39ac407e163030d",
+  "published_version": "1.3.3",
+  "release_tag": "internal-n-crush-v1.3.3",
+  "source_commit": "d01b920d3e459ac7e3ec3d15648bfe7ef5e1d10f",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.3",
+  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=2620a7173a72",
+  "web_source_commit": "39bc10eb6dba2f96e137284fd5da3822d419dc41",
+  "site_commit": "0a0e1ec5d3a49fb15c4f91c6e154a016df78e306",
+  "published_at": "2026-09-28T15:04:21.622753+00:00",
+  "status": "published_windows_only_escape_crash_hotfix_work_ended",
   "assets": [
     {
-      "name": "InternalNCrush_NAS_Linux_v1.3.2.zip",
-      "bytes": 15598,
-      "sha256": "fd09278276d946d96983f03655e05982698d8f8f20619fe18225b88bf038428f",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/InternalNCrush_NAS_Linux_v1.3.2.zip"
+      "name": "InternalNCrush_Windows_v1.3.3.zip",
+      "bytes": 199584643,
+      "sha256": "ea6afb5c077ca3e7aa51934085c40bc4dac8404080e91d5a986514e82adda6e7",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.3/InternalNCrush_Windows_v1.3.3.zip"
     },
     {
-      "name": "InternalNCrush_Web_v1.3.2.zip",
-      "bytes": 106362623,
-      "sha256": "bc65b8fcdae903fa6658b261bb5f0d5d660545e1db4b8c2a2abea47eef32026f",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/InternalNCrush_Web_v1.3.2.zip"
+      "name": "InternalNCrush_Web_v1.3.3.zip",
+      "bytes": 106363144,
+      "sha256": "2620a7173a72a653fc8b8e355e45572d64e27986db3935917f9759004b40ef3a",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.3/InternalNCrush_Web_v1.3.3.zip"
     },
     {
-      "name": "InternalNCrush_Windows_v1.3.2.zip",
-      "bytes": 199577855,
-      "sha256": "55412884b2da3d855179a0e1dd3aa465b27c6aa6f05764ca07141de3c8531bfe",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/InternalNCrush_Windows_v1.3.2.zip"
-    },
-    {
-      "name": "SHA256SUMS.txt",
-      "bytes": 301,
-      "sha256": "fb9c09d9629663618db614da2ac3a7a8ed8a667a8cfdca9b8eaf9a712318e0bd",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/SHA256SUMS.txt"
-    },
-    {
-      "name": "WEB_RELEASE_v1.3.2.json",
-      "bytes": 173,
-      "sha256": "1fa3824dcd99a121657851a46ac456d41b2a5837c895b97154462198a6ac40f6",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/WEB_RELEASE_v1.3.2.json"
+      "name": "InternalNCrush_NAS_Linux_v1.3.3.zip",
+      "bytes": 15597,
+      "sha256": "1160d509f7312620e07388fc28eb387459aa8b4f23a6c79804d6320b03abe2a0",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.3/InternalNCrush_NAS_Linux_v1.3.3.zip"
     }
   ],
   "validation": {
-    "native_and_web_export": "completed without script/export errors",
-    "gameplay_tests": "Windows graphical cursor regression: 11 checks passed; MENDER data assertions passed",
-    "pages": "success: 36435378498",
-    "physical_mobile_and_intel_igpu": "not measured"
+    "native_export": "completed",
+    "targeted_dialog_lifetime": "20 checks / 0 failures; native windows, deferred callbacks, one Escape owner, duplicate suppression",
+    "physical_key_reproduction": "computer interaction stopped by user Escape; Windows Application Error records confirmed original 0xc0000005",
+    "additional_tests": "not run for hotfix; user requested all other checks and work stop",
+    "web": "unchanged by hotfix",
+    "public_directory": "not deployed; no default endpoint; work stopped at user request"
   }
 }

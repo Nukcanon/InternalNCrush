@@ -1,3 +1,11 @@
+# Latest: 1.3.3 Windows Escape crash hotfix — work ended
+
+Windows source `d01b920d3e459ac7e3ec3d15648bfe7ef5e1d10f` replaces the Windows ZIP in release `internal-n-crush-v1.3.3`. Native confirmation dialogs now have one Escape handler and defer window closing until input dispatch completes. Targeted native dialog lifetime checks: 20/20. Web remains at source `39bc10e`, build `2620a7173a72`; no web rebuild or deployment for this hotfix.
+
+The user explicitly requested only this crash fix be published, all other checks skipped, and all work ended. Public lobby deployment/cross-play investigation is unfinished; default lobby URL remains empty. Temporary local directory/web servers and the test browser were stopped. Do not describe a zero-configuration public lobby as deployed. See PUBLICATION_STATUS.json for exact artifact hashes and verification limits.
+
+---
+
 # Latest same-version release: cursor ownership, MENDER and ammunition updates
 
 Source `3dccae0`: alternating gray row cards, centered participant rows, expanding result list, PULSE/FOLD partial-reload exit delay with unchanged full-reload times, shotgun reserves 50 and rocket reserves 20, MONOLITH total 24 and SCOUT total 36, MENDER 80 RPM with PULSE reload, native cursor ownership and menu keyboard fixes, automatic ammo salvage and 10% owned consumable gadget refill. Native/Web exported; Windows pointer regression passed 11 checks. PUBLICATION_STATUS.json has current source and assets.
