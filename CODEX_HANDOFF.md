@@ -1,3 +1,9 @@
+# Latest publication: 1.3.2 same-version update
+
+Source `9e781e5` is deployed. Web: https://nukcanon.github.io/nukcanon/play/?build=800346d668c1 . See PUBLICATION_STATUS.json and docs/V132_HOTFIX.md. Latest UI and ARC updates exported and published; additional game tests explicitly skipped by user. Earlier test results below are historical. Version-history Word document delivered locally under artifacts/version-history (36 release entries, 30 pages).
+
+---
+
 # Latest publication: 1.3.1 (2026-09-28)
 
 Source `0bb5cce` is published on main and in release `internal-n-crush-v1.3.1`. Website: https://nukcanon.github.io/nukcanon/play/?build=91550bc6ec27 . Current evidence is in `PUBLICATION_STATUS.json`, `docs/COMBAT_AUDIO_REFRESH.md`, and `docs/v131-performance.json`; older notes below are historical. Arena cache revision is 141. User-approved MP3 vocal alternatives are included; default setting remains off. Do not replace them with the rejected shouting take. No public directory endpoint or Intel iGPU hardware result is claimed.

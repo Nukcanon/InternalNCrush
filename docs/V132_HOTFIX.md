@@ -11,3 +11,12 @@
 Pre-publication: native/Web script imports clean; combat refresh 59 checks, zero failures. Detailed interaction and respawn regression follows publication as requested. No physical Intel iGPU/mobile performance guarantee.
 
 Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes match. Public Web v1.3.2 menu inspected. Mobile/reload 15/15 and bot 12/12 (including three respawns) passed. Hidden sound-tab controls initially had zero layout size in the test; selecting the sound tab before measuring corrected the fixture. Windows 32-player P99: low 10.8 ms / high 11.7 ms on RTX 4080 SUPER. See v132-validation.json.
+
+
+## Same-version update, 2026-09-28 (source 9e781e5)
+
+- Three sound preview buttons now share one equal-width row at the bottom. Website download/play buttons have equal widths.
+- Constrained buttons shrink text to their actual available width. Content-sized buttons retain native sizing; duplicate mobile/dialog fitting callbacks were removed.
+- ARC: 60 to 120 DPS, maximum reached at 3 seconds; battery 6 seconds; overheat after 4 seconds. Both overheat and release cooling take 2 seconds from maximum heat to zero.
+- ARC deals 30% extra damage to armor only, without boosting HP spillover. Friendly device repair remains 30 HP/s within 100 m.
+- Windows and Web assets replaced under version 1.3.2. Pages run 36412681984 succeeded. Additional game tests were intentionally skipped at the user's request; preceding test results describe the earlier build only.
