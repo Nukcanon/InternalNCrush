@@ -6,6 +6,7 @@ func run():
 	g.host_game(OfflineMultiplayerPeer.new());g.start_match();g.ui.clear_panel()
 	for i in range(60):await process_frame
 	g.leave_game();g.free();await process_frame;await process_frame
-	CharacterVisual.templates.clear();OperatorSkin.templates.clear();SurfaceFinish.humans.clear();SurfaceFinish.hand_materials.clear();SurfaceFinish.equipment=null;SurfaceFinish.architecture=null;WeaponVisual.web_templates.clear()
+	CharacterVisual.templates.clear();OperatorSkin.templates.clear();WeaponVisual.web_templates.clear()
+	SurfaceFinish.clear_cache()
 	for i in range(5):await process_frame
 	print("RENDER_SHUTDOWN_DONE");quit()

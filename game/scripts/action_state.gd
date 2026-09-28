@@ -11,6 +11,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 	var now=float(game.clock);var w=game.current_weapon(p)
 	if action.begins_with("slot"):
 		var slot=int(action.trim_prefix("slot"))
+		if not WeaponRules.allows_slot(game.options,slot):return false
 		return slot==MeleeCombat.SLOT or (slot==0 and p.get("owned_primary",true)) or slot==1 or (game.options.classes and slot==2 and GadgetLoadout.selectable(p))
 	match action:
 		"melee":return MeleeCombat.ready(game,p)

@@ -37,7 +37,7 @@ static func apply(game:Node,automatic:bool=false):
 	Engine.max_fps=int(game.profile.get("frame_limit",60))
 	# GLES directional atlases require a positive size. Disable casting on the
 	# lights themselves; keep a tiny valid atlas when shadows are off.
-	RenderingServer.directional_shadow_atlas_set_size(([256,2048,4096] if OS.has_feature("web") else [256,4096,4096])[shadows],false)
+	RenderingServer.directional_shadow_atlas_set_size(([256,2048,4096] if OS.has_feature("web") else [256,4096,4096])[shadows],shadows>0)
 	apply_viewport(game.get_viewport());apply_world(game,automatic)
 	for viewport in game.find_children("*","SubViewport",true,false):apply_viewport(viewport)
 
@@ -85,7 +85,11 @@ static func build(ui:Node):
 			profile.width=size.x;profile.height=size.y;profile.display_mode=1;profile.window=false
 			ui.game.apply_display_settings();apply(ui.game);ui.game.save_profile();ui.settings())
 	ui.label("연막의 전술적 범위·밀도·지속 시간과 폭발·회복·스킬 표시는 유지됩니다.",17)
-	ui.button("그래픽 설정 적용",func():apply(ui.game);ui.game.save_profile();ui.notice("그래픽 설정을 적용했습니다."))
+	ui.button("그래픽 설정 적용",func():
+		apply(ui.game);ui.game.save_profile()
+		var applied=SettingsGuard.snapshot(ui.game.profile)
+		for key in ["monitor","display_mode","width","height","window"]:applied.erase(key)
+		ui.settings_baseline.merge(applied,true);ui.notice("그래픽 설정을 적용했습니다."))
 
 static func apply_world(root:Node,automatic:bool=false):
 	if not automatic:WebMaterials.apply(root)
@@ -121,9 +125,16 @@ static func apply_world(root:Node,automatic:bool=false):
 			light.visible=lighting>0;light.shadow_enabled=lighting>0 and shadows>0 and (light.name=="Sun" or bool(light.get_meta("quality_shadow")))
 			light.directional_shadow_max_distance=25. if shadows==1 else 55.
 			light.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-			light.shadow_bias=.1;light.shadow_normal_bias=1.;light.shadow_blur=4.
+			light.shadow_bias=.25;light.shadow_normal_bias=1.2;light.shadow_blur=2.
+			light.directional_shadow_blend_splits=true
+			if not light.has_meta("unshadowed_energy"):light.set_meta("unshadowed_energy",light.light_energy)
+			var base=float(light.get_meta("unshadowed_energy"))
+			# Compatibility shadows use a different lighting pass. Keep sunlit
+			# plaster below clipping instead of washing out its texture relief.
+			light.light_energy=base*(.72 if light.shadow_enabled and base>.8 else 1.)
 	for world in root.get_tree().get_nodes_in_group("quality_environment"):
 		if world.environment:
+			world.environment.tonemap_exposure=1.0
 			if not world.has_meta("quality_fog"):world.set_meta("quality_fog",world.environment.fog_enabled)
 			world.environment.fog_enabled=fog and bool(world.get_meta("quality_fog"))
 			if RenderStyle.web():world.environment.tonemap_mode=Environment.TONE_MAPPER_LINEAR

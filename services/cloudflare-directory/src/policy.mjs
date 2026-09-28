@@ -7,10 +7,10 @@ export function integer(value,min,max){if(!Number.isInteger(value)||value<min||v
 export function scope(value='internet'){if(!['internet','lan'].includes(value))fail(422,'로비 종류를 확인하세요.');return value;}
 export function exact(value,keys){object(value);if(Object.keys(value).some(k=>!keys.includes(k)))fail(422,'지원하지 않는 설정입니다.');}
 export function options(value){
-  const base={name:'공개 경기',mode:0,map:13,capacity:8,map_random:true,map_rotation:false,minutes:10,target:60,team_respawns:60,capture_hold:60,capture_seconds:5,rounds:4,starting_cash:800,prep_seconds:30,round_minutes:5,bomb_seconds:45,buy_seconds:60,lives:0,next_teams:2,scope:'internet',locked:false};
+  const base={name:'공개 경기',mode:0,map:13,capacity:8,map_random:true,map_rotation:false,weapon_rule:0,minutes:10,target:60,team_respawns:60,capture_hold:60,capture_seconds:5,rounds:4,starting_cash:800,prep_seconds:30,round_minutes:5,bomb_seconds:45,buy_seconds:60,lives:0,next_teams:2,scope:'internet',locked:false};
   exact(value,Object.keys(base));const o={...base,...value};
   text(o.name,40);integer(o.mode,0,4);integer(o.map,0,30);integer(o.capacity,2,32);scope(o.scope);
-  for(const [key,min,max] of [['minutes',0,180],['target',1,10000],['team_respawns',0,10000],['capture_hold',1,3600],['capture_seconds',1,60],['rounds',2,100],['starting_cash',0,8000],['prep_seconds',5,120],['round_minutes',1,60],['bomb_seconds',30,120],['buy_seconds',0,300],['lives',0,10],['next_teams',0,2]])integer(o[key],min,max);
+  for(const [key,min,max] of [['weapon_rule',0,2],['minutes',0,180],['target',1,10000],['team_respawns',0,10000],['capture_hold',1,3600],['capture_seconds',1,60],['rounds',2,100],['starting_cash',0,8000],['prep_seconds',5,120],['round_minutes',1,60],['bomb_seconds',30,120],['buy_seconds',0,300],['lives',0,10],['next_teams',0,2]])integer(o[key],min,max);
   if(o.buy_seconds>o.round_minutes*60)fail(422,'구매 시간은 라운드 시간을 넘을 수 없습니다.');
   if(o.rounds%2)fail(422,'진행 라운드 수는 짝수여야 합니다.');
   for(const k of ['map_random','map_rotation','locked'])if(typeof o[k]!=='boolean')fail(422,'체크 설정을 확인하세요.');

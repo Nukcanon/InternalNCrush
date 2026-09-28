@@ -4,14 +4,17 @@ static var equipment:ShaderMaterial
 static var architecture:ShaderMaterial
 static var humans={}
 static var hand_materials={}
+static func clear_cache():
+	humans.clear();hand_materials.clear();equipment=null;architecture=null
 static func human_material(role:int=0) -> ShaderMaterial:
-	if RenderStyle.web():return ToonMaterials.vertex_material()
+	if RenderStyle.web():return ToonMaterials.human_material()
 	if humans.has(role):return humans[role]
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
 #include "res://shaders/material_normal.gdshaderinc"
 uniform sampler2D operator_atlas:source_color,filter_linear_mipmap_anisotropic;
 uniform sampler2D anatomy_detail:source_color,filter_linear_mipmap;
+uniform sampler2D skin_normal:hint_normal,filter_linear_mipmap,repeat_enable;
 // Two shared CC0 diffuse maps, importer-capped to 512px; never loaded in Web.
 varying vec3 p;
 varying vec3 local_normal;
@@ -35,7 +38,10 @@ void fragment(){
  }
  ROUGHNESS=clamp(UV2.x+(relief-1.)*.10,.58,.97);
  METALLIC=0.;SPECULAR=kind==0.?.24:.14;
- if(material_detail_enabled)NORMAL=detail_surface_normal(NORMAL,VERTEX,coords*8.,texture(detail_normal,coords*8.).rgb,kind==0. || kind==4.?.10:.55);
+ if(material_detail_enabled){
+  vec3 bump=(kind==0. || kind==4.)?texture(skin_normal,coords*8.).rgb:texture(detail_normal,coords*8.).rgb;
+  NORMAL=detail_surface_normal(NORMAL,VERTEX,coords*8.,bump,kind==0. || kind==4.?.18:.65);
+ }
  // Face only: clean painted colors, without photographic pores or glossy highlights.
  if(kind==4.){
    ALBEDO=COLOR.rgb;ROUGHNESS=.78;SPECULAR=.16;
@@ -50,11 +56,12 @@ void fragment(){
 }
 """
 	var human=ShaderMaterial.new();human.shader=shader
+	human.set_shader_parameter("skin_normal",load("res://assets/textures/district/skin_normal.png"))
 	human.set_shader_parameter("operator_atlas",load("res://assets/textures/operator_materials_v11.png"))
 	human.set_shader_parameter("anatomy_detail",load("res://assets/human/textures/female.png" if role in HumanModel.FEMALE_ROLES else "res://assets/human/textures/male.png"))
 	human.set_shader_parameter("detail_normal",load("res://assets/textures/district/cloth_normal.png"));humans[role]=human;return human
 static func hand_material(color:Color,kind:int) -> ShaderMaterial:
-	if RenderStyle.web():return ToonMaterials.color_material(color)
+	if RenderStyle.web():return ToonMaterials.hand_material(color,kind)
 	var key=str(color)+str(kind)
 	if hand_materials.has(key):return hand_materials[key]
 	var shader=Shader.new();shader.code="""

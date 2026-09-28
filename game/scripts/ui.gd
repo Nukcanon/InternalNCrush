@@ -56,6 +56,9 @@ var weapon_ids=[]
 var theme:Theme
 var perf_clock=0.0
 var screen=""
+var settings_baseline={}
+var settings_exit=Callable()
+var settings_dialog:ConfirmationDialog
 var preview_widget:EquipmentPreview
 var bot_setup=false
 var bot_choice={"role":0,"primary":"a1","secondary":"pistol","armor_max":0,"gadget":0,"team":0,"cash":800}
@@ -282,6 +285,7 @@ func training_menu():
 	button("봇 전투 설정",practice_menu);button("메인메뉴",menu)
 func practice_menu():
 	make_panel("봇 전투");screen="practice"
+	WeaponRules.build(self)
 	if int(game.options.bots) not in [3,5,7,15,31]:game.options.bots=7
 	option("난이도",["하 · 반응과 조준을 완화","중 · 목표와 지원 역할 수행","상 · 빠른 반응, 사격·후퇴 판단 강화"],game.options.get("bot_difficulty",1),func(i):game.options.bot_difficulty=i)
 	option("봇 인원",["3명","5명","7명","15명","31명"],maxi(0,[3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[3,5,7,15,31][i])
@@ -320,6 +324,7 @@ func host_settings():
 	option("다음 경기 팀",["현재 팀 유지","무작위","성적 기준 팀 균형"],game.options.next_teams,func(i):game.options.next_teams=i)
 	label("각자 본인의 팀을 선택하며, 방장은 본인과 봇만 이동할 수 있습니다.\n불균형한 이동은 제한되고, 빈자리는 난이도 상의 균형 봇이 채웁니다.",16)
 	stack=groups[2]
+	WeaponRules.build(self)
 	check("병과 사용",game.options.classes,func(v):game.options.classes=v)
 	check("특수 스킬 사용",game.options.skills,func(v):game.options.skills=v)
 	label("스킬 OFF여도 회복 무기·수리 도구·가젯은 작동합니다.",14)
@@ -403,6 +408,7 @@ func team_swap_menu(first:int):
 		if game.phase=="lobby":lobby()
 		else:teams_menu())
 func settings():
+	settings_baseline=SettingsGuard.snapshot(game.profile)
 	make_panel("환경 설정",980);screen="settings"
 	var outer=stack;var tabs=section_tabs(["화면 · 조준","그래픽","HUD","소리","조작법"]);stack=tabs[0]
 	var displays=[]
@@ -485,10 +491,14 @@ func settings():
 	var diagram=ControlsDiagram.new();diagram.custom_minimum_size=Vector2(885,415);stack.add_child(diagram)
 	label("마우스 휠: 무기 전환  /  E: 문 열기·닫기  /  E 길게: 설치·해체  /  F: 스킬 · 포탑 강화  /  Q: 즉시 근접 / 5: 근접 무기 장착 / C: 의료 카빈 회복\nG: 가젯 · 수류탄은 누른 뒤 놓아 투척  /  V: 가젯 종류  /  F6·F7: 강퇴 투표",18)
 	stack=outer
-	var back=button("메인메뉴" if game.phase=="menu" else "돌아가기",func():
+	var leave_settings=func():
 		if game.phase=="menu":menu()
 		elif game.phase=="lobby":lobby()
-		else:clear_panel();game.capture_pointer())
+		else:clear_panel();game.capture_pointer()
+	var read_display=func():return {"monitor":monitor.selected,"display_mode":mode.selected,"width":int(width.value),"height":int(height.value)}
+	settings_baseline.merge(read_display.call(),true)
+	settings_exit=func():SettingsGuard.confirm_exit(self,read_display,leave_settings)
+	var back=button("메인메뉴" if game.phase=="menu" else "돌아가기",settings_exit)
 	pin_actions(back)
 func sound_slider(title:String,key:String):
 	var row=HBoxContainer.new();stack.add_child(row);var text=label(title,20,row);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -544,7 +554,10 @@ func gear():
 	if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish()
 	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
 	make_panel("병과 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
+	if WeaponRules.mode(game.options)>0:
+		gear_category=2 if WeaponRules.mode(game.options)==1 else 1
 	var title=stack.get_child(stack.get_child_count()-1);stack.remove_child(title);var heading=HBoxContainer.new();stack.add_child(heading);heading.add_child(title);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button("맵 보기",show_current_map,heading)
+	if WeaponRules.mode(game.options)>0:label("칼 전용 · 가젯 사용 가능 · 스킬 사용 불가" if WeaponRules.mode(game.options)==1 else "권총 전용 · 가젯 사용 가능 · 스킬 사용 불가",18)
 	# Hidden selectors preserve one canonical loadout state for networking and menus.
 	gear_secondary=str(queued.get("secondary",p.secondary))
 	gear_class=option("병과",Rules.CLASSES,chosen);gear_class.get_parent().hide()
@@ -559,6 +572,7 @@ func gear():
 	var tabs=GridContainer.new();gear_tabs=tabs;tabs.columns=5 if get_viewport().get_visible_rect().size.x>=1100 else 3;tabs.size_flags_horizontal=Control.SIZE_EXPAND_FILL;form.add_child(tabs)
 	for i in range(5):
 		var category=i;var tab=button(["주무기","보조","가젯","방어구","스킬"][i],func():gear_category=category;preview_secondary=category==1;preview_kind=[1,1,2,3,4][category];refresh_gear_detail();refresh_gear_cards(),tabs);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.toggle_mode=true;tab.button_pressed=i==gear_category
+		if WeaponRules.mode(game.options)>0:tab.disabled=i in [0,4] or (i==1 and WeaponRules.mode(game.options)==1)
 	var scroll=ScrollContainer.new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;scroll.custom_minimum_size=Vector2(625,260);form.add_child(scroll)
 	var cards_inset=MarginContainer.new();cards_inset.add_theme_constant_override("margin_right",18);scroll.add_child(cards_inset)
 	gear_cards=GridContainer.new();gear_cards.columns=3;gear_cards.add_theme_constant_override("h_separation",8);gear_cards.add_theme_constant_override("v_separation",8);cards_inset.add_child(gear_cards)
@@ -649,6 +663,7 @@ func refresh_gear_cards():
 				image_card(gear_cards,weapon_ids[i],caption,gear_primary.selected==i,func():gear_primary.select(index);preview_kind=1;preview_secondary=false;refresh_gear_detail();refresh_gear_cards())
 		1:
 			for id in Catalog.secondaries_for(role):
+				if WeaponRules.mode(game.options)>0 and id not in WeaponRules.PISTOLS:continue
 				var wid=id;image_card(gear_cards,id,Catalog.get_weapon(id).name,gear_secondary==id,func():gear_secondary=wid;gear_repair.button_pressed=wid=="repair";preview_kind=1;preview_secondary=true;refresh_gear_detail();refresh_gear_cards())
 		2:
 			for i in range(gear_gadget.item_count):
@@ -658,7 +673,7 @@ func refresh_gear_cards():
 				var index=i;image_card(gear_cards,"armor"+str(i),["기본 복장","경량 방어구","중량 방어구"][i],gear_armor.selected==i,func():gear_armor.select(index);preview_kind=3;refresh_gear_detail();refresh_gear_cards())
 		4:image_card(gear_cards,"skill"+str(role),Rules.SKILLS[role],true,func():preview_kind=4;refresh_gear_detail())
 func selected_loadout() -> Dictionary:
-	return {"role":gear_class.selected,"primary":weapon_ids[gear_primary.selected],"armor":gear_armor.selected,"gadget":-1 if gear_gadget.get_selected_id()==99 else gear_gadget.get_selected_id(),"repair":gear_secondary=="repair","secondary":gear_secondary}
+	return WeaponRules.selection(game.options,{"role":gear_class.selected,"primary":weapon_ids[gear_primary.selected],"armor":gear_armor.selected,"gadget":-1 if gear_gadget.get_selected_id()==99 else gear_gadget.get_selected_id(),"repair":gear_secondary=="repair","secondary":gear_secondary})
 func refresh_weapons():
 	if gear_class.selected!=3:gear_repair.button_pressed=false
 	if gear_secondary not in Catalog.secondaries_for(gear_class.selected):gear_secondary="pistol"
@@ -721,6 +736,7 @@ func refresh_gear_detail():
 	gear_submit.text="봇 전투 시작" if bot_setup else "구매하기" if game.phase=="buy" else "장비 적용" if game.phase=="lobby" or game.options.get("practice",false) else "다음 부활부터 적용" if game.options.mode!=4 else "준비 시간에 구매 가능"
 	refresh_gear_economy()
 func toggle_pause():
+	if screen=="settings" and settings_exit.is_valid():settings_exit.call();return
 	if is_instance_valid(map_viewer):map_viewer.dismiss();return
 	if is_instance_valid(panel):clear_panel();game.capture_pointer();return
 	make_panel("게임 메뉴",480,true)
@@ -942,6 +958,7 @@ func internet_password(room_id:String):
 	dialog.canceled.connect(dialog.queue_free);dialog.popup_centered(Vector2i(420,150));password.grab_focus()
 func internet_create():
 	make_panel("공개 방 만들기",880);screen="internet_create"
+	WeaponRules.build(self)
 	var title=edit("방 이름",str(game.profile.nick)+"의 경기",func(_v):pass)
 	edit("방 비밀번호 · 선택",str(game.options.get("password","")),func(value):game.options.password=value,true)
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):

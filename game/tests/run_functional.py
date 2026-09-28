@@ -10,6 +10,8 @@ OUT = PROJECT.parent / "validation/functional-v11"
 TESTS = ["rules", "regressions", "ai_aim", "bots", "v04", "v05", "kill_feed", "v06", "v07", "v1", "v101", "vertical_traversal", "v102", "v103", "arena_flow_v103", "network_security", "lobby_menu", "combat_v104", "presentation_v104", "v11", "v111", "abilities_v111", "spawn_exits", "v112", "v113", "turret_replacement", "silhouette_assembly", "ballistics", "cartoon_review", "web_graphics", "render_split", "motion_v115", "details_v116", "details_gameplay_v116", "melee_v117", "support_v118", "update_v119", "selection_v120", "update_v121", "update_v122", "update_v123", "resources_v123", "native_finish_v124", "defusal_v124", "room_routes_v125", "traversal_contacts", "capture_v126", "drops_v127", "practical_lights"]
 
 def main():
+    for test in ["optics_v13", "room_weapons_v13", "settings_guard_v13"]:
+        if test not in TESTS:TESTS.append(test)
     OUT.mkdir(parents=True, exist_ok=True)
     failed = []
     selected = sys.argv[1:] or TESTS

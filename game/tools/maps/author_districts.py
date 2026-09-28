@@ -97,11 +97,12 @@ for i,m in enumerate(old):
   bent.append(new)
  paths=bent
  # Bend points are passage corners, not additional oversized courtyards.
- rooms=list(dict.fromkeys(p for ch in authored_paths for p in ch));floors=[]
+ rooms=list(dict.fromkeys(p for ch in authored_paths for p in ch));floors=[];ceiling_rooms=[]
  for chain in paths:floors.append(LineString(chain).buffer(width/2,join_style=2,cap_style=2))
  for j,(x,y) in enumerate(rooms):
   rw=(28 if cap==32 else 22 if cap==16 else 18 if cap==12 else 15 if cap==8 else 13)+(j%3)*2;rh=(24 if cap==32 else 20 if cap>=12 else 13 if cap==8 else 11)+(j%4)*1.5
   floors.append(box(x-rw/2,y-rh/2,x+rw/2,y+rh/2))
+  if j>1 and j%3==1:ceiling_rooms.append([x-rw/2,y-rh/2,x+rw/2,y+rh/2])
  # Side buildings contain linked rooms and a second exit, rather than decorative solid boxes.
  districts=0
  base_rooms=list(dict.fromkeys(p for ch in authored_paths for p in ch))
@@ -114,7 +115,8 @@ for i,m in enumerate(old):
   cc=(x+vx*offset+vy*span,y+vy*offset-vx*span)
   branch=[(x,y),a,b,cc,(x,y)]
   floors.append(LineString(branch).buffer(1.35,join_style=2,cap_style=2))
-  for bx,by in [a,b,cc]:floors.append(box(bx-6,by-5,bx+6,by+5))
+  for bx,by in [a,b,cc]:
+   floors.append(box(bx-6,by-5,bx+6,by+5));ceiling_rooms.append([bx-6,by-5,bx+6,by+5])
   districts+=3
  floor=unary_union(floors).buffer(0)
  # Irregular perimeter follows connected districts rather than clipping rectangle corners.
@@ -129,6 +131,7 @@ for i,m in enumerate(old):
  targets=[paths[0][len(paths[0])//2],paths[1][len(paths[1])//2],paths[2][len(paths[2])//2]] if i<19 or i==31 else [world(pts[2]),world(pts[3])]
  item={'paths':paths,'upper_path':upper_chain,'lower_path':lower_chain,'id':i+1,'name':m['name'],'capacity':cap,'dimensions':dim,'rectangle':i in rects,'identity':ident,'floor':polys(floor),'border':polys(border),'upper':polys(upper),'lower':polys(lower),'stairs':[list(p) for chain in [upper_chain,lower_chain] if chain for p in [chain[0],chain[-1]]],'spawns':[spawn,enemy],'targets':targets,'corridor_m':width,'side_corridor_m':2.7,'rooms':len(rooms)+districts,'connected':floor.geom_type=='Polygon','mode':'연습장' if i==31 else '설치/해체' if i>=19 else '일반전'}
  result.append(item)
+ item['ceiling_rooms']=ceiling_rooms
  item['terrain']=TERRAIN.get(i,None);item['elevated_crossing']=i in BRIDGES;item['authored_revision']=128
  item['upper_height']=upper_height;item['lower_height']=lower_height
  item['composition']='supported_crossing' if i in BRIDGES else 'grounded_terraces' if i in TERRAIN else 'rectangular_district' if i in RECTANGLES else 'practice_towers'

@@ -1,6 +1,6 @@
 extends RefCounted
 class_name CombatLayout
-const INDOOR=[2,3,8,11,14,15,22,27,29]
+const INDOOR=[2,3,8,11,14,15,16,22,27,29]
 const NIGHT=[1,6,9,16,17]
 static func valid(a:Node,pos:Vector3,half:Vector2) -> bool:
 	if absf(pos.x)+half.x>a.bounds.x-5. or absf(pos.z)+half.y>a.bounds.y-12.:return false

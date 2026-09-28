@@ -49,3 +49,10 @@ variants of the same 40 designs, not 40 additional designs.
 fabric, wood and metal micro-normal textures, are original procedural work in
 `build_building_textures.py`. No downloaded proprietary game assets are used.
 Editable Blender files, tile sources and geometry manifests are retained.
+
+## 1.3 original roof and ceiling finishes
+
+40 roof tiles, 20 soffit tiles and 40 ceiling tiles, with relief-derived normal
+atlas, were authored with `build_roof_textures.py`. Tile sources and the CC0
+manifest are retained in `art_source/roof_textures`. These are original work,
+not extracted game assets.

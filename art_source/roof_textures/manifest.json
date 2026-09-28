@@ -1,0 +1,605 @@
+{
+  "license": "CC0-1.0",
+  "assets": [
+    {
+      "name": "terracotta_00",
+      "index": 0,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_01",
+      "index": 1,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_02",
+      "index": 2,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_03",
+      "index": 3,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_04",
+      "index": 4,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_05",
+      "index": 5,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_06",
+      "index": 6,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_07",
+      "index": 7,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_08",
+      "index": 8,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "terracotta_09",
+      "index": 9,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_00",
+      "index": 10,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_01",
+      "index": 11,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_02",
+      "index": 12,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_03",
+      "index": 13,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_04",
+      "index": 14,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_05",
+      "index": 15,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_06",
+      "index": 16,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_07",
+      "index": 17,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_08",
+      "index": 18,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "slate_09",
+      "index": 19,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_00",
+      "index": 20,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_01",
+      "index": 21,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_02",
+      "index": 22,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_03",
+      "index": 23,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_04",
+      "index": 24,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_05",
+      "index": 25,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_06",
+      "index": 26,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_07",
+      "index": 27,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_08",
+      "index": 28,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "standing_seam_09",
+      "index": 29,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_00",
+      "index": 30,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_01",
+      "index": 31,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_02",
+      "index": 32,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_03",
+      "index": 33,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_04",
+      "index": 34,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_05",
+      "index": 35,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_06",
+      "index": 36,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_07",
+      "index": 37,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_08",
+      "index": 38,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "shingles_09",
+      "index": 39,
+      "kind": "roof",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_00",
+      "index": 40,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_01",
+      "index": 41,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_02",
+      "index": 42,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_03",
+      "index": 43,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_04",
+      "index": 44,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_05",
+      "index": 45,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_06",
+      "index": 46,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_07",
+      "index": 47,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_08",
+      "index": 48,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_wood_09",
+      "index": 49,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_00",
+      "index": 50,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_01",
+      "index": 51,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_02",
+      "index": 52,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_03",
+      "index": 53,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_04",
+      "index": 54,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_05",
+      "index": 55,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_06",
+      "index": 56,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_07",
+      "index": 57,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_08",
+      "index": 58,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "soffit_panels_09",
+      "index": 59,
+      "kind": "soffit",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_00",
+      "index": 60,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_01",
+      "index": 61,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_02",
+      "index": 62,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_03",
+      "index": 63,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_04",
+      "index": 64,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_05",
+      "index": 65,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_06",
+      "index": 66,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_07",
+      "index": 67,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_08",
+      "index": 68,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_acoustic_09",
+      "index": 69,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_00",
+      "index": 70,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_01",
+      "index": 71,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_02",
+      "index": 72,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_03",
+      "index": 73,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_04",
+      "index": 74,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_05",
+      "index": 75,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_06",
+      "index": 76,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_07",
+      "index": 77,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_08",
+      "index": 78,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_plaster_09",
+      "index": 79,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_00",
+      "index": 80,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_01",
+      "index": 81,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_02",
+      "index": 82,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_03",
+      "index": 83,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_04",
+      "index": 84,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_05",
+      "index": 85,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_06",
+      "index": 86,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_07",
+      "index": 87,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_08",
+      "index": 88,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_wood_09",
+      "index": 89,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_00",
+      "index": 90,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_01",
+      "index": 91,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_02",
+      "index": 92,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_03",
+      "index": 93,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_04",
+      "index": 94,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_05",
+      "index": 95,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_06",
+      "index": 96,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_07",
+      "index": 97,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_08",
+      "index": 98,
+      "kind": "ceiling",
+      "original": true
+    },
+    {
+      "name": "ceiling_metal_09",
+      "index": 99,
+      "kind": "ceiling",
+      "original": true
+    }
+  ]
+}

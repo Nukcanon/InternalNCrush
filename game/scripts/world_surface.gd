@@ -35,6 +35,8 @@ uniform sampler2D surface_texture:source_color,filter_linear_mipmap,repeat_enabl
 uniform sampler2D district_variation:filter_linear_mipmap,repeat_enable;
 uniform sampler2D building_atlas:source_color,filter_linear_mipmap,repeat_disable;
 uniform float atlas_family=-1.;
+uniform vec2 atlas_size=vec2(1360.);
+uniform int roof_finish=0;
 uniform float map_seed=0.;
 uniform sampler2D building_normals:hint_normal,filter_linear_mipmap,repeat_disable;
 uniform vec4 tint:source_color=vec4(1.0);
@@ -61,9 +63,13 @@ void fragment(){
    vec2 lot=floor(surface_p.xz/12.);
    float variant=mod(abs(lot.x*17.+lot.y*37.+map_seed*11.),10.);
    vec2 cell=vec2(variant,atlas_family);
-   vec2 atlas_uv=(cell*136.+vec2(4.5)+fract(surface_uv)*127.)/1360.;
-   tex=textureGrad(building_atlas,atlas_uv,dFdx(surface_uv)*127./1360.,dFdy(surface_uv)*127./1360.).rgb;
-   if(material_detail_enabled)bump=textureGrad(building_normals,atlas_uv,dFdx(surface_uv)*127./1360.,dFdy(surface_uv)*127./1360.).rgb;
+   if(roof_finish>0){
+     float finish=mod(abs(lot.x*17.+lot.y*37.+map_seed*11.),roof_finish==2?20.:40.)+(roof_finish==2?40.:roof_finish==3?60.:0.);
+     cell=vec2(mod(finish,10.),floor(finish/10.));
+   }
+   vec2 atlas_uv=(cell*136.+vec2(4.5)+fract(surface_uv)*127.)/atlas_size;
+   tex=textureGrad(building_atlas,atlas_uv,dFdx(surface_uv)*127./atlas_size,dFdy(surface_uv)*127./atlas_size).rgb;
+   if(material_detail_enabled)bump=textureGrad(building_normals,atlas_uv,dFdx(surface_uv)*127./atlas_size,dFdy(surface_uv)*127./atlas_size).rgb;
  }
  vec3 n=normalize(surface_n);if(!FRONT_FACING)n=-n;
  float facing=.82+.18*max(0.,dot(n,normalize(vec3(.35,.85,.4))));
@@ -141,4 +147,11 @@ void fragment(){
 	mat.set_shader_parameter("atlas_family",family);mat.set_shader_parameter("map_seed",float(index))
 	mat.set_shader_parameter("building_normals",load("res://assets/textures/district/building_normals.png"))
 	mat.set_shader_parameter("detail_normal",load("res://assets/textures/district/metal_normal.png"))
+	if kind in ["roof","soffit","eave_edge","ceiling"]:
+		mat.set_shader_parameter("roof_finish",1 if kind=="roof" else 3 if kind=="ceiling" else 2)
+		mat.set_shader_parameter("atlas_family",0.)
+		mat.set_shader_parameter("atlas_size",Vector2(1360,1360))
+		mat.set_shader_parameter("building_atlas",load("res://assets/textures/district/roof_atlas.png"))
+		mat.set_shader_parameter("building_normals",load("res://assets/textures/district/roof_normals.png"))
+		mat.set_shader_parameter("tint",Color("e4ddd0") if kind!="roof" else Color("c9c8c0"))
 	cache[key]=mat;return mat

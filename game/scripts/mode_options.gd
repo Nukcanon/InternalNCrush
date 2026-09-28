@@ -1,6 +1,6 @@
 extends RefCounted
 class_name ModeOptions
-const NETWORK_KEYS=["minutes","target","team_respawns","capture_hold","capture_seconds","rounds","starting_cash","prep_seconds","round_minutes","bomb_seconds","buy_seconds","lives","next_teams"]
+const NETWORK_KEYS=["minutes","target","team_respawns","capture_hold","capture_seconds","rounds","starting_cash","prep_seconds","round_minutes","bomb_seconds","buy_seconds","lives","next_teams","weapon_rule"]
 const FIELDS=[
 	["minutes","경기 시간 (분 · 0은 무제한)",[0,1,2,3],0,180,1],
 	["target","목표 처치 수",[0,1],1,10000,1],

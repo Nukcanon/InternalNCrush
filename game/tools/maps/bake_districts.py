@@ -8,6 +8,7 @@ from pathlib import Path
 from shapely import constrained_delaunay_triangles
 from shapely.geometry import Polygon, LineString, Point, box
 from shapely.ops import unary_union
+from tile_faces import tiled_triangles
 
 ROOT=Path(__file__).resolve().parents[3]
 OUT=ROOT/'game/assets/arenas/districts'
@@ -32,8 +33,21 @@ for plan in plans:
     # Bounds are exact; the preview's buffer may extend a few metres outside.
     envelope=box(1,1,w-1,h-1)
     floor=floor.intersection(envelope);border=border.intersection(box(0,0,w,h))
+    # Corridor unions can leave centimetre-wide interior holes. Extruding those
+    # holes into full-height buildings produces the isolated wall blades seen
+    # in the warehouse/canal maps. Fill only tiny, narrow isolated remnants.
+    cleaned=[];removed_slivers=[]
+    for p in polygons(floor):
+        holes=[]
+        for ring in p.interiors:
+            island=Polygon(ring)
+            if island.area<4. and island.buffer(-.30).is_empty:
+                removed_slivers.append([*island.centroid.coords[0],round(island.area,6)])
+            else:holes.append(ring)
+        cleaned.append(Polygon(p.exterior,holes))
+    floor=unary_union(cleaned)
     architecture_floor=floor
-    surfaces=[];groups={};goals=[];pending_faces={}
+    surfaces=[];groups={};goals=[];pending_faces={};seen_triangles=set()
     terrain=plan.get('terrain')
     bands=[]
     if terrain:
@@ -50,9 +64,20 @@ for plan in plans:
             if region.covers(Point(x,z)):return plane[0]*(x-ox)+plane[1]*(z-oz)+plane[2]
         return 0.
     def emit(points,kind):
-        cx=sum(p[0] for p in points)/3-ox;cz=sum(p[2] for p in points)/3-oz
-        key=(math.floor(cx/24),math.floor(cz/24),kind)
-        groups.setdefault(key,[]).extend([[round(x-ox,4),round(y,4),round(z-oz,4)] for x,y,z in points])
+        signature=tuple(sorted(tuple(round(c,5) for c in p) for p in points))
+        if signature in seen_triangles:return
+        seen_triangles.add(signature)
+        if kind=='water':
+            cx=sum(p[0] for p in points)/3-ox;cz=sum(p[2] for p in points)/3-oz
+            key=(math.floor(cx/24),math.floor(cz/24),kind)
+            groups.setdefault(key,[]).extend([[round(x-ox,4),round(y,4),round(z-oz,4)] for x,y,z in points])
+            return
+        for tx,tz,triangle in tiled_triangles(points,ox,oz):
+            key=(tx,tz,kind)
+            rounded=[[round(x-ox,4),round(y,4),round(z-oz,4)] for x,y,z in triangle]
+            a,b,c=rounded;u=[b[j]-a[j] for j in range(3)];v=[c[j]-a[j] for j in range(3)]
+            if sum(n*n for n in [u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]])<1e-14:continue
+            groups.setdefault(key,[]).extend(rounded)
     def face(poly,plane,kind,walk=True):
         key=(kind,tuple(round(v,8) for v in plane),walk)
         pending_faces.setdefault(key,[]).append(poly)
@@ -108,6 +133,7 @@ for plan in plans:
         for p in polygons(poly):
             for ring in rings(p):
                 for a,b in zip(ring,ring[1:]):
+                    if kind=='eave_edge' and buildings.distance(Point((a[0]+b[0])*.5,(a[1]+b[1])*.5))<.02:continue
                     if kind=='perimeter' and sea and (a[0]+b[0])*.5>w*.76:
                         # The coastal edge opens onto the sea; remaining sides
                         # retain the map boundary and its collision.
@@ -183,10 +209,32 @@ for plan in plans:
         architecture_floor=floor
         lower=Polygon();upper=Polygon()
     face(floor,[0,0,0],'ground')
-    indoor=plan['id']-1 in [2,3,8,11,14,15,22,27,29]
+    indoor=plan['id']-1 in [2,3,8,11,14,15,16,22,27,29]
     wall_height=max(6.8,plan.get('upper_height',4.2)+2.6) if indoor else 3.1
     if indoor:
         face(architecture_floor,[0,0,wall_height],'ceiling',False)
+    room_ceilings=Polygon()
+    if not indoor:
+        # Authored side-building loops contain three linked rooms. Cover these
+        # rooms, leaving the main streets, courtyards and elevated routes open.
+        pockets=[]
+        for bounds in plan.get('ceiling_rooms',[]):
+            room=box(*bounds).intersection(architecture_floor)
+            if room.is_empty:continue
+            # A room needs existing perimeter walls supporting its roof.
+            supported=room.boundary.intersection(architecture_floor.boundary.buffer(.03)).length
+            if supported>room.length*.28:pockets.append(room)
+        for path in plan['paths']:
+            if len(path)!=5 or math.dist(path[0],path[-1])>.01:continue
+            if LineString(path).length>145:continue
+            rooms=unary_union([box(x-6,z-5,x+6,z+5) for x,z in path[1:4]])
+            pockets.append(rooms.union(LineString(path[1:4]).buffer(1.35,join_style=2)))
+        if pockets:
+            room_ceilings=unary_union(pockets).intersection(architecture_floor)
+            room_ceilings=room_ceilings.difference(upper.buffer(1.)).difference(lower.buffer(1.))
+            face(room_ceilings,[0,0,wall_height],'ceiling',False)
+            face(room_ceilings,[0,0,wall_height+.16],'roof',False)
+            walls(room_ceilings,wall_height,wall_height+.16,'eave_edge_room')
     water=Polygon()
     if plan['id']-1 in [0,1,5,21,23,28]:
         holes=[Polygon(r) for p in polygons(shape(plan['floor'])) for r in p.interiors if Polygon(r).area>45]
@@ -208,8 +256,18 @@ for plan in plans:
             lot=buildings.intersection(box(ix*12+ox,iz*12+oz,(ix+1)*12+ox,(iz+1)*12+oz))
             if lot.is_empty:continue
             extra=[0.,.65,1.3,2.1][abs(ix*17+iz*37+(plan['id']-1)*11)%4]
+            # A clipping remainder is not a separate tall building. Keep very
+            # narrow roof lots at their parent wall height instead of extruding
+            # a freestanding blade above neighbouring roofs.
+            if lot.buffer(-.30).is_empty:extra=0.
             lots[ix,iz]=(lot,wall_height+extra)
-            face(lot,[0,0,wall_height+extra],'roof',False)
+            eave=Polygon()
+            if not indoor and abs(ix*17+iz*37+(plan['id']-1)*11)%5<3:
+                eave=lot.buffer(.4,join_style=2).difference(buildings).intersection(architecture_floor)
+                if not eave.is_empty:
+                    face(eave,[0,0,wall_height+extra-.16],'soffit',False)
+                    walls(eave,wall_height+extra-.16,wall_height+extra,'eave_edge')
+            face(lot.union(eave),[0,0,wall_height+extra],'roof',False)
     for (ix,iz),(lot,top) in lots.items():
         for poly in polygons(lot):
             for ring in rings(poly):
@@ -220,9 +278,17 @@ for plan in plans:
                         if neighbour in lots and lots[neighbour][0].distance(Point(mid))<.001:
                             low=max(low,lots[neighbour][1])
                     if top<=low+.001:continue
-                    uy=terrain_y(*a);vy=terrain_y(*b)
-                    emit([(a[0],low+uy,a[1]),(b[0],low+vy,b[1]),(a[0],top+uy,a[1])],'wall')
-                    emit([(b[0],low+vy,b[1]),(b[0],top+vy,b[1]),(a[0],top+uy,a[1])],'wall')
+                    # Roofs are split at terrain slope changes. Their fascia
+                    # must use the same planes, not interpolate across a hill:
+                    # doing so leaves sky gaps and overlapping diagonal strips.
+                    for region,offset in bands:
+                        segment=LineString([a,b]).intersection(region)
+                        if segment.is_empty or segment.geom_type!='LineString':continue
+                        u,v=list(segment.coords)[0],list(segment.coords)[-1]
+                        uy=offset[0]*(u[0]-ox)+offset[1]*(u[1]-oz)+offset[2]
+                        vy=offset[0]*(v[0]-ox)+offset[1]*(v[1]-oz)+offset[2]
+                        emit([(u[0],low+uy,u[1]),(v[0],low+vy,v[1]),(u[0],top+uy,u[1])],'wall')
+                        emit([(v[0],low+vy,v[1]),(v[0],top+vy,v[1]),(u[0],top+uy,u[1])],'wall')
     water_y=min([terrain_y(x,z) for x,z in water.exterior.coords],default=0.)-.35 if not water.is_empty else -.35
     if not water.is_empty:
         face(water,[0,0,water_y-(4.5 if sea else .55)],'waterbed',not sea)
@@ -299,6 +365,7 @@ for plan in plans:
     trees=[]
     if not indoor:
         for p in prop_candidates:
+            if not room_ceilings.is_empty and room_ceilings.distance(Point(p))<3.2:continue
             if not floor.contains(Point(p).buffer(3.2)):continue
             if any(math.dist(p,q)<5.5 for q in props+trees):continue
             if any(math.dist(p,q[:2])<q[2]+4 for q in vehicle_clearance):continue
@@ -363,8 +430,19 @@ for plan in plans:
             for side in [-1,1]:
                 x,z=p.x+side*nx*deck_width*.43,p.y+side*nz*deck_width*.43
                 if not floor.contains(Point(x,z).buffer(.35)):continue
+                if not upper.contains(Point(x,z).buffer(.18)):continue
                 if min(math.dist((x,z),v) for v in plan['spawns']+targets)<5:continue
-                supports.append([*centered((x,z)),round(top,4)])
+                deck_heights=[]
+                for surface in surfaces:
+                    if surface['layer']!='upper':continue
+                    rr=surface['rings'];point=Point(x-ox,z-oz)
+                    if Polygon(rr[0],rr[1:]).covers(point):
+                        a,b,c=surface['plane'];deck_heights.append(a*(x-ox)+b*(z-oz)+c)
+                base=terrain_y(x,z)
+                if not deck_heights:continue
+                actual_top=min(deck_heights)-.04
+                if actual_top-base<.75:continue
+                supports.append([*centered((x,z)),round(actual_top,4),round(base,4)])
     boats=[];boat_clearance=[]
     if not water.is_empty:
         roster=[a for a in transport if a['category']==('sea' if sea else 'river')]
@@ -383,8 +461,12 @@ for plan in plans:
         # Face away from the nearest wall; the back never points into the lane.
         yaw=math.atan2(nearest.x-p[0],nearest.y-p[1])
         return [*centered(p),terrain_y(*p),round(yaw,5)]
-    data={'index':plan['id']-1,'name':plan['name'],'dimensions':[w,h],
-          'rectangle':plan['rectangle'],'surfaces':surfaces,'groups':[{'kind':key[2],'origin':[key[0]*24+12,0,key[1]*24+12],'vertices':v} for key,v in groups.items()],
+    ceiling_lights=[]
+    for room in polygons(room_ceilings):
+        anchor=room.representative_point()
+        ceiling_lights.append([anchor.x-ox,terrain_y(anchor.x,anchor.y)+wall_height,anchor.y-oz])
+    data={'index':plan['id']-1,'name':plan['name'],'dimensions':[w,h],'room_ceiling_lights':ceiling_lights,
+          'rectangle':plan['rectangle'],'removed_sliver_islands':removed_slivers,'surfaces':surfaces,'groups':[{'kind':key[2],'origin':[key[0]*24+12,0,key[1]*24+12],'vertices':v} for key,v in groups.items()],
           'border':[[centered(p) for p in ring] for ring in rings(max(polygons(border),key=lambda p:p.area))],
           'spawns':[centered(p) for p in plan['spawns']], 'targets':[centered(p) for p in targets],
           'goals':goals,'corridor_m':plan['corridor_m'],'capacity':plan['capacity'],

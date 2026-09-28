@@ -77,11 +77,7 @@ func stock(style:String):
 		block(self,Vector3(0,-.038,.14),Vector3(.085,.12,.095),edge,-.14)
 func sight(scoped:bool,compact=false):
 	if scoped:
-		block(self,Vector3(0,.095,-.19),Vector3(.032,.075,.19),metal)
-		tube(self,Vector3(0,.143,-.22),.04 if compact else .049,.19 if compact else .31,edge)
-		for z in [-.115,-.29]:tube(self,Vector3(0,.143,z),.055,.025,metal)
-		tube(self,Vector3(0,.143,-.383 if not compact else -.327),.045,.012,Color("438a9c"))
-		M.cylinder(self,Vector3(0,.197,-.21),.024,.034,metal)
+		ScopeVisual.build(self,compact)
 	else:
 		for x in [-.027,.027]:block(self,Vector3(x,.085,-.09),Vector3(.0035,.025,.014),light)
 		block(self,Vector3(0,.076,-length*.82),Vector3(.003,.023,.010),accent)

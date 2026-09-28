@@ -136,6 +136,7 @@ func _ready():
 		profile.map_quality_revision=126
 	if OS.has_feature("web"):
 		web_graphics=WebGraphics.new();web_graphics.game=self;add_child(web_graphics)
+		var pointer=WebPointer.new();pointer.game=self;add_child(pointer)
 	else:
 		native_graphics=NativeGraphics.new();native_graphics.game=self;add_child(native_graphics)
 	if not OS.has_feature("web") and int(profile.display_revision)<115 and DisplayServer.get_name()!="headless":
@@ -273,10 +274,12 @@ func capture_pointer(from_input_event:bool=false):
 		Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 		if is_instance_valid(ui):ui.notice("화면을 클릭하면 조준이 시작됩니다.")
 		return
-	web_pointer_active=OS.has_feature("web")
+	# Escape/Alt-Tab can release the DOM lock independently of Godot's cached mode.
+	# Reset it inside this user gesture so the engine issues a fresh request.
+	if OS.has_feature("web") and not web_pointer_active:Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func pointer_input_active() -> bool:
-	return not is_instance_valid(ui.map_viewer) and not Input.is_action_pressed("score") and not is_instance_valid(ui.panel) and (Input.mouse_mode==Input.MOUSE_MODE_CAPTURED or (OS.has_feature("web") and web_pointer_active))
+	return not is_instance_valid(ui.map_viewer) and not Input.is_action_pressed("score") and not is_instance_valid(ui.panel) and (web_pointer_active if OS.has_feature("web") else Input.mouse_mode==Input.MOUSE_MODE_CAPTURED)
 func setup_input():
 	var binds={"left":KEY_A,"right":KEY_D,"forward":KEY_W,"back":KEY_S,"sprint":KEY_SHIFT,"crouch":KEY_CTRL,"jump":KEY_SPACE,"reload":KEY_R,"use":KEY_E,"skill":KEY_F,"gadget":KEY_G,"gear":KEY_B,"score":KEY_TAB,"primary":KEY_1,"secondary":KEY_2,"medical":KEY_C,"melee":KEY_Q,"item5":KEY_5,"gadget_mode":KEY_V,"item3":KEY_3,"item4":KEY_4}
 	for k in binds:
@@ -442,6 +445,7 @@ func ensure_actor(id:int):
 	if actors.has(id):return
 	var a=A.new();a.pid=id;a.game=self;a.name="Player_"+str(id);add_child(a);actors[id]=a;a.set_local(id==local_id and not dedicated);a.set_team(int(players[id].team));a.target_pos=Vector3.ZERO
 func equip_ammo(p:Dictionary):
+	WeaponRules.enforce(options,p)
 	for id in [p.primary,p.secondary]:
 		if str(id).is_empty():continue
 		var w=C.get_weapon(id);p.mag[id]=int(w.mag);p.reserve[id]=int(w.reserve)
@@ -588,7 +592,7 @@ func _unhandled_input(event):
 		else:capture_pointer(true)
 		get_viewport().set_input_as_handled();return
 	if is_instance_valid(touch) and (event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag):return
-	if OS.has_feature("web") and not is_instance_valid(touch) and not is_instance_valid(ui.panel) and phase in ["buy","combat","round_end"] and not web_pointer_active and Input.mouse_mode!=Input.MOUSE_MODE_CAPTURED:
+	if OS.has_feature("web") and not is_instance_valid(touch) and not is_instance_valid(ui.panel) and phase in ["buy","combat","round_end"] and not web_pointer_active:
 		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
 			capture_pointer(true);get_viewport().set_input_as_handled();return
 	if is_instance_valid(kill_replay) and kill_replay.active:
@@ -598,6 +602,7 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_F6,KEY_F7]:
 		command("vote",{"yes":event.keycode==KEY_F6});get_viewport().set_input_as_handled();return
 	if event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE:
+		if ui.screen=="settings" and ui.settings_exit.is_valid():ui.settings_exit.call();get_viewport().set_input_as_handled();return
 		if phase!="menu":ui.toggle_pause();get_viewport().set_input_as_handled()
 	if not actors.has(local_id) or not pointer_input_active():return
 	var a=actors[local_id]
@@ -646,6 +651,7 @@ func cycle_weapon(direction:int):
 	if options.classes and GadgetLoadout.selectable(p):available.append(2)
 	if false:available.append(3)
 	available.append(MeleeCombat.SLOT)
+	available=available.filter(func(slot):return WeaponRules.allows_slot(options,int(slot)))
 	command("slot",{"slot":available[posmod(available.find(int(p.slot))+direction,available.size())]})
 func command(action:String,data:Dictionary):
 	if server:handle_command(local_id,action,data)
@@ -813,6 +819,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 			if phase=="lobby" and (id==1 or (is_instance_valid(public_room) and public_room.enabled and public_room.can_start(id))):start_match()
 		"slot":
 			var slot=clampi(int(data.get("slot",0)),0,4)
+			if not WeaponRules.allows_slot(options,slot):return
 			if slot in [2,3] and not options.classes:return
 			if slot==3 or (slot==2 and not GadgetLoadout.selectable(p)) or (slot==0 and not p.get("owned_primary",true)):return
 			if MeleeCombat.active(p,clock):return
@@ -869,7 +876,7 @@ func finish_team_change(target:int):
 	actors[target].set_team(p.team)
 func valid_loadout(p:Dictionary,d:Dictionary) -> bool:
 	var role=clampi(int(d.get("role",p.role)),0,5);var wid=str(d.get("primary",C.first(role)))
-	if not (int(options.mode)==4 and wid.is_empty()):
+	if not ((int(options.mode)==4 or WeaponRules.mode(options)>0) and wid.is_empty()):
 		if not C.weapons.has(wid) or C.get_weapon(wid).slot!=0:return false
 		if options.classes and int(C.get_weapon(wid).role)!=role:return false
 		if not options.classes and C.get_weapon(wid).kind!="gun":return false
@@ -882,6 +889,7 @@ func loadout_cost(p:Dictionary,d:Dictionary) -> int:
 	return DefusalEconomy.cost(p,d) if int(options.mode)==4 else 0
 
 func apply_loadout(id:int,d:Dictionary):
+	d=WeaponRules.selection(options,d)
 	var p=players[id]
 	if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","현재 장비를 구매할 수 없습니다. 구매 시간과 생존 상태를 확인하세요.");return
 	if int(options.mode)==4 and DefusalEconomy.replacement(p,d) and not d.get("confirmed",false):feedback(id,"","기존 장비 교체를 먼저 확인하세요.");return
@@ -894,6 +902,7 @@ func apply_loadout(id:int,d:Dictionary):
 		feedback(id,"","선택 예약 완료 · 다음 부활"+(" / 다음 라운드 구매 시간" if int(options.mode)==4 else "")+"에 적용됩니다.");return
 	commit_loadout(id,d)
 func commit_loadout(id:int,d:Dictionary):
+	d=WeaponRules.selection(options,d)
 	var p=players[id]
 	if int(options.mode)==4 and (not DefusalEconomy.can_buy(self,id) or (DefusalEconomy.replacement(p,d) and not d.get("confirmed",false))):return
 	if not valid_loadout(p,d):return
@@ -991,6 +1000,8 @@ func ray(from:Vector3,to:Vector3,exclude:Array=[],mask:int=15) -> Dictionary:
 func clear_line(from:Vector3,to:Vector3,exclude:Array=[]) -> bool:return ray(from,to,exclude,1|4|8).is_empty()
 func fire(id:int):
 	var p=players[id];var a=actors[id]
+	if not WeaponRules.allows_slot(options,int(p.slot)):return
+	if WeaponRules.mode(options)==2 and p.secondary not in WeaponRules.PISTOLS:return
 	if p.get("cooking",0)>0 or p.slot>1 or MeleeCombat.active(p,clock) or not can_attack(p) or clock<p.fire_ready or p.reload>0 or clock<a.sprint_release or a.last_sprint:return
 	var wid=p.primary if p.slot==0 else p.secondary;var w=C.get_weapon(wid)
 	if w.kind=="remote":return
@@ -1079,7 +1090,8 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 			p.can_respawn=tickets[p.team]>0
 			if p.can_respawn:tickets[p.team]-=1
 		actors[target].collision_layer=0
-		var wid=p.secondary if p.slot==1 else p.primary;drops.append({"pos":actors[target].position+Vector3.UP*.18,"yaw":actors[target].aim_yaw,"amount":int(p.mag.get(wid,0))+int(p.reserve.get(wid,0)),"weapon":wid,"until":clock+DROP_LIFETIME})
+		var wid=p.secondary if p.slot==1 or WeaponRules.mode(options)==2 else p.primary
+		if not wid.is_empty() and WeaponRules.mode(options)!=1:drops.append({"pos":actors[target].position+Vector3.UP*.18,"yaw":actors[target].aim_yaw,"amount":int(p.mag.get(wid,0))+int(p.reserve.get(wid,0)),"weapon":wid,"until":clock+DROP_LIFETIME})
 		if int(options.mode)==4:DefusalEconomy.reset(p);equip_ammo(p)
 		if players.has(source) and source!=target and enemies(players[source],p):
 			players[source].kills+=1;players[source].match_kills=int(players[source].get("match_kills",0))+1
@@ -1181,6 +1193,7 @@ func grant_invulnerability(id:int,target:int):
 		feedback(tid,"heal","무적 보호 · 6초");effect.rpc("skill",actors[tid].position,Vector3.ZERO,id)
 	p.invul_select=0.;p.skill_ready=clock+AbilityBalance.COOLDOWNS[5]
 func use_skill(id:int):
+	if WeaponRules.mode(options)>0:return
 	if MeleeCombat.active(players[id],clock):return
 	var p=players[id];var a=actors[id]
 	if not options.skills or not options.classes or not can_attack(p) or phase!="combat":return

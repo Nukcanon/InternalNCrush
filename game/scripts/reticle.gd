@@ -25,8 +25,7 @@ func _draw():
 			var first=Vector2.from_angle(i*TAU/96.);var next=Vector2.from_angle((i+1)*TAU/96.)
 			draw_colored_polygon(PackedVector2Array([center+first*radius,center+first*reach,center+next*reach,center+next*radius]),Color.BLACK)
 		draw_circle(center,radius,Color("14212a"),false,4.,true)
-		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:draw_line(center+direction*8,center+direction*radius*.85,Color(.05,.1,.13,.85),1.,true)
-		for i in [-3,-2,-1,1,2,3]:draw_line(center+Vector2(-4,i*35),center+Vector2(4,i*35),Color(.05,.1,.13,.85),1.,true)
+		ScopeReticle.draw_on(self,center,radius,game.current_weapon(p))
 		if MarkerTracker.equipped(p) and game.current_weapon(p).get("category","") in ["저격소총","지정사수소총"]:
 			var marking_radius=AimModel.pixel_radius(MarkerTracker.HALF_ANGLE_DEGREES,a.camera.fov,size.y)
 			draw_arc(center,marking_radius,0,TAU,96,Color(1.,.86,.36,.28),3.,true)
@@ -42,7 +41,8 @@ func _draw():
 		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:
 			draw_line(center+direction*gap,center+direction*(gap+6),Color(.015,.035,.04,.8),4.)
 			draw_line(center+direction*gap,center+direction*(gap+6),color,2.)
-	draw_circle(center,2.5,Color(.02,.05,.06,.9));draw_circle(center,1.3,color)
+	if not scoped:
+		draw_circle(center,2.5,Color(.02,.05,.06,.9));draw_circle(center,1.3,color)
 	if Time.get_ticks_msec()<ui.hit_until:
 		for d in [Vector2(-1,-1),Vector2(1,-1),Vector2(-1,1),Vector2(1,1)]:draw_line(center+d*7,center+d*12,Color("ffce7a"),2.,true)
 	if game.clock-p.last_hit<.3 and p.protect<game.clock:

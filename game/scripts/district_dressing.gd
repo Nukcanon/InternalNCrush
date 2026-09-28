@@ -5,15 +5,23 @@ static func build(a:Node,plan:Dictionary):
 	var index=a.map_index;var market=index in [7,9,12,17,19,22,24,30];var coastal=index in [0,1,5,21,23,28]
 	var garden=index in [10,26];var web=RenderStyle.web()
 	for support in plan.get("supports",[]):
-		var pos=Vector3(support[0],support[2]*.5,support[1]);var size=Vector3(.28,support[2],.28)
+		var base=float(support[3]) if support.size()>3 else 0.
+		var height=float(support[2])-base
+		if height<.75:continue
+		var pos=Vector3(support[0],base+height*.5,support[1]);var size=Vector3(.28,height,.28)
 		var body=a.box(pos,size,Color("798795"))
 		for mesh in body.get_children():
 			if mesh is MeshInstance3D:mesh.material_override=WorldSurface.material("trim",index)
-		M.box(a.architecture,Vector3(pos.x,.10,pos.z),Vector3(.48,.20,.48),Color("8c9696"))
+		M.box(a.architecture,Vector3(pos.x,base+.10,pos.z),Vector3(.48,.20,.48),Color("8c9696"))
 		M.box(a.architecture,Vector3(pos.x,support[2]-.13,pos.z),Vector3(.65,.25,.5),Color("687982"))
 	# Decorative fa챌ades are separate from tactical collision/cover. Their
 	# visibility can change with quality without revealing players behind walls.
 	var chunks={};var fixtures=[]
+	for anchor in plan.get("room_ceiling_lights",[]):
+		var pos=Vector3(anchor[0],anchor[1]-.12,anchor[2])
+		M.box(a.architecture,pos,Vector3(.9,.12,.4),Color("48545a"))
+		M.box(a.architecture,pos-Vector3.UP*.075,Vector3(.78,.025,.3),Color("efdfbb"))
+		fixtures.append({"pos":pos-Vector3.UP*.16,"direction":Vector3(.01,-1,0),"color":Color("ffedcd"),"range":9.,"energy":4.})
 	if float(plan.get("ceiling_height",0.))>0.:
 		for i in range(0,plan.props.size(),3):
 			var anchor=plan.props[i];var pos=Vector3(anchor[0],float(anchor[2])+float(plan.ceiling_height)-.12,anchor[1])

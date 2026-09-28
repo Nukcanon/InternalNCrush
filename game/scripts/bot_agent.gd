@@ -58,7 +58,7 @@ func tick(dt:float):
 	var destination=goal
 	if action=="engage" and visible_target:
 		var enemy_pos=game.devices[device_target].pos if device_target!=0 else game.actors[target].position;var distance=a.position.distance_to(enemy_pos)
-		var ideal=9. if p.role==3 and p.slot==0 else 34. if p.role==1 else 21.
+		var ideal=1.0 if WeaponRules.mode(game.options)==1 else 9. if p.role==3 and p.slot==0 else 34. if p.role==1 else 21.
 		if distance>ideal:destination=last_known
 		else:destination=a.position
 	navigate(destination,dt)
@@ -67,6 +67,11 @@ func tick(dt:float):
 		look(aim_at,dt,true)
 		var distance=a.position.distance_to(aim_at);a.input_state.ads=distance>12;a.input_state.sprint=false
 		var w=game.current_weapon(p)
+		if WeaponRules.mode(game.options)==1:
+			game.handle_command(id,"slot",{"slot":MeleeCombat.SLOT})
+			a.input_state.ads=false
+			if distance<1.65:game.handle_command(id,"melee",{})
+		elif WeaponRules.mode(game.options)==2:game.handle_command(id,"slot",{"slot":1})
 		if w.kind!="gun" or (p.role==3 and distance>40 and p.secondary!="repair"):
 			game.handle_command(id,"slot",{"slot":1});w=game.current_weapon(p)
 		elif p.slot!=0 and p.get("owned_primary",true) and p.primary!="m1" and (p.role!=3 or distance<30):game.handle_command(id,"slot",{"slot":0})
@@ -75,7 +80,7 @@ func tick(dt:float):
 		if now>=ready_to_fire and firing and aligned and w.kind=="gun":
 			a.input_state.fire=true
 			if now>=next_click:a.input_state.trigger_seq=int(a.input_state.get("trigger_seq",0))+1;next_click=now+maxf(float(w.interval),.19)
-		if action=="engage" and distance<48:
+		if action=="engage" and distance<48 and WeaponRules.mode(game.options)!=1:
 			var lateral=combat_strafe(w,distance,now,id,difficulty,a.input_state.fire)
 			combat_move=Basis(Vector3.UP,float(a.input_state.yaw))*Vector3(lateral,0,0)
 			if lateral!=0.:
@@ -136,7 +141,7 @@ func choose_action():
 	var p=game.players[id];var a=game.actors[id];var now=game.clock
 	ally=0;repair_target=0
 	# A bot only pursues an enemy it has actually seen; objectives are public information.
-	if p.role==5 and game.options.classes:
+	if p.role==5 and game.options.classes and WeaponRules.mode(game.options)==0:
 		var best=40.
 		for other in game.players:
 			var q=game.players[other]

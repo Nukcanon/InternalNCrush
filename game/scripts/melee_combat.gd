@@ -10,11 +10,12 @@ const CONTACT_END=.15
 const DURATION=.46
 const STEPS=64
 const ZONES={"head":1.5,"torso":1.,"hands":.65,"legs":.75,"feet":.55}
-static func wrench(p:Dictionary) -> bool:return int(p.role)==3
+static func wrench(p:Dictionary) -> bool:return int(p.role)==3 and not p.get("knife_only",false)
 static func label(p:Dictionary) -> String:return "렌치" if wrench(p) else "칼"
 static func active(p:Dictionary,now:float) -> bool:return now<float(p.get("melee_started",-100.))+DURATION
 static func shown(p:Dictionary,now:float) -> bool:return int(p.slot)==SLOT or active(p,now)
 static func ready(g:Node,p:Dictionary) -> bool:
+	if WeaponRules.mode(g.options)==2:return false
 	return g.phase=="combat" and g.can_attack(p) and g.clock>=float(p.get("melee_ready",0.)) and p.get("cooking",0)<=0 and p.get("placing","")=="" and p.get("invul_select",0)<=g.clock
 static func begin(g:Node,id:int) -> bool:
 	var p=g.players[id]

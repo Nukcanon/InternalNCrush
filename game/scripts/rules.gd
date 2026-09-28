@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.2.8"
+const VERSION = "1.3.0"
 const MAPS = ["항구", "조선소", "제철소", "연구소", "사막 기지", "운하", "중앙역", "구시가지", "정비 공장", "산동네", "과수원", "발전소", "분수 광장", "물류 창고", "실험 단지", "폐공장", "고층 빌딩", "재래시장", "채석장", "요새", "원전", "수로교", "도서관", "폐선장", "수도원", "용광로", "온실", "지하 금고", "해안 기지", "서버 센터", "산성", "훈련장"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16]
 static func maps_for_size(count:int,mode:int=-1) -> Array:
@@ -48,7 +48,7 @@ static func score(p:Dictionary) -> int:
 static func rating(p:Dictionary) -> float:
 	return float(score(p)) / maxf(1.0,p.get("played",60.0)/60.0)
 static func default_options() -> Dictionary:
-	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"infinite":false,"join":2,"teams":0,"next_teams":2,"lives":0,"shared_lives":true,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":4,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":30,"team_respawns":60,"capture_hold":60,"capture_seconds":5,"starting_cash":800,"round_minutes":5,"bomb_seconds":45,"buy_seconds":60}
+	return {"room":"Internal N Crush", "mode":0,"map":13,"max_players":8,"skills":true,"classes":true,"weapon_rule":0,"infinite":false,"join":2,"teams":0,"next_teams":2,"lives":0,"shared_lives":true,"minutes":10,"target":60,"bots":0,"bot_difficulty":1,"friendly":false,"autoheal":false,"password":"","rounds":4,"map_random":true,"map_rotation":false,"map_size":8,"prep_seconds":30,"team_respawns":60,"capture_hold":60,"capture_seconds":5,"starting_cash":800,"round_minutes":5,"bomb_seconds":45,"buy_seconds":60}
 static func balanced_ids(ps:Dictionary) -> Dictionary:
 	var ids=ps.keys()
 	ids.sort_custom(func(a,b):return rating(ps[a])>rating(ps[b]))
@@ -59,6 +59,8 @@ static func balanced_ids(ps:Dictionary) -> Dictionary:
 	return teams
 
 static func sanitize_room(options:Dictionary):
+	options.weapon_rule=WeaponRules.mode(options)
+	if options.weapon_rule>0:options.skills=false;options.classes=true
 	options.mode=clampi(int(options.get("mode",0)),0,4)
 	options.map=clampi(int(options.get("map",13)),0,MAPS.size()-1)
 	options.max_players=clampi(int(options.get("max_players",8))/2*2,2,12 if int(options.mode)==4 else 32)

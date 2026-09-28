@@ -136,4 +136,9 @@ static func build(ui:Node):
 	ui.label("자동은 낮음부터 높음까지 재질·노말맵·조명·그림자·효과를 조절하며 해상도와 선명도를 바꾸지 않습니다. 항목을 직접 바꾸면 사용자 설정으로 전환합니다. 광원을 끄면 그림자도 꺼집니다.",17)
 	ui.label("모든 품질에서 가까운 캐릭터·무기·지형의 기본 형태와 카툰 색상을 유지합니다. 연습장·봇·킬 리플레이·5개 모드와 연막의 전술적 효과는 동일합니다.",17)
 	ui.button("기본설정으로 복원",func():profile.web_render_scale=1.;profile.web_options={};profile.frame_limit=60;preset.select(0);preset.item_selected.emit(0))
+	ui.button("그래픽 설정 적용",func():
+		apply_settings(ui.game)
+		var applied=SettingsGuard.snapshot(profile)
+		for key in ["monitor","display_mode","width","height","window"]:applied.erase(key)
+		ui.settings_baseline.merge(applied,true);ui.notice("그래픽 설정을 적용했습니다."))
 

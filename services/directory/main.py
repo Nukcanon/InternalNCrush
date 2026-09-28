@@ -19,7 +19,7 @@ from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSION = os.getenv("GAME_VERSION", "1.2.8")
+VERSION = os.getenv("GAME_VERSION", "1.3.0")
 CAPACITIES = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8]+[8]*6+[12]*6
 
 class SessionInput(BaseModel):
@@ -28,6 +28,7 @@ class SessionInput(BaseModel):
     version: str = Field(max_length=20)
 
 class RoomInput(BaseModel):
+    weapon_rule: int = Field(default=0, ge=0, le=2)
     model_config = ConfigDict(extra="forbid", strict=True)
     name: str = Field(default="공개 경기", min_length=1, max_length=40)
     mode: int = Field(default=0, ge=0, le=4)
