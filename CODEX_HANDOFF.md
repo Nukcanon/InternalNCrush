@@ -1,5 +1,9 @@
 # Latest approved update (same 1.3.2)
 
+Source `8da1489`: Restored full detailed cover assemblies with tier paint/depth; compact paired team cells with visible single-line names; important notices visible over menus; armor gauge maximum remains 75. Published native/Web; exports completed, no gameplay tests by request. Latest includes weapon range changes: ANCHOR 75–160 m, BASTION 85–180 m; shotguns x3/x2.5; ordinary rifles/SMGs/pistols/medic carbine x2/x1.9; snipers/DMRs x1.1. Native cursor capture now checks open menus and window focus, including respawn while Alt-Tabbed. Current links in PUBLICATION_STATUS.json. Older entries below remain historical.
+
+# Latest approved update (same 1.3.2)
+
 Source `d8862fd`: QUAD/COMET balance, three separate assault plates, tier-colored cover thickness, passive gadget HUD, uniform human/bot team rows and separated combat/menu notifications. Published native/Web; exports completed, no gameplay tests by request. Current links in PUBLICATION_STATUS.json. Older entries below remain historical.
 
 # Latest publication: 1.3.2 same-version update
