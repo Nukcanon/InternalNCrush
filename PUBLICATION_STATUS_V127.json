@@ -1,0 +1,206 @@
+{
+  "published_version": "1.2.7",
+  "source_commit": "75ffb19e0a448d74303fdc4705f4bd2aa33b9d68",
+  "release_tag": "internal-n-crush-v1.2.7",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.7",
+  "published_at": "2026-09-27T13:43:27Z",
+  "verified_at": "2026-09-27T14:05:43.268638+00:00",
+  "status": "published_with_documented_validation_limits",
+  "previous_publication_record": "PUBLICATION_STATUS_V126.json",
+  "recovery_branch": "work/v1.2.3-stability-20260927",
+  "graphics": {
+    "native": "detailed baked anatomy and materials",
+    "web": "separate lightweight baked assets",
+    "shared_gameplay": true,
+    "automatic_web_resolution_changes": false
+  },
+  "assets": [
+    {
+      "name": "InternalNCrush_NAS_Linux_v1.2.7.zip",
+      "bytes": 15583,
+      "sha256": "cd1c0dd3ea3a23ccf37f91f1144aa2c5c66c31bb6a9508f7e64abda0f41c4343",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/InternalNCrush_NAS_Linux_v1.2.7.zip"
+    },
+    {
+      "name": "InternalNCrush_Web_v1.2.7.zip",
+      "bytes": 94646556,
+      "sha256": "995d687615f3b55b756e497eccdf04d07b62f89828728e6bd634bd34eac0c3a7",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/InternalNCrush_Web_v1.2.7.zip"
+    },
+    {
+      "name": "InternalNCrush_Windows_v1.2.7.zip",
+      "bytes": 150484004,
+      "sha256": "d56495a91e195ef5192b41fa11b74ccc39d43b5ab2be4b1523f0c07ccb1e24a2",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/InternalNCrush_Windows_v1.2.7.zip"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 301,
+      "sha256": "cc1b0954213e3dde630bf85a2f0111446103d5a1b3947f47a6055b9acc585e0f",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/SHA256SUMS.txt"
+    },
+    {
+      "name": "WEB_RELEASE_v1.2.7.json",
+      "bytes": 173,
+      "sha256": "d3d4fba925da0fbda7130a6dba4b4e239a8b55784b0504101e02e26b9ebc179e",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.7/WEB_RELEASE_v1.2.7.json"
+    }
+  ],
+  "website": {
+    "url": "https://nukcanon.github.io/nukcanon/internal-n-crush.html",
+    "play_url": "https://nukcanon.github.io/nukcanon/play/?build=995d687615f3",
+    "runtime_installation_commit": "a7246bff370dae77d17a624903512adad38b97a1",
+    "runtime_source_commit": "75ffb19e0a448d74303fdc4705f4bd2aa33b9d68",
+    "windows_web_nas_links_verified": true,
+    "live_build_json_verified": true,
+    "exact_archive_local_browser_combat_entry_verified": true
+  },
+  "successful_ci": {
+    "directory_docker_worker": 36322990614,
+    "site_installer": 36323407195,
+    "pages_deployment": 36323429203
+  },
+  "pending_ci": {
+    "source_rebuild_and_artifact_upload": 36322990615,
+    "all_test_steps": "passed",
+    "current_step": "Export single-thread Web build",
+    "note": "Public packages already exported, hash-verified and executed locally; this independent CI rebuild is not replacing public assets."
+  },
+  "public_windows_zip_verification": {
+    "bytes": 150484004,
+    "sha256": "d56495a91e195ef5192b41fa11b74ccc39d43b5ab2be4b1523f0c07ccb1e24a2",
+    "files": 27,
+    "source_commit": "75ffb19e0a448d74303fdc4705f4bd2aa33b9d68",
+    "native_runs": [
+      {
+        "mode": "practice",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=10 phase=combat"
+        ],
+        "known_shutdown_texture_warning": true
+      },
+      {
+        "mode": "training",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=8 phase=combat"
+        ],
+        "known_shutdown_texture_warning": true
+      },
+      {
+        "mode": "network-client-headless-host",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=2 phase=combat"
+        ],
+        "known_shutdown_texture_warning": false
+      },
+      {
+        "mode": "network-client-window-host",
+        "exit": 0,
+        "test_exit": [
+          "TEST_EXIT players=2 phase=combat"
+        ],
+        "known_shutdown_texture_warning": false
+      }
+    ],
+    "windows_exe_loopback_connection": true
+  },
+  "connections": {
+    "windows_exe_loopback_connection": true,
+    "public_zip_webrtc_loopback": {
+      "passed": true,
+      "evidence": [
+        "RTC_CONNECTED role=client players=2 ping=7 snapshots=59"
+      ],
+      "warning": "ICE candidate send warning errno10051 observed; connection and snapshots succeeded"
+    },
+    "external_wan_nat_turn": "not_verified"
+  },
+  "v127_validation": {
+    "functional_groups": 49,
+    "navigation_routes": 490,
+    "physical_vertical_routes": 16,
+    "spawn_exits": 48,
+    "identical_native_web_collision_maps": 32,
+    "map_cache_revision": 131,
+    "site_installer_tests": 7,
+    "clean_ci_functional_groups": 49,
+    "ci_network_capacity_players": 32,
+    "ci_network_lifecycle_late_start_touch_webrtc": "passed"
+  },
+  "public_directory": {
+    "status": "awaiting_owner_cloudflare_login",
+    "default_url": "",
+    "existing_public_default_in_1_2_2": false,
+    "docker_and_worker_implementation_tested": true
+  },
+  "remaining_limits": [
+    "Intel 10th/11th generation UHD/Iris Xe, GTX960 and physical Android/iOS performance are unverified.",
+    "Intermittent long frames are not all explained; a major first-deployment CPU stall was reduced.",
+    "Known native GL texture and Web WorkerThreadPool allocator warnings remain at shutdown.",
+    "The historical v1.2.2 c0000005 crash has no original dump and no proven root cause.",
+    "External multi-PC LAN/WAN NAT/TURN and multi-hour play remain unverified.",
+    "Female faces remain stylized game art, not reference-equivalent high-end assets.",
+    "Web archive increased to 94,646,556 bytes; not a download-size reduction.",
+    "Complete reference-equivalent art overhaul is not claimed."
+  ],
+  "validation_document": "VALIDATION_V127.md",
+  "handoff_document": "CODEX_HANDOFF.md",
+  "pending_work": null,
+  "rendered_repeated_sessions": {
+    "v127_web_diagnostic_export": {
+      "cycles": 24,
+      "result": "SESSION_RESULT failures=0 replays=24",
+      "resources": [
+        1087
+      ],
+      "wasm_bytes": [
+        100466688.0
+      ],
+      "js_heap_warm_range": [
+        125204203.0,
+        162434663.0
+      ],
+      "nodes_warm_range": [
+        2580,
+        2750
+      ],
+      "warm_max_frame_ms": 115.799,
+      "warm_average_ms_range": [
+        16.6447403314917,
+        27.4963727272727
+      ],
+      "seconds": 249.56,
+      "shutdown_warnings": [
+        "WorkerThreadPool Group allocator pages in use",
+        "ObjectDB instances and 2 resources still in use"
+      ],
+      "first_cycle_background_throttled": true
+    },
+    "v127_exact_windows_zip": {
+      "cycles": 24,
+      "exit_code": 0,
+      "seconds": 245.0360526000004,
+      "result": "SESSION_RESULT failures=0 replays=24",
+      "resources_warm_range": [
+        1201,
+        1210
+      ],
+      "nodes_warm_range": [
+        2723,
+        2804
+      ],
+      "private_bytes_warm": 683851776,
+      "private_bytes_end": 680312832,
+      "private_bytes_peak": 699830272,
+      "warm_max_ms": 50.442,
+      "warm_average_ms_range": [
+        16.6400386740332,
+        16.7045166666667
+      ],
+      "shutdown_texture_warnings": true
+    }
+  }
+}

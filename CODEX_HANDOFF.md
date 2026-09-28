@@ -1,3 +1,20 @@
+# Published 1.2.8 material hotfix — current checkpoint
+
+Source build `61ef2b4be90332b9df1b11fa7144ab165ffa41ce`; release
+`internal-n-crush-v1.2.8-hotfix.1`. Native and Web are published and Pages
+checksums verified. Read `PUBLICATION_STATUS.json` and `HOTFIX_V128_MATERIALS.md`
+for exact validation and limitations. Prior sections below are historical.
+
+Current patch adds200 set-dressing designs,40 windows,30 trees,100 building
+materials, normal-map shaders and automatic quality in both versions.
+Native/Web24-cycle soaks passed; all49 functional groups passed locally.
+Remaining limitations: two native shutdown texture warnings; warm-up/occasional
+frame spikes; physical Intel iGPU/mobile testing unavailable. This patch does
+not claim completion of the historical character replacement request.
+Preserve unrelated `output/` and `game/tools/inspect_character_source.py`.
+
+---
+
 # Active 1.2.8 publication work — latest checkpoint
 
 User authorized publishing before extended performance/soak tests, then reporting measured impact. Branch work/v1.2.8-districts-mobile. The first 32-prop snapshot 1fa10b6 passed CI 36361431769, but subsequent expanded changes require fresh builds and checks.

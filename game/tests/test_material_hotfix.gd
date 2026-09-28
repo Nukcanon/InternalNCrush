@@ -18,4 +18,9 @@ func run():
 		print("HOTFIX_QUALITY ",quality," nodes=",Performance.get_monitor(Performance.OBJECT_NODE_COUNT)," resources=",Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)," vram=",Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED))
 	assert(hashes[0]!=hashes[1] and hashes[1]!=hashes[2],"Quality settings must produce different rendered pixels")
 	assert(before==Vector2i(g.profile.width,g.profile.height),"Effects must not change output resolution")
+	RenderingServer.global_shader_parameter_set("material_detail_enabled",false)
+	for i in range(3):await process_frame
+	await RenderingServer.frame_post_draw
+	var plain=root.get_texture().get_image().get_data().hex_encode().sha256_text()
+	assert(plain!=hashes[-1],"Normal detail must change rendered pixels at fixed lighting and quality")
 	g.free();await process_frame;print("MATERIAL_HOTFIX_PASS");quit()
