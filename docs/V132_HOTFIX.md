@@ -36,3 +36,5 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Keep armor plus plate gauge maximum at 75.
 - Important match/administration announcements remain visible over menus; combat hit/skill chatter stays in HUD. Settings feedback also has a timed menu overlay.
 - Same-version native/Web rebuild; no additional gameplay tests requested.
+
+- Participant management uses a narrower dialog and compact action buttons; overflowing names scroll within clipped fixed-width slots.

@@ -523,7 +523,7 @@ func sound_slider(title:String,key:String):
 	var slider=HSlider.new();slider.min_value=0;slider.max_value=1;slider.step=.01;slider.value=game.profile[key];slider.custom_minimum_size.y=28;stack.add_child(slider)
 	slider.value_changed.connect(func(v):game.profile[key]=v;amount.text="%d%%"%roundi(v*100);game.save_profile())
 func members_menu():
-	make_panel("참가자 관리",1020);screen="members";member_signature=""
+	make_panel("참가자 관리",840 if TouchControls.supported() else 760,true);screen="members";member_signature=""
 	label("방장은 바로 강퇴할 수 있습니다. 투표는 대상 외 참가자의 60% 이상(최소 2명)이 찬성하면 통과됩니다.",18)
 	room_list=VBoxContainer.new();stack.add_child(room_list);refresh_members()
 	button("돌아가기",func():
@@ -538,10 +538,13 @@ func refresh_members():
 	for node in room_list.get_children():room_list.remove_child(node);node.queue_free()
 	for p in game.players.values():
 		var row=HBoxContainer.new();room_list.add_child(row);var pid=int(p.id)
-		var name=label(p.nick+(" · 방장" if TeamBalance.host(game,pid) else " · 나" if pid==game.local_id else ""),20,row);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.modulate=Color("78caff") if p.team==0 else Color("ffb376")
+		var name=preload("res://scripts/scrolling_name.gd").new();name.display_text=p.nick+(" · 방장" if TeamBalance.host(game,pid) else " · 나" if pid==game.local_id else "");name.font_size=26 if TouchControls.supported() else 20;name.custom_minimum_size=Vector2(160,44);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.modulate=Color("78caff") if p.team==0 else Color("ffb376");row.add_child(name)
 		if not TeamBalance.host(game,pid) and pid!=game.local_id:
 			if TeamBalance.host(game,game.local_id) and not p.get("auto_balance",false):button("강퇴",func():game.command("kick",{"target":pid}),row)
 			if pid>0:button("강퇴 투표",func():game.command("vote_kick",{"target":pid}),row)
+		for control in row.get_children():
+			if control is Button:control.custom_minimum_size=Vector2(110,44);control.size_flags_vertical=Control.SIZE_SHRINK_CENTER;control.add_theme_font_size_override("font_size",20)
+
 func refresh_vote():
 	if game.vote.is_empty():
 		if is_instance_valid(vote_panel):vote_panel.visible=false
