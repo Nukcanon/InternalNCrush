@@ -17,7 +17,7 @@ func run():
 		if b.text.ends_with("듣기"):previews.append(b)
 	expect(previews.size()==3,"only three audio previews")
 	for b in previews:
-		expect(b.get_parent() is VBoxContainer and b.size.x>200,"preview full-width: "+b.text)
+		expect(b.get_parent() is HBoxContainer and b.size.x>100,"preview equal-width row: "+b.text)
 		var siblings=b.get_parent().get_children();expect(b.get_index()>=siblings.size()-3,"previews at end of sound tab")
 	g.ui.confirm_navigation(func():pass,"메인메뉴")
 	await process_frame

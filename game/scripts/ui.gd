@@ -493,9 +493,12 @@ func settings():
 	sound_slider("메뉴 소리", "ui_volume")
 	var reduction=check("총소리 저감 · 여성 목소리 효과음",game.profile.get("gunfire_reduction",false),func(value):game.profile.gunfire_reduction=value;game.save_profile())
 	reduction.disabled=not VocalGunfire.ready()
-	button("피격음 듣기",func():game.play_sound("hurt",Vector3.ZERO,false))
-	button("총소리 듣기",func():game.play_sound("gun_a1",Vector3.ZERO,false))
-	button("발소리 듣기",func():game.play_sound("step_stone_0",Vector3.ZERO,false))
+	var samples=HBoxContainer.new();samples.add_theme_constant_override("separation",10);stack.add_child(samples)
+	button("피격음 듣기",func():game.play_sound("hurt",Vector3.ZERO,false),samples)
+	button("총소리 듣기",func():game.play_sound("gun_a1",Vector3.ZERO,false),samples)
+	button("발소리 듣기",func():game.play_sound("step_stone_0",Vector3.ZERO,false),samples)
+	for sample in samples.get_children():
+		sample.size_flags_horizontal=Control.SIZE_EXPAND_FILL;sample.custom_minimum_size.x=0;sample.clip_text=true
 	stack=tabs[4]
 	var diagram=ControlsDiagram.new();diagram.custom_minimum_size=Vector2(885,415);stack.add_child(diagram)
 	label("마우스 휠: 무기 전환  /  E: 문 열기·닫기  /  E 길게: 설치·해체  /  F: 스킬 · 포탑 강화  /  Q: 즉시 근접 / 5: 근접 무기 장착 / C: 의료 카빈 회복\nG: 가젯 · 수류탄은 누른 뒤 놓아 투척  /  V: 가젯 종류  /  F6·F7: 강퇴 투표",18)
