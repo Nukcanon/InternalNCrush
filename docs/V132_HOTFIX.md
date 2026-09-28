@@ -62,3 +62,10 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Kick vote: one active vote, 15 s, 9 yes / 0 no, equal green/right and red/left buttons, thin countdown bar, unanswered votes do not count as yes. Join/leave/kick notices distinguish events.
 - Mobile pause menu opens map via a button. World surfaces use stable floor/wall/ceiling color contrast without additional texture fetches.
 - Native/Web export and same-version publication; extra gameplay tests omitted by request.
+
+## Roster readability and automatic salvage
+- Center participant rows and use alternating dark-gray cards in participant, team and result lists; widen bot difficulty controls.
+- Let result records use remaining vertical space, retaining scrolling only for overflowing rosters.
+- PULSE/FOLD require 0.3 seconds to settle after reload completion/interruption; existing shot cooldown is preserved and incomplete shells are not granted.
+- Automatically collect nearby dropped guns as ammunition salvage with line-of-sight checking. Each consumed drop gives one 10% chance to restore one owned consumable gadget charge, capped at loadout capacity.
+- Same-version native/web publication; no additional gameplay tests requested.

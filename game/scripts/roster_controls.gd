@@ -1,5 +1,9 @@
 class_name RosterControls
 extends RefCounted
+static func row_panel(parent:Node,index:int) -> PanelContainer:
+	var panel=PanelContainer.new();panel.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	var style=StyleBoxFlat.new();style.bg_color=Color("2b2e32") if index%2==0 else Color("1b1e22");style.set_corner_radius_all(5);style.set_content_margin_all(6)
+	panel.add_theme_stylebox_override("panel",style);parent.add_child(panel);return panel
 static func small_button(parent:Node,text:String,callback:Callable) -> Button:
 	var b=Button.new();b.text=text;b.custom_minimum_size=Vector2(0,30);b.add_theme_font_size_override("font_size",14);b.pressed.connect(callback);parent.add_child(b);return b
 static func add_bot(g:Node,requester:int,team:int):
@@ -27,13 +31,13 @@ static func populate(g:Node,parent:Node,results:bool):
 			var team=side;var add=small_button(h,"+ 봇",func():g.command("bot_add",{"team":team}));add.disabled=g.players.size()>=int(g.options.max_players) or (int(g.options.mode)!=1 and g.team_count(side)>=int(g.options.max_players)/2)
 	for index in range(maxi(teams[0].size(),teams[1].size())):
 		for side in range(2):
-			var cell=HBoxContainer.new();cell.custom_minimum_size=Vector2(380,72);cell.size_flags_horizontal=Control.SIZE_EXPAND_FILL;grid.add_child(cell)
+			var panel=row_panel(grid,index);var cell=HBoxContainer.new();cell.custom_minimum_size=Vector2(380,64);cell.size_flags_horizontal=Control.SIZE_EXPAND_FILL;panel.add_child(cell)
 			if index>=teams[side].size():continue
 			var p=teams[side][index];var pid=int(p.id);var left=VBoxContainer.new();left.size_flags_horizontal=Control.SIZE_EXPAND_FILL;cell.add_child(left)
 			var title=preload("res://scripts/scrolling_name.gd").new();title.display_text=str(p.nick)+(" · 나" if pid==g.local_id else "")+" · "+Rules.CLASSES[p.role]+(" · %d/%d · %d점"%[p.kills,p.deaths,Rules.score(p)] if results else "");title.font_size=15;title.custom_minimum_size=Vector2(190,30);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;title.size_flags_vertical=Control.SIZE_EXPAND_FILL;left.add_child(title)
 			if pid<0 and BotSettings.allowed(g,g.local_id):
 				var actions=HBoxContainer.new();left.add_child(actions);BotSettings.controls(g,actions,p)
-				for control in actions.get_children():control.custom_minimum_size=Vector2(82 if control.name=="BotRole" else 48,30);control.add_theme_font_size_override("font_size",14)
+				for control in actions.get_children():control.custom_minimum_size=Vector2(104 if control.name=="BotRole" else 78,30);control.add_theme_font_size_override("font_size",14)
 				small_button(actions,"제거",func():g.command("bot_remove",{"target":pid}))
 			if results:
 				var detail=small_button(cell,"기록",func():

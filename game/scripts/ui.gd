@@ -511,8 +511,10 @@ func refresh_members():
 	if signature==member_signature:return
 	member_signature=signature
 	for node in room_list.get_children():room_list.remove_child(node);node.queue_free()
+	var row_index=0
 	for p in game.players.values():
-		var row=HBoxContainer.new();room_list.add_child(row);var pid=int(p.id)
+		var panel=RosterControls.row_panel(room_list,row_index);panel.size_flags_horizontal=Control.SIZE_SHRINK_CENTER;row_index+=1
+		var row=HBoxContainer.new();row.custom_minimum_size.x=382;panel.add_child(row);var pid=int(p.id)
 		var name=preload("res://scripts/scrolling_name.gd").new();name.display_text=p.nick+(" · 방장" if TeamBalance.host(game,pid) else " · 나" if pid==game.local_id else "");name.font_size=26 if TouchControls.supported() else 20;name.custom_minimum_size=Vector2(260,44);name.size_flags_horizontal=Control.SIZE_FILL;name.modulate=Color("78caff") if p.team==0 else Color("ffb376");row.add_child(name)
 		if not TeamBalance.host(game,pid) and pid!=game.local_id:
 			if TeamBalance.host(game,game.local_id):

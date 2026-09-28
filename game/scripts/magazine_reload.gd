@@ -1,5 +1,8 @@
 class_name MagazineReload
 extends RefCounted
+static func settle(g:Node,p:Dictionary,w:Dictionary):
+	if w.get("single_load",false) and w.reload_style in ["shell","break"]:
+		p.fire_ready=maxf(float(p.fire_ready),g.clock+.3)
 static func chambered(w:Dictionary) -> bool:
 	return w.kind=="gun" and not w.get("rocket",false) and not w.get("laser",false) and w.name!="CHIME" and w.reload_style not in ["shell","break"]
 static func capacity(w:Dictionary,rounds:int) -> int:
@@ -12,4 +15,7 @@ static func finish(g:Node,id:int):
 	p.mag[wid]=int(p.mag.get(wid,0))+got
 	if not g.options.infinite:p.reserve[wid]=int(p.reserve.get(wid,0))-got
 	p.reload=0.;p.trigger_until=0.
-	if w.get("single_load",false) and got>0 and int(p.mag[wid])<int(w.mag):g.begin_reload(id)
+	if w.get("single_load",false) and got>0 and int(p.mag[wid])<int(w.mag) and not g.actors[id].input_state.fire:g.begin_reload(id)
+	if p.reload<=0:
+		settle(g,p,w)
+		if w.get("single_load",false) and g.actors[id].input_state.fire:p.trigger_until=maxf(g.clock+.55,float(p.fire_ready)+.1)

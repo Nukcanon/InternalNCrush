@@ -1003,7 +1003,8 @@ func process_trigger(id:int):
 				use_gadget(id)
 		return
 	var w=current_weapon(p);var mode=w.get("fire_mode","auto")
-	if w.get("single_load",false) and (pressed or held) and p.reload>0 and int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0:p.reload=0.
+	if w.get("single_load",false) and (pressed or held) and p.reload>0 and int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0:
+		p.reload=0.;MagazineReload.settle(self,p,w);p.trigger_until=clock+.55
 	if pressed and p.reload<=0:p.trigger_until=clock+.55
 	if mode=="auto":
 		if held:fire(id)
@@ -1337,11 +1338,29 @@ func update_fields(dt:float):
 			for id in players:
 				if players[id].alive and players[id].team!=f.team and players[id].get("cleanse",0)<clock and actors[id].position.distance_to(f.pos)<AbilityBalance.SLOW_RADIUS and clear_line(f.pos+Vector3.UP*.35,actors[id].position+Vector3.UP*.8,[actors[id].get_rid()]):players[id].slow=clock+.2
 func update_pickups():
-	drops=drops.filter(func(d):return d.until>clock)
+	drops=drops.filter(func(d):return d.until>clock and not d.get("collected",false))
 	while drops.size()>MAX_DROPS:drops.pop_front()
 	for id in players:
 		var p=players[id]
 		if not p.alive:continue
+		for drop in drops:
+			if drop.get("collected",false) or actors[id].position.distance_to(drop.pos)>2.:continue
+			var candidates=[p.primary,p.secondary] if p.slot!=1 else [p.secondary,p.primary]
+			var ammo_id="";var take=0
+			for candidate in candidates:
+				if str(candidate).is_empty():continue
+				var weapon=C.get_weapon(candidate)
+				if weapon.kind!="gun":continue
+				take=mini(maxi(0,int(weapon.reserve)-int(p.reserve.get(candidate,0))),mini(R.ammo_pickup(int(weapon.reserve)),int(drop.amount)))
+				if take>0:ammo_id=candidate;break
+			var gadget_missing=GadgetLoadout.can_replenish(p)
+			if take<=0 and not gadget_missing:continue
+			if not clear_line(actors[id].position+Vector3.UP*.5,drop.pos+Vector3.UP*.15,[actors[id].get_rid()]):continue
+			drop.collected=true
+			if take>0:p.reserve[ammo_id]=int(p.reserve.get(ammo_id,0))+take
+			var replenished=gadget_missing and randf()<.1
+			if replenished:GadgetLoadout.replenish(p)
+			feedback(id,"","떨어진 총 회수"+(" · 탄약 +%d"%take if take>0 else "")+(" · 가젯 +1" if replenished else ""))
 		var wid=p.primary if p.slot==0 else p.secondary;var w=C.get_weapon(wid)
 		if w.kind!="gun":continue
 		for supply in arena.supplies:
@@ -1356,12 +1375,6 @@ func interact(id:int,dt:float):
 			if door.toggle(actors):effect.rpc("door",door.global_position,Vector3.ZERO,id)
 			else:feedback(id,"","통로에 사람이 있어 닫을 수 없습니다.")
 		return
-	for drop in drops:
-		if drop.amount>0 and a.position.distance_to(drop.pos)<2.5:
-			var wid=p.primary if p.slot==0 else p.secondary;var w=C.get_weapon(wid)
-			if w.kind=="gun":
-				var take=mini(int(w.reserve)-int(p.reserve[wid]),mini(R.ammo_pickup(int(w.reserve)),int(drop.amount)))
-				p.reserve[wid]+=take;drop.amount-=take
 	if int(options.mode)!=4 or phase!="combat":return
 	var attackers=MatchFlow.attackers(self)
 	if not bomb.planted and p.team==attackers and int(bomb.get("carrier",0))==id:

@@ -12,6 +12,14 @@ static func count(p:Dictionary) -> int:
 	return 3 if int(p.role) in [0,4] else 1
 static func reset(p:Dictionary):
 	p.plate=0.;p.gadget_count=count(p);p.smoke=3 if int(p.role)==4 and int(p.gadget)==0 else 0;p.flash_count=3 if int(p.role)==4 and int(p.gadget)==1 else 0
+static func can_replenish(p:Dictionary) -> bool:
+	return bool(p.get("owned_gadget",true)) and int(p.gadget)>=0 and not passive(p) and int(p.get("gadget_count",0))<count(p)
+static func replenish(p:Dictionary):
+	if not can_replenish(p):return
+	p.gadget_count=mini(count(p),int(p.get("gadget_count",0))+1)
+	if int(p.role)==4 and not frag(p):
+		if int(p.gadget)==1:p.flash_count=mini(3,int(p.get("flash_count",0))+1)
+		else:p.smoke=mini(3,int(p.get("smoke",0))+1)
 static func label(p:Dictionary) -> String:
 	if int(p.gadget)==9:return "해체 키트"
 	if cluster(p):return "확산 파편 수류탄"
