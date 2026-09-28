@@ -11,7 +11,7 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 		rows=[["피해 / 1발",float(w.damage)*int(w.pellets),150.,"%d%s"%[w.damage," × %d"%w.pellets if w.pellets>1 else ""]],
 		["DPS / 지속",CombatBalance.firing_dps(w),360.,"%.0f / %.0f"%[CombatBalance.firing_dps(w),CombatBalance.sustained_dps(w)]],
 		["연사 속도",CombatBalance.sustained_rpm(w),1000.,"%d RPM"%CombatBalance.sustained_rpm(w)],
-		["유효 거리",w.reach,150.,"%d m"%w.reach],["안정성",w.stability,100.,"%d / 100"%w.stability],
+		["폭발 반경" if w.get("rocket",false) else "피해 감소 시작",w.get("splash_radius",9.) if w.get("rocket",false) else w.reach,150.,"%.1f m"%(w.get("splash_radius",9.) if w.get("rocket",false) else w.reach)],["안정성",w.stability,100.,"%d / 100"%w.stability],
 		["조준 속도",800.-w.ads_ms,800.,"%d ms"%w.ads_ms],["휴대성",w.portability,100.,"%d · %.1f kg"%[w.portability,w.weight_kg]],
 		["탄창 / 장전",w.mag,100.,"%d / %.2f초"%[w.mag,w.reload]]]
 	elif kind==1 and w.kind=="remote":

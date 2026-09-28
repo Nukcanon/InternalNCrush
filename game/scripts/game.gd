@@ -1040,6 +1040,12 @@ func fire(id:int):
 	for pellet in range(int(w.pellets)):
 		var forward=Basis(Vector3.UP,a.aim_yaw-deg_to_rad(spray.x))*Basis(Vector3.RIGHT,a.aim_pitch+deg_to_rad(spray.y))*Vector3.FORWARD
 		var sample=CombatBalance.pellet_sample(pellet,int(w.pellets),pattern_rotation) if int(w.pellets)>1 else Vector2(randf(),randf())
+		if w.has("pellet_core_angle"):
+			var core_count=ceili(int(w.pellets)*float(w.get("pellet_core_fraction",.6)))
+			if pellet<core_count:
+				# Tighter central pellets, without aim assistance; movement still broadens the core.
+				var core=float(w.pellet_core_angle)*maxf(1.,spread/maxf(.01,float(w.get("ads_spread",w.spread))))
+				sample.x=(float(pellet)+.5)/core_count*pow(minf(1.,core/maxf(.001,spread)),2.)
 		var dir=AimModel.cone_direction(forward,spread,sample.x,sample.y)
 		var reach=float(w.get("max_range",300.));var aim_hit=ray(eye,eye+dir*reach,[a.get_rid()]);var aim_point=aim_hit.get("position",eye+dir*reach)
 		# Keep close-range muzzle convergence, then trace the full range with mild
