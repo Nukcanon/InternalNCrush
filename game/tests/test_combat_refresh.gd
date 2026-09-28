@@ -43,17 +43,17 @@ func run():
 	expect(p.mag.h5==1 and p.reserve.h5==3 and p.reload>g.clock,"QUAD loads one at a time and continues")
 	p.fire_ready=0.;p.switch_until=0.;a.last_sprint=false;a.sprint_release=0.;a.input_state.fire=true;a.input_state.trigger_seq=1;p.trigger_seen=0;p.fire_prev=false;g.process_trigger(1)
 	expect(p.mag.h5==0 and g.rockets.size()==1,"QUAD fires an inserted round during reload")
-	p.role=2;p.primary="h6";p.mag.h6=500.;p.reload=0.;p.switch_until=0.;p.laser_heat=0.;p.laser_lock=0.;p.fire_ready=0.;a.last_sprint=false;a.sprint_release=0.;a.input_state.fire=true;a.input_state.ads=false;a.aim_yaw=PI
-	for i in range(32):g.clock+=.1;LaserCombat.tick(g,1,.1)
-	expect(is_equal_approx(p.laser_heat,1.) and p.laser_lock>g.clock,"laser overheats at 3.2 seconds")
-	expect(absf(float(p.mag.h6)-180.)<.01,"battery consumed by firing duration")
+	p.role=2;p.primary="h6";p.mag.h6=600.;p.reload=0.;p.switch_until=0.;p.laser_heat=0.;p.laser_lock=0.;p.fire_ready=0.;a.last_sprint=false;a.sprint_release=0.;a.input_state.fire=true;a.input_state.ads=false;a.aim_yaw=PI
+	for i in range(40):g.clock+=.1;LaserCombat.tick(g,1,.1)
+	expect(is_equal_approx(p.laser_heat,1.) and p.laser_lock>g.clock,"laser overheats at 4 seconds")
+	expect(absf(float(p.mag.h6)-200.)<.01,"battery consumed by firing duration")
 	var rounds=float(p.mag.h6)
 	for i in range(10):g.clock+=.1;LaserCombat.tick(g,1,.1)
 	expect(is_equal_approx(float(p.mag.h6),rounds) and absf(float(p.laser_heat)-.5)<.01,"locked laser cools and cannot fire")
 	a.input_state.fire=false
 	for i in range(11):g.clock+=.1;LaserCombat.tick(g,1,.1)
 	expect(p.laser_heat<.001,"overheat cooldown finishes at zero")
-	expect(LaserCombat.dps(0.)==60. and LaserCombat.dps(.98)==120.,"heat damage endpoints")
+	expect(LaserCombat.dps(0.)==60. and LaserCombat.dps(.75)==120.,"heat damage endpoints")
 	expect(is_equal_approx(CombatBalance.range_factor(Catalog.get_weapon("h6"),100.),1.) and is_equal_approx(CombatBalance.range_factor(Catalog.get_weapon("h6"),150.),.3),"laser range endpoints")
 	var reticle=load("res://scripts/reticle.gd")
 	expect(reticle.distance_text(1234.56)=="1234.6 m" and reticle.distance_text(10000.)=="∞ m","rangefinder formatting and maximum")
