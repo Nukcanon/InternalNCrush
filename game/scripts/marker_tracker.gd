@@ -1,19 +1,23 @@
 class_name MarkerTracker
 extends RefCounted
-const DWELL_SECONDS=2.
+const DWELL_SECONDS=1.5
 const HALF_ANGLE_DEGREES=1.25
 static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)==0 and GadgetLoadout.has_item(p)
+static func eligible(game:Node,id:int,other:int) -> bool:
+	if other==id or not game.players.has(other) or not game.actors.has(other):return false
+	var p=game.players[id];var q=game.players[other]
+	if not q.alive or not game.enemies(p,q) or q.get("cleanse",0)>game.clock or TargetReveal.visible_to(game,other,id):return false
+	var a=game.actors[id];var actor=game.actors[other];var point=actor.eye()-Vector3.UP*.25;var delta=point-a.eye()
+	if delta.length()>160. or delta.length_squared()<.001:return false
+	return a.direction().dot(delta.normalized())>=cos(deg_to_rad(HALF_ANGLE_DEGREES)) and not game.in_smoke_line(a.eye(),point) and game.clear_line(a.eye(),point,[a.get_rid(),actor.get_rid()])
 static func select_target(game:Node,id:int) -> int:
-	var p=game.players[id];var a=game.actors[id];var w=game.current_weapon(p)
-	var best=cos(deg_to_rad(HALF_ANGLE_DEGREES));var target=0
+	var locked=int(game.players[id].get("marker_target",0))
+	if eligible(game,id,locked):return locked
+	var best=INF;var target=0
 	for other in game.players:
-		var q=game.players[other]
-		if other==id or not q.alive or not game.enemies(p,q) or q.get("cleanse",0)>game.clock:continue
-		var actor=game.actors[other];var point=actor.eye()-Vector3.UP*.25;var delta=point-a.eye()
-		if delta.length()>160. or delta.length_squared()<.001:continue
-		var alignment=a.direction().dot(delta.normalized())
-		if alignment<=best or game.in_smoke_line(a.eye(),point) or not game.clear_line(a.eye(),point,[a.get_rid(),actor.get_rid()]):continue
-		best=alignment;target=other
+		if not eligible(game,id,other):continue
+		var distance=game.actors[id].eye().distance_squared_to(game.actors[other].eye())
+		if distance<best or (is_equal_approx(distance,best) and other<target):best=distance;target=other
 	return target
 static func tick(game:Node,id:int,dt:float):
 	var p=game.players[id];var a=game.actors[id];var w=game.current_weapon(p)
@@ -28,5 +32,5 @@ static func tick(game:Node,id:int,dt:float):
 	if target==0:return
 	p.marker_progress=float(p.get("marker_progress",0))+elapsed
 	if p.marker_progress>=DWELL_SECONDS-.00001:
-		TargetReveal.mark(game,target,id,6.);p.marker_progress=0.
+		TargetReveal.mark(game,target,id,6.);p.marker_progress=0.;p.marker_target=0
 		game.feedback(target,"","표식 감지 · 6초 동안 위치가 노출됩니다.")

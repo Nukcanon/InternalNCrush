@@ -3,6 +3,7 @@ from pathlib import Path
 import shutil
 import json
 from PIL import Image
+from compact_audio import compact_audio
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'game'
@@ -37,7 +38,7 @@ def main():
         with Image.open(p) as source:
             picture = source.convert('RGBA' if 'A' in source.getbands() else 'RGB')
             before = picture.size
-            limit = 1920 if 'menu_slides' in p.parts else 680 if p.name in ['building_atlas.png','building_normals.png','roof_atlas.png','roof_normals.png'] else 256 if 'world' in p.parts else 192 if 'thumbnails' in p.parts else 128
+            limit = 1920 if 'menu_slides' in p.parts else 768 if 'plans' in p.parts else 680 if p.name in ['building_atlas.png','building_normals.png','roof_atlas.png','roof_normals.png'] else 256 if 'world' in p.parts else 192 if 'thumbnails' in p.parts else 128
             picture.thumbnail((limit, limit), Image.Resampling.LANCZOS)
             picture.save(p, optimize=True)
             converted.append({'path': str(p.relative_to(STAGE)), 'before': before, 'after': picture.size})
@@ -63,6 +64,8 @@ def main():
     text = text.replace('assets/human/source/*', 'assets/human/source/*,assets/human/male.json,assets/human/female.json,assets/arenas/geometry/*,assets/textures/field_materials_v103.png,assets/textures/operator_materials_v11.png')
     preset.write_text(text, encoding='utf-8')
     (ROOT / 'web/staging/asset_report.json').write_text(json.dumps(converted, indent=2), encoding='utf-8')
+    audio_report=compact_audio(STAGE)
+    (ROOT/'web/staging/audio_report.json').write_text(json.dumps(audio_report,indent=2),encoding='utf-8')
     print('LIGHTWEIGHT_WEB_PROJECT', STAGE, 'textures', len(converted))
 
 if __name__ == '__main__':

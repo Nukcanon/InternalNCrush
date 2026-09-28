@@ -13,7 +13,7 @@ const FIELDS=[
 	["round_minutes","라운드 시간 (분)",[4],1,60,1],
 	["bomb_seconds","폭탄 설치 후 폭발 시간 (초)",[4],30,120,1],
 	["buy_seconds","전투 시작 후 구매 시간 (초 · 0~300 / 준비 시간 별도)",[4],0,300,1],
-	["lives","개인별 라운드 부활 횟수",[4],0,10,1]]
+	["lives","개인별 경기 전체 부활 횟수",[4],0,10,1]]
 static func install(ui:Node):
 	var parent=VBoxContainer.new();ui.stack.add_child(parent);ui.mode_fields=parent
 	for field in FIELDS:

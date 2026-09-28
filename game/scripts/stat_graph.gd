@@ -4,7 +4,9 @@ var rows:Array=[]
 var weapon:Dictionary={}
 func configure(kind:int,w:Dictionary,role:int,variant:int):
 	rows.clear();weapon={};visible=true
-	if kind==1 and w.kind=="gun":
+	if kind==1 and w.get("laser",false):
+		weapon=w;rows=[["피해 / 초",300.,300.,"100 → 300"],["과열 / 냉각",3.2,5.,"3.2초 / 2초"],["배터리 / 교체",5.,5.,"5초 / %.1f초"%w.reload],["아군 설치물 수리",30.,100.,"30 / 초"],["유효 거리",100.,150.,"100 m"]]
+	elif kind==1 and w.kind=="gun":
 		weapon=w
 		rows=[["피해 / 1발",float(w.damage)*int(w.pellets),150.,"%d%s"%[w.damage," × %d"%w.pellets if w.pellets>1 else ""]],
 		["DPS / 지속",CombatBalance.firing_dps(w),360.,"%.0f / %.0f"%[CombatBalance.firing_dps(w),CombatBalance.sustained_dps(w)]],
@@ -47,7 +49,7 @@ func _draw():
 	if weapon.is_empty():return
 	var y=rows.size()*19.+5.;var max_distance=minf(180.,float(weapon.falloff_end)*1.2);var origin=Vector2(118,y+36)
 	draw_string(font,Vector2(0,y+15),"거리별 피해",HORIZONTAL_ALIGNMENT_LEFT,-1,14,ink)
-	draw_string(font,Vector2(0,y+33),"몸통 · 1발",HORIZONTAL_ALIGNMENT_LEFT,-1,12,ink.darkened(.18))
+	draw_string(font,Vector2(0,y+33),"몸통 · DPS" if weapon.get("laser",false) else "몸통 · 1발",HORIZONTAL_ALIGNMENT_LEFT,-1,12,ink.darkened(.18))
 	var points=PackedVector2Array()
 	for i in range(51):points.append(origin+Vector2((width-255)*i/50.,-CombatBalance.range_factor(weapon,max_distance*i/50.)*30))
 	draw_line(origin,origin+Vector2(width-255,0),Color("607887"),1.);draw_polyline(points,accent,2.,true)

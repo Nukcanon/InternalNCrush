@@ -28,7 +28,7 @@ var difficulty=1
 var rng=RandomNumberGenerator.new()
 var stats={"repaths":0,"gadgets":0,"skills":0,"heals":0,"repairs":0,"interactions":0}
 func setup(world:Node,pid:int):
-	game=world;id=pid;difficulty=clampi(int(game.options.get("bot_difficulty",1)),0,2);rng.seed=abs(id)*7189+227;goal=game.arena.zones[abs(id)%3];previous_pos=game.actors[id].position;roam_index=abs(id)%5
+	game=world;id=pid;difficulty=clampi(int(game.players[id].get("bot_difficulty",game.options.get("bot_difficulty",2))),0,2);rng.seed=abs(id)*7189+227;goal=game.arena.zones[abs(id)%3];previous_pos=game.actors[id].position;roam_index=abs(id)%5
 func tick(dt:float):
 	var p=game.players[id];var a=game.actors[id];var now=game.clock
 	var previous_yaw=float(a.input_state.yaw)

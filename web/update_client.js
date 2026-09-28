@@ -37,7 +37,18 @@
     }
   }
   window.incRefreshGame = () => check(true);
-  window.incUpdateReady = check();
+  window.incUpdateReady = (async () => {
+    if ('serviceWorker' in navigator && window.isSecureContext) {
+      try {
+        await navigator.serviceWorker.register('./asset_cache_worker.js');
+        await Promise.race([
+          navigator.serviceWorker.ready.then(() => navigator.serviceWorker.controller ? undefined : new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }))),
+          new Promise(resolve => setTimeout(resolve, 2500))
+        ]);
+      } catch (_) {}
+    }
+    await check();
+  })();
   setInterval(() => { if (!document.hidden) check(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
 })();

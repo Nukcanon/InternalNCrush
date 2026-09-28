@@ -18,6 +18,8 @@ func _draw():
 	var p=game.players[game.local_id]
 	if MeleeCombat.shown(p,game.clock) or p.slot>=2 or p.get("cooking",0)>0 or p.reload>game.clock:return
 	var id=p.primary if p.slot==0 else p.secondary;var w=Catalog.get_weapon(id)
+	if w.get("laser",false):
+		draw_rect(Rect2(14,16,200,14),Color(0,0,0,.5));draw_rect(Rect2(14,16,200*clampf(float(p.mag.get(id,0))/500.,0.,1.),14),Color("efd64f"));return
 	if w.kind in ["heal","repair"]:
 		var energy=float(p.energy)/180. if w.kind=="heal" else float(p.get("repair_energy",100))/100.
 		draw_rect(Rect2(14,16,200,12),Color(0,0,0,.35));draw_rect(Rect2(14,16,200*clampf(energy,0.,1.),12),Color("64ddbd"));return

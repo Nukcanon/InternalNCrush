@@ -42,7 +42,7 @@ func _ready():
 		"gear":Rect2(790,15,170,65),"auto_fire":Rect2(75,260,230,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
 	for i in range(4):buttons["slot"+str(i)]=Rect2(392+i*126,635,118,70)
 func active() -> bool:
-	return enabled and is_instance_valid(game.ui) and not is_instance_valid(game.ui.panel) and game.phase in ["combat","buy","round_end","result"] and game.players.has(game.local_id)
+	return enabled and is_instance_valid(game.ui) and not is_instance_valid(game.ui.panel) and not is_instance_valid(game.ui.map_viewer) and not (is_instance_valid(game.ui.scoreboard) and game.ui.scoreboard.pinned) and game.phase in ["combat","buy","round_end","result"] and game.players.has(game.local_id)
 func reset():
 	if held.get("gadget",false) and game.players.has(game.local_id):game.command("gadget_release",{})
 	fingers.clear();positions.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1;auto_trigger_at=0.;swipe_neutral=true;swipe_stamp=-2000
@@ -87,6 +87,9 @@ func layout_actions(p:Dictionary):
 	var start=640.-(actions.size()*119.-14.)*.5
 	for i in range(actions.size()):buttons[actions[i]]=Rect2(start+i*119.,542,105,76)
 func press(action:String,on:bool):
+	if action=="score" and is_instance_valid(game.ui.scoreboard) and game.ui.scoreboard.editable():
+		if on:game.ui.scoreboard.toggle()
+		return
 	# Releases must always be accepted, even if the ability became unavailable.
 	if action=="melee":
 		held.melee=on

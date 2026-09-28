@@ -45,6 +45,9 @@ func run():
 	var deaths=int(game.players[1].deaths)
 	for b in game.ui.panel.find_children("*","Button",true,false):
 		if b.text.begins_with("사망 후"):b.pressed.emit();break
+	expect(game.players[1].deaths==deaths,"immediate apply waits for confirmation")
+	for dialog in game.ui.root.find_children("*","ConfirmationDialog",true,false):
+		if dialog.title=="사망 후 즉시 적용":dialog.confirmed.emit();break
 	expect(game.players[1].alive and game.players[1].role==1 and game.players[1].deaths==deaths+1,"actual immediate-apply button redeploys with one death")
 	expect(not is_instance_valid(game.ui.panel),"immediate apply closes loadout")
 	game.clock+=1.;game.cycle_weapon(1);expect(game.players[1].slot==1,"wheel advances to secondary")
@@ -93,8 +96,12 @@ func run():
 	expect(bot.device_target==tower and bot.visible_target,"bot acquires visible hostile turret")
 	bot.ready_to_fire=0.;bot.choose_action();bot.next_perception=200.;bot.next_decision=200.
 	game.players[-1].primary="a1";game.players[-1].secondary="pistol";game.players[-1].role=0;game.players[-1].slot=0
-	game.equip_ammo(game.players[-1]);game.clock=100.7;bot.tick(.1)
-	expect(game.actors[-1].input_state.fire,"bot fires at hostile turret")
+	game.equip_ammo(game.players[-1]);game.clock=100.7
+	var fired_at_device=false
+	for tick in range(30):
+		game.clock+=.1;bot.tick(.1)
+		fired_at_device=fired_at_device or game.actors[-1].input_state.fire
+	expect(fired_at_device,"bot fires at hostile turret during a complete burst cycle")
 	game.devices[tower].yaw=PI;game.devices[tower].disabled=0.;game.devices[tower].next_scan=0.
 	game.actors[-1].position=Vector3(0,75,5)
 	await physics_frame
@@ -156,10 +163,10 @@ func run():
 	game.players[-3].alive=true;game.players[-3].team=1;game.players[-3].cleanse=0.;game.actors[-3].position=Vector3(2,60.25,-30)
 	await physics_frame
 	expect(MarkerTracker.select_target(game,1)==-1,"passive marker selects closest enemy to scope center")
-	for i in range(19):MarkerTracker.tick(game,1,.1)
-	expect(game.players[-1].mark==0.,"less than two seconds never marks")
+	for i in range(14):MarkerTracker.tick(game,1,.1)
+	expect(game.players[-1].mark==0.,"less than 1.5 seconds never marks")
 	MarkerTracker.tick(game,1,.1)
-	expect(game.players[-1].mark==game.clock+6. and game.players[-3].mark==0.,"two-second scope dwell marks exactly one enemy for six seconds")
+	expect(game.players[-1].mark==game.clock+6. and game.players[-3].mark==0.,"1.5-second scope dwell marks exactly one enemy for six seconds")
 	MarkerTracker.tick(game,1,.1);game.actors[1].input_state.ads=false;MarkerTracker.tick(game,1,.1)
 	expect(game.players[1].marker_progress==0.,"leaving scope clears partial lock")
 	game.players[1].gadget=9
@@ -181,7 +188,7 @@ func run():
 			weapon.animate_reload(.93,0.);expect(weapon.dual_guns[1].action_part.position.z>weapon.dual_guns[1].action_origin.z+.02,"second DUET pistol chambers")
 		elif weapon.reload_style=="shell":
 			expect(weapon.action_part.position.z>weapon.action_origin.z+.02,"shell-fed shotgun finishes with its pump action "+id)
-		elif weapon.reload_style in ["break","box","revolver","rocket"]:
+		elif weapon.reload_style in ["break","box","revolver","rocket","battery"]:
 			expect(weapon.action_part.position.is_equal_approx(weapon.action_origin),"no generic rifle action on alternate reload "+id)
 		else:expect(weapon.action_part.position.z>weapon.action_origin.z+.06,"chambering phase "+id)
 		weapon.animate_reload(1.,0.)

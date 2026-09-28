@@ -23,13 +23,15 @@ func run():
 	g.add_player(3,"Three","three");TeamBalance.reconcile(g);expect(g.players.size()==4 and TeamBalance.auto_ids(g).size()==1,"odd players get one hard bot")
 	var auto_id=TeamBalance.auto_ids(g)[0];expect(g.bot_agents[auto_id].difficulty==2,"automatic bot hard difficulty")
 	TeamBalance.remove_auto(g,auto_id);g.players.erase(3);g.actors[3].free();g.actors.erase(3)
-	g.options.mode=4;g.options.map=13;g.options.map_rotation=false;g.clock=100.;g.start_match()
+	g.options.mode=4;g.options.map=19;g.options.map_rotation=false;g.clock=100.;g.start_match()
 	var p=g.players[1];var q=g.players[2]
 	expect(p.primary=="" and p.slot==1 and p.secondary=="pistol" and p.gadget==-1,"pistol only defusal start")
 	expect(not GadgetLoadout.has_item(p) and not GadgetLoadout.selectable(p),"unbought gadget absent")
 	expect(MatchFlow.attackers(g)==0,"first half attackers")
 	g.round_no=2;expect(MatchFlow.attackers(g)==0,"same side through half");g.round_no=3;expect(MatchFlow.attackers(g)==1,"halftime swaps sides");g.round_no=5;g.overtime_attacker=0;expect(MatchFlow.attackers(g)==0,"overtime assigned side")
 	g.round_no=1;p.cash=4000
+	var buy_spawn=MatchFlow.spawn_rect(g,int(p.team)).get_center()
+	g.actors[1].position=Vector3(buy_spawn.x,0.,buy_spawn.y)
 	var purchase={"role":0,"primary":"a1","secondary":"pistol","armor":0,"gadget":8,"confirmed":true}
 	g.commit_loadout(1,purchase);expect(p.primary=="a1" and p.slot==0 and p.gadget_count==2,"owned slots purchased")
 	var money=p.cash;g.commit_loadout(1,purchase);expect(p.cash==money,"same equipment no duplicate charge")

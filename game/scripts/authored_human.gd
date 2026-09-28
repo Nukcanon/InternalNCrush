@@ -51,7 +51,10 @@ static func face_point(which:int,p:Vector3) -> Vector3:
 		var eyelid=exp(-pow((absf(p.x)-eye_x)/.018,4)-pow((p.y-eye_y)/.013,4))*smoothstep(.045,.075,-p.z)
 		shaped.y+=(p.y-eye_y)*.08*eyelid
 		shaped.x+=signf(p.x)*(absf(p.x)-eye_x)*.12*eyelid
-	return p.lerp(shaped,strength)
+	var result=p.lerp(shaped,strength)
+	if which in HumanModel.FEMALE_ROLES:
+		result.x*=.95/.88;result.y*=(1.72 if which==1 else 1.70)/HumanModel.HEIGHTS[which]
+	return result
 static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trousers:Color):
 	_remove_base(root,[skin,shirt,trousers])
 	var key=str(which)+"_"+str(team)
@@ -88,6 +91,8 @@ static func install(root:Node3D,which:int,team:int,skin:Color,shirt:Color,trouse
 				st.set_uv(Vector2(uv[0],uv[1]))
 				st.set_bones(bones);st.set_weights(weights);st.set_color(color.srgb_to_linear());st.set_uv2(Vector2(.67 if surface_kind==0 else .9,float(surface_kind)+.01))
 				var point=Vector3(p[0],p[1]-.94,p[2])
+				if which in HumanModel.FEMALE_ROLES:
+					var hip=exp(-pow((p[1]-.93)/.16,2));point.x*=1.+hip*.13
 				if p[1]>1.45:
 					var shaped=surface_point(which,info,index)
 					point=shaped+Vector3(0,.66,0)

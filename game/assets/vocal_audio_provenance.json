@@ -1,0 +1,72 @@
+{
+  "source_sha256": "9f62f6c7f807a141f3662441aec9886131d5d06700a1b6357743e854cabeb7b6",
+  "pistol_source_sha256": "5f6f4bf7e0123d8fb0427994cf45eae649b5d3c1cc0d47bb257c36e31d902c70",
+  "provider": "ElevenLabs Sound Effects; user supplied and selected",
+  "tts": false,
+  "pitch_changed": false,
+  "clips": {
+    "pistol": {
+      "source_seconds": [
+        0.0,
+        0.402
+      ],
+      "duration": 0.402,
+      "gain_db": -0.42,
+      "sha256": "396ac46d11980ab07f48e094447358dff347176dcfa36ad7eee52256ebfc7309"
+    },
+    "smg": {
+      "source_seconds": [
+        0.0,
+        0.64
+      ],
+      "duration": 0.64,
+      "gain_db": -4.04,
+      "sha256": "2d88947ba25f3a6702ff16229e9b2eb0a73c5a0e11f1aa1840e47dbac33d26be"
+    },
+    "rifle": {
+      "source_seconds": [
+        0.85,
+        1.54
+      ],
+      "duration": 0.69,
+      "gain_db": -5.83,
+      "sha256": "d95a3680e0e418218b9d59a75a0701f787b297bb9573d83bd48a7c71edca1861"
+    },
+    "machinegun": {
+      "source_seconds": [
+        1.76,
+        2.57
+      ],
+      "duration": 0.81,
+      "gain_db": -3.25,
+      "sha256": "463014150498f47fab9959528be4a6028baa4ec9418d98b8321f863c5a8d0b0d"
+    },
+    "sniper": {
+      "source_seconds": [
+        3.51,
+        4.46
+      ],
+      "duration": 0.95,
+      "gain_db": -3.27,
+      "sha256": "7e2366b3c05ba042a4540ecd9a1b420605e95e31879359dcead0e0d699eb118b"
+    },
+    "shotgun": {
+      "source_seconds": [
+        5.25,
+        6.0
+      ],
+      "duration": 0.75,
+      "gain_db": -3.02,
+      "sha256": "b21e53752fe94315aeba19e4bcf6f680f8aa425436be0a5dba162b8c649d9e27"
+    },
+    "energy": {
+      "source_seconds": [
+        1.76,
+        2.57
+      ],
+      "duration": 0.81,
+      "gain_db": -3.25,
+      "sha256": "463014150498f47fab9959528be4a6028baa4ec9418d98b8321f863c5a8d0b0d"
+    }
+  }
+}

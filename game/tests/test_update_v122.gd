@@ -42,7 +42,7 @@ func run():
 	var p=g.players[1];p.protect=0.;p.role=3;p.primary="e1";p.gadget=0;p.team=0
 	var q=g.players[2];q.protect=0.;q.team=1
 	g.ui.show_hud();g.damage(2,1000.,1)
-	expect(g.ui.banner.text==str(q.nick)+" 처치","kill confirmation names victim")
+	expect(g.ui.notice_queue.any(func(item):return item.text==str(q.nick)+" 처치"),"kill confirmation names victim in separate notification queue")
 	g.spawn(2);q.protect=0.
 	var cover=g.add_device("cover",Vector3(20,0,20),1,180.);var turret=g.add_device("turret",Vector3(26,0,20),1,180.)
 	g.damage(1,1000.,2);expect(g.devices.has(cover) and not g.devices.has(turret),"death preserves cover and removes turret")

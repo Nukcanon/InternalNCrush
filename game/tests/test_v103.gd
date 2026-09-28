@@ -21,7 +21,8 @@ func run():
 		var spray=AimModel.spray_offset(w,ceili(w.spray_build_seconds/w.interval));signatures[str(spray)]=true
 		var p={"bloom":float(w.shot_bloom)*3.,"spray_phase":3.,"shot_time":0.};var original=p.bloom
 		for tick in range(60):AimModel.recover(p,w,1./120.,tick/120.)
-		expect(p.bloom<original and p.spray_phase<3.,id+" short-burst accuracy recovers during a pause")
+		if w.get("laser",false):expect(p.bloom==0. and AimModel.spread(w,7.,false,false,true,false,4.)==0. and spray==Vector2.ZERO,"laser stays straight while moving or airborne")
+		else:expect(p.bloom<original and p.spray_phase<3.,id+" short-burst accuracy recovers during a pause")
 	expect(signatures.size()>18,"distinct weapon recoil curves")
 	var burst=Catalog.get_weapon("a4");expect(absf(CombatBalance.magazine_seconds(burst)-((int(burst.mag)-1)/3*(burst.interval*2.+burst.burst_pause)+((int(burst.mag)-1)%3)*burst.interval))<.001,"burst DPS accounts for gaps between bursts")
 	expect(AbilityBalance.flash_duration(0.,1.)==5. and AbilityBalance.flash_duration(18.,1.)==2. and AbilityBalance.flash_duration(18.1,1.)==0.,"flash lasts 5 seconds at centre and 2 at radius edge")

@@ -41,3 +41,20 @@ unchanged; DUET is appended as a new weapon.
 ## 1.2.4 contact separation
 
 Wrench repair uses high-passed Kenney plate/metal recordings for a bright ringing strike. Wrench wall/body impacts use the existing dry low-mid impact/cloth layers; knife body contact uses a shorter soft-impact mix, and knife wall contact retains the clear metal layer. All five mixes are CC0-1.0, reproduced by `tools/build_audio.py`. Contact feedback is local to the striking player.
+
+## Combat audio refresh (work in progress)
+
+Shotgun shell/rack recordings: zer0_sol, Shotgun Reload Sound effects, https://opengameart.org/content/shotgun-reload-sound-effects (CC0). Source archive retained at tools/foley/new_sources/shotgunsounds.zip. Converted to mono 44.1 kHz PCM, trimmed and filtered; no pitch-to-speech or TTS. Native per-weapon Q009 adaptations retain CC BY-SA 3.0. combat_audio_refresh.py records all transformations. New propulsion/vent/hinge textures are original CC0 procedural sound designs, not claimed to be field recordings.
+
+## Optional vocal gunfire
+
+Generated with ElevenLabs Sound Effects (https://elevenlabs.io/), not TTS.
+The user supplied and selected candidate 4 from the first session for the pistol,
+and `American_woman_yelli_#3-1790581855008.mp3` for the other categories.
+The louder `American_woman_shout_#1` take was rejected and is not shipped.
+Edits: separate utterances, mono conversion, short edge fades, gain adjustment,
+44.1 kHz resampling; no pitch or voice-identity alteration. ARC/LINK reuse the
+machine-gun utterance. See `assets/vocal_audio_provenance.json` for hashes/cuts.
+These are provider-licensed samples, not CC0. Free-plan generation is subject
+to ElevenLabs attribution and noncommercial-use terms; this record does not
+grant commercial rights. The optional setting is off by default.

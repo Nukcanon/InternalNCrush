@@ -15,7 +15,8 @@ func run():
 		var standing=AimModel.spread(w,0,false,false,false,true,0)
 		var moving=AimModel.spread(w,7.4,false,false,false,true,0)
 		var aiming=AimModel.spread(w,0,true,false,false,true,0)
-		expect(moving>standing and standing>aiming,id+" movement and ADS change actual spread")
+		if w.get("laser",false):expect(moving==0. and standing==0. and aiming==0.,id+" laser remains perfectly straight while moving or aiming")
+		else:expect(moving>standing and standing>aiming,id+" movement and ADS change actual spread")
 		var recoil={"spray_phase":10.,"bloom":w.bloom_max}
 		var cone=AimModel.spread(w,0,false,false,false,true,w.bloom_max)
 		expect(AimModel.reticle_angle(w,recoil,cone)>=cone,id+" reticle includes the spray pattern envelope")

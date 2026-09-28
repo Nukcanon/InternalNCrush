@@ -4,7 +4,7 @@ static func attackers(game) -> int:
 	if game.round_no>int(game.options.rounds):return int(game.overtime_attacker)
 	return 0 if game.round_no<=int(game.options.rounds)/2 else 1
 static func rotate(game):
-	if not (game.options.get("map_random",false) or game.options.get("map_rotation",false)):return
+	if not game.options.get("map_rotation",false):return
 	game.options.map=Rules.random_map(game.options,int(game.options.map));game.build_world()
 	for id in game.players:
 		if id<0:
@@ -65,7 +65,7 @@ static func update_gate(game):
 			body.add_child(visual)
 	for id in game.players:
 		if game.actors.has(id):preparation(game,id)
-static func at_limit(game) -> bool:return int(game.options.mode)==4 and game.round_no>=int(game.options.rounds) and game.scores[0]!=game.scores[1]
+static func at_limit(game) -> bool:return int(game.options.mode)==4 and DefusalMatch.decided(game)
 static func return_to_lobby(game):
 	RoundCleanup.clear(game)
 	game.phase="lobby";game.announce("설정한 경기 수를 완료했습니다.");game.ui.lobby();game.broadcast_state(true)

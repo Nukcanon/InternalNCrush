@@ -11,6 +11,8 @@ var fingers={}
 var pinch_distance=0.
 var dragging=false
 var floor_meshes=[]
+var plan_texture:Texture2D
+var texture_key=""
 static var cache={}
 func _ready():
 	clip_contents=true;mouse_filter=Control.MOUSE_FILTER_STOP
@@ -20,6 +22,8 @@ func select_map(index:int):
 	if not cache.has(index):
 		var path="res://assets/arenas/districts/plan_%02d.json"%index
 		var data=JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else {}
+		# Preview needs the plan, not a retained duplicate of all 3D vertex groups.
+		data.erase("groups")
 		var meshes=[]
 		for key in ["ground","upper","lower"]:
 			var vertices=PackedVector3Array()
@@ -28,6 +32,7 @@ func select_map(index:int):
 			if not vertices.is_empty():
 				var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 			meshes.append(mesh)
+		if cache.size()>=8:cache.erase(cache.keys()[0])
 		cache[index]={"data":data,"meshes":meshes}
 	plan=cache[index].data;floor_meshes=cache[index].meshes;reset_view()
 func reset_view():zoom=1.;pan=Vector2.ZERO;fingers.clear();dragging=false;pinch_distance=0.;queue_redraw()
@@ -45,7 +50,13 @@ func _draw():
 	if plan.is_empty():return
 	var border=polygon(plan.border[0]);draw_colored_polygon(border,Color("263442"))
 	var color=Color("94a8b5") if level==0 else Color("75bca7") if level==1 else Color("718bbe")
-	if floor_meshes[level].get_surface_count()>0:draw_mesh(floor_meshes[level],null,Transform2D(0.,Vector2.ONE*scale_factor(),0.,size*.5+pan),color)
+	var key="res://assets/arenas/plans/map_%02d_%d%s.png"%[map_index,level,"" if interactive else "_thumb"]
+	if key!=texture_key:
+		texture_key=key;plan_texture=load(key) if ResourceLoader.exists(key) else null
+	if plan_texture:
+		var dimensions=Vector2(plan.dimensions[0],plan.dimensions[1])*scale_factor()
+		draw_texture_rect(plan_texture,Rect2(size*.5+pan-dimensions*.5,dimensions),false)
+	elif floor_meshes[level].get_surface_count()>0:draw_mesh(floor_meshes[level],null,Transform2D(0.,Vector2.ONE*scale_factor(),0.,size*.5+pan),color)
 	for i in range(plan.targets.size()):
 		var p=project(plan.targets[i]);draw_circle(p,7. if size.x>200 else 2.,Color("e6c676"))
 		if size.x>200:

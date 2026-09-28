@@ -43,6 +43,9 @@ var flash_overlay:ColorRect
 var roster:Label
 var notice_label:Label
 var notice_until=0
+var notice_queue=[]
+var toast_label:Label
+var redeploy_button:Button
 var practice_hint_until=0
 var hit_until=0
 var room_list:VBoxContainer
@@ -126,13 +129,14 @@ func clear_panel(keep_background=false):
 	if is_instance_valid(background) and not keep_background:background.queue_free();background=null
 	if panel:panel.queue_free();panel=null
 func make_panel(title:String,width=780,compact=false):
+	if is_instance_valid(scoreboard):scoreboard.pinned=false;scoreboard.hide()
 	if TouchControls.supported():width=maxi(width,560 if compact else 1000)
 	clear_panel(game.phase=="menu");Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	if is_instance_valid(hud):hud.hide()
 	if is_instance_valid(background):
 		for child in background.get_children():
 			if child is Label or child==version_box:child.hide()
-	panel=PanelContainer.new();panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
+	panel=PanelContainer.new();panel.z_index=100;panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
 	panel.minimum_size_changed.connect(func():
 		if is_instance_valid(panel):panel.set_deferred("size",panel.get_combined_minimum_size())
 	)
@@ -191,7 +195,7 @@ func confirm_navigation(callback:Callable,destination:String):
 	navigation_confirm.confirmed.connect(func():
 		var dialog=navigation_confirm;navigation_confirm=null;dialog.queue_free();callback.call())
 	navigation_confirm.canceled.connect(func():navigation_confirm.queue_free();navigation_confirm=null)
-	navigation_confirm.popup_centered(Vector2i(440,160))
+	DialogStyle.apply(navigation_confirm,theme,true);navigation_confirm.popup_centered(Vector2i(440,160))
 func confirm_practice():
 	confirm_navigation(func():clear_panel();PracticeSession.start(game),"연습장")
 	if is_instance_valid(navigation_confirm):
@@ -287,14 +291,13 @@ func practice_menu():
 	make_panel("봇 전투");screen="practice"
 	WeaponRules.build(self)
 	if int(game.options.bots) not in [3,5,7,15,31]:game.options.bots=7
-	option("난이도",["하 · 반응과 조준을 완화","중 · 목표와 지원 역할 수행","상 · 빠른 반응, 사격·후퇴 판단 강화"],game.options.get("bot_difficulty",1),func(i):game.options.bot_difficulty=i)
+	option("난이도",["하 · 반응과 조준을 완화","중 · 목표와 지원 역할 수행","상 · 빠른 반응, 사격·후퇴 판단 강화"],game.options.get("bot_difficulty",2),func(i):game.options.bot_difficulty=i)
 	option("봇 인원",["3명","5명","7명","15명","31명"],maxi(0,[3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[3,5,7,15,31][i])
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):
 		game.options.mode=i;ModeOptions.refresh(self)
 		if map_refresh.is_valid():map_refresh.call())
 	map_selector()
 	ModeOptions.install(self)
-	label("장애물 우회 · 목표 수행 · 회복/수리 · 가젯/스킬 사용\n체력, 탄약, 최근 교전 상황에 따라 행동을 바꿉니다.",16)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
 	button("다음 · 경기 시작",func():
 		if int(game.options.mode)==4:game.start_bot_match(bot_choice)
@@ -334,7 +337,7 @@ func host_settings():
 	label("마지막 사격·피격 10초 후 초당 1 HP 회복. 부활 횟수와 별개입니다.",17)
 	stack=groups[3]
 	option("봇 인원",["없음","3명","5명","7명","15명","31명"],maxi(0,[0,3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[0,3,5,7,15,31][i])
-	option("봇 난이도",["하 · 느린 반응","중 · 균형","상 · 빠른 판단"],game.options.get("bot_difficulty",1),func(i):game.options.bot_difficulty=i)
+	option("봇 난이도",["하 · 느린 반응","중 · 균형","상 · 빠른 판단"],game.options.get("bot_difficulty",2),func(i):game.options.bot_difficulty=i)
 	label("봇도 참가 인원에 포함됩니다.\n선택 인원이 방 정원을 넘으면 정원까지 추가합니다.",16)
 	stack=outer;var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);button("방 만들기",func():game.host_game(),actions);button("돌아가기",join_menu,actions);pin_actions(actions);notice_label=label("",14)
 func join_menu():
@@ -371,8 +374,10 @@ func teams_menu():
 func refresh_teams():
 	if not is_instance_valid(team_columns):return
 	var signature=str(game.players.keys())+str(game.options.mode)+str(game.options.get("room_owner",1))
-	for p in game.players.values():signature+=str([p.id,p.team,p.role,p.nick])
+	for p in game.players.values():signature+=str([p.id,p.team,p.role,p.nick,p.get("bot_role",p.role),p.get("bot_difficulty",2)])
 	if signature==team_signature:return
+	for control in team_columns.find_children("*","OptionButton",true,false):
+		if control.get_popup().visible:return
 	team_signature=signature
 	for node in team_columns.get_children():team_columns.remove_child(node);node.queue_free()
 	for side in range(2):
@@ -382,6 +387,8 @@ func refresh_teams():
 			if p.team!=side:continue
 			var row=HBoxContainer.new();box.add_child(row)
 			var name=label(p.nick+("  · 나" if p.id==game.local_id else "")+"  /  "+Rules.CLASSES[p.role],15,row);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			if int(p.id)<0:
+				var bot_controls=HBoxContainer.new();box.add_child(bot_controls);BotSettings.controls(game,bot_controls,p)
 			var allowed=TeamBalance.allowed(game,game.local_id,int(p.id))
 			if allowed and game.options.mode!=1:
 				var pid=int(p.id);var target=1-side
@@ -461,7 +468,7 @@ func settings():
 		timer.timeout.connect(func():
 			seconds[0]-=1;confirm.dialog_text="이 화면을 유지할까요? %d초 후 이전 설정으로 돌아갑니다."%seconds[0]
 			if seconds[0]<=0:rollback.call())
-		confirm.dialog_text="이 화면을 유지할까요? 15초 후 이전 설정으로 돌아갑니다.";confirm.popup_centered(Vector2i(660,170));timer.start())
+		confirm.dialog_text="이 화면을 유지할까요? 15초 후 이전 설정으로 돌아갑니다.";DialogStyle.apply(confirm,theme);confirm.popup_centered(Vector2i(660,170));timer.start())
 	label("웹은 그래픽 탭에서 3D 선명도를 100%·85%·70%로 선택할 수 있습니다. 자동 설정은 선명도를 바꾸지 않습니다." if OS.has_feature("web") else "전체 화면에서도 게임 해상도를 낮출 수 있습니다. 낮을수록 화면은 덜 선명하지만 그래픽 부하가 줄어듭니다.",17)
 	sensitivity_control("마우스 감도",float(game.profile.sensitivity)/.0023,.15,4.,func(v):game.profile.sensitivity=v*.0023;game.save_profile())
 	sensitivity_control("정조준 감도 배율",float(game.profile.ads_sensitivity),.2,1.5,func(v):game.profile.ads_sensitivity=v;game.save_profile())
@@ -486,6 +493,8 @@ func settings():
 	label("총소리·발소리·전투 효과는 전체 음량에 함께 적용됩니다.",17)
 	sound_slider("명중 알림", "hit_volume")
 	sound_slider("메뉴 소리", "ui_volume")
+	var reduction=check("총소리 저감 · 여성 목소리 효과음",game.profile.get("gunfire_reduction",false),func(value):game.profile.gunfire_reduction=value;game.save_profile())
+	reduction.disabled=not VocalGunfire.ready()
 	var samples=HBoxContainer.new();stack.add_child(samples);button("총소리 미리 듣기",func():game.play_sound("gun_a1",Vector3.ZERO,false),samples);button("발소리 미리 듣기",func():game.play_sound("step_stone_0",Vector3.ZERO,false),samples)
 	stack=tabs[4]
 	var diagram=ControlsDiagram.new();diagram.custom_minimum_size=Vector2(885,415);stack.add_child(diagram)
@@ -549,7 +558,7 @@ func sensitivity_control(title:String,value:float,low:float,high:float,callback:
 	slider.value_changed.connect(func(v):number.set_value_no_signal(v);callback.call(v))
 	number.value_changed.connect(func(v):slider.set_value_no_signal(v);callback.call(v))
 func gear():
-	if int(game.options.mode)==4 and not DefusalEconomy.can_buy(game,game.local_id):notice("구매 시간이 종료되었거나 현재 구매할 수 없는 상태입니다.");return
+	if int(game.options.mode)==4 and not DefusalEconomy.can_buy(game,game.local_id):notice("구매 시간 안에 팀 시작 위치에서만 병과와 장비를 변경할 수 있습니다.");return
 	if not bot_setup and not game.players.has(game.local_id):return
 	if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish()
 	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
@@ -590,9 +599,8 @@ func gear():
 			var selection=selected_loadout();bot_choice.merge(selection,true);bot_choice.armor_max=selection.armor*25
 			bot_setup=false;game.start_bot_match(selection)
 		else:submit_loadout(),actions)
-	if game.phase=="combat" and int(game.options.mode) in [0,1,3] and not game.options.get("practice",false):
-		button("사망 후 즉시 적용 · −25점",func():
-			var selection=selected_loadout();selection["immediate"]=true;game.command("loadout",selection),actions)
+	if not bot_setup and RedeployRules.available(game,p):
+		redeploy_button=button("사망 후 즉시 적용",confirm_redeploy,actions)
 	button("돌아가기",exit_gear,actions)
 	var spacer=Control.new();spacer.size_flags_horizontal=Control.SIZE_EXPAND_FILL;actions.add_child(spacer)
 	if int(game.options.mode)==4:
@@ -606,11 +614,22 @@ func gear():
 	var wanted=queued.get("primary",p.primary)
 	if wanted in weapon_ids:gear_primary.select(weapon_ids.find(wanted))
 	gear_gadget.select(maxi(0,gear_gadget.get_item_index(99 if int(queued.get("gadget",p.gadget))<0 else int(queued.get("gadget",p.gadget)))));refresh_gear_detail();refresh_gear_cards()
+func confirm_redeploy():
+	var p=game.players.get(game.local_id,{})
+	if not RedeployRules.available(game,p):notice("남은 부활 횟수가 없거나 지금은 즉시 적용할 수 없습니다.");return
+	var wait=RedeployRules.wait_seconds(game,p)
+	if wait>0.:notice("즉시 적용은 %.1f초 후 다시 사용할 수 있습니다."%wait);return
+	var selection=selected_loadout()
+	var dialog=ConfirmationDialog.new();dialog.title="사망 후 즉시 적용"
+	dialog.dialog_text="시작 위치로 돌아가 선택한 장비를 적용하시겠습니까?" if game.options.get("practice",false) else RedeployRules.warning(int(game.options.mode))
+	dialog.ok_button_text="확인 · 적용";dialog.cancel_button_text="취소";root.add_child(dialog)
+	dialog.confirmed.connect(func():selection.immediate=true;selection.redeploy_confirmed=true;selection.confirmed=true;game.command("loadout",selection);dialog.queue_free())
+	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(580,220))
 func submit_loadout():
 	var selection=selected_loadout();var p=game.players[game.local_id]
 	if int(game.options.mode)==4 and DefusalEconomy.replacement(p,selection):
 		var dialog=ConfirmationDialog.new();dialog.title="구매 장비 변경";dialog.dialog_text="병과를 변경하면 구매한 장비를 잃습니다. 선택한 장비로 변경하시겠습니까?" if int(selection.role)!=int(p.role) else "현재 장비를 교체하고 새 장비를 구매하시겠습니까?"
-		root.add_child(dialog);dialog.confirmed.connect(func():selection.confirmed=true;game.command("loadout",selection);dialog.queue_free());dialog.canceled.connect(dialog.queue_free);dialog.popup_centered(Vector2i(560,170))
+		root.add_child(dialog);dialog.confirmed.connect(func():selection.confirmed=true;game.command("loadout",selection);dialog.queue_free());dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(560,170))
 	else:game.command("loadout",selection)
 func economy_box(parent:Node,title:String,color:Color) -> Label:
 	var box=PanelContainer.new();box.custom_minimum_size=Vector2(158,66);parent.add_child(box)
@@ -711,7 +730,8 @@ func refresh_gear_detail():
 	if float(w.get("structure_damage_scale",1.))<1.:gear_detail.text+="\n포탑·엄폐물 피해 %d%%"%roundi(float(w.structure_damage_scale)*100.)
 	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 20/초\n유효 거리 15 m · 에너지 180\n클릭 유지: 연결한 아군 지속 치료 · 조준 이탈 ±100° 허용.\n벽·사거리 이탈 시 연결 해제 · 여러 LINK 중첩 불가."
 	if float(w.get("heal_per_pellet",0.))>0:gear_detail.text=str(w.get("description",""))+"\n아군은 치료, 적군은 피해 · 모바일 자동 사격 지원"
-	if w.get("rocket",false):gear_detail.text=str(w.description)+"\n속도 30m/s · 완만한 낙하 · 직격 시 강한 밀림"
+	if w.get("rocket",false):gear_detail.text=str(w.description)+"\n속도 36m/s · 완만한 낙하 · 직격 시 강한 밀림"
+	if w.get("laser",false):gear_detail.text=str(w.description)+"\n100m까지 동일 피해 · 150m에서 30% · 머리 ×1.5 / 다리 ×0.5"
 	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n12m 이후 탄환 피해 감소 · 48m에서 10%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
 	if w.kind=="repair":gear_detail.text="FIX · 원격 수리 도구 · 10m · 초당 30 수리\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
 	if preview_kind==0:
@@ -779,7 +799,8 @@ func show_hud():
 	bomb_hint.size=Vector2(450,76);bomb_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;bomb_hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;bomb_hint.add_theme_color_override("font_color",Color("ffda8a"));bomb_hint.hide()
 	cash_hint=hud_label("",Vector2(32,530),28);cash_hint.size=Vector2(250,42);cash_hint.add_theme_color_override("font_color",Color.WHITE);cash_hint.hide()
 	upgrade_hint=hud_label("",Vector2(320,505),20);upgrade_hint.size=Vector2(640,36);upgrade_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;upgrade_hint.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;upgrade_hint.add_theme_color_override("font_outline_color",Color.BLACK);upgrade_hint.add_theme_constant_override("outline_size",6);upgrade_hint.hide()
-	banner=hud_label("",Vector2(34,96),17)
+	banner=hud_label("",Vector2(34,96),17);banner.size=Vector2(560,52);banner.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	toast_label=hud_label("",Vector2(34,154),16);toast_label.size=Vector2(560,116);toast_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	info=hud_label("",Vector2(305,686),16)
 	skill_label=hud_label("",Vector2(313,590),16)
 	slots=[];slot_panels=[]
@@ -791,7 +812,8 @@ func show_hud():
 	crosshair=hud_label("",Vector2(0,0),1)
 	reticle=Reticle.new();reticle.game=game;reticle.ui=self;reticle.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(reticle)
 	kill_feed=KillFeed.new();hud.add_child(kill_feed)
-	scoreboard=MatchScoreboard.new();scoreboard.game=game;hud.add_child(scoreboard);scoreboard.visible=false
+	if is_instance_valid(scoreboard):scoreboard.queue_free()
+	scoreboard=MatchScoreboard.new();scoreboard.game=game;scoreboard.theme=theme;root.add_child(scoreboard);scoreboard.visible=false
 	flash_overlay=ColorRect.new();flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);flash_overlay.color=Color(1,1,1,0);flash_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(flash_overlay)
 	HudLayout.attach(self)
 	if is_instance_valid(game.touch):
@@ -801,13 +823,21 @@ func notice(message:String):
 	if message.is_empty():return
 	if lan_lobby:lan_lobby.notice(message)
 	notice_until=Time.get_ticks_msec()+3500
+	notice_queue.append({"text":message,"until":notice_until})
+	while notice_queue.size()>3:notice_queue.pop_front()
 	if is_instance_valid(notice_label):notice_label.text=message
 	if game.phase=="menu" and message.contains("버전"):
 		var dialog=AcceptDialog.new();dialog.title="게임 버전 확인";dialog.dialog_text=message;dialog.ok_button_text="확인";root.add_child(dialog);dialog.add_button("다운로드",false,"download");dialog.custom_action.connect(func(action):
 			if action=="download":OS.shell_open(VersionCheck.PAGE))
-		dialog.confirmed.connect(dialog.queue_free);dialog.canceled.connect(dialog.queue_free);dialog.popup_centered(Vector2i(680,210))
-	if is_instance_valid(banner):banner.text=message
+		dialog.confirmed.connect(dialog.queue_free);dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(680,210))
+
 func refresh():
+	if is_instance_valid(redeploy_button):redeploy_button.visible=RedeployRules.available(game,game.players.get(game.local_id,{}))
+	notice_queue=notice_queue.filter(func(n):return int(n.until)>Time.get_ticks_msec())
+	if is_instance_valid(toast_label):
+		var lines=PackedStringArray()
+		for item in notice_queue:lines.append(str(item.text))
+		toast_label.text="\n".join(lines)
 	if lan_lobby:lan_lobby.refresh_connection()
 	refresh_gear_economy()
 	refresh_vote();refresh_members()
@@ -832,7 +862,7 @@ func refresh():
 	kill_feed.refresh(game.kill_events,game.local_id,Time.get_ticks_msec())
 	stats.text="%d FPS  ·  %s"%[Engine.get_frames_per_second(),"HOST" if game.server else str(game.ping_ms)+" ms"]
 	var secs=maxi(0,int(game.remaining));status.text="∞" if game.remaining>=1e10 else "%02d:%02d"%[secs/60,secs%60]
-	hud_blue.text="BLUE %d"%game.scores[0];hud_orange.text="%d ORANGE"%game.scores[1]
+	hud_blue.text=("BLUE %d승" if int(game.options.mode)==4 else "BLUE %d")%game.scores[0];hud_orange.text=("%d승 ORANGE" if int(game.options.mode)==4 else "%d ORANGE")%game.scores[1]
 	hud_blue.visible=not game.options.get("practice",false);hud_orange.visible=hud_blue.visible
 	if game.options.get("practice",false):status.text="FIELD ACADEMY  ·  자유 연습"
 	health.text=("◆ BLUE  " if p.team==0 else "● ORANGE  ")+"%d HP"%p.hp if p.alive else "Dead · 관전" if game.options.mode==4 or p.spectator else "Dead · 부활 %.0f초"%maxf(0,p.respawn-game.clock)
@@ -841,9 +871,10 @@ func refresh():
 	var fire_mode={"auto":"AUTO","semi":"SEMI","burst":"BURST"}.get(w.get("fire_mode","auto"),"")
 	weapon_title.text=w.name+"   /   "+fire_mode
 	ammo.text=str(int(p.mag.get(wid,0)))+" / "+("∞" if game.options.infinite else str(int(p.reserve.get(wid,0))))
+	if w.get("laser",false):ammo.text="과열 · %.1f초"%maxf(0.,float(p.get("laser_lock",0))-game.clock) if float(p.get("laser_lock",0))>game.clock else "배터리 %.0f%%"%(float(p.mag.get(wid,0))/5.)
 	if w.kind=="heal":ammo.text="%d / 180"%p.energy;weapon_title.text="LINK  /  회복 에너지"
 	if w.kind=="repair":ammo.text="%d / 100"%p.repair_energy;weapon_title.text="FIX  /  수리 에너지"
-	if p.slot>=2:weapon_title.text=Rules.GADGETS[p.role] if p.role!=4 else "섬광탄" if p.slot==3 else "연막탄";ammo.text="스코프로 2초 추적 · 자동" if MarkerTracker.equipped(p) else "클릭하여 사용"
+	if p.slot>=2:weapon_title.text=Rules.GADGETS[p.role] if p.role!=4 else "섬광탄" if p.slot==3 else "연막탄";ammo.text="스코프로 1.5초 추적 · 자동" if MarkerTracker.equipped(p) else "클릭하여 사용"
 	if p.reload>game.clock:ammo.text="재장전 %.1f"%(p.reload-game.clock)
 	var health_color=Color("6bc7ff") if p.team==0 else Color("ffa35f")
 	if health.get_theme_color("font_color")!=health_color:health.add_theme_color_override("font_color",health_color)
@@ -887,8 +918,8 @@ func refresh():
 	elif int(game.options.mode)==4 and int(game.bomb.get("carrier",0))==game.local_id:banner.text="폭탄 운반 중 · A 또는 B에서 E 유지"
 	elif int(game.options.mode)==4 and game.bomb.get("dropped",false) and p.team==MatchFlow.attackers(game):banner.text="폭탄을 회수하세요 · 가까이에서 E"
 	elif game.options.get("practice",false) and Time.get_ticks_msec()<practice_hint_until:banner.text=("병과/장비 버튼" if TouchControls.supported() else "B 병과/장비")+" · 입구 보급 구역에서 탄약·가젯·스킬 재충전"
-	elif Time.get_ticks_msec()>notice_until:banner.text=""
-	scoreboard.visible=Input.is_action_pressed("score") or game.phase=="result" or (is_instance_valid(game.touch) and game.touch.held.get("score",false))
+	else:banner.text=""
+	scoreboard.visible=not is_instance_valid(panel) and not is_instance_valid(map_viewer) and scoreboard.shown()
 	if scoreboard.visible:scoreboard.refresh_scores()
 
 func map_selector():
@@ -955,7 +986,7 @@ func internet_password(room_id:String):
 	var dialog=ConfirmationDialog.new();dialog.title="방 비밀번호";dialog.ok_button_text="접속";dialog.cancel_button_text="돌아가기";root.add_child(dialog)
 	var password=LineEdit.new();password.secret=true;password.placeholder_text="방 비밀번호";password.custom_minimum_size=Vector2(350,45);dialog.add_child(password)
 	dialog.confirmed.connect(func():game.options.password=password.text;dialog.queue_free();wait_internet_room(room_id))
-	dialog.canceled.connect(dialog.queue_free);dialog.popup_centered(Vector2i(420,150));password.grab_focus()
+	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(420,150));password.grab_focus()
 func internet_create():
 	make_panel("공개 방 만들기",880);screen="internet_create"
 	WeaponRules.build(self)

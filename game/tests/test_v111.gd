@@ -51,6 +51,7 @@ func run():
 	expect(not g.ray(center,center+Vector3.FORWARD*15.,[],1).is_empty(),"spawn boundary blocks fire even when its team can walk through")
 	expect(BombLogic.beep_interval(100,120)==1.2 and BombLogic.beep_interval(50,120)==.75 and BombLogic.beep_interval(20,120)==.4 and BombLogic.beep_interval(5,120)==.16,"bomb beeps accelerate through four stages")
 	var p=g.players[7];p.cash=800;p.protect=0.;p.owned_primary=true;g.phase="buy";g.remaining=30.
+	g.actors[7].position=Vector3(defender.get_center().x,0.,defender.get_center().y)
 	var request={"role":p.role,"primary":p.primary,"armor":0,"gadget":9}
 	expect(g.loadout_cost(p,request)==400,"defuse kit costs 400 credits instead of the class gadget")
 	g.commit_loadout(7,request);expect(p.gadget==9 and p.cash==400,"purchase equips the kit in the gadget slot")

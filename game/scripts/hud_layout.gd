@@ -33,6 +33,7 @@ static func apply(ui:Node):
 		ui.hud.get_node("Hud_ammo").position=Vector2(1258-263*amount,145)
 		ui.hud.get_node("Hud_gear").hide()
 		ui.banner.position=Vector2(320,86);ui.banner.size=Vector2(640,48);ui.banner.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;ui.banner.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		ui.toast_label.position=Vector2(320,142);ui.toast_label.size=Vector2(620,120)
 		ui.stats.hide()
 	for panel in ui.hud.find_children("*","Panel",true,false):
 		if not panel.has_meta("hud_plate"):continue

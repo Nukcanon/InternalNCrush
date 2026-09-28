@@ -86,7 +86,9 @@ func run():
 	touch(6,Vector2(1040,45),true);game.ui.refresh()
 	expect(game.ui.scoreboard.visible,"record button displays the scoreboard")
 	touch(6,Vector2(1040,45),false);game.ui.refresh()
-	expect(not game.ui.scoreboard.visible,"releasing record hides the scoreboard")
+	expect(game.ui.scoreboard.visible,"host records stay open after touch release")
+	game.ui.scoreboard.close_button.pressed.emit();game.ui.refresh()
+	expect(not game.ui.scoreboard.visible,"records close button dismisses pinned board")
 	for frame in range(5):a.visual(.016,game.players[1],game.clock)
 	game.ui.refresh();await capture("hud")
 	touch(3,Vector2(570,670),true);touch(3,Vector2(570,670),false)
@@ -119,5 +121,7 @@ func run():
 	game.kill_replay.active=true;game.ui.clear_panel()
 	expect(not game.ui.hud.visible,"closing equipment during killcam never restores score/time HUD")
 	game.kill_replay.active=false
-	game.leave_game();game.free();await process_frame
+	game.leave_game()
+	for i in range(4):await process_frame
+	game.free();await process_frame
 	print("TOUCH_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

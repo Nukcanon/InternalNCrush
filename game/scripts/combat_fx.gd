@@ -64,13 +64,13 @@ func finish(node:Node3D,seconds:float):
 	var tween=node.create_tween();tween.tween_interval(seconds);tween.tween_callback(node.queue_free)
 func ring(parent:Node3D,radius:float,color:Color) -> MeshInstance3D:
 	var node=MeshInstance3D.new();var mesh=TorusMesh.new();mesh.inner_radius=maxf(.01,radius-.06);mesh.outer_radius=radius;mesh.rings=32;mesh.ring_segments=6;node.mesh=mesh;node.material_override=glow(color);node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;parent.add_child(node);return node
-func beam(from:Vector3,to:Vector3,heal=false):
+func beam(from:Vector3,to:Vector3,heal=false,laser=false):
 	var length=from.distance_to(to)
 	if length<.02:return
 	# Fixed geometry and a bounded pool avoid per-shot mesh uploads and tweens.
 	if tracer_mesh==null:
 		tracer_mesh=CylinderMesh.new();tracer_mesh.height=1.;tracer_mesh.top_radius=1.;tracer_mesh.bottom_radius=1.;tracer_mesh.radial_segments=6
-		tracer_materials=[glow(Color(1,.81,.40,.72)),glow(Color(.3,1,.73,.85))]
+		tracer_materials=[glow(Color(1,.81,.40,.72)),glow(Color(.3,1,.73,.85)),glow(Color(.72,.16,1.,.94))]
 	var now=Time.get_ticks_msec();var available=-1
 	for offset in range(tracers.size()):
 		var candidate=(tracer_cursor+offset)%tracers.size()
@@ -83,9 +83,9 @@ func beam(from:Vector3,to:Vector3,heal=false):
 	var item=tracers[tracer_cursor];tracer_cursor=(tracer_cursor+1)%tracers.size()
 	var node:MeshInstance3D=item.node
 	node.position=(from+to)*.5;node.quaternion=Quaternion(Vector3.UP,(to-from)/length)
-	var width=.018 if heal else .010
-	node.scale=Vector3(width,length,width);node.material_override=tracer_materials[1 if heal else 0];node.show()
-	item.until=now+(100 if heal else 48)
+	var width=.024 if laser else .018 if heal else .010
+	node.scale=Vector3(width,length,width);node.material_override=tracer_materials[2 if laser else 1 if heal else 0];node.show()
+	item.until=now+(115 if laser else 100 if heal else 48)
 func burst(kind:String,pos:Vector3,color:Color):
 	if kind in ["explosion","turret_break","cover_break"]:explosion(pos,kind!="cover_break");return
 	var node=group(pos+Vector3.UP*.15);var explosive=kind=="explosion";var radius=5.5 if explosive else 1.9 if kind=="flash" else 1.15
@@ -288,7 +288,7 @@ func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:f
 	light.tree_exited.connect(func():active_lights=maxi(0,active_lights-1))
 	var t=light.create_tween();t.tween_property(light,"light_energy",0.,seconds);t.tween_callback(light.queue_free)
 func muzzle_light(pos:Vector3):temporary_light(pos,Color("ffc77b"),1.3,3.8,.075)
-func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.):
+func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.,bomb:bool=false):
 	var node:BurstVisual
 	for candidate in explosion_pool:
 		if not candidate.active:node=candidate;break
@@ -300,7 +300,7 @@ func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.):
 		for candidate in explosion_pool:
 			if candidate.age>node.age:node=candidate
 		node.retire()
-	node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.build(fire)
+	node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.bomb=bomb;node.build(fire)
 	temporary_light(pos+Vector3.UP*.3,Color("ffc78a"),6.,10.,.20)
 func skill_burst(role:int,pos:Vector3,color:Color):
 	var node=group(pos);var radius=[2.5,12.,2.2,2.,5.,2.4][role]
@@ -380,6 +380,9 @@ func sync_rockets(rockets:Array):
 			if i>=rocket_nodes.size():rocket_nodes.append(n)
 			else:rocket_nodes[i]=n
 		var n=rocket_nodes[i];n.position=rockets[i].pos;n.look_at(n.position+rockets[i].velocity)
+		if Time.get_ticks_msec()>=int(n.get_meta("flight_sound",0)):
+			n.set_meta("flight_sound",Time.get_ticks_msec()+500)
+			get_parent().play_sound("rocket_flight",n.global_position,true)
 
 var bomb_visual:Node3D
 var bomb_beep_at=0.

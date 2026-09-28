@@ -20,11 +20,12 @@ static func build(ui) -> Callable:
 		game.options.max_players=clampi(int(game.options.max_players)/2*2,2,12 if int(game.options.mode)==4 else 32);count.clear()
 		for capacity in range(2,13 if int(game.options.mode)==4 else 33,2):count.add_item("%d명"%capacity,capacity)
 		count.select(int(game.options.max_players)/2-1);update_maps.call()
+	var rotation=ui.check("무작위 맵 순환",bool(game.options.get("map_rotation",true)),func(value):game.options.map_rotation=value)
 	count.item_selected.connect(func(i):game.options.max_players=count.get_item_id(i);game.options.bots=mini(int(game.options.bots),int(game.options.max_players)-1);update_maps.call())
-	scale.item_selected.connect(func(i):game.options.map_size=scale.get_item_id(i);game.options.map_random=true;update_maps.call())
+	scale.item_selected.connect(func(i):game.options.map_size=scale.get_item_id(i);game.options.map_random=true;game.options.map_rotation=true;rotation.set_pressed_no_signal(true);update_maps.call())
 	map.item_selected.connect(func(i):
 		game.options.map_random=i==0
+		if i==0:game.options.map_rotation=true;rotation.set_pressed_no_signal(true)
 		if i>0:game.options.map=map.get_item_id(i))
-	ui.check("무작위 맵 순환",bool(game.options.get("map_rotation",false)),func(value):game.options.map_rotation=value)
-	ui.label("정원 이상의 전장만 표시합니다. 무작위 선택 시 같은 규모의 전장이 순환합니다.\n점령·설치/해체는 양 진영을 한 번씩 진행한 뒤 전장을 바꿉니다.",14)
+	ui.label("정원 이상의 전장만 표시합니다. 순환을 끄면 처음 무작위로 선택된 전장을 반복합니다.\n점령·설치/해체는 양 진영을 한 번씩 진행한 뒤 전장을 바꿉니다.",14)
 	refresh.call();return refresh

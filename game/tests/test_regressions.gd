@@ -79,7 +79,9 @@ func run():
 	expect(a.position.is_equal_approx(pos) and a.hit_recoil>0,"hit reaction changes visuals without moving collider")
 	g.options.mode=4;g.phase="combat";p.cash=4000;p.armor=0;g.apply_loadout(1,{"role":0,"primary":"a1","armor":2})
 	expect(p.cash==4000 and p.pending_loadout.is_empty(),"defusal purchases rejected outside preparation")
-	p.owned_primary=false;g.phase="buy";g.apply_loadout(1,{"role":0,"primary":"a1","secondary":"pistol","armor":2,"gadget":-1,"confirmed":true})
+	p.owned_primary=false;g.phase="buy";g.options.map=19
+	var buy_spawn=MatchFlow.spawn_rect(g,int(p.team)).get_center();a.position=Vector3(buy_spawn.x,0.,buy_spawn.y)
+	g.apply_loadout(1,{"role":0,"primary":"a1","secondary":"pistol","armor":2,"gadget":-1,"confirmed":true})
 	expect(p.cash==1000 and p.primary=="a1" and p.armor==50,"confirmed preparation purchase charges once")
 	print("REGRESSION_RESULT ",checks-failures,"/",checks," passed")
 	await create_timer(.8).timeout

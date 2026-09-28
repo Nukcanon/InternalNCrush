@@ -14,8 +14,9 @@ func _ready():
 	viewport=SubViewport.new();viewport.size=Vector2i(440,330);viewport.transparent_bg=true;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_WHEN_VISIBLE;viewport.msaa_3d=Viewport.MSAA_2X;add_child(viewport)
 	GraphicsOptions.apply_viewport(viewport)
 	stage=Node3D.new();viewport.add_child(stage)
-	var world=WorldEnvironment.new();var env=Environment.new();env.background_mode=Environment.BG_COLOR;env.background_color=Color("263b46");env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color.WHITE;env.ambient_light_energy=.95;world.environment=env;stage.add_child(world)
-	var key=DirectionalLight3D.new();key.rotation_degrees=Vector3(-35,150,0);key.light_energy=1.3;stage.add_child(key)
+	var world=WorldEnvironment.new();var env=Environment.new();env.background_mode=Environment.BG_COLOR;env.background_color=Color("263b46");env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color.WHITE;env.ambient_light_energy=.45;world.environment=env;stage.add_child(world)
+	var key=DirectionalLight3D.new();key.rotation_degrees=Vector3(-35,150,0);key.light_energy=1.15;key.shadow_enabled=true;key.directional_shadow_max_distance=8.;key.shadow_bias=.03;stage.add_child(key)
+	viewport.positional_shadow_atlas_size=512
 	camera=Camera3D.new();stage.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.current=true
 	resized.connect(fit_frame)
 func fit_frame():
@@ -54,6 +55,11 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 
 	else:
 		gadget_model(model,role,gadget);camera.position=Vector3(1,.9,-3);camera.look_at(Vector3(0,.2,0));camera.size=1.3
+	# Preview owns lit material copies; global low/Web settings must not flatten it.
+	for mesh in model.find_children("*","MeshInstance3D",true,false):
+		var material=mesh.material_override
+		if material is ShaderMaterial:
+			mesh.material_override=material.duplicate();mesh.material_override.set_shader_parameter("dynamic_lighting",true)
 	if kind in [1,2,3]:
 		var bounds=AABB();var first=true
 		for mesh in model.find_children("*","MeshInstance3D",true,false):

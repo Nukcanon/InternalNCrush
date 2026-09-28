@@ -279,18 +279,20 @@ func try_low_step(dt:float) -> bool:
 	if not test_move(global_transform,motion,obstacle):return false
 	if obstacle.get_collider() is RigidBody3D:return false # Push small props instead.
 	if obstacle.get_normal().y>=cos(floor_max_angle):return false
-	if test_move(global_transform,Vector3.UP*STEP_HEIGHT):return false
-	var raised=global_transform;raised.origin.y+=STEP_HEIGHT
+	# Clear the tread by a small collision margin; keep the actual step limit below.
+	var clearance=STEP_HEIGHT+.01
+	if test_move(global_transform,Vector3.UP*clearance):return false
+	var raised=global_transform;raised.origin.y+=clearance
 	# A capsule touching the riser is still outside its top surface. Probe one
 	# foot radius ahead so the downward sweep finds the tread, not the corner.
 	var step_motion=motion.normalized()*maxf(motion.length(),float(shape.shape.radius)+.03)
 	if test_move(raised,step_motion):return false
 	raised.origin+=step_motion
 	var landing=KinematicCollision3D.new()
-	if not test_move(raised,Vector3.DOWN*(STEP_HEIGHT+.02),landing):return false
+	if not test_move(raised,Vector3.DOWN*(clearance+.02),landing):return false
 	if landing.get_collider() is RigidBody3D or landing.get_normal().y<cos(floor_max_angle):return false
-	var rise=STEP_HEIGHT+landing.get_travel().y
-	if rise<=.005 or rise>STEP_HEIGHT:return false
+	var rise=clearance+landing.get_travel().y
+	if rise<=.005 or rise>STEP_HEIGHT+safe_margin*2.:return false
 	global_position.y+=rise+.002
 	return true
 func update_spread(dt:float,now:float):
@@ -331,7 +333,7 @@ func headless_pose(p:Dictionary):
 	if not is_instance_valid(weapon) or weapon.spec.name!=w.name:
 		if is_instance_valid(weapon):character.socket.remove_child(weapon);weapon.free()
 		weapon=Weapon.new();character.socket.add_child(weapon);weapon.scale=Vector3.ONE*.85;weapon.build_pose(w)
-	weapon.reload_round_count=int(p.get("reload_count",3))
+	weapon.reload_tactical=bool(p.get("reload_tactical",false));weapon.reload_round_count=int(p.get("reload_count",3))
 	weapon.animate_reload(progress,0.,game.clock-float(p.get("shot_time",-100.)))
 	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
 	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.))
@@ -375,7 +377,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.))
 	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
 	if is_instance_valid(world_weapon):
-		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.reload_tactical=bool(p.get("reload_tactical",false));world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
 		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
 	if is_instance_valid(gadget_world):
 		gadget_world.visible=GadgetLoadout.held_visible(p,now) and (p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
@@ -406,7 +408,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	var reloading=p.reload>now
 	var ads=input_state.ads and p.slot<2 and not reloading and not MeleeCombat.shown(p,now)
 	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001*(1.+float(p.armor_max)/250.)));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
-	var scoped=ads and float(w.zoom)<=38 and ads_blend>.9
+	var scoped=ads and SniperScope.overlay(w) and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
 	camera.fov=lerpf(88. if sprint else 82.,SniperScope.fov(game.profile,w),ads_blend)
 	var base=Vector3(.255,-.255,-.46).lerp(Vector3(.25,-.21,-.50) if w.get("rocket",false) else Vector3(0,-.14,-.5),ads_blend)
@@ -437,8 +439,10 @@ func visual(dt:float,p:Dictionary,now:float):
 	if is_instance_valid(gadget_world):
 		var payload=gadget_world.get_node_or_null("Payload")
 		if payload:payload.visible=not throwing
-	view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.reload_round_count=int(p.get("reload_count",3))
+	view_weapon.reload_tactical=bool(p.get("reload_tactical",false));view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.reload_round_count=int(p.get("reload_count",3))
 	view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
+	var gauge=view_weapon.get_node_or_null("HeatGauge")
+	if gauge:gauge.update_heat(float(p.get("laser_heat",0)),float(p.get("laser_lock",0))>now)
 	BombHandling.view(self,p,now)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))

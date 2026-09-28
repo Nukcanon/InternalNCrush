@@ -3,6 +3,7 @@ class_name GameAudio
 var catalog={}
 var profile={}
 var streams={}
+var vocal_streams={}
 var spatial=[]
 var local=[]
 var serial=0
@@ -23,7 +24,13 @@ func _ready():
 	if AudioServer.get_bus_effect_count(0)==0:
 		var limiter=AudioEffectLimiter.new();limiter.ceiling_db=-1.;limiter.threshold_db=-2.;AudioServer.add_bus_effect(0,limiter)
 	catalog=JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio_manifest.json"))
-	for key in catalog:streams[key]=load(catalog[key].file)
+	var loaded_files={}
+	for key in catalog:
+		var file=str(catalog[key].file)
+		if not loaded_files.has(file):loaded_files[file]=load(file)
+		streams[key]=loaded_files[file]
+	for family in VocalGunfire.FAMILIES:
+		if ResourceLoader.exists(VocalGunfire.path(family)):vocal_streams[family]=load(VocalGunfire.path(family))
 	announcer=AudioStreamPlayer.new();add_child(announcer);announcer.finished.connect(_next_announcement)
 	for i in range(56):
 		var player=AudioStreamPlayer3D.new();player.max_distance=90;player.unit_size=6;player.attenuation_model=AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE;add_child(player);spatial.append(player)
@@ -53,13 +60,27 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 			if candidate.get_meta("pain",false):candidate.stop()
 	for candidate in candidates:
 		if not candidate.playing:voice=candidate;break
-	voice.stop();voice.stream=streams[key]
+	var vocal=VocalGunfire.family(key,catalog) if profile.get("gunfire_reduction",false) else ""
+	var use_vocal=vocal_streams.has(vocal)
+	if use_vocal:
+		# Long syllables must not stack on every machine-gun/beam tick.
+		# Allow two overlapping attacks per nearby emitter, then recycle the oldest.
+		var matching=[]
+		for candidate in candidates:
+			if candidate.playing and candidate.get_meta("vocal_family","")==vocal and (not world or candidate.position.distance_squared_to(where)<4.):matching.append(candidate)
+		if matching.size()>=2:
+			matching.sort_custom(func(a,b):return int(a.get_meta("vocal_serial",0))<int(b.get_meta("vocal_serial",0)))
+			voice=matching[0]
+	voice.stop();voice.stream=vocal_streams[vocal] if use_vocal else streams[key]
+	voice.set_meta("vocal_family",vocal if use_vocal else "");voice.set_meta("vocal_serial",serial)
 	voice.set_meta("pain",key in ["hurt","armor_hurt","hurt_female","armor_hurt_female"])
 	voice.set_meta("cue",key)
 	var data=catalog[key];var category=category_gain(str(data.category))
 	if category<=0:return
 	voice.volume_db=linear_to_db(category)+float(data.gain_db)+gain
+	if use_vocal:voice.volume_db=linear_to_db(category)-9.+minf(gain,0.)
 	voice.pitch_scale=1.+sin(serial*1.31)*(.025 if key.begins_with("gun_") else .065)
+	if use_vocal:voice.pitch_scale=1.
 	if world:
 		voice.position=where;voice.max_distance=audible_range(key);voice.unit_size=7. if audible_range(key)<=40. else 12.
 		voice.attenuation_model=AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE

@@ -178,7 +178,7 @@ func _process(dt):
 			if not fall_started:
 				var direction=(Vector3(event.hit_point)-Vector3(event.origin)).normalized()
 				fx.ragdoll(visual,node.global_position,direction,int(a.role),int(a.team),node.rotation.y,bool(a.crouch),a.velocity,event.hit_point)
-				fall_started=true;game.play_sound("hurt",Vector3.ZERO,false)
+				fall_started=true;game.play_sound("hurt_female" if int(a.role) in HumanModel.FEMALE_ROLES else "hurt",Vector3.ZERO,false)
 			node.hide()
 		else:visual.update_pose(dt,a.velocity if elapsed<RUNUP_SECONDS else Vector3.ZERO,a.sprint and elapsed<RUNUP_SECONDS,a.crouch,a.grounded,a.pitch,-1,0,a.gait,0)
 	var killer=int(event.attacker);var state=left.actors.get(killer,{})
@@ -195,7 +195,7 @@ func _process(dt):
 		if event.weapon in ["turret","turret_missile"]:
 			camera.position=event.origin+(event.hit_point-event.origin).normalized()*.25+Vector3.UP*.10;camera.look_at(event.hit_point);gun.hide()
 		gun.scale.x=float(state.get("hand",1));gun.rotation=Vector3(kick*.24,0,0);gun.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46+kick*.11);gun.animate_reload(-1.,kick,0. if kick>.75 else 10.)
-		if elapsed>=RUNUP_SECONDS and event.weapon not in ["knife","wrench"]:
+		if elapsed>=RUNUP_SECONDS and event.weapon not in ["knife","wrench","h6"]:
 			camera.look_at(event.hit_point);camera.fov=70.
 			if elapsed<FIRST_PERSON_SECONDS:
 				if not fatal_sound_played:fatal_sound_played=true;game.play_sound("gun_"+str(event.weapon) if Catalog.weapons.has(event.weapon) else "gun_h1",Vector3.ZERO,false)
@@ -216,6 +216,10 @@ func _process(dt):
 		var desired=focus+Basis(Vector3.UP,attacker.rotation.y)*Vector3(.45,.16,-lerpf(3.2,1.35,1.-pow(1.-t,3)))
 		var hit=game.ray(focus,desired,[],1);camera.position=hit.position+hit.normal*.15 if not hit.is_empty() else desired
 		camera.look_at(focus);camera.rotation.z=sin(t*PI)*-.035;camera.fov=lerpf(68.,55.,1.-pow(1.-t,3))
+	if event.weapon=="h6" and elapsed>=RUNUP_SECONDS and elapsed<FIRST_PERSON_SECONDS:
+		bullet.hide();bullet_trail.hide();kick=0.;title.text="킬 리플레이 · 레이저 피격"
+		fx.beam(event.origin,event.hit_point,false,true)
+		if not fatal_sound_played:fatal_sound_played=true;game.play_sound("laser_fire",Vector3.ZERO,false)
 	if event.weapon in ["knife","wrench"] and is_instance_valid(melee_view):
 		var age=elapsed-RUNUP_SECONDS+.20
 		var showing=int(state.get("slot",0))==MeleeCombat.SLOT or elapsed>=RUNUP_SECONDS-.20 or float(state.get("melee_age",100.))<MeleeCombat.DURATION

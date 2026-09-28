@@ -1,608 +1,608 @@
 {
   "original": true,
-  "tile": 128,
-  "gutter": 4,
+  "tile": 256,
+  "gutter": 8,
   "columns": 10,
   "assets": [
     {
       "id": 0,
       "name": "brick_00",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 1,
       "name": "brick_01",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 2,
       "name": "brick_02",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 3,
       "name": "brick_03",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 4,
       "name": "brick_04",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 5,
       "name": "brick_05",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 6,
       "name": "brick_06",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 7,
       "name": "brick_07",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 8,
       "name": "brick_08",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 9,
       "name": "brick_09",
       "family": "brick",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 10,
       "name": "plaster_00",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 11,
       "name": "plaster_01",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 12,
       "name": "plaster_02",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 13,
       "name": "plaster_03",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 14,
       "name": "plaster_04",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 15,
       "name": "plaster_05",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 16,
       "name": "plaster_06",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 17,
       "name": "plaster_07",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 18,
       "name": "plaster_08",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 19,
       "name": "plaster_09",
       "family": "plaster",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 20,
       "name": "concrete_00",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 21,
       "name": "concrete_01",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 22,
       "name": "concrete_02",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 23,
       "name": "concrete_03",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 24,
       "name": "concrete_04",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 25,
       "name": "concrete_05",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 26,
       "name": "concrete_06",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 27,
       "name": "concrete_07",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 28,
       "name": "concrete_08",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 29,
       "name": "concrete_09",
       "family": "concrete",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 30,
       "name": "stone_00",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 31,
       "name": "stone_01",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 32,
       "name": "stone_02",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 33,
       "name": "stone_03",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 34,
       "name": "stone_04",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 35,
       "name": "stone_05",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 36,
       "name": "stone_06",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 37,
       "name": "stone_07",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 38,
       "name": "stone_08",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 39,
       "name": "stone_09",
       "family": "stone",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 40,
       "name": "wood_00",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 41,
       "name": "wood_01",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 42,
       "name": "wood_02",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 43,
       "name": "wood_03",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 44,
       "name": "wood_04",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 45,
       "name": "wood_05",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 46,
       "name": "wood_06",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 47,
       "name": "wood_07",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 48,
       "name": "wood_08",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 49,
       "name": "wood_09",
       "family": "wood",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 50,
       "name": "metal_00",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 51,
       "name": "metal_01",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 52,
       "name": "metal_02",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 53,
       "name": "metal_03",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 54,
       "name": "metal_04",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 55,
       "name": "metal_05",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 56,
       "name": "metal_06",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 57,
       "name": "metal_07",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 58,
       "name": "metal_08",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 59,
       "name": "metal_09",
       "family": "metal",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 60,
       "name": "roof_tiles_00",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 61,
       "name": "roof_tiles_01",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 62,
       "name": "roof_tiles_02",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 63,
       "name": "roof_tiles_03",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 64,
       "name": "roof_tiles_04",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 65,
       "name": "roof_tiles_05",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 66,
       "name": "roof_tiles_06",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 67,
       "name": "roof_tiles_07",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 68,
       "name": "roof_tiles_08",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 69,
       "name": "roof_tiles_09",
       "family": "roof_tiles",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 70,
       "name": "roof_seams_00",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 71,
       "name": "roof_seams_01",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 72,
       "name": "roof_seams_02",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 73,
       "name": "roof_seams_03",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 74,
       "name": "roof_seams_04",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 75,
       "name": "roof_seams_05",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 76,
       "name": "roof_seams_06",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 77,
       "name": "roof_seams_07",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 78,
       "name": "roof_seams_08",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 79,
       "name": "roof_seams_09",
       "family": "roof_seams",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 80,
       "name": "pavers_00",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 81,
       "name": "pavers_01",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 82,
       "name": "pavers_02",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 83,
       "name": "pavers_03",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 84,
       "name": "pavers_04",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 85,
       "name": "pavers_05",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 86,
       "name": "pavers_06",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 87,
       "name": "pavers_07",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 88,
       "name": "pavers_08",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 89,
       "name": "pavers_09",
       "family": "pavers",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 90,
       "name": "ceramic_00",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 91,
       "name": "ceramic_01",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 92,
       "name": "ceramic_02",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 93,
       "name": "ceramic_03",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 94,
       "name": "ceramic_04",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 95,
       "name": "ceramic_05",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 96,
       "name": "ceramic_06",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 97,
       "name": "ceramic_07",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 98,
       "name": "ceramic_08",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     },
     {
       "id": 99,
       "name": "ceramic_09",
       "family": "ceramic",
-      "pixels": 128
+      "pixels": 256
     }
   ]
 }

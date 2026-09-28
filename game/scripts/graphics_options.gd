@@ -97,6 +97,8 @@ static func apply_world(root:Node,automatic:bool=false):
 	# only registered quality targets, not every node/mesh in the entire match.
 	if not automatic:
 		for mesh in root.find_children("*","MeshInstance3D",true,false):
+			if mesh.material_override is ShaderMaterial and "district_surface" in mesh.material_override.shader.code:
+				mesh.material_override.shader=WorldSurface.material("wall",0).shader
 			if mesh.has_meta("district_detail") or (mesh.material_override is ShaderMaterial and "district_surface" in mesh.material_override.shader.code):mesh.add_to_group("quality_mesh")
 		for light in root.find_children("*","Light3D",true,false):light.add_to_group("quality_light")
 		for world in root.find_children("*","WorldEnvironment",true,false):world.add_to_group("quality_environment")

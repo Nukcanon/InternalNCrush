@@ -152,6 +152,7 @@ write('wrench_wall',mix(.24,(body,.92,0),(thud,.95,0),(lowpass(sample('impactMet
 write('wrench_flesh',mix(.25,(body,.92,0),(thud,1.,0),(cloth,.22,.006)),gain=1)
 write('knife_flesh',mix(.20,(lowpass(body,600),.55,0),(sample('impactSoft_medium_000',.72,.19),1.,0),(cloth,.42,.009)),gain=2)
 write('wrench_repair',mix(.40,(highpass(sample('impactPlate_light_1',1.15,.38),500),.92,0),(highpass(sample('impactMetal_heavy_000',1.2,.24),850),.35,.004)),gain=-1)
+exec((root/'tools/combat_audio_refresh.py').read_text(encoding='utf-8'))
 (root/'assets/audio_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print('AUDIO_BUILT',len(manifest),'sample-based clips;',sum(k.startswith('gun_') for k in manifest),'distinct weapon mixes')
 

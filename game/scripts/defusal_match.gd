@@ -1,5 +1,7 @@
 extends RefCounted
 class_name DefusalMatch
+static func decided(g:Node) -> bool:
+	return maxi(int(g.scores[0]),int(g.scores[1]))>=int(g.options.rounds)/2+1 or (g.round_no>=int(g.options.rounds) and g.scores[0]!=g.scores[1])
 static func begin(g:Node):
 	RoundCleanup.clear(g)
 	if g.server and is_instance_valid(g.arena):g.arena.reset_props()
@@ -9,11 +11,12 @@ static func begin(g:Node):
 	if g.round_no>int(g.options.rounds):g.overtime_attacker=randi()%2
 	if halftime:g.losses=[0,0]
 	for id in g.players:
-		var p=g.players[id];p.round_bonus=0;p.lives=int(g.options.lives);p.can_respawn=p.lives>0
-		if g.round_no==1 or halftime:reset_player(g,p)
+		var p=g.players[id];p.round_bonus=0;p.can_respawn=int(p.lives)>0
+		if g.round_no==1:reset_player(g,p)
+		elif halftime:p.cash=int(g.options.starting_cash)
 		g.spawn(id)
 	BombLogic.assign(g);MatchFlow.update_gate(g)
-	g.announce("준비 시간 · 장비 구매"+(" · 공수 변경: 금액과 장비 초기화" if halftime else ""))
+	g.announce("준비 시간 · 장비 구매"+(" · 공수 변경: 금액 초기화 / 생존 장비 유지" if halftime else ""))
 	g.call_deferred("open_buy_menu")
 static func reset_player(g:Node,p:Dictionary):
 	DefusalEconomy.reset(p,int(g.options.starting_cash));g.equip_ammo(p)
@@ -28,7 +31,7 @@ static func finish(g:Node,winner:int,reason:String):
 	g.scores[winner]+=1;g.losses[winner]=maxi(0,g.losses[winner]-1);g.losses[1-winner]+=1
 	for p in g.players.values():p.cash=mini(8000,p.cash+(3500 if p.team==winner else Rules.loss_reward(g.losses[p.team])))
 	g.completed_games+=1;g.winner_voice.rpc(winner)
-	if g.round_no>=int(g.options.rounds) and g.scores[0]!=g.scores[1]:
+	if decided(g):
 		var champion=0 if g.scores[0]>g.scores[1] else 1
 		g.phase="result";g.remaining=12.;g.result={"team":champion,"player":0};g.announce(("BLUE" if champion==0 else "ORANGE")+" 최종 승리")
 		if champion!=winner:g.get_tree().create_timer(2.).timeout.connect(func():

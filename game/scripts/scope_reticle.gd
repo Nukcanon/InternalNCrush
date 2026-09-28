@@ -4,6 +4,11 @@ class_name ScopeReticle
 static func style(weapon:Dictionary) -> int:
 	return {"SCOUT":0,"MONOLITH":1,"ECHO":2,"LARK":3,"KESTREL":4}.get(str(weapon.get("name","")),0)
 static func draw_on(canvas:Control,center:Vector2,radius:float,weapon:Dictionary):
+	if weapon.get("laser",false):
+		canvas.draw_arc(center,radius*.04,0,TAU,48,Color("985bd1"),1.5,true)
+		canvas.draw_circle(center,2.,Color("bc81f5"),true,-1.,true)
+		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP]:canvas.draw_line(center+direction*radius*.07,center+direction*radius*.28,Color("27353c"),1.5,true)
+		return
 	var design=style(weapon);var ink=Color(.025,.045,.055,.92);var red=Color(.8,.13,.09,.86)
 	var unit=radius/10.;var thin=clampf(radius/330.,1.,1.6)
 	for d in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:

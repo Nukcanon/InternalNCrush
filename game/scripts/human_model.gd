@@ -1,8 +1,8 @@
 extends RefCounted
 class_name HumanModel
 const M=preload("res://scripts/mesh_factory.gd")
-const HEIGHTS=[1.80,1.72,1.88,1.76,1.83,1.70]
-const WIDTHS=[1.0,.95,1.08,1.01,.98,.95]
+const HEIGHTS=[1.80,1.64,1.88,1.76,1.83,1.62]
+const WIDTHS=[1.0,.88,1.08,1.01,.98,.88]
 const FEMALE_ROLES=[1,5]
 const IDENTITIES=["MASON", "SERA", "BRIGGS", "REED", "VALE", "MINA"]
 const SKIN_COLORS=[Color("b3a28c"),Color("cbbcaf"),Color("89765f"),Color("b9a48a"),Color("9b866e"),Color("c7b6a8")]

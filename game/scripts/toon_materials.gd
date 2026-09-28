@@ -7,6 +7,8 @@ static var vertex:ShaderMaterial
 static var human:ShaderMaterial
 static var colors={}
 static var dynamic_lighting=false
+static func clear_cache():
+	colors.clear();vertex=null;human=null;shader=null
 static func configure(on:bool):
 	if dynamic_lighting==on:return
 	dynamic_lighting=on

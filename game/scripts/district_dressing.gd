@@ -38,11 +38,16 @@ static func build(a:Node,plan:Dictionary):
 		if index in [3,14,20,29]:variant=20+variant%15
 		for x in [-1.65,1.65]:
 			var before=n.get_child_count()
-			ImportedWorldProp.build(n,"window_%02d"%variant,Vector3(1.9,1.8,.48),"windows_web" if web else "windows_original")
+			# Fit the opening in width/height without shrinking a whole window just
+			# because its authored sun hood projects farther than a plain frame.
+			ImportedWorldProp.build(n,"window_%02d"%variant,Vector3(1.9,1.8,.55),"windows_web" if web else "windows_original")
 			var meshes=n.get_children().slice(before);var bounds=AABB();var first=true
 			for mesh in meshes:
 				var box=mesh.transform*mesh.get_aabb();bounds=box if first else bounds.merge(box);first=false
-			for mesh in meshes:mesh.position+=Vector3(x,.87,-bounds.position.z+.025)
+			# Some thin variants have their glazing at the backmost depth. Embedding
+			# the whole model hides those panes inside the wall; seat the back face
+			# 2 mm forward instead, without the old visible floating gap.
+			for mesh in meshes:mesh.position+=Vector3(x,.87,-bounds.position.z+.002)
 		facade_details(n,i,market,web,index)
 		if i%2==0:
 			var local=Vector3(0,2.26,.60) if market else Vector3(0,2.32,.50)

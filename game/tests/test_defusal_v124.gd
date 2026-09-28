@@ -20,6 +20,7 @@ func run():
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(80,80);g.arena.has_water=false;g.arena.sites=[Vector3(10,0,10),Vector3(-10,0,-10)]
 	g.add_player(1,"Carrier","one");g.add_player(2,"Defender","two");g.players[1].team=0;g.players[2].team=1;g.clock=100.;g.start_match()
 	var p=g.players[1];var q=g.players[2];p.cash=8000;p.protect=0.;q.protect=0.
+	var staging=MatchFlow.spawn_rect(g,int(p.team)).get_center();g.actors[1].position=Vector3(staging.x,0,staging.y)
 	expect(DefusalEconomy.can_buy(g,1),"preparation permits purchases separately")
 	for i in range(20):
 		BombLogic.assign(g);expect(g.bomb.carrier==1,"only an attacking living player can receive bomb")
@@ -27,7 +28,7 @@ func run():
 	expect(g.ui.gear_cash.text=="8000" and g.ui.gear_cash.get_theme_color("font_color")==Color("ffda73"),"large yellow balance in store")
 	expect(g.ui.gear_cash.get_parent().get_parent() is PanelContainer and g.ui.gear_price.get_parent().get_parent() is PanelContainer,"separate rectangular balance and cost boxes")
 	expect(g.ui.gear_cash.get_theme_font_size("font_size")==32 and g.ui.gear_price.get_theme_font_size("font_size")==32,"large matching price typography")
-	g.ui.exit_gear();g.phase="combat";g.bomb.buy_until=g.clock+60.;g.actors[1].position=Vector3.ZERO
+	g.ui.exit_gear();g.phase="combat";g.bomb.buy_until=g.clock+60.;g.actors[1].position=Vector3(staging.x,0,staging.y)
 	var chosen={"role":0,"primary":"a1","secondary":"pistol","armor":0,"gadget":8,"confirmed":true}
 	var cost=DefusalEconomy.cost(p,chosen);g.apply_loadout(1,chosen)
 	expect(p.primary=="a1" and p.cash==8000-cost and p.pending_loadout.is_empty(),"combat-window purchase is charged and immediately equipped")
@@ -50,7 +51,7 @@ func run():
 	g.phase="combat";g.bomb.defused=false;g.bomb.actor=0;g.bomb.progress=0.;q.owned_gadget=true
 	expect(BombLogic.defuse_seconds(q)==5. and BombLogic.hint(g,2).contains("5초"),"owned kit matches five-second HUD")
 	g.interact(2,4.9);expect(not g.bomb.defused,"kit also requires full timer");g.interact(2,.11);expect(g.bomb.defused,"kit completes at five seconds")
-	g.phase="combat";g.bomb.planted=false;g.bomb.defused=false;g.bomb.carrier=1;g.actors[1].position=Vector3.ZERO
+	g.phase="combat";g.bomb.planted=false;g.bomb.defused=false;g.bomb.carrier=1;g.actors[1].position=Vector3(staging.x,0,staging.y)
 	BombLogic.tap(g,1);g.clock+=.2;BombLogic.tap(g,1);expect(g.bomb.dropped and g.bomb.carrier==0,"rapid double E drops outside site")
 	g.ui.show_hud();g.bomb.carrier=2;g.actors[2].aim_yaw=.65;g.combat_fx.sync_bomb(g)
 	var normal=g.combat_fx.bomb_visual.basis.y.normalized();var back=Basis(Vector3.UP,.65)*Vector3.BACK

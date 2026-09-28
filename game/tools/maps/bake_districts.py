@@ -395,11 +395,14 @@ for plan in plans:
                 length=math.dist(a,b)
                 if length<7:continue
                 x,z=(a[0]+b[0])/2,(a[1]+b[1])/2
+                # Seaward quay edges are knee-high, not building facades.
+                if sea and ring==list(poly.exterior.coords) and x>w*.76:continue
+                if not water.is_empty and water.boundary.distance(Point(x,z))<.01:continue
                 dx,dz=(b[0]-a[0])/length,(b[1]-a[1])/length
                 nx,nz=-dz,dx
                 if not floor.contains(Point(x+nx*.3,z+nz*.3)):nx,nz=-nx,-nz
                 # Front detail is clipped to the wall, never across an entrance.
-                facades.append([*centered((x+nx*.04,z+nz*.04)),math.atan2(nx,nz),min(6,length-1)])
+                facades.append([*centered((x,z)),math.atan2(nx,nz),min(6,length-1)])
     # A new descending entrance may cut through a former ground objective.
     # Move that objective onto nearby clear ground, never leave it in a hole.
     def safe_target(point):
@@ -465,12 +468,19 @@ for plan in plans:
     for room in polygons(room_ceilings):
         anchor=room.representative_point()
         ceiling_lights.append([anchor.x-ox,terrain_y(anchor.x,anchor.y)+wall_height,anchor.y-oz])
+    supported_facades=[]
+    for f in facades:
+        heights=[terrain_y(f[0]+ox+math.cos(f[2])*x,f[1]+oz-math.sin(f[2])*x) for x in [-2.7,-1.35,0.,1.35,2.7]]
+        # Keep both glazing and trim above the uphill pavement and below the wall top.
+        if max(heights)-min(heights)>.60:continue
+        supported_facades.append(f+[min(heights)])
     data={'index':plan['id']-1,'name':plan['name'],'dimensions':[w,h],'room_ceiling_lights':ceiling_lights,
           'rectangle':plan['rectangle'],'removed_sliver_islands':removed_slivers,'surfaces':surfaces,'groups':[{'kind':key[2],'origin':[key[0]*24+12,0,key[1]*24+12],'vertices':v} for key,v in groups.items()],
           'border':[[centered(p) for p in ring] for ring in rings(max(polygons(border),key=lambda p:p.area))],
           'spawns':[centered(p) for p in plan['spawns']], 'targets':[centered(p) for p in targets],
           'goals':goals,'corridor_m':plan['corridor_m'],'capacity':plan['capacity'],
-          'props':[prop_anchor(p) for p in props], 'trees':[[*centered(p),terrain_y(*p)] for p in trees], 'ceiling_height':wall_height if indoor else 0., 'loose_props':[[*centered(p),terrain_y(*p)] for p in loose], 'facades':[f+[terrain_y(f[0]+ox,f[1]+oz)] for f in facades],'supports':supports,
+          # Keep the whole window below a sloped wall's lowest top edge.
+          'props':[prop_anchor(p) for p in props], 'trees':[[*centered(p),terrain_y(*p)] for p in trees], 'ceiling_height':wall_height if indoor else 0., 'loose_props':[[*centered(p),terrain_y(*p)] for p in loose], 'facades':supported_facades,'supports':supports,
           'terrain':terrain,'elevated_crossing':plan.get('elevated_crossing',False),
           'spawn_heights':[terrain_y(*p) for p in plan['spawns']], 'target_heights':[terrain_y(*p) for p in targets],
           'water':[[centered(p) for p in ring] for ring in rings(water)] if not water.is_empty else [],

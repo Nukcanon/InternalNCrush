@@ -5,7 +5,7 @@ import numpy as np, json
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'assets/textures/district';OUT.mkdir(parents=True,exist_ok=True)
 SOURCE=ROOT.parent/'art_source/district_textures';SOURCE.mkdir(parents=True,exist_ok=True)
-N=128;G=4;CELL=N+2*G;atlas=Image.new('RGB',(CELL*10,CELL*10));rows=[]
+N=256;G=8;CELL=N+2*G;atlas=Image.new('RGB',(CELL*10,CELL*10));rows=[]
 normal_atlas=Image.new('RGB',atlas.size)
 y,x=np.mgrid[0:N,0:N];u=x/N;v=y/N
 families=['brick','plaster','concrete','stone','wood','metal','roof_tiles','roof_seams','pavers','ceramic']
@@ -14,25 +14,38 @@ for family in range(10):
  for variant in range(10):
   idx=family*10+variant;rng=np.random.default_rng(128000+idx)
   grain=rng.normal(0,1.5,(N,N));pat=np.zeros((N,N));base=np.array(palettes[family],float)
-  base=base*np.array([.87+(variant%3)*.10,.91+(variant//3%3)*.075,.90+(variant%4)*.06])
+  base=base*np.array([.97,1.,.99])
   if family in [0,3,6,8,9]:
-   nx=2+variant%4;ny=3+variant//3;row=np.floor(v*ny);a=(u*nx+(row%2)*(.5 if family!=9 else 0))%1;b=(v*ny)%1
+   nx=4;ny=4;row=np.floor(v*ny);a=(u*nx+(row%2)*(.5 if family!=9 else 0))%1;b=(v*ny)%1
    mortar=(a<.035)|(b<.055);bevel=(a<.085)|(b<.12)
    pat=np.where(mortar,-34,np.where(bevel,7,0))+4*np.sin(row*7+np.floor(u*nx+row%2*.5)*3)
    if family==3:pat+=3*np.sin(u*31+v*17)
    if family==6:pat+=12*np.cos(a*np.pi*2)
-   if family==8 and variant%2:pat+=np.where((x+y)%(16+variant)<2,-9,0)
   elif family==4:
-   a=(u*(3+variant%4))%1;pat=np.where(a<.04,-27,0)+5*np.sin(u*(16+variant*2)*np.pi*2+np.sin(v*np.pi*4))
+   a=(u*4)%1;pat=np.where(a<.04,-27,0)+5*np.sin(u*20*np.pi*2+np.sin(v*np.pi*4))
    pat+=3*np.sin(u*np.pi*80+np.sin(v*np.pi*2)*2)
   elif family in [5,7]:
-   a=(u*(3+variant%4))%1;pat=8*np.cos(a*np.pi*2)+np.where(a<.07,-20,0)
+   a=(u*4)%1;pat=8*np.cos(a*np.pi*2)+np.where(a<.07,-20,0)
    rivet=(((u*4)%1-.5)**2+((v*4)%1-.5)**2)<.012;pat+=rivet*13
   elif family==1:
    pat=3*np.sin(u*np.pi*8)*np.cos(v*np.pi*6)+grain*.6
   else:
-   pat=3*np.sin(u*np.pi*6)*np.cos(v*np.pi*10);pat+=np.where((x%(32+variant*0))<1,-6,0) if variant>4 else 0
-  rgb=np.clip(base+pat[...,None]+grain[...,None],0,255).astype('uint8');im=Image.fromarray(rgb)
+   pat=3*np.sin(u*np.pi*6)*np.cos(v*np.pi*10)
+  # Same relief grid / border across each family; only interior wear varies.
+  blend=np.clip(np.minimum.reduce([u,v,1-u,1-v])*14,0,1)
+  coarse=np.sin(u*np.pi*6+variant*.7)*np.cos(v*np.pi*4-variant*.4)
+  unit=np.zeros_like(pat)
+  if family in [0,3,6,8,9]:
+   row=np.floor(v*4);col=np.floor(u*4+(row%2)*(.5 if family!=9 else 0))
+   unit=np.sin(col*19.7+row*41.1+variant*17.3)*12
+  scratches=np.maximum(0, np.sin(u*251+v*37+variant)-.985)*-280
+  age=(coarse+1)*.5*blend
+  wear=unit*blend+scratches*blend+coarse*4*blend
+  rgb=base+pat[...,None]+(grain*blend+wear)[...,None]
+  if family in [0,3,6,8]:
+   moss=np.clip((coarse-.55)*.15,0,.06)*blend
+   rgb=rgb*(1-moss[...,None])+np.array([81,101,54])*moss[...,None]
+  rgb=np.clip(rgb,0,255).astype('uint8');im=Image.fromarray(rgb)
   name=f'{families[family]}_{variant:02d}';im.save(SOURCE/(name+'.png'))
   padded=np.pad(rgb,((G,G),(G,G),(0,0)),mode='wrap');atlas.paste(Image.fromarray(padded),((idx%10)*CELL,(idx//10)*CELL))
   # Derive normals from authored relief, never colour or random colour grain.

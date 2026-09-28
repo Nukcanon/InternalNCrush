@@ -40,7 +40,7 @@
 		},
 		{
 			"gender": "female",
-			"height_cm": 172,
+			"height_cm": 164,
 			"identity": "SERA",
 			"name": "Pathfinder",
 			"role": "정찰",
@@ -49,7 +49,7 @@
 		},
 		{
 			"gender": "female",
-			"height_cm": 172,
+			"height_cm": 164,
 			"identity": "SERA",
 			"name": "Pathfinder",
 			"role": "정찰",
@@ -112,7 +112,7 @@
 		},
 		{
 			"gender": "female",
-			"height_cm": 170,
+			"height_cm": 162,
 			"identity": "MINA",
 			"name": "Lifeline",
 			"role": "메딕",
@@ -121,7 +121,7 @@
 		},
 		{
 			"gender": "female",
-			"height_cm": 170,
+			"height_cm": 162,
 			"identity": "MINA",
 			"name": "Lifeline",
 			"role": "메딕",
@@ -254,6 +254,14 @@
 		{
 			"id": "dual_pistols",
 			"name": "DUET"
+		},
+		{
+			"id": "h5",
+			"name": "QUAD"
+		},
+		{
+			"id": "h6",
+			"name": "ARC"
 		}
 	]
 }

@@ -22,7 +22,7 @@ func run():
 		expect(same,"female torso and shoulders retain male source below the tailored neckline")
 		expect(female.weights.slice(0,original_count)==male.weights.slice(0,original_count),"female original skin vertices use common male joint weights; seam vertices interpolate them")
 		var rig=HumanModel.pose_rig(role);root.add_child(rig)
-		expect(is_equal_approx(rig.scale.x,.95) and is_equal_approx(rig.scale.z,1.),"female only lateral width five percent slimmer")
+		expect(is_equal_approx(rig.scale.x,.88) and is_equal_approx(rig.scale.z,1.),"female body width reduced while depth retained")
 		expect(is_equal_approx(rig.get_node("Hips/Chest/LeftArm").position.y,.105),"shared shoulder animation baseline")
 		rig.free()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.options.bots=0;g.host_game();g.start_match();g.set_physics_process(false)
@@ -34,7 +34,7 @@ func run():
 	p.invulnerable=0.;p.protect=g.clock+4.;g.actors[1].visual(.016,p,g.clock);expect(g.actors[1].protected_visual.visible,"respawn uses same shell")
 	p.protect=0.;g.actors[1].visual(.016,p,g.clock);expect(not g.actors[1].protected_visual.visible,"expired protection shell removed")
 	expect(not g.has_node("Web3D") and not root.disable_3d,"native rendering remains enabled")
-	expect(MarkerTracker.DWELL_SECONDS==2.,"mark takes two seconds")
+	expect(MarkerTracker.DWELL_SECONDS==1.5,"mark takes 1.5 seconds")
 	g.free();await process_frame
 	var arena=Node3D.new();root.add_child(arena);var props={}
 	for i in range(6):

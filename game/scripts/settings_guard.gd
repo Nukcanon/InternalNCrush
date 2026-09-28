@@ -24,4 +24,4 @@ static func confirm_exit(ui:Node,read_display:Callable,leave:Callable):
 		if OS.has_feature("web"):WebGraphics.apply_settings(ui.game)
 		ui.game.save_profile();dialog.queue_free();leave.call())
 	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered(Vector2i(720,180))
+	DialogStyle.apply(dialog,ui.theme);dialog.popup_centered(Vector2i(720,180))

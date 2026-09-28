@@ -7,6 +7,7 @@ static var debris_shapes={}
 var puffs:Array=[]
 var age=0.
 var blast_scale=1.
+var bomb=false
 var pooled=false
 var active=false
 var debris:Array=[]
@@ -33,7 +34,7 @@ func build(fire:bool):
 		if flame:mat.emission_enabled=true;mat.emission=Color(1.,.30,.035);mat.emission_energy_multiplier=1.6;mat.emission_texture=texture
 		mesh.material_override=mat
 		var direction=Vector3(cos(angle),rng.randf_range(.4,1.4),sin(angle)).normalized()
-		var puff={"node":mesh,"material":mat,"delay":float(i%6)*.012,"life":.44 if flame else 1.2 if dust else 2.8,"velocity":direction*(2.3 if dust else 1.05),"size":rng.randf_range(1.8,2.9) if not dust else 2.3,"alpha":mat.albedo_color.a,"flame":flame,"dust":dust}
+		var puff={"node":mesh,"material":mat,"delay":float(i%6)*.012,"life":(.85 if flame else 2.4 if dust else 7.) if bomb else (.44 if flame else 1.2 if dust else 2.8),"velocity":direction*(2.3 if dust else 1.05),"size":rng.randf_range(1.8,2.9) if not dust else 2.3,"alpha":mat.albedo_color.a,"flame":flame,"dust":dust}
 		if i<puffs.size():puffs[i]=puff
 		else:puffs.append(puff)
 	# Fire/smoke puffs above remain identical at every quality; only tiny debris scales.
@@ -56,6 +57,6 @@ func _process(dt:float):
 		puff.node.scale=Vector3.ONE*(.35+expansion*puff.size)*blast_scale
 		puff.material.albedo_color.a=puff.alpha*(1.-smoothstep(.12 if puff.flame else .35,1.,t))*smoothstep(0.,.07,t)
 		if puff.flame:puff.material.emission_energy_multiplier=1.6*(1.-t)
-	if age>3.:
+	if age>(7.2 if bomb else 3.):
 		if pooled:retire()
 		else:queue_free()

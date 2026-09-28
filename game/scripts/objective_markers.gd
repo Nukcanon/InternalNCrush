@@ -13,7 +13,7 @@ func setup(g:Node):
 		var origin:Vector3=points[i]
 		var label=game.arena.text3d((["A","C","B"][i] if int(game.options.mode)==3 else ["A","B"][i])+"\n▼",origin+Vector3.UP*4.5,Color("f5dfa1"),80,self)
 		label.visibility_range_end=180.;label.pixel_size=.009;label.outline_size=12
-		var mesh=ImmediateMesh.new();var ring=MeshInstance3D.new();ring.mesh=mesh;add_child(ring)
+		var mesh=ImmediateMesh.new();var ring=MeshInstance3D.new();ring.mesh=mesh;ring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(ring)
 		var material=StandardMaterial3D.new();material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;material.cull_mode=BaseMaterial3D.CULL_DISABLED;ring.material_override=material
 		entries.append({"origin":origin,"label":label,"mesh":mesh,"material":material,"index":i})
 		if int(game.options.mode)==3:
@@ -33,6 +33,9 @@ func _remove_decorative_labels(node:Node):
 			if child.text not in ["AMMO","HEALTH"] and not child.text.ends_with(" m"):child.visible=false
 		else:_remove_decorative_labels(child)
 func place_markers():
+	# Newly added collision bodies must reach the physics server before ray tests.
+	await get_tree().physics_frame
+	await get_tree().process_frame
 	if not is_inside_tree() or is_queued_for_deletion() or not is_instance_valid(game.arena):return
 	var space=get_world_3d().direct_space_state
 	for entry in entries:
@@ -46,16 +49,23 @@ func place_markers():
 			entry.badge.position=entry.label.position
 			entry.badge.mesh.size=Vector2(1.,1.5) if height<2.5 else Vector2(1.5,2.25)
 		var radius=7. if int(game.options.mode)==3 else 5.
-		var mesh:ImmediateMesh=entry.mesh;mesh.clear_surfaces();mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+		var mesh:ImmediateMesh=entry.mesh;mesh.clear_surfaces()
+		var ring_vertices=PackedVector3Array()
 		for j in range(96):
 			var vertices=[]
 			for pair in [[j,radius-.10],[j,radius+.10],[j+1,radius+.10],[j+1,radius-.10]]:
 				var angle=float(pair[0])*TAU/96.;var p=origin+Vector3(cos(angle)*pair[1],0,sin(angle)*pair[1])
-				var floor_hit=space.intersect_ray(PhysicsRayQueryParameters3D.create(p+Vector3.UP*.5,p-Vector3.UP*1.,1))
-				p.y=float(floor_hit.position.y)+.045 if not floor_hit.is_empty() else origin.y+.045
-				vertices.append(p)
-			for k in [0,1,2,0,2,3]:mesh.surface_add_vertex(vertices[k])
-		mesh.surface_end()
+				vertices.append(floor_vertex(p,space))
+			if not vertices.all(func(p):return p.is_finite()):continue
+			var low=float(vertices[0].y);var high=low
+			for p in vertices:low=minf(low,p.y);high=maxf(high,p.y)
+			# Never stretch a quad across a wall, void, or different floor level.
+			if high-low>.25:continue
+			for k in [0,1,2,0,2,3]:ring_vertices.append(vertices[k])
+		if not ring_vertices.is_empty():
+			mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+			for vertex in ring_vertices:mesh.surface_add_vertex(vertex)
+			mesh.surface_end()
 		if entry.has("overlay"):build_floor_overlay(entry,space)
 func floor_vertex(point:Vector3,space:PhysicsDirectSpaceState3D) -> Vector3:
 	var levels=game.arena.navigation_heights(point);var best=INF;var floor_y=INF

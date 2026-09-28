@@ -3,7 +3,7 @@ class_name DefusalEconomy
 static func purchase_seconds(g:Node) -> float:
 	return maxf(0.,float(g.bomb.get("buy_until",0.))-g.clock) if g.phase=="combat" else maxf(0.,g.remaining) if g.phase=="buy" else 0.
 static func can_buy(g:Node,id:int) -> bool:
-	return int(g.options.mode)==4 and g.players.has(id) and g.players[id].alive and purchase_seconds(g)>0. and not BombLogic.busy(g,id)
+	return int(g.options.mode)==4 and g.players.has(id) and g.players[id].alive and purchase_seconds(g)>0. and MatchFlow.protected_spawn(g,id) and not BombLogic.busy(g,id)
 static func reset(p:Dictionary,cash:int=-1):
 	p.primary="";p.secondary="pistol";p.slot=1;p.owned_primary=false;p.owned_secondary=false;p.owned_gadget=false
 	p.armor_max=0;p.armor=0.;p.gadget=-1;p.gadget_count=0;p.smoke=0;p.flash_count=0

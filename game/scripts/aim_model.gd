@@ -1,6 +1,7 @@
 extends RefCounted
 class_name AimModel
 static func spread(w:Dictionary,speed:float,ads:bool,crouch:bool,sprint:bool,grounded:bool,bloom:float,mounted=false,vertical_speed=0.,aim_fraction:float=-1.) -> float:
+	if w.get("laser",false):return 0.
 	if w.kind!="gun":return .1
 	var movement=maxf(0.,speed)/Rules.WALK_SPEED
 	var aiming=clampf(aim_fraction,0.,1.) if aim_fraction>=0 else (1. if ads else 0.)
@@ -20,6 +21,7 @@ static func cone_direction(forward:Vector3,angle_degrees:float,u:float,v:float) 
 static func pixel_radius(angle_degrees:float,fov:float,height:float) -> float:return tan(deg_to_rad(angle_degrees))*height*.5/tan(deg_to_rad(fov*.5))
 
 static func spray_offset(w:Dictionary,index:int) -> Vector2:
+	if w.get("laser",false):return Vector2.ZERO
 	if w.kind!="gun" or int(w.pellets)>1:return Vector2.ZERO
 	var scale=float(w.get("pattern_scale",1.5))
 	var time=float(index)*float(w.interval)

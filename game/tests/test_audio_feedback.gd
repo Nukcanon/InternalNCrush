@@ -7,8 +7,9 @@ func expect(ok:bool,message:String):
 	checks+=1
 	if not ok:failures+=1;printerr("FAIL ",message)
 func run():
-	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel()
+	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false)
 	await process_frame;await process_frame
+	g.ui.clear_panel()
 	g.server=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(100,100);g.arena.has_water=false
 	g.arena.box(Vector3(0,-.5,0),Vector3(200,1,200),Color.GRAY)
@@ -77,7 +78,11 @@ func run():
 	for i in range(100):g.clock+=1./60.;g.players[1].input_time=g.clock;g.server_tick(1./60.);await physics_frame
 	expect(not heard.any(func(k):return k.begins_with("step_")),"crouch walking remains silent")
 	AudioServer.remove_bus_effect(0,AudioServer.get_bus_effect_count(0)-1)
-	g.leave_game();g.queue_free();await process_frame
+	g.leave_game()
+	for i in range(4):await process_frame
+	g.queue_free();await process_frame
+	CharacterVisual.templates.clear();OperatorSkin.templates.clear();WeaponVisual.web_templates.clear()
+	SurfaceFinish.clear_cache();ToonMaterials.clear_cache()
 	# Allow deferred audio/render deletion to drain before shutting down the driver.
 	await create_timer(.5).timeout
 	print("AUDIO_FEEDBACK_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

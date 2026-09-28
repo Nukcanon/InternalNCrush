@@ -38,7 +38,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 		"gadget_mode":return false
 		"reload":
 			var wid=p.primary if p.slot==0 else p.secondary
-			return combat and p.slot<2 and w.kind=="gun" and p.reload<=0 and int(p.mag.get(wid,0))<int(w.mag) and (game.options.infinite or int(p.reserve.get(wid,0))>0)
+			return combat and p.slot<2 and w.kind=="gun" and p.reload<=0 and int(p.mag.get(wid,0))<MagazineReload.capacity(w,int(p.mag.get(wid,0))) and (game.options.infinite or int(p.reserve.get(wid,0))>0)
 		"fire":
 			if not combat:return false
 			if p.get("placing","")!="":return Deployment.candidate(game,id,p.placing).valid
@@ -46,7 +46,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 			if p.slot==MeleeCombat.SLOT:return MeleeCombat.ready(game,p)
 			if MeleeCombat.active(p,now):return false
 			if p.slot>=2:return available(game,id,"gadget")
-			return p.reload<=0 and p.get("cooking",0)<=0 and (w.kind!="gun" or int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0)
+			return (p.reload<=0 or (w.get("single_load",false) and int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0)) and p.get("cooking",0)<=0 and (w.kind!="gun" or int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0)
 		"medical":return combat and p.role==5 and p.primary in ["m2","m3"] and p.slot==0 and p.heal_ready<=now and p.reload<=0
 		"slide":return combat and a.is_on_floor() and p.shield<=now and p.slow<=now and p.get("cooking",0)<=0 and p.get("slide_ready",0)<=now
 		"jump":return game.phase in ["combat","buy"] and a.is_on_floor()

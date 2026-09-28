@@ -16,6 +16,7 @@ config=json.loads(re.search(r'const GODOT_CONFIG = (\{[^\n]+\});',html).group(1)
 executable=config['executable']
 assert re.fullmatch(r'[A-Za-z0-9_-]+',executable),'Unsafe export basename'
 patch_file(BUILD/(executable+'.js'))
+shutil.copy2(ROOT/'web/asset_cache_worker.js',BUILD/'asset_cache_worker.js')
 updater=(ROOT/'web/update_client.js').read_text(encoding='utf-8')
 html=html.replace('const engine = new Engine(GODOT_CONFIG);',updater+'\nconst engine = new Engine(GODOT_CONFIG);')
 html=html.replace('(function () {', '(async function () {\n await window.incUpdateReady;')

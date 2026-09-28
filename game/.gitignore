@@ -1,6 +1,8 @@
 .godot/
 assets/audio/*.wav
 assets/audio/*.import
+# Approved vocal performances are release inputs, not recreated by the foley builder.
+!assets/audio/vocal_*.wav
 assets/Korean.ttf
 assets/Korean.ttf.import
 *.uid

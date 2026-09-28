@@ -3,20 +3,22 @@ extends RefCounted
 ## One transparent quad per impact, shared materials; no extra lights or geometry holes.
 static var meshes:Dictionary={}
 static var materials:Dictionary={}
-static func make(web:bool) -> MeshInstance3D:
-	var variant=randi_range(0,7);var key=str(web)+str(variant)
+static func make(web:bool,scorch:bool=false) -> MeshInstance3D:
+	var variant=randi_range(0,7);var key=str(web)+str(variant)+str(scorch)
 	if not meshes.has(web):
 		var mesh=PlaneMesh.new();mesh.size=Vector2.ONE*(.115 if web else .155);meshes[web]=mesh
 	if not materials.has(key):
 		var material=ShaderMaterial.new();var shader=Shader.new()
-		shader.code=CODE;material.shader=shader;material.set_shader_parameter("fine_detail",not web);material.set_shader_parameter("seed",float(variant)*7.31);materials[key]=material
+		shader.code=CODE;material.shader=shader;material.set_shader_parameter("fine_detail",not web);material.set_shader_parameter("seed",float(variant)*7.31);material.set_shader_parameter("scorch",scorch);materials[key]=material
 	var mark=MeshInstance3D.new();mark.mesh=meshes[web];mark.material_override=materials[key]
+	if scorch:mark.scale=Vector3.ONE*1.6
 	mark.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mark
 const CODE="""
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;
 uniform bool fine_detail = true;
+uniform bool scorch=false;
 uniform float seed = 0.0;
 float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7))+seed)*43758.5453); }
 void fragment() {
@@ -47,5 +49,6 @@ void fragment() {
 	}
 	ALBEDO=mix(color,vec3(0.015,0.012,0.01),core);
 	ALPHA=alpha;
+	if(scorch){ALBEDO=vec3(.065,.04,.022);ALPHA=(1.-smoothstep(.22,.92,radius))*(.72+.2*hash(floor(UV*70.)));}
 }
 """

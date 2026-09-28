@@ -61,11 +61,12 @@ void fragment(){
  vec3 bump=vec3(.5,.5,1.);
  if(atlas_family>=0. && !vertex_paint){
    vec2 lot=floor(surface_p.xz/12.);
-   float variant=mod(abs(lot.x*17.+lot.y*37.+map_seed*11.),10.);
+   vec2 unit=floor(surface_uv);
+   float variant=mod(abs(unit.x*17.+unit.y*37.+map_seed*11.),10.);
    vec2 cell=vec2(variant,atlas_family);
    if(roof_finish>0){
      float finish=mod(abs(lot.x*17.+lot.y*37.+map_seed*11.),roof_finish==2?20.:40.)+(roof_finish==2?40.:roof_finish==3?60.:0.);
-     cell=vec2(mod(finish,10.),floor(finish/10.));
+     cell=vec2(variant,floor(finish/10.));
    }
    vec2 atlas_uv=(cell*136.+vec2(4.5)+fract(surface_uv)*127.)/atlas_size;
    tex=textureGrad(building_atlas,atlas_uv,dFdx(surface_uv)*127./atlas_size,dFdy(surface_uv)*127./atlas_size).rgb;
