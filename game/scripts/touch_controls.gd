@@ -36,7 +36,7 @@ func _ready():
 	enabled=supported();mouse_filter=Control.MOUSE_FILTER_IGNORE;set_process_input(enabled);visible=false
 	buttons={
 		"fire":Rect2(1100,400,130,130),"melee":Rect2(880,410,96,82),"reload":Rect2(1000,555,104,82),"ads":Rect2(980,410,96,82),
-		"jump":Rect2(1150,565,104,82),"crouch":Rect2(1150,660-10,104,60),
+		"jump":Rect2(1150,534,104,82),"crouch":Rect2(1150,628,104,82),"slide":Rect2(100,642,150,64),
 		"sprint":Rect2(100,350,180,78),
 		"skill":Rect2(409,542,105,76),"gadget":Rect2(528,542,105,76),"use":Rect2(647,542,105,76),"medical":Rect2(766,542,105,76),
 		"gear":Rect2(790,15,170,65),"auto_fire":Rect2(75,260,230,70),"menu":Rect2(1130,15,130,65),"score":Rect2(980,15,130,65)}
@@ -45,7 +45,7 @@ func active() -> bool:
 	return enabled and is_instance_valid(game.ui) and not is_instance_valid(game.ui.panel) and game.phase in ["combat","buy","round_end","result"] and game.players.has(game.local_id)
 func reset():
 	if held.get("gadget",false) and game.players.has(game.local_id):game.command("gadget_release",{})
-	fingers.clear();positions.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1;auto_trigger_at=0.
+	fingers.clear();positions.clear();held.clear();movement=Vector2.ZERO;stick_id=-1;look_id=-1;auto_trigger_at=0.;swipe_neutral=true;swipe_stamp=-2000
 func _notification(what):
 	# A browser/app switch may omit the last touch-up event. Never retain a
 	# virtual trigger or movement stick when the window loses focus.
@@ -78,10 +78,9 @@ func layout_actions(p:Dictionary):
 	else:buttons.erase("gadget");held.gadget=false
 	var font=game.ui.theme.default_font if is_instance_valid(game) and is_instance_valid(game.ui) else ThemeDB.fallback_font
 	for action in ["sprint","auto_fire"]:
-		var toggled=held.get(action,false) if action=="sprint" else game.profile.get("touch_auto_fire",false) if is_instance_valid(game) else false
-		var title=("달리기 " if action=="sprint" else "자동 발사 ")+("ON" if toggled else "OFF")
+		var title=("달리기 " if action=="sprint" else "자동 발사 ")+"OFF"
 		var width=font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,22).x+22
-		buttons[action]=Rect2(190.-width*.5,350. if action=="sprint" else 260.,width,70.)
+		buttons[action]=Rect2(12.,350. if action=="sprint" else 260.,width,70.)
 	if int(p.role)==5 and p.primary in ["m2","m3"]:actions.append("medical")
 	else:buttons.erase("medical");held.medical=false
 	actions.append("skill")
@@ -129,7 +128,7 @@ func _input(event):
 			for action in buttons:
 				if buttons[action].has_point(p):fingers[event.index]=action;press(action,true);get_viewport().set_input_as_handled();return
 			if p.x<380 and p.y>180 and stick_id<0:
-				stick_id=event.index;stick_center=Vector2(clampf(p.x,95,290),clampf(p.y,220,590));stick_point=p;movement=(p-stick_center).limit_length(90)/90.
+				stick_id=event.index;stick_center=Vector2(clampf(p.x,95,290),clampf(p.y,455,540));stick_point=p;movement=stick_motion(p)
 			elif look_id<0:look_id=event.index
 		else:
 			positions.erase(event.index)
@@ -149,7 +148,7 @@ func _input(event):
 			input_transform=inverse;positions.clear();positions[event.index]=point;delta=Vector2.ZERO
 		if not delta.is_finite() or delta.length()>240.:delta=Vector2.ZERO
 		if event.index==stick_id:
-			stick_point=inverse*event.position;movement=(stick_point-stick_center).limit_length(90)/90.;track_swipe()
+			stick_point=inverse*event.position;movement=stick_motion(stick_point);track_swipe()
 		elif event.index==look_id or fingers.get(event.index,"")=="fire":
 			var actor=game.actors.get(game.local_id)
 			if actor:
@@ -159,11 +158,11 @@ func _input(event):
 				else:game.spectator_yaw-=delta.x*sensitivity;game.spectator_pitch=clampf(game.spectator_pitch-delta.y*sensitivity,-1.2,1.2)
 		get_viewport().set_input_as_handled()
 func track_swipe():
-	if movement.length()<.25:swipe_neutral=true;return
+	if movement.length()<.35:swipe_neutral=true;return
 	if movement.length()<.65 or not swipe_neutral:return
 	swipe_neutral=false
 	var stamp=Time.get_ticks_msec();var direction=movement.normalized()
-	if stamp-swipe_stamp<=1000 and direction.dot(swipe_direction)>.82:
+	if stamp-swipe_stamp<=1200 and direction.dot(swipe_direction)>.70:
 		held.crouch=false;game.command("slide",{"x":direction.x,"z":direction.y});swipe_stamp=-2000
 	else:swipe_stamp=stamp;swipe_direction=direction
 func apply_input(actor:Actor,on:bool):
@@ -192,7 +191,7 @@ func _draw():
 		if not ready:color=Color(.22,.23,.24,.72)
 		elif action=="skill":color=HudSymbols.GOLD
 		elif action=="auto_fire" and game.profile.get("touch_auto_fire",false):color=Color(.18,.48,.54,.75)
-		if action=="fire":draw_circle(rect.get_center(),rect.size.x*.5,color);draw_arc(rect.get_center(),rect.size.x*.5,0,TAU,48,Color(.86,.96,1,.6),2.,true)
+		if action=="fire":screen_circle(rect.get_center(),rect.size.x*.5,color,true)
 		else:draw_style_box(plate(color),rect)
 		var title=labels.get(action,"");var font_size=26
 		if action.begins_with("slot"):
@@ -213,9 +212,21 @@ func _draw():
 		font_size=mini(font_size,maxi(12,int(font_size*(rect.size.x-14)/maxf(1.,font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x))))
 		draw_string(font,rect.position+Vector2(7,rect.size.y*.5+font_size*.35),title,HORIZONTAL_ALIGNMENT_CENTER,rect.size.x-14,font_size,Color("202b32") if ready and action=="skill" else Color("eefaff") if ready else Color("aeb1b4"))
 	var center=stick_center if stick_id>=0 else Vector2(165,530)
-	draw_circle(center,90,Color(.06,.11,.15,.27));draw_arc(center,90,0,TAU,48,Color(.8,.94,1,.5),2.,true)
-	draw_circle(center+movement*64,35,Color(.7,.9,.96,.55))
-	if stick_id<0:draw_string(font,center+Vector2(-50,117),"이동",HORIZONTAL_ALIGNMENT_CENTER,100,22,Color("d2e6e8"))
+	screen_circle(center,90,Color(.06,.11,.15,.27),true)
+	screen_circle(center+movement*64*circle_scale(),35,Color(.7,.9,.96,.55))
+func circle_scale() -> Vector2:
+	var basis=get_global_transform_with_canvas().get_scale().abs()
+	var unit=minf(basis.x,basis.y)
+	return Vector2(unit/maxf(.001,basis.x),unit/maxf(.001,basis.y))
+func stick_motion(point:Vector2) -> Vector2:
+	return ((point-stick_center)/circle_scale()).limit_length(90)/90.
+func screen_circle(center:Vector2,radius:float,color:Color,outline:bool=false):
+	var basis=get_global_transform_with_canvas().get_scale().abs()
+	var unit=minf(basis.x,basis.y)
+	draw_set_transform(center,0.,Vector2(unit/maxf(.001,basis.x),unit/maxf(.001,basis.y)))
+	draw_circle(Vector2.ZERO,radius,color)
+	if outline:draw_arc(Vector2.ZERO,radius,0,TAU,48,Color(.8,.94,1,.5),2.,true)
+	draw_set_transform(Vector2.ZERO)
 func plate(color:Color) -> StyleBoxFlat:
 	if plate_cache.has(color):return plate_cache[color]
 	var style=StyleBoxFlat.new();style.bg_color=color;style.border_color=Color(.8,.92,1,.5);style.set_border_width_all(1);style.set_corner_radius_all(14);plate_cache[color]=style;return style

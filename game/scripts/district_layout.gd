@@ -45,7 +45,7 @@ static func build(a:Node,index:int):
 			for point in points:st.set_normal(normal);st.add_vertex(point-origin)
 		st.index();var mesh=st.commit()
 		var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;a.architecture.add_child(body);body.position=origin
-		var visual=MeshInstance3D.new();visual.mesh=mesh;visual.material_override=WorldSurface.material(group.kind,index);body.add_child(visual)
+		var visual=MeshInstance3D.new();visual.mesh=mesh;visual.material_override=WorldSurface.material(group.kind,index,false,(1 if origin.x>0 else 0)+(2 if origin.z>0 else 0));body.add_child(visual)
 		if group.kind in ["water","stair_detail"]:continue
 		var collision=CollisionShape3D.new();var shape=ConcavePolygonShape3D.new();shape.set_faces(mesh.get_faces());shape.backface_collision=true;collision.shape=shape;body.add_child(collision)
 	# Vertical fascia gives elevated paths visible thickness without changing cover.
@@ -65,11 +65,14 @@ static func build(a:Node,index:int):
 	for team in range(2):
 		var p=plan.spawns[team]
 		for slot in range(16):
-			var pos=Vector3(p[0]+(slot%4-1.5)*1.7,.15,p[1]+(slot/4-1.5)*1.7)
+			var pos=Vector3(p[0]+(slot%4-1.5)*1.7,float(plan.get("spawn_heights",[0,0])[team])+.15,p[1]+(slot/4-1.5)*1.7)
+			var floor_candidates=heights(a,pos)
+			if not floor_candidates.is_empty():pos.y=float(floor_candidates[0])+.04
 			if a.point_clear(pos):a.spawn_points[team].append(pos);a.ffa_spawns.append(pos)
-		if a.spawn_points[team].is_empty():a.spawn_points[team].append(Vector3(p[0],.15,p[1]))
+		if a.spawn_points[team].is_empty():a.spawn_points[team].append(Vector3(p[0],float(plan.get("spawn_heights",[0,0])[team])+.15,p[1]))
 	a.sites=[];a.zones=[]
-	for point in plan.targets:a.zones.append(Vector3(point[0],0,point[1]))
+	for i in range(plan.targets.size()):
+		var point=plan.targets[i];a.zones.append(Vector3(point[0],float(plan.get("target_heights",[0,0,0])[i]),point[1]))
 	a.sites=[a.zones[0],a.zones[1]]
 	if a.zones.size()==2:
 		# Select a real ground-floor route, not an arbitrary clear point in a
@@ -83,14 +86,35 @@ static func build(a:Node,index:int):
 				var steps=maxi(1,ceili(start.distance_to(end)))
 				for step in range(steps+1):
 					var point=start.lerp(end,float(step)/steps);var candidate=Vector3(point.x,0,point.y)
+					var possible=heights(a,candidate)
+					if possible.is_empty():continue
+					candidate.y=possible[0]
 					var distance=candidate.distance_squared_to(midpoint)
-					if distance>=best or not a.navigation_clear(candidate) or absf(a.walk_height(candidate))>.05:continue
+					if distance>=best or not a.navigation_clear(candidate):continue
 					var clear=true
 					for side in [Vector3.LEFT,Vector3.RIGHT,Vector3.FORWARD,Vector3.BACK]:
-						if not a.navigation_clear(candidate+side*1.2) or absf(a.walk_height(candidate+side*1.2))>.05:clear=false;break
+						if not a.navigation_clear(candidate+side*1.2):clear=false;break
 					if clear:middle=candidate;best=distance
 		a.zones.insert(1,middle)
 	for point in plan.goals:a.navigation_goals.append(Vector3(point[0],point[1],point[2]))
+	# Grounded terraces have no old upper/lower ribbon midpoint. Include their
+	# landings in roaming/navigation coverage as well as the combat objectives.
+	if plan.get("terrain")!=null:
+		var seen={};route_spec(index);var source=specs[index]
+		for path in source.paths:
+			for point in path:
+				var candidate=Vector3(point[0]-a.bounds.x,0,point[1]-a.bounds.y)
+				var values=heights(a,candidate)
+				if values.is_empty():continue
+				candidate.y=float(values[0]);var bucket=roundi(candidate.y)
+				if absf(candidate.y)<1.5 or seen.has(bucket) or not a.point_clear(candidate):continue
+				# Roaming targets belong on broad landings, not clipped ramp edges.
+				var landing=true
+				for offset in [Vector3.LEFT,Vector3.RIGHT,Vector3.FORWARD,Vector3.BACK]:
+					var nearby=heights(a,candidate+offset*.6)
+					if nearby.is_empty() or absf(float(nearby[0])-candidate.y)>.04:landing=false;break
+				if not landing:continue
+				seen[bucket]=true;a.navigation_goals.append(candidate)
 	a.navigation_goals.append_array(a.sites)
 	DistrictDressing.build(a,plan)
 	a.set_meta("sight_blockers",plan.groups.size())

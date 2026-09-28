@@ -42,7 +42,10 @@ func run():
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		DistrictLayout.route_spec(index)
 		var spec=DistrictLayout.specs[index]
-		expect(arena.navigation_goals.any(func(p):return p.y>1.)==not spec.upper_path.is_empty() and arena.navigation_goals.any(func(p):return p.y< -1.)==not spec.lower_path.is_empty(),"map %d uses its authored combination of levels"%index)
+		var terrain=spec.get("terrain")
+		var high=not spec.upper_path.is_empty() or (terrain!=null and float(terrain[2].max())>1.)
+		var low=not spec.lower_path.is_empty() or (terrain!=null and float(terrain[2].min())< -1.)
+		expect(arena.navigation_goals.any(func(p):return p.y>1.)==high and arena.navigation_goals.any(func(p):return p.y< -1.)==low,"map %d exposes its authored terrace or bridge elevations"%index)
 		for team in [0,1]:
 			var start=arena.spawn_points[team][3]
 			for goal in arena.navigation_goals:
@@ -50,8 +53,14 @@ func run():
 				expect(route.size()>1 and route[-1].distance_to(goal)<2.1,"map %d team %d reaches %s"%[index,team,str(goal)])
 		await physics_frame;await physics_frame
 		for floor_point in arena.navigation_goals.filter(func(p):return absf(p.y)>1.):
-			var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(floor_point+Vector3.UP*.5,floor_point-Vector3.UP*.5,1))
-			expect(not hit.is_empty() and absf(hit.position.y-floor_point.y)<.05,"map %d authored level has actual walkable floor"%index)
+			# A zero-width ray exactly on a triangulation vertex can miss both
+			# faces. Check the capsule footprint, requiring all surrounding rays.
+			var supported=true
+			for offset in [Vector3(.1,0,0),Vector3(-.1,0,0),Vector3(0,0,.1),Vector3(0,0,-.1)]:
+				var sample=floor_point+offset
+				var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(sample+Vector3.UP*.5,sample-Vector3.UP*.5,1))
+				if hit.is_empty() or absf(hit.position.y-floor_point.y)>.05:supported=false
+			expect(supported,"map %d authored level %s has actual walkable floor"%[index,str(floor_point)])
 		arena.free();await process_frame
 	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=0;g.build_world();g.add_player(1,"TEST","v101_test")
 	var actor=g.actors[1];var p=g.players[1]

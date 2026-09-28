@@ -2,6 +2,7 @@ import json,math,html
 from pathlib import Path
 from shapely.geometry import LineString,Point,box,Polygon
 from shapely.ops import unary_union
+from districts_v128 import LAYOUTS,TERRAIN,KEEP,BRIDGES,RECTANGLES
 from vertical_districts import select as vertical_routes,COMPOSITIONS,STAIR_MAPS
 r=Path(__file__).resolve().parents[3];out=r/'game/assets/arenas';old=[{'players':c,'name':str(i+1)} for i,c in enumerate([32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16])]
 # Authored district paths: each chain is a room/courtyard sequence, not a repeated open-field template.
@@ -74,6 +75,10 @@ for i,m in enumerate(old):
   if k%3==1:left=[spawn,(14,82),(13,57),(29,47),(14,28),pa];middle=[(29,47),(43,39),(56,57),(79,52)]
   if k%3==2:right=[spawn,(86,84),(88,60),(71,45),(87,22),pb];middle=[(19,55),(38,66),(54,47),(71,45)]
   paths.extend([left,right,middle,[pa,(33,13),defend,(68,10),pb]]);ident=defdesc[k]
+ if i in LAYOUTS:
+  paths=[coords(x) for x in LAYOUTS[i]]
+  if i>=19:
+   pts=[paths[0][0],paths[0][-1],paths[0][max(1,len(paths[0])//2)],paths[1][max(1,len(paths[1])//2)]]
  # Convert normalized district coordinates to metre geometry; corridors keep human-scale widths.
  def world(p):return (p[0]*dim[0]/100,p[1]*dim[1]/100)
  paths=[[world(p) for p in chain] for chain in paths]
@@ -101,7 +106,7 @@ for i,m in enumerate(old):
  districts=0
  base_rooms=list(dict.fromkeys(p for ch in authored_paths for p in ch))
  for j,(x,y) in enumerate(base_rooms):
-  if j<2 or j%2:continue
+  if i in LAYOUTS or j<2 or j%2:continue
   vx,vy=dim[0]/2-x,dim[1]/2-y;length=max(1,math.hypot(vx,vy));vx/=length;vy/=length
   offset=20 if cap>=16 or cap==12 else 12;span=10 if cap>=16 or cap==12 else 6
   a=(x+vx*offset-vy*span,y+vy*offset+vx*span)
@@ -117,15 +122,18 @@ for i,m in enumerate(old):
  if i<31:
   (upper_chain,upper_height),(lower_chain,lower_height)=vertical_routes(i,paths)
  else:upper_chain,lower_chain,upper_height,lower_height=paths[1],paths[0],4.2,-4.2
+ if i not in BRIDGES and i!=31:upper_chain=[];lower_chain=[];upper_height=lower_height=0.
  upper=LineString(upper_chain).buffer(max(2.7,width*.70)/2,join_style=2) if upper_chain else Polygon()
  lower=LineString(lower_chain).buffer(max(2.7,width*.65)/2,join_style=2) if lower_chain else Polygon()
  spawn=paths[0][0] if i<19 or i==31 else world(pts[0]);enemy=paths[0][-1] if i<19 or i==31 else world(pts[1])
  targets=[paths[0][len(paths[0])//2],paths[1][len(paths[1])//2],paths[2][len(paths[2])//2]] if i<19 or i==31 else [world(pts[2]),world(pts[3])]
  item={'paths':paths,'upper_path':upper_chain,'lower_path':lower_chain,'id':i+1,'name':m['name'],'capacity':cap,'dimensions':dim,'rectangle':i in rects,'identity':ident,'floor':polys(floor),'border':polys(border),'upper':polys(upper),'lower':polys(lower),'stairs':[list(p) for chain in [upper_chain,lower_chain] if chain for p in [chain[0],chain[-1]]],'spawns':[spawn,enemy],'targets':targets,'corridor_m':width,'side_corridor_m':2.7,'rooms':len(rooms)+districts,'connected':floor.geom_type=='Polygon','mode':'연습장' if i==31 else '설치/해체' if i>=19 else '일반전'}
  result.append(item)
+ item['terrain']=TERRAIN.get(i,None);item['elevated_crossing']=i in BRIDGES;item['authored_revision']=128
  item['upper_height']=upper_height;item['lower_height']=lower_height
- item['composition']=COMPOSITIONS[i] if i<31 else 'practice_towers';item['stairs_enabled']=i in STAIR_MAPS
- item['identity']=('지상 연결 동선' + (' · 상층 우회로' if upper_chain else '') + (' · 하층 통로' if lower_chain else '') + (' · 계단' if i in STAIR_MAPS else ''))
+ item['composition']='supported_crossing' if i in BRIDGES else 'grounded_terraces' if i in TERRAIN else 'rectangular_district' if i in RECTANGLES else 'practice_towers'
+ item['stairs_enabled']=i in STAIR_MAPS
+ item['identity']=('지형 단차 · 계단/경사 연결' if i in TERRAIN else '교각으로 지지한 고가 연결' if i in BRIDGES else '지상 구획과 실내외 동선' if i in RECTANGLES else '다층 야외 연습장')
 assert all(m['connected'] for m in result)
 assert len([m for m in result if m['rectangle']])==5
 names=['항구','조선소','제철소','연구소','사막 기지','운하','중앙역','구시가지','정비 공장','산동네','과수원','발전소','분수 광장','물류 창고','실험 단지','폐공장','고층 빌딩','재래시장','채석장','요새','원전','수로교','도서관','폐선장','수도원','용광로','온실','지하 금고','해안 기지','서버 센터','산성','훈련장']

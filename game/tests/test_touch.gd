@@ -108,5 +108,16 @@ func run():
 	touch(4,Vector2(1165,465),true);touch(5,Vector2(1180,45),true);game.touch._process(0);game.collect_input()
 	expect(is_instance_valid(game.ui.panel) and not a.input_state.fire and game.touch.fingers.is_empty(),"opening pause clears held touch fire")
 	await capture("pause")
+	game.ui.clear_panel();game.touch.layout_actions(game.players[1])
+	var auto_rect:Rect2=game.touch.buttons.auto_fire;var sprint_rect:Rect2=game.touch.buttons.sprint
+	game.profile.touch_auto_fire=not game.profile.get("touch_auto_fire",false);game.touch.held.sprint=true
+	game.touch.layout_actions(game.players[1])
+	expect(game.touch.buttons.auto_fire==auto_rect and game.touch.buttons.sprint==sprint_rect,"ON/OFF keeps OFF-sized touch buttons")
+	expect(auto_rect.position.x==12. and sprint_rect.position.x==12.,"toggles stay near the left edge")
+	if not is_instance_valid(game.kill_replay):
+		game.kill_replay=KillReplay.new();game.kill_replay.game=game;game.add_child(game.kill_replay)
+	game.kill_replay.active=true;game.ui.clear_panel()
+	expect(not game.ui.hud.visible,"closing equipment during killcam never restores score/time HUD")
+	game.kill_replay.active=false
 	game.leave_game();game.free();await process_frame
 	print("TOUCH_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

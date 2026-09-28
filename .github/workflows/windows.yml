@@ -1,4 +1,4 @@
-name: Build and publish Internal N Crush 1.2.7
+name: Build and publish Internal N Crush 1.2.8
 on:
   push:
     paths:
@@ -132,6 +132,8 @@ jobs:
           set -euo pipefail
           pip install -r services/directory/requirements.txt
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_touch.gd -- --touch-test --no-save-profile --no-update-check
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_mobile_v128.gd
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_map_pinch_v128.gd
           python3 game/tests/run_network_rtc.py
       - name: Export Windows and package
         run: |
@@ -160,7 +162,7 @@ jobs:
           python3 web/test_webgl_handles.py "web/build/$web_name.js"
           mkdir -p web/build/guide
           for screen in controls touch settings lan internet; do cp "validation/v117/$screen.jpg" "web/build/guide/$screen.jpg"; done
-          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.2.7.zip", include_config=False)'
+          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.2.8.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -180,17 +182,17 @@ jobs:
         with:
           overwrite: true
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.2.7.zip
+          path: out/InternalNCrush_Windows_v1.2.8.zip
       - uses: actions/upload-artifact@v4
         with:
           overwrite: true
           name: release-files
           if-no-files-found: error
           path: |
-            out/InternalNCrush_Windows_v1.2.7.zip
-            out/InternalNCrush_Web_v1.2.7.zip
-            out/InternalNCrush_NAS_Linux_v1.2.7.zip
-            out/WEB_RELEASE_v1.2.7.json
+            out/InternalNCrush_Windows_v1.2.8.zip
+            out/InternalNCrush_Web_v1.2.8.zip
+            out/InternalNCrush_NAS_Linux_v1.2.8.zip
+            out/WEB_RELEASE_v1.2.8.json
             out/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -212,7 +214,7 @@ jobs:
         with:
           name: release-files
           path: release-files
-      - name: Create draft 1.2.7 downloads after successful tests
+      - name: Create draft 1.2.8 downloads after successful tests
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -220,18 +222,18 @@ jobs:
           test "$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq .sha)" = "$GITHUB_SHA"
           cd release-files
           sha256sum --check SHA256SUMS.txt
-          if gh release view internal-n-crush-v1.2.7 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
+          if gh release view internal-n-crush-v1.2.8 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
             if [ "$(cat /tmp/is-draft)" != true ]; then
-              echo "1.2.7 is already public; preserve its verified immutable assets."
+              echo "1.2.8 is already public; preserve its verified immutable assets."
               exit 0
             fi
-            gh release edit internal-n-crush-v1.2.7 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+            gh release edit internal-n-crush-v1.2.8 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create internal-n-crush-v1.2.7 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.2.7" --notes "Rebuild enlarged layered maps, add interactive map plans and team capture feedback, and improve announcements." --repo "$GITHUB_REPOSITORY"
+            gh release create internal-n-crush-v1.2.8 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.2.8" --notes "Rebuild enlarged layered maps, add interactive map plans and team capture feedback, and improve announcements." --repo "$GITHUB_REPOSITORY"
           fi
-          gh release upload internal-n-crush-v1.2.7 InternalNCrush_Windows_v1.2.7.zip InternalNCrush_Web_v1.2.7.zip InternalNCrush_NAS_Linux_v1.2.7.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.2.8 InternalNCrush_Windows_v1.2.8.zip InternalNCrush_Web_v1.2.8.zip InternalNCrush_NAS_Linux_v1.2.8.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
-          gh release upload internal-n-crush-v1.2.7 WEB_RELEASE_v1.2.7.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.2.8 WEB_RELEASE_v1.2.8.json --clobber --repo "$GITHUB_REPOSITORY"
 
           # Keep this draft until rendered Windows/Web soak results are reviewed.
-          gh release edit internal-n-crush-v1.2.7 --notes-file ../RELEASE_NOTES_V127.md --repo "$GITHUB_REPOSITORY"
+          gh release edit internal-n-crush-v1.2.8 --notes-file ../RELEASE_NOTES_V128.md --repo "$GITHUB_REPOSITORY"

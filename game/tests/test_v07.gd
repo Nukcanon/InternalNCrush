@@ -53,7 +53,10 @@ func run():
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.playable_polygon.size()>4,"map %d has a nonrectangular perimeter"%index)
 		expect(arena.district_surfaces.any(func(s):return absf(s.plane.x)+absf(s.plane.y)>.01),"map %d has traversable terraces and ramps"%index)
-		var terrace=arena.navigation_goals.filter(func(p):return p.y>1.5)[0]
+		var terraces=arena.navigation_goals.filter(func(p):return p.y>1.5)
+		expect(not terraces.is_empty(),"map %d exposes a high landing to navigation"%index)
+		if terraces.is_empty():arena.free();continue
+		var terrace=terraces[0]
 		expect(arena.walk_height(terrace)>1.5,"map %d navigation recognizes terrace elevation"%index)
 		await physics_frame;await physics_frame
 		var hit=arena.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(terrace+Vector3.UP*.5,terrace-Vector3.UP*.5,1))

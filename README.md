@@ -1,6 +1,6 @@
-# Internal N Crush 1.2.7
+# Internal N Crush 1.2.8
 
-Continued from the published 1.2.2 source and the preserved 1.2.3 recovery branch. See [release notes](RELEASE_NOTES_V127.md), [validation](VALIDATION_V127.md), and [publication status](PUBLICATION_STATUS.json) for changes and exact delivery status.
+Continued from the published 1.2.2 source and the preserved 1.2.3 recovery branch. See [release notes](RELEASE_NOTES_V128.md), [validation](VALIDATION_V127.md), and [publication status](PUBLICATION_STATUS.json) for changes and exact delivery status.
 
 Windows / Web tactical FPS with six operators, 31 competitive arenas and a four-level outdoor practice range. Godot 4.4.1. The player hosting a room runs the authoritative game; the lightweight lobby only provides room discovery and WebRTC signaling.
 

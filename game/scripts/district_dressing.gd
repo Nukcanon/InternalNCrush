@@ -17,7 +17,7 @@ static func build(a:Node,plan:Dictionary):
 	for i in range(plan.facades.size()):
 		var f=plan.facades[i];var key=Vector2i(floori(f[0]/24),floori(f[1]/24))
 		if not chunks.has(key):var chunk=Node3D.new();chunk.name="Facade";a.add_child(chunk);chunk.position=Vector3(key.x*24+12,0,key.y*24+12);chunks[key]=chunk
-		var n=Node3D.new();chunks[key].add_child(n);n.position=Vector3(f[0],0,f[1])-chunks[key].position;n.rotation.y=f[2]
+		var n=Node3D.new();chunks[key].add_child(n);n.position=Vector3(f[0],float(f[4]) if f.size()>4 else 0.,f[1])-chunks[key].position;n.rotation.y=f[2]
 		var wall=Color("d4c5ac") if market else Color("9aaeb3")
 		M.box(n,Vector3(0,2.9,0),Vector3(f[3],.15,.13),Color("536e7b"))
 		if market:
@@ -28,7 +28,13 @@ static func build(a:Node,plan:Dictionary):
 					M.box(n,Vector3(x,1.02,.10),Vector3(1.5,.13,.30),wall)
 			if i%3==0 and index in [7,17]:
 				M.box(n,Vector3(0,2.5,.48),Vector3(3.2,.10,.95),Color("a57558") if i%2 else Color("5c8d83"),Vector3(.12,0,0))
-		elif i%2==0:
+		elif index in [3,14,29]:
+			# Glazed observation windows and wall panels, not garage shutters.
+			M.box(n,Vector3(0,1.75,.015),Vector3(3.5,1.35,.10),Color("90b9bc"))
+			M.box(n,Vector3(0,1.75,.075),Vector3(3.26,1.14,.045),Color("365b6b"))
+			for x in [-1.08,0.,1.08]:M.box(n,Vector3(x,1.75,.105),Vector3(.045,1.16,.045),Color("c9dedb"))
+			M.box(n,Vector3(0,.35,.045),Vector3(f[3],.12,.07),Color("508e95"))
+		elif i%2==0 and index in [0,1,2,8,13,15,25]:
 			M.box(n,Vector3(0,1.45,.015),Vector3(2.4,2.7,.08),Color("526c77"))
 			if not web:
 				for k in range(9):M.box(n,Vector3(0,.3+k*.25,.07),Vector3(2.3,.025,.025),Color("809198"))
@@ -57,12 +63,17 @@ static func build(a:Node,plan:Dictionary):
 	var anchors=plan.props.duplicate()
 	if not plan.get("water_boat",[]).is_empty():anchors.append(plan.water_boat)
 	for i in range(anchors.size()):
-		var floating=i==plan.props.size();var p=anchors[i];var pos=Vector3(p[0],-.5 if floating else 0.,p[1]);var kind="boat" if floating else "tree" if garden or (market and i%4==0) else "container" if coastal and i%3==0 else "car" if market or coastal else "tank"
-		if i==0 and not floating and index!=31:
+		var floating=i==plan.props.size();var p=anchors[i];var pos=Vector3(p[0],-.5 if floating else float(p[2]) if p.size()>2 else 0.,p[1]);var kind="boat" if floating else "tree" if garden or (market and i%4==0) else "container" if coastal and i%3==0 else "car" if market or coastal else "tank"
+		# One dock service cabin, not an identical room cloned into every map.
+		if index==0 and i==0:
 			utility_room(a,pos);continue
+		if not floating:kind=DistrictArt.prop(index,i)
 		var node=Node3D.new();a.architecture.add_child(node);node.position=pos
-		var imported=kind in ["container","tank","car","tree","boat"]
-		if kind in ["container","tank"]:
+		if p.size()>3:node.rotation.y=float(p[3])
+		var imported=true
+		if DistrictArt.original(kind):
+			ImportedWorldProp.build(node,kind,Vector3(2.5,2.8,2.),"district_original")
+		elif kind in ["container","tank"]:
 			ImportedWorldProp.build(node,("shipping-container-a" if i%2==0 else "shipping-container-b") if kind=="container" else ("detail-tank" if i%2==0 else "detail-tank-large"),Vector3(2.2,2.8,4.))
 		elif kind=="tree":
 			ImportedWorldProp.build(node,"tree_pineTallA" if index in [10,26] else "tree_oak",Vector3(3.4,4.8,3.4),"nature")
@@ -73,21 +84,22 @@ static func build(a:Node,plan:Dictionary):
 		else:
 			WorldDressing.furniture(node,2+i%4,false)
 		# Collision is generated before optional detail, identical in both builds.
-		var faces=PackedVector3Array()
+		var faces=PackedVector3Array();var occupied=AABB();var first_mesh=true
 		for mesh in node.get_children():
 			if mesh is MeshInstance3D:
+				var bounds=mesh.transform*mesh.get_aabb();occupied=bounds if first_mesh else occupied.merge(bounds);first_mesh=false
 				for point in mesh.mesh.get_faces():faces.append(mesh.transform*point)
 		var body=StaticBody3D.new();node.add_child(body);body.collision_layer=1;body.collision_mask=0
 		var collision=CollisionShape3D.new();var shape=ConcavePolygonShape3D.new();shape.set_faces(faces);shape.backface_collision=true;collision.shape=shape;body.add_child(collision)
-		a.navigation_blocks.append(AABB(pos-Vector3(1.2,0,2.1),Vector3(2.4,4.8 if kind=="tree" else 2.,4.2)))
+		a.navigation_blocks.append(node.transform*occupied)
 		if not imported:
 			M.merge_children(node)
 			for mesh in node.get_children():
 				if mesh is MeshInstance3D:mesh.material_override=WorldSurface.material("detail",index,true)
 	for p in plan.get("loose_props",[]):
-		var id=a.props.size();var item=WorldDressing.KINDS[id%WorldDressing.KINDS.size()];var prop=InteractiveProp.new()
+		var id=a.props.size();var item=DistrictArt.loose(index,id);var prop=InteractiveProp.new()
 		var height={"barrel":.485,"crate":.29,"cone":.31,"canister":.325,"tire":.365}[item]
-		prop.position=Vector3(p[0],height,p[1]);prop.configure(id,item,a.props_authoritative);a.add_child(prop);a.props[id]=prop
+		prop.position=Vector3(p[0],height+(float(p[2]) if p.size()>2 else 0.),p[1]);prop.configure(id,item,a.props_authoritative);a.add_child(prop);a.props[id]=prop
 	a.set_meta("dressing_count",plan.props.size()+plan.facades.size());a.set_meta("interactive_count",a.props.size());a.set_meta("facade_tiles",chunks.size())
 static func utility_room(a:Node,pos:Vector3):
 	# A complete side room, with the door's pockets enclosed by its front wall.

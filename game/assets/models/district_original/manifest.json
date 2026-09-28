@@ -1,0 +1,197 @@
+{
+  "provenance": "Original project assets authored with Blender; no third-party source assets",
+  "assets": [
+    {
+      "name": "produce_stall",
+      "triangles": 1440,
+      "bytes": 163168,
+      "materials": 1
+    },
+    {
+      "name": "library_bookcase",
+      "triangles": 3008,
+      "bytes": 303516,
+      "materials": 1
+    },
+    {
+      "name": "instrument_cabinet",
+      "triangles": 1056,
+      "bytes": 106928,
+      "materials": 1
+    },
+    {
+      "name": "water_pump",
+      "triangles": 652,
+      "bytes": 54908,
+      "materials": 1
+    },
+    {
+      "name": "work_cart",
+      "triangles": 632,
+      "bytes": 61216,
+      "materials": 1
+    },
+    {
+      "name": "garden_planter",
+      "triangles": 456,
+      "bytes": 56904,
+      "materials": 1
+    },
+    {
+      "name": "reading_desk",
+      "triangles": 512,
+      "bytes": 49820,
+      "materials": 1
+    },
+    {
+      "name": "dock_rescue",
+      "triangles": 304,
+      "bytes": 28700,
+      "materials": 1
+    },
+    {
+      "name": "park_bench",
+      "triangles": 424,
+      "bytes": 44056,
+      "materials": 1
+    },
+    {
+      "name": "cafe_parasol",
+      "triangles": 260,
+      "bytes": 21932,
+      "materials": 1
+    },
+    {
+      "name": "timber_stack",
+      "triangles": 928,
+      "bytes": 95660,
+      "materials": 1
+    },
+    {
+      "name": "cargo_pallet",
+      "triangles": 368,
+      "bytes": 37380,
+      "materials": 1
+    },
+    {
+      "name": "ventilation_fan",
+      "triangles": 484,
+      "bytes": 43876,
+      "materials": 1
+    },
+    {
+      "name": "transformer",
+      "triangles": 640,
+      "bytes": 56952,
+      "materials": 1
+    },
+    {
+      "name": "stone_fountain",
+      "triangles": 344,
+      "bytes": 27716,
+      "materials": 1
+    },
+    {
+      "name": "solar_array",
+      "triangles": 372,
+      "bytes": 36344,
+      "materials": 1
+    },
+    {
+      "name": "potting_bench",
+      "triangles": 572,
+      "bytes": 52324,
+      "materials": 1
+    },
+    {
+      "name": "hose_reel",
+      "triangles": 724,
+      "bytes": 57472,
+      "materials": 1
+    },
+    {
+      "name": "stone_bench",
+      "triangles": 220,
+      "bytes": 23804,
+      "materials": 1
+    },
+    {
+      "name": "air_compressor",
+      "triangles": 320,
+      "bytes": 29764,
+      "materials": 1
+    },
+    {
+      "name": "fruit_cart",
+      "triangles": 632,
+      "bytes": 53812,
+      "materials": 1
+    },
+    {
+      "name": "bakery_display",
+      "triangles": 524,
+      "bytes": 45664,
+      "materials": 1
+    },
+    {
+      "name": "fish_table",
+      "triangles": 264,
+      "bytes": 30944,
+      "materials": 1
+    },
+    {
+      "name": "mooring_bollards",
+      "triangles": 264,
+      "bytes": 23016,
+      "materials": 1
+    },
+    {
+      "name": "rope_crate",
+      "triangles": 548,
+      "bytes": 53224,
+      "materials": 1
+    },
+    {
+      "name": "drill_press",
+      "triangles": 212,
+      "bytes": 20584,
+      "materials": 1
+    },
+    {
+      "name": "workshop_lathe",
+      "triangles": 276,
+      "bytes": 27328,
+      "materials": 1
+    },
+    {
+      "name": "staff_lockers",
+      "triangles": 408,
+      "bytes": 41836,
+      "materials": 1
+    },
+    {
+      "name": "laboratory_sink",
+      "triangles": 160,
+      "bytes": 16028,
+      "materials": 1
+    },
+    {
+      "name": "sample_rack",
+      "triangles": 768,
+      "bytes": 65144,
+      "materials": 1
+    },
+    {
+      "name": "memorial_stone",
+      "triangles": 180,
+      "bytes": 19312,
+      "materials": 1
+    },
+    {
+      "name": "notice_board",
+      "triangles": 128,
+      "bytes": 13756,
+      "materials": 1
+    }
+  ]
+}

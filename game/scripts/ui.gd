@@ -115,7 +115,7 @@ func _ready():
 	theme.set_color("font_outline_color","Label",Color(0.01,0.025,0.04,.65));theme.set_constant("outline_size","Label",1)
 func clear_panel(keep_background=false):
 	if is_instance_valid(map_viewer):map_viewer.queue_free();map_viewer=null
-	if is_instance_valid(hud):hud.show()
+	if is_instance_valid(hud):hud.visible=not (is_instance_valid(game.kill_replay) and game.kill_replay.active)
 	if is_instance_valid(navigation_confirm):navigation_confirm.queue_free();navigation_confirm=null
 	if lan_lobby:lan_lobby.close_dialog()
 	if is_instance_valid(vote_panel):vote_panel.visible=false
@@ -166,6 +166,10 @@ func button(text:String,callback:Callable,parent:Node=null) -> Button:
 		if returning and screen in ["practice","host","join","internet","internet_create"]:confirm_navigation(callback,text)
 		else:callback.call())
 	(parent if parent else stack).add_child(b)
+	if TouchControls.supported():
+		b.clip_text=true
+		b.resized.connect(func():fit_mobile_button(b))
+		fit_mobile_button.call_deferred(b)
 	if parent and parent.get_meta("pinned_actions",false):
 		b.custom_minimum_size=Vector2(180,ACTION_HEIGHT);b.size_flags_horizontal=Control.SIZE_EXPAND_FILL;b.clip_text=true
 	if returning:
@@ -173,6 +177,10 @@ func button(text:String,callback:Callable,parent:Node=null) -> Button:
 			var style=theme.get_stylebox(state,"Button").duplicate();style.bg_color=Color("593b4b") if state=="normal" else Color("805263");style.border_color=Color("c28c9a");b.add_theme_stylebox_override(state,style)
 		if parent==null and is_instance_valid(panel_body) and is_instance_valid(panel_scroll) and screen!="menu":pin_actions(b)
 	return b
+func fit_mobile_button(b:Button):
+	var font=b.get_theme_font("font");var available=maxf(1.,b.size.x-36)
+	var width=font.get_string_size(b.text,HORIZONTAL_ALIGNMENT_LEFT,-1,28).x
+	b.add_theme_font_size_override("font_size",clampi(int(28.*available/maxf(1.,width)),12,28))
 func confirm_navigation(callback:Callable,destination:String):
 	if is_instance_valid(navigation_confirm):return
 	navigation_confirm=ConfirmationDialog.new();navigation_confirm.title="화면 이동 확인";navigation_confirm.dialog_text="메인메뉴로 이동할까요?" if destination=="메인메뉴" else "이전 화면으로 돌아갈까요?"

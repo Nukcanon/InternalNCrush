@@ -22,8 +22,8 @@ const THEMES=[
 	["plaster","moss","c8ddbc"], ["metal","concrete","b4c1cf"],
 	["stone","paving","c3d7df"], ["concrete","metal","c1d9db"],
 	["sandstone","moss","d6c5a2"], ["concrete","paving","c7d3d1"]]
-static func material(kind:String,index:int,vertex_paint:bool=false) -> ShaderMaterial:
-	var key=str([kind,index,vertex_paint])
+static func material(kind:String,index:int,vertex_paint:bool=false,zone:int=0) -> ShaderMaterial:
+	var key=str([kind,index,vertex_paint,zone])
 	if cache.has(key):return cache[key]
 	if shader==null:
 		shader=Shader.new();shader.code="""shader_type spatial;
@@ -55,7 +55,7 @@ void fragment(){
  // alternated between dark and light, looking exactly like z-fighting.
  float foot=mix(.94,1.,smoothstep(0.,.8,surface_p.y));
  float variation=.96+.04*sin(surface_p.x*.17+surface_p.z*.23);
- vec3 base=paint*mix(vec3(.86),sqrt(max(tex,vec3(0.))),vertex_paint?.24:.78)*foot*variation;
+ vec3 base=paint*mix(vec3(.98),sqrt(max(tex,vec3(0.))),vertex_paint?.16:.62)*foot*variation;
  ALBEDO=dynamic_lighting?base*.78:vec3(0.);
  EMISSION=dynamic_lighting?base*.22:base*facing;
  ROUGHNESS=.86;
@@ -79,5 +79,31 @@ void fragment(){
 	if index>=0 and index<THEMES.size():
 		if kind in ["wall","perimeter"]:texture=THEMES[index][0];color=Color(THEMES[index][2])
 		elif kind=="ground":texture=THEMES[index][1]
+	# Material families keep a laboratory sterile and a quay maritime. Region
+	# variation must not randomly put moss/wood flooring inside a power station.
+	if zone>0 and kind in ["ground","wall","perimeter"]:
+		var family="town"
+		if index in [0,1,5,21,23,28]:family="port"
+		elif index in [2,8,11,13,15,20,25,27,29]:family="industrial"
+		elif index in [3,14]:family="lab"
+		elif index in [4,18]:family="quarry"
+		elif index in [10,26]:family="garden"
+		elif index in [19,24,30]:family="historic"
+		elif index==22:family="library"
+		var families={
+			"town":[["paving","concrete","paving","wood"],["plaster","brick","painted","stone"],["d7c6a5","b4c7bf","e2c5ad","d1c7b4"]],
+			"port":[["concrete","paving","wood","metal"],["painted","stone","brick","rust"],["c5dce0","d9d0b7","c8bbab","d3bd9c"]],
+			"industrial":[["concrete","metal","concrete","paving"],["concrete","painted","brick","metal"],["c5d1cb","9dbfc4","d0b59a","c4cbd3"]],
+			"lab":[["paving","concrete","paving","metal"],["plaster","painted","concrete","plaster"],["dce9e7","b1d3cf","c7d7e2","e5d9bb"]],
+			"quarry":[["earth","stone","concrete","earth"],["sandstone","stone","rust","sandstone"],["dfc695","c7bfa9","c9ba9c","e6d3aa"]],
+			"garden":[["earth","moss","paving","wood"],["wood","plaster","stone","brick"],["d0c397","d2dfba","c8d0b4","d8bc96"]],
+			"historic":[["paving","stone","moss","paving"],["sandstone","stone","plaster","brick"],["e1d3b3","c6cbb5","e8d8bf","d5b89c"]],
+			"library":[["wood","paving","wood","paving"],["plaster","wood","brick","stone"],["e7d8ba","c3af8f","d4bda2","d9d5c4"]]}
+		var recipe=families[family]
+		if kind=="ground":
+			texture=recipe[0][zone%4];color=Color(recipe[2][zone%4]).darkened(.12)
+		else:
+			texture=recipe[1][zone%4];color=Color(recipe[2][zone%4])
+	if kind=="stair_detail":texture=THEMES[index][1];color=Color("c7c9b6");meters=2.4
 	var mat=ShaderMaterial.new();mat.shader=shader;mat.set_shader_parameter("surface_texture",load("res://assets/textures/world/"+texture+".png"));mat.set_shader_parameter("tint",color);mat.set_shader_parameter("tile_meters",meters);mat.set_shader_parameter("vertex_paint",vertex_paint)
 	cache[key]=mat;return mat

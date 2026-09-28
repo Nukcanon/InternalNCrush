@@ -15,3 +15,5 @@ nas/.env.backup-*
 services/cloudflare-directory/.dev.vars*
 
 web/staging/
+*.blend1
+*.blend2

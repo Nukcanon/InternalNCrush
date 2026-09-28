@@ -1,4 +1,27 @@
-# Internal N Crush 1.2.7 — published; local and CI test steps verified
+# Current work: 1.2.8 candidate, not yet published
+
+Work continues on `work/v1.2.8-districts-mobile`. Read
+`VALIDATION_V128_PARTIAL.md` and `RELEASE_NOTES_V128.md` first. 32 original Blender
+props are built, rendered and integrated; editable sources and inventory are in
+`art_source/`. Native/Web final 32-map state and physics signatures match.
+31-map navigation check passes 508/508, mobile regression 43/43, gesture and
+pinch tests pass. Full functional pass initially found five regressions; all five
+were corrected and passed targeted reruns. Native 12-cycle effects stress test
+passes, but release packaging, browser soak and hardware limits remain.
+
+Latest user instruction: after finishing the current work, expand to **more than
+200 distinct prop types** and place them appropriately. Do not count colour-only
+duplicates. Sea maps need recognizable sea/coast and fatal immersion; rivers need
+shallow visible water/riverbeds and must not kill players merely for entering.
+These additions have not been implemented yet. Existing water uses shallow
+interior polygons; do not misrepresent it as a completed sea system.
+
+Additional user instruction: make about **30 vehicle/vessel types** with distinct
+sizes and purposes, included in the 200+ catalogue. Use sea-appropriate boats at
+coasts/ports and small shallow-draft boats in rivers. Include cars and trucks;
+place with plausible scale, waterline and road/berth clearance. Still pending.
+
+## Published baseline: 1.2.7
 
 The user explicitly requested publishing first, then continuing remaining tests.
 Windows/Web/NAS release 1.2.7 and the live website are published. Do not restore

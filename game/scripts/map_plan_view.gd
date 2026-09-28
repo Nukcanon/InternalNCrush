@@ -30,7 +30,7 @@ func select_map(index:int):
 			meshes.append(mesh)
 		cache[index]={"data":data,"meshes":meshes}
 	plan=cache[index].data;floor_meshes=cache[index].meshes;reset_view()
-func reset_view():zoom=1.;pan=Vector2.ZERO;queue_redraw()
+func reset_view():zoom=1.;pan=Vector2.ZERO;fingers.clear();dragging=false;pinch_distance=0.;queue_redraw()
 func scale_factor() -> float:
 	if plan.is_empty():return 1.
 	return minf((size.x-24)/plan.dimensions[0],(size.y-24)/plan.dimensions[1])*zoom
@@ -56,6 +56,9 @@ func _draw():
 func zoom_at(factor:float,pivot:Vector2):
 	var old=zoom;zoom=clampf(zoom*factor,1.,8.);pan=pivot-size*.5-(pivot-size*.5-pan)*(zoom/old);queue_redraw()
 func _gui_input(event:InputEvent):
+	# Touch also emits synthetic mouse events on browsers. Consuming both moves
+	# the plan twice, and relative drag vectors can belong to another contact.
+	if event is InputEventMouse and event.device==InputEvent.DEVICE_ID_EMULATION:return
 	if event is InputEventMouseButton:
 		if event.button_index==MOUSE_BUTTON_LEFT:
 			dragging=event.pressed
@@ -69,10 +72,16 @@ func _gui_input(event:InputEvent):
 		else:fingers.erase(event.index)
 		pinch_distance=fingers.values()[0].distance_to(fingers.values()[1]) if fingers.size()==2 else 0.
 	elif interactive and event is InputEventScreenDrag:
+		if not fingers.has(event.index):return
+		var previous:Vector2=fingers[event.index]
+		var old_center=Vector2.ZERO
+		if fingers.size()==2:old_center=(fingers.values()[0]+fingers.values()[1])*.5
 		fingers[event.index]=event.position
 		if fingers.size()==2:
 			var points=fingers.values();var distance=points[0].distance_to(points[1])
-			if pinch_distance>1:zoom_at(distance/pinch_distance,(points[0]+points[1])*.5)
+			var center:Vector2=(points[0]+points[1])*.5
+			pan+=center-old_center
+			if pinch_distance>1:zoom_at(distance/pinch_distance,center)
 			pinch_distance=distance
-		elif fingers.size()==1:pan+=event.relative;queue_redraw()
+		elif fingers.size()==1:pan+=event.position-previous;queue_redraw()
 	accept_event()
