@@ -71,3 +71,5 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Same-version native/web publication; no additional gameplay tests requested.
 
 - PULSE, TIDAL, FOLD and MENDER reserve ammunition increased to at least 50 rounds, in addition to magazine ammunition.
+
+- COMET and QUAD reserve rockets increased to 20; other weapon reserves reviewed without additional balance changes.
