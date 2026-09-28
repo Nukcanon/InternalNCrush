@@ -125,7 +125,8 @@ export class Directory {
         const user=await this.verify(auth.slice(7),'session');
         if(path==='/v1/rooms'&&request.method==='GET'){
           const kind=scope(url.searchParams.get('scope')||'internet');
-          result={rooms:[...this.rooms.values()].filter(r=>r.options.scope===kind&&(kind!=='lan'||r.network===user.network)).map(r=>this.public(r))};
+          const nearby=url.searchParams.get('network')==='nearby';
+          result={rooms:[...this.rooms.values()].filter(r=>r.options.scope===kind&&(!(kind==='lan'||nearby)||r.network===user.network)).map(r=>this.public(r))};
         }else if(path==='/v1/rooms'&&data){result=this.public(await this.create(user,data));}
         else if(/^\/v1\/rooms\/[a-f0-9]+\/join$/.test(path)&&data){
           const r=this.rooms.get(path.split('/')[3]);if(!r)fail(404,'종료된 방입니다.');result=await this.admission(r,user);

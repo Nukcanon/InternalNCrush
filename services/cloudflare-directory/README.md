@@ -1,5 +1,11 @@
 # 무료 방 목록 서버 · Cloudflare Workers
 
+## 배포된 공용 로비
+
+https://internal-n-crush-lobby.internal-n-crush-directory.workers.dev
+
+웹 온라인 로비와 Windows 인터넷 로비의 기본 주소입니다. 빈 주소를 쓰던 프로필은 기본 주소를 받으며, 사용자가 지정해 둔 주소는 유지합니다. 메뉴를 열면 자동 연결합니다. 웹 ‘같은 네트워크의 방’은 `/v1/rooms?scope=internet&network=nearby` 필터이며, 새 방과 참가 권한은 `internet` 범위입니다. 학교망에서 외부 IP가 달라도 전체 목록으로 참가할 수 있습니다. 기존 클라이언트의 `scope=lan`은 이전 API 규칙을 유지합니다.
+
 경기 계산은 방을 만든 Windows PC 또는 웹 브라우저에서 실행합니다. 이 서버는 방 목록, 빠른 매치 배정, 일회용 입장 승인과 WebRTC 연결 신호만 처리합니다. 전투 패킷과 음성·영상은 이 서버를 통과하지 않습니다.
 
 Workers **Free**의 SQLite Durable Object와 WebSocket hibernation을 사용합니다. 기본 32개 방이며 자동 유료 전환이나 유료 TURN 신청은 구성하지 않았습니다. 무료 일일 한도에 도달하면 새 로비 요청이 실패할 수 있습니다. GitHub Pages는 정적 게임 파일만 호스팅하며 이 서버를 실행할 수 없습니다.

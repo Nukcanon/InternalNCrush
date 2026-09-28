@@ -90,7 +90,13 @@ body {
 	z-index: 1;
 }
 		
-#launch { position:fixed;inset:0;z-index:20;display:grid;place-content:center;background:#10232f;color:#eef8f9;font-family:system-ui;text-align:center;padding:24px; }
+#launch { position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:#10232f;color:#eef8f9;font-family:system-ui;text-align:center;padding:24px;overflow-y:auto;touch-action:pan-y;box-sizing:border-box; }
+.launch-card {width:min(100%,680px);margin:auto;}
+#launch .launch-card>p {margin:16px auto;}
+#launch #start {width:100%;}
+.lobby-guide {margin-top:22px;padding:16px 20px;border:1px solid #34505e;border-radius:8px;background:#172d39;text-align:left;font-size:14px;line-height:1.65;}
+#launch .lobby-guide p {margin:8px 0;max-width:none;}
+.lobby-guide strong {color:#6cdfc3;}
 #launch button {background:#6cdfc3;color:#10212c;border:0;border-radius:8px;padding:18px 42px;font-size:20px;font-weight:700;cursor:pointer;}
 #launch h1 {letter-spacing:.1em;font-size:clamp(24px,5vw,44px);}
 #launch p {color:#bdd0d7;line-height:1.6;max-width:550px;}
@@ -102,7 +108,7 @@ body {
 	</head>
 	<body>
 <div id="portrait">화면을 가로로 돌려 주세요.<br><small>두 손 터치 조작에 맞춘 가로 화면 게임입니다.</small></div>
-<div id="launch"><h1>INTERNAL N CRUSH</h1><p>첫 실행에는 게임 파일을 내려받습니다.<br>모바일은 가로 화면 · PC는 키보드와 마우스로 플레이하세요.</p><button id="start">게임 시작</button><p id="start-error" role="status"></p></div>
+<div id="launch"><div class="launch-card"><h1>INTERNAL N CRUSH</h1><p>첫 실행에는 게임 파일을 내려받습니다.<br>모바일은 가로 화면 · PC는 키보드와 마우스로 플레이하세요.</p><button id="start">게임 시작</button><p id="start-error" role="status"></p><section class="lobby-guide" aria-label="함께 플레이하는 방법"><strong>별도 서버 프로그램 없이 함께 플레이</strong><p>게임 시작 → <b>온라인 로비</b>에서 공용 로비에 자동 연결됩니다.<br>한 사람이 방을 만들고, 다른 사람들은 같은 목록에서 참가하세요.<br>Windows 버전은 <b>인터넷 로비</b>를 이용하면 웹과 함께 플레이할 수 있습니다.</p><p>인터넷 연결이 필요합니다. 학교·DMZ·VPN에서는 <b>전체 방 목록</b>을 이용하세요. ‘같은 네트워크의 방’은 외부 IP를 기준으로 한 참고용 필터입니다. 망 설정에 따라 기기 간 직접 연결이 제한될 수 있습니다.</p></section></div></div>
 <button id="fullscreen" aria-label="전체 화면 전환">전체 화면</button>
 		<canvas id="canvas">
 			Your browser does not support the canvas tag.

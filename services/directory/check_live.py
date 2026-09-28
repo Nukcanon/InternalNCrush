@@ -8,7 +8,7 @@ import websockets
 
 async def check(url, version):
     def request(path, data=None, token=''):
-        headers={'Content-Type':'application/json'}
+        headers={'Content-Type':'application/json','User-Agent':'InternalNCrush-Validation/'+version}
         if token:headers['Authorization']='Bearer '+token
         req=urllib.request.Request(url+path,data=None if data is None else json.dumps(data).encode(),headers=headers)
         with urllib.request.urlopen(req,timeout=10) as r:return json.load(r)

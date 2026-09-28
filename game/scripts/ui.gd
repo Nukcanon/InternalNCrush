@@ -92,6 +92,8 @@ var hud_orange:Label
 var operator_name:Label
 var internet_filter=RoomFilters.defaults()
 var internet_rooms=[]
+var internet_nearby=false
+var lobby_connect_button:Button
 const MENU_SCALE=.88
 var ACTION_HEIGHT=84 if TouchControls.supported() else 40
 func menu_key(event:InputEvent) -> bool:
@@ -281,8 +283,12 @@ func build_main_actions():
 	var name=label("닉네임",19);name.modulate=Color("a7c5d4")
 	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="게임에서 사용할 닉네임";nick.max_length=20;nick.custom_minimum_size.y=47;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
 	stack.add_child(HSeparator.new());label("플레이",23)
-	button("내부망 로비",join_menu)
-	button("인터넷 로비",internet_menu)
+	if OS.has_feature("web"):
+		button("온라인 로비",internet_menu)
+		button("같은 네트워크의 방",join_menu)
+	else:
+		button("내부망 로비",join_menu)
+		button("인터넷 로비",internet_menu)
 	stack.add_child(HSeparator.new());label("연습",23)
 	var practice_actions=HBoxContainer.new();practice_actions.add_theme_constant_override("separation",10);stack.add_child(practice_actions)
 	button("봇 전투",practice_menu,practice_actions).size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -962,23 +968,21 @@ func refresh():
 func map_selector():
 	map_refresh=MapSelection.build(self)
 
-func internet_menu(scope:String="internet"):
-	game.internet.scope=scope
-	make_panel("내부망 로비" if scope=="lan" else "인터넷 로비",980);screen="internet"
+func internet_menu(scope:String="internet",auto_connect=true):
+	# Nearby is a list filter, never an admission restriction. School networks
+	# can use several external addresses for devices in the same building.
+	internet_nearby=scope=="lan";game.internet.scope="internet"
+	make_panel("같은 네트워크의 방" if internet_nearby else "온라인 로비",980);screen="internet"
 	var service=game.internet
-	if scope=="lan":label("웹 호환 내부망 방입니다. 참가자 모두 같은 로비 주소를 사용하세요. 브라우저는 UDP 자동 검색을 지원하지 않습니다.",17)
+	if internet_nearby:label("외부 IP가 같은 방을 참고용으로 표시합니다. 학교·DMZ·VPN에서는 같은 내부망도 누락될 수 있으니 모든 방 보기를 이용하세요.",17)
 	var footer=HBoxContainer.new();footer.add_theme_constant_override("separation",12);stack.add_child(footer);pin_actions(footer)
 	var address=edit("로비 서버",str(game.profile.get("lobby_url","")),func(_v):pass)
 	address.placeholder_text="https://play.example.com"
-	button("서버 연결",func():
-		notice("로비 서버에 연결 중…")
-		var result=await service.connect_service(address.text)
-		if screen!="internet":return
-		if result.has("error"):notice(result.error)
-		else:internet_menu(scope),footer)
+	lobby_connect_button=button("서버 연결",func():connect_online_lobby(address.text,scope,panel),footer)
 	if service.token.is_empty():
-		label("운영 중인 로비 서버 주소를 입력하세요.\n연결되면 아래의 방 만들기 버튼이 활성화됩니다.",17)
+		label("기본 공용 로비에 자동으로 연결합니다. 별도 서버 프로그램은 필요하지 않습니다.\n연결 실패 시 서버 연결로 다시 시도하거나 운영 중인 다른 로비 주소를 입력하세요.",17)
 	else:
+		button("모든 방 보기" if internet_nearby else "같은 네트워크의 방 보기",func():internet_menu("internet" if internet_nearby else "lan"))
 		RoomFilters.build(self,stack,internet_filter,render_internet_rooms)
 		var selected_mode=[-1]
 		option("빠른 참가 모드",["모든 모드"]+Rules.MODES,0,func(i):selected_mode[0]=i-1)
@@ -999,10 +1003,28 @@ func internet_menu(scope:String="internet"):
 	var create=button("방 만들기" if scope=="lan" else "공개 방 만들기",internet_create,footer)
 	create.name="CreateRoom";create.disabled=service.token.is_empty();create.tooltip_text="로비 서버에 연결하면 방을 만들 수 있습니다." if create.disabled else "새 방을 만들고 방장으로 참가합니다."
 	button("메인메뉴",menu,footer)
+	if auto_connect and service.token.is_empty() and not address.text.is_empty():connect_online_lobby.call_deferred(address.text,scope,panel)
+func connect_online_lobby(url:String,scope:String,origin_panel):
+	if not is_instance_valid(origin_panel) or panel!=origin_panel:return
+	lobby_connect_button.disabled=true;notice("로비 서버에 연결 중…")
+	while game.internet.busy:
+		await get_tree().create_timer(.1).timeout
+		if not is_instance_valid(origin_panel) or panel!=origin_panel:return
+	if not game.internet.token.is_empty() and game.internet.endpoint==url.strip_edges().trim_suffix("/"):
+		internet_menu(scope,false);return
+	var result=await game.internet.connect_service(url)
+	if not is_instance_valid(origin_panel) or panel!=origin_panel or screen!="internet":return
+	if result.has("error"):
+		lobby_connect_button.disabled=false;notice(result.error)
+	else:internet_menu(scope,false)
 func refresh_internet_rooms():
 	if screen!="internet" or game.internet.token.is_empty():return
-	var result=await game.internet.request("/v1/rooms?scope="+game.internet.scope)
-	if screen!="internet" or not is_instance_valid(room_list):return
+	var target_list=room_list
+	while game.internet.busy:
+		await get_tree().create_timer(.1).timeout
+		if screen!="internet" or not is_instance_valid(target_list) or room_list!=target_list:return
+	var result=await game.internet.request("/v1/rooms?scope=internet"+("&network=nearby" if internet_nearby else ""))
+	if screen!="internet" or not is_instance_valid(target_list) or room_list!=target_list:return
 	if result.has("error"):notice(result.error);return
 	internet_rooms=result.get("rooms",[])
 	for room in internet_rooms:room.ping=-1 if room.get("host_rtt")==null else int(room.host_rtt)+game.internet.list_latency
@@ -1043,7 +1065,7 @@ func internet_create():
 		if result.has("error"):notice(result.error)
 		else:wait_internet_room(result.id),actions)
 	notice_label=label("방장이 대기실에서 경기를 시작합니다.",17)
-	button("돌아가기",func():internet_menu(game.internet.scope),actions)
+	button("돌아가기",func():internet_menu("lan" if internet_nearby else "internet"),actions)
 func wait_internet_room(room_id:String):
 	for i in range(30):
 		if screen not in ["internet","internet_create"] or game.phase!="menu":return
@@ -1060,7 +1082,8 @@ func build_touch_main_actions():
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",14);panel.add_child(stack)
 	label("INTERNAL N CRUSH",38)
 	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=64;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
-	for items in [[["내부망 로비",join_menu],["인터넷 로비",internet_menu]],[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
+	var network_actions=[["온라인 로비",internet_menu],["같은 네트워크의 방",join_menu]] if OS.has_feature("web") else [["내부망 로비",join_menu],["인터넷 로비",internet_menu]]
+	for items in [network_actions,[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)
 		for item in items:button(item[0],item[1],row).size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	label("왼손 이동 · 오른손 화면 조준 · 달리기 버튼으로 켜기/끄기",25)

@@ -200,9 +200,9 @@ async def session(request:Request,value:SessionInput):
     return {"token":token,"uid":uid,"transport":"webrtc","ice_servers":ice_servers(uid)}
 
 @app.get("/v1/rooms")
-async def rooms(request:Request,scope:str="internet"):
+async def rooms(request:Request,scope:str="internet",network:str="all"):
     user=directory.authenticate(request)
-    return {"rooms":[directory.public(r) for r in directory.rooms.values() if r["options"]["scope"]==scope and time.time()-r["updated"]<45 and (scope!="lan" or r["network"]==user["network"])]}
+    return {"rooms":[directory.public(r) for r in directory.rooms.values() if r["options"]["scope"]==scope and time.time()-r["updated"]<45 and ((scope!="lan" and network!="nearby") or r["network"]==user["network"])]}
 
 @app.post("/v1/rooms")
 async def create(request:Request,value:RoomInput):

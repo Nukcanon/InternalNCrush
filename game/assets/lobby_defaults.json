@@ -1,4 +1,4 @@
 {
-  "url": "",
-  "status": "Cloudflare account deployment pending; no unverified public endpoint is configured."
+  "url": "https://internal-n-crush-lobby.internal-n-crush-directory.workers.dev",
+  "status": "Cloudflare public room directory; gameplay uses peer-to-peer WebRTC."
 }
