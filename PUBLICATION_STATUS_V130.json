@@ -1,0 +1,379 @@
+{
+  "published_version": "1.3.0",
+  "release_tag": "internal-n-crush-v1.3.0",
+  "source_commit": "ba0da924851739a9a7aec1e34c18ce47271419b1",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.0",
+  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=e777495bdc55",
+  "published_at": "2026-09-28T03:53:30Z",
+  "verified_at": "2026-09-28T04:20:57.186730+00:00",
+  "status": "published_with_documented_validation_limits",
+  "previous_publication_record": "PUBLICATION_STATUS_V128.json",
+  "assets": [
+    {
+      "name": "InternalNCrush_NAS_Linux_v1.3.0.zip",
+      "bytes": 15601,
+      "sha256": "6abfc5bc216933b832bbc66e6c6430c9b3e551f83a0e4e0f08d0eadf04ce40fe",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.0/InternalNCrush_NAS_Linux_v1.3.0.zip"
+    },
+    {
+      "name": "InternalNCrush_Web_v1.3.0.zip",
+      "bytes": 90162248,
+      "sha256": "e777495bdc559909d7095c714bad252cd6dd748d405b7ccc7f980baed49b3197",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.0/InternalNCrush_Web_v1.3.0.zip"
+    },
+    {
+      "name": "InternalNCrush_Windows_v1.3.0.zip",
+      "bytes": 170833158,
+      "sha256": "6a39eaf8602cb37147b71ded8efbe5fe77156ccc7205b52477ef7dfca67c96bd",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.0/InternalNCrush_Windows_v1.3.0.zip"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 301,
+      "sha256": "9b8a425ed809d4e4c8b83641fe27b3b463649e655bc05beabd80afc32146334a",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.0/SHA256SUMS.txt"
+    },
+    {
+      "name": "WEB_RELEASE_v1.3.0.json",
+      "bytes": 173,
+      "sha256": "c94130c867dc0b2f2869ba7f33f3195846ac8fb97985b9995b797a378a345fc3",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.0/WEB_RELEASE_v1.3.0.json"
+    }
+  ],
+  "site_install_commit": "99b37b56b086a38d3c476b9983128b529697df67",
+  "site_installer_run": 36375684418,
+  "pages_run": 36375710423,
+  "web_pack": {
+    "path": "game-ba0da9248517.pck",
+    "bytes": 85071824,
+    "sha256": "38dd41e48a94598577fb492e47a56f7c1df3208dedc030d51870f89c68213d0a"
+  },
+  "graphics": {
+    "native_and_web_default": "automatic",
+    "new_finishes": {
+      "roof": 40,
+      "soffit": 20,
+      "ceiling": 40
+    },
+    "paired_relief_normal_atlas": true,
+    "automatic_resolution_changes": false,
+    "low": "Detail normals, sunlight shadows and pooled practical lights disabled",
+    "high": "Detail normals, directional shadows, practical lights and antialiasing"
+  },
+  "validation": {
+    "surface_audit": {
+      "maps": 32,
+      "triangles": 251766,
+      "duplicates": 0,
+      "degenerate": 0,
+      "material_tile_leaks": 0
+    },
+    "clear_spawn_positions": 1007,
+    "native_web_physics_maps": 32,
+    "arena_flow": "201/201",
+    "room_routes": "8/8",
+    "traversal_contacts": "13/13",
+    "physical_traversal": "26/26",
+    "weapon_rules": "16/16",
+    "restricted_bot_actual_combat": "knife and pistol passed",
+    "melee": "38/38 plus actual replay capture, no bullet shown",
+    "network_security": "40/40",
+    "bots": "6/6",
+    "defusal": "52/52",
+    "web_graphics": "19/19",
+    "render_split": "5/5 native and Web",
+    "mobile_ui": "passed",
+    "settings_guard": "apply/discard/Escape passed; browser confirm/discard inspected",
+    "directory_python_tests": 12,
+    "cloudflare_policy_tests": "passed",
+    "installer_tests": 7,
+    "soak": {
+      "native": {
+        "cycles": 24,
+        "mean_frame_ms": 16.685030629993538,
+        "largest_sample_frame_ms": 106.719,
+        "tail_nodes": [
+          2812,
+          2816
+        ],
+        "tail_resources": [
+          1285
+        ],
+        "tail_video_bytes": [
+          148409837,
+          148436153
+        ]
+      },
+      "web": {
+        "cycles": 24,
+        "mean_frame_ms": 17.00940432772836,
+        "largest_sample_frame_ms": 574.5,
+        "tail_nodes": [
+          2817
+        ],
+        "tail_resources": [
+          1214
+        ],
+        "tail_video_bytes": [
+          66476147
+        ],
+        "wasm_capacity_bytes": [
+          100466688.0
+        ],
+        "heap_bytes_range": [
+          113498967.0,
+          212376572.0
+        ]
+      }
+    },
+    "fixed_view_render_benchmark": {
+      "baseline": [
+        {
+          "draw_calls_mean": 260.0,
+          "drawn_frames": 7226,
+          "frames": 7226,
+          "map": 17,
+          "max_ms": 3.025,
+          "mean_ms": 0.830322861887627,
+          "p95_ms": 1.272,
+          "p99_ms": 1.691,
+          "players": 8,
+          "quality": "low",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 118490505.0
+        },
+        {
+          "draw_calls_mean": 271.0,
+          "drawn_frames": 7179,
+          "frames": 7179,
+          "map": 17,
+          "max_ms": 3.13,
+          "mean_ms": 0.835745786321217,
+          "p95_ms": 1.252,
+          "p99_ms": 1.612,
+          "players": 8,
+          "quality": "medium",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 120620697.0
+        },
+        {
+          "draw_calls_mean": 412.0,
+          "drawn_frames": 6767,
+          "frames": 6767,
+          "map": 17,
+          "max_ms": 2.104,
+          "mean_ms": 0.886599822668831,
+          "p95_ms": 1.108,
+          "p99_ms": 1.439,
+          "players": 8,
+          "quality": "medium_shadow",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 120620697.0
+        },
+        {
+          "draw_calls_mean": 412.0,
+          "drawn_frames": 6433,
+          "frames": 6433,
+          "map": 17,
+          "max_ms": 2.48,
+          "mean_ms": 0.932684284159803,
+          "p95_ms": 1.19,
+          "p99_ms": 1.556,
+          "players": 8,
+          "quality": "high",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 146425497.0
+        },
+        {
+          "draw_calls_mean": 384.0,
+          "drawn_frames": 7299,
+          "frames": 7299,
+          "map": 0,
+          "max_ms": 1.888,
+          "mean_ms": 0.821960542540069,
+          "p95_ms": 0.976,
+          "p99_ms": 1.321,
+          "players": 32,
+          "quality": "low",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 173876301.0
+        },
+        {
+          "draw_calls_mean": 392.0,
+          "drawn_frames": 6940,
+          "frames": 6940,
+          "map": 0,
+          "max_ms": 3.739,
+          "mean_ms": 0.864640778097993,
+          "p95_ms": 1.101,
+          "p99_ms": 1.411,
+          "players": 32,
+          "quality": "medium",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 173876301.0
+        },
+        {
+          "draw_calls_mean": 499.0,
+          "drawn_frames": 6400,
+          "frames": 6400,
+          "map": 0,
+          "max_ms": 2.149,
+          "mean_ms": 0.937556874999996,
+          "p95_ms": 1.112,
+          "p99_ms": 1.457,
+          "players": 32,
+          "quality": "medium_shadow",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 173876301.0
+        },
+        {
+          "draw_calls_mean": 504.0,
+          "drawn_frames": 5874,
+          "frames": 5874,
+          "map": 0,
+          "max_ms": 2.027,
+          "mean_ms": 1.02143479741233,
+          "p95_ms": 1.206,
+          "p99_ms": 1.53,
+          "players": 32,
+          "quality": "high",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 199681101.0
+        }
+      ],
+      "candidate": [
+        {
+          "draw_calls_mean": 279.0,
+          "drawn_frames": 8279,
+          "frames": 8279,
+          "map": 17,
+          "max_ms": 1.447,
+          "mean_ms": 0.724684019809162,
+          "p95_ms": 0.857,
+          "p99_ms": 1.169,
+          "players": 8,
+          "quality": "low",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 131470125.0
+        },
+        {
+          "draw_calls_mean": 290.0,
+          "drawn_frames": 8112,
+          "frames": 8112,
+          "map": 17,
+          "max_ms": 1.558,
+          "mean_ms": 0.739550788954633,
+          "p95_ms": 0.877,
+          "p99_ms": 1.177,
+          "players": 8,
+          "quality": "medium",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 131470125.0
+        },
+        {
+          "draw_calls_mean": 470.0,
+          "drawn_frames": 7002,
+          "frames": 7002,
+          "map": 17,
+          "max_ms": 1.598,
+          "mean_ms": 0.856851471008286,
+          "p95_ms": 1.009,
+          "p99_ms": 1.313,
+          "players": 8,
+          "quality": "medium_shadow",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 131470125.0
+        },
+        {
+          "draw_calls_mean": 470.0,
+          "drawn_frames": 6468,
+          "frames": 6468,
+          "map": 17,
+          "max_ms": 1.749,
+          "mean_ms": 0.927613172541743,
+          "p95_ms": 1.093,
+          "p99_ms": 1.4,
+          "players": 8,
+          "quality": "high",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 157274925.0
+        },
+        {
+          "draw_calls_mean": 480.0,
+          "drawn_frames": 6238,
+          "frames": 6238,
+          "map": 0,
+          "max_ms": 2.337,
+          "mean_ms": 0.961859570375116,
+          "p95_ms": 1.12,
+          "p99_ms": 1.458,
+          "players": 32,
+          "quality": "low",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 185150279.0
+        },
+        {
+          "draw_calls_mean": 488.0,
+          "drawn_frames": 6190,
+          "frames": 6190,
+          "map": 0,
+          "max_ms": 1.819,
+          "mean_ms": 0.969277705977381,
+          "p95_ms": 1.144,
+          "p99_ms": 1.493,
+          "players": 32,
+          "quality": "medium",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 185150279.0
+        },
+        {
+          "draw_calls_mean": 650.0,
+          "drawn_frames": 5533,
+          "frames": 5533,
+          "map": 0,
+          "max_ms": 2.159,
+          "mean_ms": 1.08440050605458,
+          "p95_ms": 1.266,
+          "p99_ms": 1.587,
+          "players": 32,
+          "quality": "medium_shadow",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 185150279.0
+        },
+        {
+          "draw_calls_mean": 655.0,
+          "drawn_frames": 5032,
+          "frames": 5032,
+          "map": 0,
+          "max_ms": 2.02,
+          "mean_ms": 1.19233505564388,
+          "p95_ms": 1.4,
+          "p99_ms": 1.736,
+          "players": 32,
+          "quality": "high",
+          "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+          "video_bytes": 210955079.0
+        }
+      ],
+      "scope": "Fixed paused scene, 1280x720, RTX 4080 SUPER; rendering only, not full-match or Intel iGPU performance."
+    },
+    "full_ci": {
+      "run": 36375283761,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "functional_groups": 52,
+    "network_32_clients": "passed",
+    "network_lifecycle_props_rotation_webrtc_touch": "passed"
+  },
+  "limitations": [
+    "No physical Intel integrated GPU or mobile device was available; measurements use RTX 4080 SUPER.",
+    "The app browser refuses pointer lock; ordinary Chrome/Edge Alt+Tab recapture still needs physical browser verification.",
+    "Initial Web workload included a 574.5 ms frame; later sampled spikes reached 95.3 ms. Repeated resources were bounded, not proof of zero frame drops.",
+    "GLES texture cleanup warnings remain at native process exit; two in fixed-render checks and four in replay checks. Runtime node/resource counts remain bounded across 24 rounds.",
+    "No public directory endpoint is configured; service protocol changes are packaged but no new directory service is claimed deployed.",
+    "Three views per map and numerical geometry checks do not inspect every possible view of every surface."
+  ],
+  "site_guidance_commit": "4f62ffe",
+  "site_guidance_pages_run": 36376809693
+}

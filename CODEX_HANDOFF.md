@@ -1,3 +1,9 @@
+# Latest publication: 1.3.1 (2026-09-28)
+
+Source `0bb5cce` is published on main and in release `internal-n-crush-v1.3.1`. Website: https://nukcanon.github.io/nukcanon/play/?build=91550bc6ec27 . Current evidence is in `PUBLICATION_STATUS.json`, `docs/COMBAT_AUDIO_REFRESH.md`, and `docs/v131-performance.json`; older notes below are historical. Arena cache revision is 141. User-approved MP3 vocal alternatives are included; default setting remains off. Do not replace them with the rejected shouting take. No public directory endpoint or Intel iGPU hardware result is claimed.
+
+---
+
 # Published 1.3 — current checkpoint
 
 1.3 is live. Runtime source `ba0da924851739a9a7aec1e34c18ce47271419b1`, release `internal-n-crush-v1.3.0`, public Web build `e777495bdc55`. Read `V13_VALIDATION.md`, `PUBLICATION_STATUS.json` and `RELEASE_NOTES_V13.md` before older notes below.
@@ -149,3 +155,6 @@ Source: `D:/python_workplace/InternalNCrush/InternalNCrush`; website: sibling `s
 Native `game/` and Web `web/staging/game/` share gameplay but use separately baked graphics. Never copy Web models back into native assets. `ArenaCache.REVISION` is 126. Authoring/bake tools live in `game/tools/maps/`; district specifications/data are tracked under `game/assets/arenas/`. CI rebakes both sets and compares collision signatures. Partial bakes merge signature manifests. Web retains bounded sparse GL handles and does not automatically lower resolution.
 
 Release evidence is under ignored `validation/public-v126`, `validation/windows-v126-ci`, `validation/webrtc-v126-package`, `validation/public-web-v126` and `validation/v126-*`. Prior map-review bundles in ignored `output/` are review artifacts, not current runtime. Do not accidentally commit generated validation outputs or test entrypoints into production exports.
+
+## Latest: 1.3.2 published
+Source d4dfca97ed492c8adf12b6afa838e0612089d27c; Pages 8f8eec295b3f37cbdf7029a4c16e33f7ea48d877. Latest user balance is ARC 60→120 DPS. See docs/V132_HOTFIX.md, docs/v132-validation.json, PUBLICATION_STATUS.json. User requested publish first, then checks: completed focused mobile/reload 15, bot 12 (three respawns), combat 59 and 32-player native low/high timing. Public critical hashes and Web v1.3.2 menu verified. No physical mobile/Intel iGPU measured.

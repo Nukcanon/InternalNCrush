@@ -20,6 +20,13 @@ func run():
 		for rect in g.arena.obstacles:
 			if rect.has_point(Vector2(pos.x,pos.z)):clear=false
 	expect(clear,"path nodes avoid expanded static collision rectangles")
+	for attempt in range(3):
+		brain.next_path=g.clock+500.;brain.next_decision=g.clock+500.;brain.target=999;brain.visible_target=true
+		g.spawn(-1);g.actors[-1].position=Vector3(35,0,77)
+		expect(brain.next_path==0. and brain.next_decision==0. and brain.target==0,"respawn clears stale bot state")
+		var respawn_start=g.actors[-1].position;await steps(120)
+		expect(g.actors[-1].position.distance_to(respawn_start)>.5,"bot moves after respawn %d"%attempt)
+	g.actors[-1].position=Vector3(35,0,77);brain.reset_after_spawn()
 	var start=g.actors[-1].position;await steps(900)
 	expect(g.actors[-1].position.distance_to(start)>25,"bot leaves spawn and passes obstacles")
 	await steps(600)

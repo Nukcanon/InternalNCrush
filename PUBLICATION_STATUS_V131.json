@@ -1,0 +1,98 @@
+{
+  "published_version": "1.3.1",
+  "release_tag": "internal-n-crush-v1.3.1",
+  "source_commit": "0bb5ccec86301a1250e91b36cb808d6c3d25b7be",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.1",
+  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=91550bc6ec27",
+  "published_at": "2026-09-28T08:42:02Z",
+  "verified_at": "2026-09-28T08:49:07.733645+00:00",
+  "status": "published_with_documented_validation_limits",
+  "previous_publication_record": "PUBLICATION_STATUS_V130.json",
+  "site_commit": "e5b722871f684963659f02cb2a158ee5045971c5",
+  "assets": [
+    {
+      "name": "InternalNCrush_NAS_Linux_v1.3.1.zip",
+      "bytes": 15598,
+      "sha256": "6977cd2bd825e7c832b807385d7512084b16386b9bd21b769ec00333f213e085",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.1/InternalNCrush_NAS_Linux_v1.3.1.zip"
+    },
+    {
+      "name": "InternalNCrush_Web_v1.3.1.zip",
+      "bytes": 107121713,
+      "sha256": "91550bc6ec2700ae92b6f5e4218b697d4d08df84fa470dd3cb14b5bbaf89940f",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.1/InternalNCrush_Web_v1.3.1.zip"
+    },
+    {
+      "name": "InternalNCrush_Windows_v1.3.1.zip",
+      "bytes": 199560700,
+      "sha256": "b4cdd5a487cb18c581634132dde19f72609408069530b28d201e817dd9fbdb2f",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.1/InternalNCrush_Windows_v1.3.1.zip"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 301,
+      "sha256": "5d86328e665d40aa48c2c7cc03bf1bdb96915b87b1f6fed1cad88312955a29a7",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.1/SHA256SUMS.txt"
+    },
+    {
+      "name": "WEB_RELEASE_v1.3.1.json",
+      "bytes": 173,
+      "sha256": "c37930fa3e6c2cd3560cf3e336ad1c93509bb4de1260fd761d614927c4b6afc7",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.1/WEB_RELEASE_v1.3.1.json"
+    }
+  ],
+  "public_web_files_verified": [
+    {
+      "path": "asset_cache_worker.js",
+      "bytes": 1481,
+      "sha256": "509546f30fd5a53fe15955f2c24ebb01e5fd7fa2e4db299bca906af51b609e23"
+    },
+    {
+      "path": "game-0bb5ccec8630.js",
+      "bytes": 317269,
+      "sha256": "a10fc8a5f64086ff4c6f5ce3549efac8d9d9b1d25c03dd8b92f2575bbc26ef83"
+    },
+    {
+      "path": "game-0bb5ccec8630.pck",
+      "bytes": 101982512,
+      "sha256": "5448c107a06f0c044eca15471f055e7d472ae7f3efd7cc07141d7f1613343b75"
+    },
+    {
+      "path": "game-0bb5ccec8630.wasm",
+      "bytes": 43699190,
+      "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+    },
+    {
+      "path": "index.html",
+      "bytes": 12863,
+      "sha256": "5a3b8c12aa915804b962a7d82c65b712a632a6738ae9d0d6424538e7c0acbf07"
+    }
+  ],
+  "validation": {
+    "functional_groups": 55,
+    "affected_groups_rerun": [
+      "spawn_exits",
+      "combat_refresh"
+    ],
+    "combat_refresh_consecutive_passes": 3,
+    "objective_floor_maps": 12,
+    "native_web_collision_maps": 32,
+    "facade_support_maps": 32,
+    "audio_feedback_checks": 30,
+    "touch_checks": 44,
+    "bot_touch_checks": 18,
+    "two_peer_bot_authorization": "passed",
+    "directory_python_tests": 9,
+    "native_packaged_startup": "passed",
+    "public_web_menu_and_combat": "passed",
+    "same_version_web_binary_cache_reuse": "passed; localhost access log has no second PCK/WASM request",
+    "performance_record": "docs/v131-performance.json",
+    "web_soak": "running"
+  },
+  "limitations": [
+    "Intel integrated GPU and physical mobile hardware were not available. Rendered measurements use RTX 4080 SUPER.",
+    "Visual captures sample each map; they do not prove every possible camera position is free of artifacts.",
+    "No public directory endpoint is configured. Directory/NAS packages are provided; a public lobby service is not claimed deployed.",
+    "Vocal alternatives are user-approved ElevenLabs free-plan output, subject to attribution and noncommercial terms."
+  ]
+}
