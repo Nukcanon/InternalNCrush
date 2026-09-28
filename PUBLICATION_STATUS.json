@@ -1,13 +1,13 @@
 {
   "published_version": "1.3.2",
   "release_tag": "internal-n-crush-v1.3.2",
-  "source_commit": "8da1489f341486d903bf1e4b41d0311eb5d5eabf",
+  "source_commit": "adbd03fa784d6c3788fe5e21c8044857a548814e",
   "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.2",
-  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=7339bbf206e2",
-  "published_at": "2026-09-28T12:34:16.331356+00:00",
+  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=4e03baae3b6d",
+  "published_at": "2026-09-28T13:32:17.415881+00:00",
   "status": "published_same_version_game_tests_skipped_by_request",
   "previous_publication_record": "PUBLICATION_STATUS_V132_INITIAL.json",
-  "site_commit": "3b612397c2b26678fe7de963f2210b16accce7b2",
+  "site_commit": "d36ed2d42a10cb8a74c0d70a06a2109ef92bf153",
   "assets": [
     {
       "name": "InternalNCrush_NAS_Linux_v1.3.2.zip",
@@ -17,33 +17,33 @@
     },
     {
       "name": "InternalNCrush_Web_v1.3.2.zip",
-      "bytes": 106356726,
-      "sha256": "7339bbf206e21d568f9eff7d5f1a2464ab5f5da56606d2cce596e7eea1efb871",
+      "bytes": 106359524,
+      "sha256": "4e03baae3b6d2567fec11c5948060ebc31946c4b29e8c6a39f1b3ba777409f17",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/InternalNCrush_Web_v1.3.2.zip"
     },
     {
       "name": "InternalNCrush_Windows_v1.3.2.zip",
-      "bytes": 199579219,
-      "sha256": "578ac783287ef0bdcf7285df001d7f4dc8e228fbf2153f5efe30597cac27c214",
+      "bytes": 199582931,
+      "sha256": "dcb6aa6e87a00efa6537bde5e544b54f2b09c1f8e82dcc79a691988d1e86f5dd",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/InternalNCrush_Windows_v1.3.2.zip"
     },
     {
       "name": "SHA256SUMS.txt",
       "bytes": 301,
-      "sha256": "dc013876217c63b71207ee233b2e5d45fa2b3723b25c251f3cd4029457427acc",
+      "sha256": "c5f5a02c3d766335814b89deced22389ae3795a42aff780807a7b42ffd2bfbb1",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/SHA256SUMS.txt"
     },
     {
       "name": "WEB_RELEASE_v1.3.2.json",
       "bytes": 173,
-      "sha256": "5e28bcb630498d77aa6a2b63d1451178e739b56203229894e187abf3310ddbbe",
+      "sha256": "8a5eba5c93a196a65ee37565d479b87e9eb5cc053cac151c2131abc02c689f9e",
       "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.2/WEB_RELEASE_v1.3.2.json"
     }
   ],
   "validation": {
     "native_and_web_export": "completed without script/export errors",
     "gameplay_tests": "skipped at user request",
-    "pages": "success: 36422665866",
+    "pages": "success: 36429139373",
     "physical_mobile_and_intel_igpu": "not measured"
   }
 }
