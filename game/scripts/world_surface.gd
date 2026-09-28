@@ -81,6 +81,12 @@ void fragment(){
  float variation=.88+.24*macro.r;
  vec3 base=paint*mix(vec3(.98),sqrt(max(tex,vec3(0.))),vertex_paint?.16:.62)*foot*variation;
  if(!vertex_paint)base*=mix(vec3(.93,1.02,.96),vec3(1.04,.97,.93),macro.g);
+ // Surface orientation contrast is stable in world space, including baked maps.
+ if(!vertex_paint){
+  if(surface_n.y>.65)base=mix(base,vec3(.22,.29,.32),.30);
+  else if(surface_n.y<-.65)base=mix(base,vec3(.86,.87,.81),.24);
+  else base=mix(base,vec3(.76,.66,.53),.10);
+ }
  ALBEDO=dynamic_lighting?base*.78:vec3(0.);
  EMISSION=dynamic_lighting?base*.22:base*facing;
  ROUGHNESS=.86;

@@ -449,7 +449,7 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 		"break":
 			var opened=smoothstep(.0,.2,t)*(1.-smoothstep(.75,.95,t))
 			barrel_group.rotation.x=-.50*opened
-			var port=barrel_group.transform*Vector3(-.02,.025,-.17)
+			var port=barrel_group.transform*Vector3(-.02 if reload_tube%2==0 else .02,.025,-.17)
 			var reach=smoothstep(.25,.50,t)*(1.-smoothstep(.64,.78,t))
 			left_hand.position=hand_origin.lerp(port+Vector3(-.09,-.04,.03),reach)
 			if is_instance_valid(reload_round):

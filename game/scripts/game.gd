@@ -417,6 +417,7 @@ func register(nick:String,token:String,password:String,version:String,ticket:Str
 	if not claims.is_empty():public_room.accepted(id,claims);options.room_owner=public_room.owner_peer
 	TeamBalance.reconcile(self)
 	configure.rpc_id(id,public_options());broadcast_state(true,id)
+	announce(players[id].nick+"님이 입장했습니다.")
 	print("JOIN ",id," count=",players.size())
 @rpc("authority","call_remote","reliable",0)
 func reject(message:String):
@@ -511,16 +512,16 @@ func kick_player(requester:int,target:int,by_vote=false) -> bool:
 			reject.rpc_id(target,"투표로 강퇴되었습니다. 3분 뒤 다시 참가할 수 있습니다." if by_vote else "방장이 강퇴했습니다. 3분 뒤 다시 참가할 수 있습니다.")
 			get_tree().create_timer(.25).timeout.connect(func():
 				if server and target in multiplayer.get_peers():multiplayer.multiplayer_peer.disconnect_peer(target))
-	disconnected(target);reconnects.erase(token);announce(name+" 강퇴");return true
+	disconnected(target,true);reconnects.erase(token);announce(name+" 강퇴");return true
 func start_kick_vote(requester:int,target:int) -> bool:
-	if not server or requester<=0 or target<=0 or target==1 or requester==target or not players.has(requester) or not players.has(target) or not vote.is_empty():return false
+	if not server or requester<=0 or target<=0 or TeamBalance.host(self,target) or requester==target or not players.has(requester) or not players.has(target) or not vote.is_empty():return false
 	if Time.get_ticks_msec()<int(vote_cooldowns.get(requester,0)):return false
 	var eligible=[]
 	for id in players:
 		if id>0 and id!=target:eligible.append(id)
 	if eligible.size()<2:feedback(requester,"","강퇴 투표는 대상 외 참가자가 2명 이상 있어야 합니다.",true);return false
-	vote={"target":target,"name":players[target].nick,"eligible":eligible,"votes":{requester:true},"needed":maxi(2,int(ceil(eligible.size()*.6))),"until":clock+25.}
-	vote_cooldowns[requester]=Time.get_ticks_msec()+60000;announce(players[target].nick+" 강퇴 투표 · F6 찬성 / F7 반대");broadcast_state(true);return true
+	vote={"target":target,"name":players[target].nick,"eligible":eligible,"votes":{requester:true},"needed":maxi(2,int(ceil(eligible.size()*.6))),"until":clock+15.}
+	vote_cooldowns[requester]=Time.get_ticks_msec()+60000;announce(players[target].nick+" 강퇴 투표 · 숫자키 9 찬성 / 숫자키 0 반대");broadcast_state(true);return true
 func cast_kick_vote(id:int,yes:bool) -> bool:
 	if not server or vote.is_empty() or id not in vote.eligible or vote.votes.has(id):return false
 	vote.votes[id]=yes;update_kick_vote();broadcast_state(true);return true
@@ -533,9 +534,10 @@ func update_kick_vote():
 	if yes>=int(vote.needed):
 		var target=int(vote.target);vote.clear();kick_player(1,target,true)
 	elif clock>=float(vote.until):vote.clear();announce("강퇴 투표가 종료되었습니다.")
-func disconnected(id:int):
+func disconnected(id:int,kicked=false):
 	peer_activity.erase(id);pending_peers.erase(id)
 	if not players.has(id):return
+	if server and id>0 and not kicked:announce(players[id].nick+"님이 퇴장했습니다.")
 	var departed=players[id].duplicate(true);var departed_pos:Vector3=actors[id].position if actors.has(id) else Vector3.ZERO
 	if server:
 		BombLogic.drop(self,id)
@@ -600,6 +602,9 @@ func network_discovery():
 			var d=JSON.parse_string(raw.get_string_from_utf8())
 			if d is Dictionary and d.get("game")=="RelayStrike":
 				d.ping=maxi(0,Time.get_ticks_msec()-room_search_sent);rooms[ip]=d;ui.update_rooms()
+func _input(event):
+	if not vote.is_empty() and event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_9,KEY_0,KEY_KP_9,KEY_KP_0]:
+		command("vote",{"yes":event.keycode in [KEY_9,KEY_KP_9]});get_viewport().set_input_as_handled()
 func _unhandled_input(event):
 	if is_instance_valid(ui.map_viewer):return
 	if event.is_action("score") and not is_instance_valid(ui.panel):
@@ -614,8 +619,6 @@ func _unhandled_input(event):
 		if event.is_action_pressed("gear") and not event.is_echo() and int(options.mode)!=4:ui.gear()
 		elif event is InputEventKey and event.pressed and event.keycode in [KEY_SPACE,KEY_ESCAPE]:kill_replay.finish()
 		get_viewport().set_input_as_handled();return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_F6,KEY_F7]:
-		command("vote",{"yes":event.keycode==KEY_F6});get_viewport().set_input_as_handled();return
 	if event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE:
 		if ui.screen=="settings" and ui.settings_exit.is_valid():ui.settings_exit.call();get_viewport().set_input_as_handled();return
 		if phase!="menu":ui.toggle_pause();get_viewport().set_input_as_handled()
@@ -818,7 +821,7 @@ func team_count(team:int) -> int:
 		if p.team==team:n+=1
 	return n
 func handle_command(id:int,action:String,data:Dictionary):
-	if action not in ["start","slot","reload","loadout","bot_settings","kick","vote_kick","vote","team","team_swap","team_policy","slide","skill","gadget","gadget_press","gadget_release","gadget_mode","melee","trigger_press","trigger_release","bomb_tap"] or data.size()>16:return
+	if action not in ["bot_add","bot_remove","start","slot","reload","loadout","bot_settings","kick","vote_kick","vote","team","team_swap","team_policy","slide","skill","gadget","gadget_press","gadget_release","gadget_mode","melee","trigger_press","trigger_release","bomb_tap"] or data.size()>16:return
 	for key in data:
 		if not (key is String or key is StringName) or str(key).length()>32:return
 		var value=data[key]
@@ -828,6 +831,8 @@ func handle_command(id:int,action:String,data:Dictionary):
 	if not players.has(id) or not rate_limit(id,"cmd_"+action,.08):return
 	var p=players[id]
 	match action:
+		"bot_add":RosterControls.add_bot(self,id,int(data.get("team",0)))
+		"bot_remove":RosterControls.remove_bot(self,id,int(data.get("target",0)))
 		"start":
 			if phase=="lobby" and (id==1 or (is_instance_valid(public_room) and public_room.enabled and public_room.can_start(id))):start_match()
 		"slot":
@@ -878,6 +883,7 @@ func swap_teams(requester:int,first:int,second:int) -> bool:
 	if first==second or not players.has(first) or not players.has(second) or int(options.mode)==1:return false
 	if not TeamBalance.allowed(self,requester,first) or not TeamBalance.allowed(self,requester,second):return false
 	if players[first].team==players[second].team:return false
+	if TeamBalance.host(self,requester):options.manual_roster=true;players[first].auto_balance=false;players[second].auto_balance=false
 	var team=players[first].team;players[first].team=players[second].team;players[second].team=team
 	finish_team_change(first);finish_team_change(second);TeamBalance.reconcile(self);enforce_medics();broadcast_state(true);return true
 func finish_team_change(target:int):

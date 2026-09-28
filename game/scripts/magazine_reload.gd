@@ -1,7 +1,7 @@
 class_name MagazineReload
 extends RefCounted
 static func chambered(w:Dictionary) -> bool:
-	return w.kind=="gun" and not w.get("rocket",false) and not w.get("laser",false) and w.name!="CHIME" and w.reload_style not in ["shell","break","box"]
+	return w.kind=="gun" and not w.get("rocket",false) and not w.get("laser",false) and w.name!="CHIME" and w.reload_style not in ["shell","break"]
 static func capacity(w:Dictionary,rounds:int) -> int:
 	return int(w.mag)+(2 if w.get("dual",false) else 1) if chambered(w) and rounds>0 else int(w.mag)
 static func finish(g:Node,id:int):

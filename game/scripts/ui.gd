@@ -5,6 +5,7 @@ var map_refresh=Callable()
 var reticle:Control
 var background:Control
 var version_box:VBoxContainer
+var vote_bar:ProgressBar
 var vote_panel:PanelContainer
 var vote_text:Label
 var vote_yes:Button
@@ -360,8 +361,8 @@ func lobby():
 	button("방 나가기",func():game.request_leave(),actions);notice_label=label("",14)
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 func teams_menu():
-	make_panel("팀 편성",1100);screen="teams"
-	label("팀은 직접 변경합니다. 방장은 봇도 이동할 수 있으며, 인원이 불균형해지는 이동은 제한됩니다.",15)
+	make_panel("팀 편성",940,true);screen="teams"
+	label("방장은 팀 이동·자리 교환과 봇 추가·제거가 가능합니다. 일반 참가자는 경기 규칙에 따라 자신의 팀을 변경합니다.",15)
 	if TeamBalance.host(game,game.local_id):option("다음 경기 편성",["현재 팀 유지","무작위","성적 기준 팀 균형"],game.options.next_teams,func(i):game.command("team_policy",{"next_teams":i}))
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
 	button("돌아가기",func():
@@ -377,33 +378,7 @@ func refresh_teams():
 		if control.get_popup().visible:return
 	team_signature=signature
 	for node in team_columns.get_children():team_columns.remove_child(node);node.queue_free()
-	var grid=GridContainer.new();grid.columns=2;grid.size_flags_horizontal=Control.SIZE_EXPAND_FILL;grid.add_theme_constant_override("h_separation",18);grid.add_theme_constant_override("v_separation",8);team_columns.add_child(grid)
-	var teams=[[],[]]
-	for p in game.players.values():
-		if int(p.team) in [0,1]:teams[int(p.team)].append(p)
-	for side in range(2):
-		var head=label(("◆ BLUE" if side==0 else "● ORANGE")+"   "+str(game.team_count(side))+"명",23,grid);head.modulate=Color("63c5ff") if side==0 else Color("ffa35f");head.size_flags_horizontal=Control.SIZE_EXPAND_FILL;head.autowrap_mode=TextServer.AUTOWRAP_OFF
-	for index in range(maxi(teams[0].size(),teams[1].size())):
-		for side in range(2):
-			var cell=VBoxContainer.new();cell.size_flags_horizontal=Control.SIZE_EXPAND_FILL;cell.add_theme_constant_override("separation",3);grid.add_child(cell)
-			var row=HBoxContainer.new();row.custom_minimum_size.y=38 if TouchControls.supported() else 30;cell.add_child(row)
-			var controls=HBoxContainer.new();controls.custom_minimum_size.y=44 if TouchControls.supported() else 38;cell.add_child(controls)
-			if index>=teams[side].size():continue
-			var p=teams[side][index]
-			var name=label(p.nick+("  · 나" if p.id==game.local_id else "")+"  /  "+Rules.CLASSES[p.role],15,row)
-			name.autowrap_mode=TextServer.AUTOWRAP_OFF;name.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;name.custom_minimum_size=Vector2(120,row.custom_minimum_size.y);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.size_flags_vertical=Control.SIZE_FILL;name.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
-			if int(p.id)<0:BotSettings.controls(game,controls,p)
-			for control in controls.get_children():control.size_flags_vertical=Control.SIZE_SHRINK_CENTER
-			if TeamBalance.allowed(game,game.local_id,int(p.id)) and game.options.mode!=1:
-				var pid=int(p.id);var target=1-side;var full=game.team_count(target)>=16
-				var move=button("교환…" if full and TeamBalance.host(game,game.local_id) else "→ "+("BLUE" if target==0 else "ORANGE"),func():
-					if full and TeamBalance.host(game,game.local_id):team_swap_menu(pid)
-					else:game.command("team",{"player_id":pid,"team":target}),row)
-				move.disabled=not TeamBalance.can_move(game,game.local_id,pid,target);move.custom_minimum_size=Vector2(96,32);move.size_flags_vertical=Control.SIZE_SHRINK_CENTER;move.add_theme_font_size_override("font_size",13)
-	for side in range(2):
-		var footer=VBoxContainer.new();grid.add_child(footer)
-		if game.phase=="lobby" and game.players.has(game.local_id) and game.players[game.local_id].team!=side and game.options.mode!=1:
-			var selected=side;button("이 팀으로 참가",func():game.command("team",{"team":selected}),footer)
+	RosterControls.populate(game,team_columns,false)
 func team_swap_menu(first:int):
 	if not TeamBalance.host(game,game.local_id) or not game.players.has(first):return
 	make_panel("참가자 팀 교환",780)
@@ -506,7 +481,7 @@ func settings():
 		sample.size_flags_horizontal=Control.SIZE_EXPAND_FILL;sample.custom_minimum_size.x=0;sample.clip_text=true
 	stack=tabs[4]
 	var diagram=ControlsDiagram.new();diagram.custom_minimum_size=Vector2(885,415);stack.add_child(diagram)
-	label("마우스 휠: 무기 전환  /  E: 문 열기·닫기  /  E 길게: 설치·해체  /  F: 스킬 · 포탑 강화  /  Q: 즉시 근접 / 5: 근접 무기 장착 / C: 의료 카빈 회복\nG: 가젯 · 수류탄은 누른 뒤 놓아 투척  /  V: 가젯 종류  /  F6·F7: 강퇴 투표",18)
+	label("마우스 휠: 무기 전환  /  E: 문 열기·닫기  /  E 길게: 설치·해체  /  F: 스킬 · 포탑 강화  /  Q: 즉시 근접 / 5: 근접 무기 장착 / C: 의료 카빈 회복\nG: 가젯 · 수류탄은 누른 뒤 놓아 투척  /  V: 가젯 종류  /  숫자키 9·0: 강퇴 투표",18)
 	stack=outer
 	var leave_settings=func():
 		if game.phase=="menu":menu()
@@ -523,7 +498,7 @@ func sound_slider(title:String,key:String):
 	var slider=HSlider.new();slider.min_value=0;slider.max_value=1;slider.step=.01;slider.value=game.profile[key];slider.custom_minimum_size.y=28;stack.add_child(slider)
 	slider.value_changed.connect(func(v):game.profile[key]=v;amount.text="%d%%"%roundi(v*100);game.save_profile())
 func members_menu():
-	make_panel("참가자 관리",840 if TouchControls.supported() else 760,true);screen="members";member_signature=""
+	make_panel("참가자 관리",640,true);screen="members";member_signature=""
 	label("방장은 바로 강퇴할 수 있습니다. 투표는 대상 외 참가자의 60% 이상(최소 2명)이 찬성하면 통과됩니다.",18)
 	room_list=VBoxContainer.new();stack.add_child(room_list);refresh_members()
 	button("돌아가기",func():
@@ -538,29 +513,36 @@ func refresh_members():
 	for node in room_list.get_children():room_list.remove_child(node);node.queue_free()
 	for p in game.players.values():
 		var row=HBoxContainer.new();room_list.add_child(row);var pid=int(p.id)
-		var name=preload("res://scripts/scrolling_name.gd").new();name.display_text=p.nick+(" · 방장" if TeamBalance.host(game,pid) else " · 나" if pid==game.local_id else "");name.font_size=26 if TouchControls.supported() else 20;name.custom_minimum_size=Vector2(160,44);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.modulate=Color("78caff") if p.team==0 else Color("ffb376");row.add_child(name)
+		var name=preload("res://scripts/scrolling_name.gd").new();name.display_text=p.nick+(" · 방장" if TeamBalance.host(game,pid) else " · 나" if pid==game.local_id else "");name.font_size=26 if TouchControls.supported() else 20;name.custom_minimum_size=Vector2(260,44);name.size_flags_horizontal=Control.SIZE_FILL;name.modulate=Color("78caff") if p.team==0 else Color("ffb376");row.add_child(name)
 		if not TeamBalance.host(game,pid) and pid!=game.local_id:
-			if TeamBalance.host(game,game.local_id) and not p.get("auto_balance",false):button("강퇴",func():game.command("kick",{"target":pid}),row)
-			if pid>0:button("강퇴 투표",func():game.command("vote_kick",{"target":pid}),row)
+			if TeamBalance.host(game,game.local_id):
+				button("제거" if pid<0 else "강퇴",func():game.command("bot_remove" if pid<0 else "kick",{"target":pid}),row)
+			if pid>0 and not TeamBalance.host(game,game.local_id):button("강퇴 투표",func():game.command("vote_kick",{"target":pid}),row)
 		for control in row.get_children():
 			if control is Button:control.custom_minimum_size=Vector2(110,44);control.size_flags_vertical=Control.SIZE_SHRINK_CENTER;control.add_theme_font_size_override("font_size",20)
 
 func refresh_vote():
 	if game.vote.is_empty():
-		if is_instance_valid(vote_panel):vote_panel.visible=false
+		if is_instance_valid(vote_panel):vote_panel.hide()
 		return
 	if not is_instance_valid(vote_panel):
-		vote_panel=PanelContainer.new();vote_panel.position=Vector2(353,75);vote_panel.custom_minimum_size=Vector2(575,0);vote_panel.z_index=100;root.add_child(vote_panel)
-		var column=VBoxContainer.new();vote_panel.add_child(column);vote_text=label("",18,column)
+		vote_panel=PanelContainer.new();vote_panel.z_index=110;vote_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(vote_panel)
+		var style=StyleBoxFlat.new();style.bg_color=Color("172b39");style.set_content_margin_all(9);style.set_corner_radius_all(6);vote_panel.add_theme_stylebox_override("panel",style)
+		var column=VBoxContainer.new();vote_panel.add_child(column)
+		vote_text=Label.new();vote_text.add_theme_font_size_override("font_size",16);vote_text.autowrap_mode=TextServer.AUTOWRAP_OFF;vote_text.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;vote_text.custom_minimum_size.x=290;column.add_child(vote_text)
 		var row=HBoxContainer.new();column.add_child(row)
-		vote_yes=button("F6  찬성",func():game.command("vote",{"yes":true}),row);vote_no=button("F7  반대",func():game.command("vote",{"yes":false}),row)
-	vote_panel.visible=true
-	var v=game.vote;var total=0
-	for result in v.get("votes",{}).values():
-		if result:total+=1
-	vote_text.text="%s 강퇴 투표  ·  찬성 %d / %d  ·  %d초"%[v.get("name",""),total,v.get("needed",2),maxi(0,int(v.get("until",0)-game.clock))]
-	var allowed=game.local_id in v.get("eligible",[]) and not v.get("votes",{}).has(game.local_id)
-	vote_yes.disabled=not allowed;vote_no.disabled=not allowed
+		vote_no=button("반대" if TouchControls.supported() else "숫자키 0 · 반대",func():game.command("vote",{"yes":false}),row)
+		vote_yes=button("찬성" if TouchControls.supported() else "숫자키 9 · 찬성",func():game.command("vote",{"yes":true}),row)
+		for entry in [[vote_no,Color("a23d42")],[vote_yes,Color("287f53")]]:
+			var control=entry[0];control.custom_minimum_size=Vector2(0,44 if TouchControls.supported() else 32);control.size_flags_horizontal=Control.SIZE_EXPAND_FILL;control.clip_text=true;control.add_theme_font_size_override("font_size",16)
+			for state in ["normal","hover","pressed","disabled"]:
+				var face=StyleBoxFlat.new();face.bg_color=entry[1];face.set_corner_radius_all(4);control.add_theme_stylebox_override(state,face)
+		vote_bar=ProgressBar.new();vote_bar.show_percentage=false;vote_bar.max_value=15.;vote_bar.custom_minimum_size.y=3;column.add_child(vote_bar)
+	vote_panel.show();vote_panel.size=Vector2(340,0);vote_panel.position=Vector2(920,245 if TouchControls.supported() else 82)
+	var v=game.vote;var voted=v.get("votes",{}).has(game.local_id);var eligible=game.local_id in v.get("eligible",[])
+	vote_text.text=("투표 완료 · " if voted else "강퇴 투표 · ")+str(v.get("name",""));vote_text.tooltip_text=vote_text.text
+	vote_no.get_parent().visible=eligible and not voted;vote_yes.disabled=not eligible;vote_no.disabled=not eligible
+	vote_bar.value=maxf(0.,float(v.get("until",0))-game.clock)
 func sensitivity_control(title:String,value:float,low:float,high:float,callback:Callable):
 	var row=HBoxContainer.new();stack.add_child(row)
 	var l=Label.new();l.text=title;l.custom_minimum_size.x=155;row.add_child(l)
@@ -776,7 +758,8 @@ func toggle_pause():
 	if game.phase=="lobby":button("돌아가기",lobby)
 	else:button("돌아가기",func():clear_panel();game.capture_pointer())
 	button("병과 · 장비",gear)
-	add_map_card(stack,Vector2(380,155))
+	if TouchControls.supported():button("맵 보기",show_current_map)
+	else:add_map_card(stack,Vector2(380,155))
 	button("팀 편성",teams_menu);button("참가자 관리",members_menu);button("환경 설정",settings);button("방 나가기",func():game.request_leave())
 func hud_label(text:String,pos:Vector2,size:int=20) -> Label:
 	var l=Label.new();l.text=text;l.position=pos;l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_shadow_color",Color(0,0,0,.8));l.add_theme_constant_override("shadow_offset_x",1);l.add_theme_constant_override("shadow_offset_y",2);hud.add_child(l);return l

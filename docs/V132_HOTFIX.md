@@ -53,3 +53,12 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Approved final machine-gun distances: ANCHOR 75→160 m; BASTION 85→180 m. All earlier proposed machine-gun distances are superseded.
 
 - Native focus return restores pointer mode from current UI state. Open gear/menu/map/dialog prevents capture, including respawn callbacks while unfocused.
+
+## Approved roster, voting and reload update
+- Ammo pips include actual chambered rounds; magazine-fed weapons retain chamber rounds (excluding shell/break, CHIME, rocket and laser).
+- PULSE: 5 shells, 0.7 s each, 90 RPM. FOLD: 2 shells, 1 s each. Single-shell load cycles can be interrupted to fire loaded ammunition, with per-shell animation.
+- Results and team menus share paired team rows: human details span two rows; bot settings occupy the second row; team move spans both on the right. Result map removed; detailed score opens separately.
+- Host can manage both humans and bots, exchange when a team is full, add/remove bots within capacity. Manual management prevents auto-balancing from undoing decisions.
+- Kick vote: one active vote, 15 s, 9 yes / 0 no, equal green/right and red/left buttons, thin countdown bar, unanswered votes do not count as yes. Join/leave/kick notices distinguish events.
+- Mobile pause menu opens map via a button. World surfaces use stable floor/wall/ceiling color contrast without additional texture fetches.
+- Native/Web export and same-version publication; extra gameplay tests omitted by request.

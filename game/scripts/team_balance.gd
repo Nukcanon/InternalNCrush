@@ -5,7 +5,7 @@ static func host(g:Node,id:int) -> bool:
 	return id==1 or (id>0 and id==int(g.options.get("room_owner",0)))
 static func allowed(g:Node,requester:int,target:int) -> bool:
 	if int(g.options.mode)==4 and g.phase in ["buy","combat","round_end"]:return host(g,requester)
-	return requester==target or (target<0 and host(g,requester))
+	return requester==target or host(g,requester)
 static func replacement_ids(g:Node) -> Array:
 	return g.players.keys().filter(func(id):return g.players[id].get("departure_replacement",false))
 static func replace_departed(g:Node,state:Dictionary,pos:Vector3):
@@ -24,6 +24,7 @@ static func remove_auto(g:Node,id:int):
 	g.bot_agents.erase(id);g.players.erase(id)
 	if g.actors.has(id):g.actors[id].queue_free();g.actors.erase(id)
 static func reconcile(g:Node):
+	if g.options.get("manual_roster",false):return
 	if not g.server or g.demo_mode or int(g.options.mode)==1 or g.options.get("practice",false):return
 	var autos=auto_ids(g);var counts=[0,0]
 	for p in g.players.values():
@@ -46,6 +47,7 @@ static func can_move(g:Node,requester:int,target:int,team:int) -> bool:
 	var counts=[0,0]
 	for p in g.players.values():
 		if not p.get("auto_balance",false):counts[int(p.team)]+=1
+	if host(g,requester):return g.team_count(team)<int(g.options.max_players)/2
 	if g.players[target].get("auto_balance",false):return false
 	counts[int(g.players[target].team)]-=1;counts[team]+=1
 	if int(g.options.mode)==4 and host(g,requester):return maxi(counts[0],counts[1])<=int(g.options.max_players)/2
@@ -53,4 +55,5 @@ static func can_move(g:Node,requester:int,target:int,team:int) -> bool:
 static func move(g:Node,requester:int,target:int,team:int) -> bool:
 	if not can_move(g,requester,target,team):return false
 	if int(g.players[target].team)==team:return true
+	if host(g,requester):g.options.manual_roster=true;g.players[target].auto_balance=false
 	g.players[target].team=team;g.finish_team_change(target);reconcile(g);g.enforce_medics();g.broadcast_state(true);return true

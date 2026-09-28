@@ -575,7 +575,7 @@
     "role": 3,
     "slot": 0,
     "damage": 14,
-    "interval": 1.05,
+    "interval": 0.6666666666666666,
     "mag": 5,
     "reserve": 20,
     "price": 1600,
@@ -583,7 +583,7 @@
     "pellets": 10,
     "reach": 22.5,
     "zoom": 62,
-    "reload": 3.1,
+    "reload": 0.7,
     "kind": "gun",
     "fire_mode": "semi",
     "model_index": 11,
@@ -620,7 +620,8 @@
     "spray_direction": 1,
     "pattern_recovery": 37.5,
     "pellet_core_angle": 0.18,
-    "pellet_core_fraction": 0.6
+    "pellet_core_fraction": 0.6,
+    "single_load": true
   },
   "e2": {
     "name": "TIDAL",
@@ -687,7 +688,7 @@
     "pellets": 10,
     "reach": 16.5,
     "zoom": 62,
-    "reload": 2.3,
+    "reload": 1.0,
     "kind": "gun",
     "fire_mode": "semi",
     "model_index": 13,
@@ -724,7 +725,8 @@
     "spray_direction": -1,
     "pattern_recovery": 37.61,
     "pellet_core_angle": 0.18,
-    "pellet_core_fraction": 0.6
+    "pellet_core_fraction": 0.6,
+    "single_load": true
   },
   "c1": {
     "name": "SWIFT",
