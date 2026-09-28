@@ -45,3 +45,5 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Conventional gun range label now identifies damage falloff start; rockets display explosion radius.
 
 - Final shotgun override (including MENDER): falloff start x3 and falloff end x2.5 relative to pre-update values; replaces x2/x1.9 above.
+
+- Final machine-gun override: ANCHOR/BASTION also receive x2 falloff start and x1.9 falloff end; trace range reaches the new endpoint. ARC, rockets and LINK remain unchanged.
