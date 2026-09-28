@@ -5,7 +5,7 @@
   "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.0",
   "web_url": "https://nukcanon.github.io/nukcanon/play/?build=e777495bdc55",
   "published_at": "2026-09-28T03:53:30Z",
-  "verified_at": "2026-09-28T04:04:35.341755+00:00",
+  "verified_at": "2026-09-28T04:20:57.186730+00:00",
   "status": "published_with_documented_validation_limits",
   "previous_publication_record": "PUBLICATION_STATUS_V128.json",
   "assets": [
@@ -359,8 +359,12 @@
     },
     "full_ci": {
       "run": 36375283761,
-      "status": "in_progress"
-    }
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "functional_groups": 52,
+    "network_32_clients": "passed",
+    "network_lifecycle_props_rotation_webrtc_touch": "passed"
   },
   "limitations": [
     "No physical Intel integrated GPU or mobile device was available; measurements use RTX 4080 SUPER.",
@@ -369,5 +373,7 @@
     "GLES texture cleanup warnings remain at native process exit; two in fixed-render checks and four in replay checks. Runtime node/resource counts remain bounded across 24 rounds.",
     "No public directory endpoint is configured; service protocol changes are packaged but no new directory service is claimed deployed.",
     "Three views per map and numerical geometry checks do not inspect every possible view of every surface."
-  ]
+  ],
+  "site_guidance_commit": "4f62ffe",
+  "site_guidance_pages_run": 36376809693
 }

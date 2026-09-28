@@ -24,8 +24,8 @@ Build source: `ba0da924851739a9a7aec1e34c18ce47271419b1`. Exact public asset has
 - Actual melee replay captured and asserted to show no bullet/trail. [Replay](docs/v13-review/melee-replay.jpg).
 - Five scope housings / five reticles / ten recessed lenses checked and rendered. [Models](docs/v13-review/scope-models.jpg) · [Reticles](docs/v13-review/scope-reticles.jpg).
 - Settings apply/discard and Escape checks passed; actual browser change/back confirmation and discard inspected. A graphics-only Apply preserves pending display values separately.
-- Python directory tests: 12 passed; Cloudflare policy passed; site installer integrity: 7 passed.
-- Full source CI run 36375283761 is still running at this checkpoint. Targeted checks above passed independently.
+- Python directory tests: 12 passed; Cloudflare policy passed; site installer integrity: 7 passed. Public graphics guidance and its reusable template now both say automatic quality.
+- All 52 functional groups, 32-client capacity, independent clients/lifecycle/movable props/rotation, delayed-start lifecycle and touch/WebRTC steps passed in source CI 36375283761. The final Windows/Web exports and complete CI run also passed.
 
 ## Post-publication performance
 
