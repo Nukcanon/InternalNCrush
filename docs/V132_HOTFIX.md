@@ -43,3 +43,5 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Assault rifles, SMGs, shotguns, medic shotguns/carbines and pistols: falloff start x2; falloff end x1.9. Snipers/DMRs: both x1.1. Machine guns, rockets, ARC and LINK unchanged.
 - Shotgun spread and bloom/movement spread values halved; 60% central pellets concentrate around the aim axis with movement penalty retained. Shotgun trace range extended only where required to reach the new falloff endpoint. No playtest-based hit-rate guarantee.
 - Conventional gun range label now identifies damage falloff start; rockets display explosion radius.
+
+- Final shotgun override (including MENDER): falloff start x3 and falloff end x2.5 relative to pre-update values; replaces x2/x1.9 above.
