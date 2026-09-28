@@ -51,3 +51,5 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Final machine-gun cap: falloff ends at 180 m for both ANCHOR and BASTION (start 80/90 m); maximum trace distance remains the original 220 m. Overrides x1.9 above.
 
 - Approved final machine-gun distances: ANCHOR 75→160 m; BASTION 85→180 m. All earlier proposed machine-gun distances are superseded.
+
+- Native focus return restores pointer mode from current UI state. Open gear/menu/map/dialog prevents capture, including respawn callbacks while unfocused.

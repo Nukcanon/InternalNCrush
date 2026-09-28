@@ -114,6 +114,9 @@ var web_graphics:WebGraphics
 var native_graphics:NativeGraphics
 var join_ticket=""
 func _ready():
+	if not OS.has_feature("web") and DisplayServer.get_name()!="headless":
+		get_window().focus_exited.connect(func():Input.mouse_mode=Input.MOUSE_MODE_VISIBLE)
+		get_window().focus_entered.connect(func():call_deferred("restore_native_pointer"))
 	if demo_mode:
 		start_demo();return
 	profile.blood_effects=false
@@ -265,7 +268,14 @@ func start_demo():
 	phase="combat";remaining=3600.
 	for id in players:players[id].protect=0.;players[id].fire_ready=0.
 	set_process_unhandled_input(false)
+func restore_native_pointer():
+	if not is_inside_tree() or not get_window().has_focus():return
+	capture_pointer()
 func capture_pointer(from_input_event:bool=false):
+	# Menus and dialogs always own a visible pointer, including respawn/focus callbacks.
+	if phase in ["menu","lobby","result"] or (not OS.has_feature("web") and not get_window().has_focus()):Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;return
+	if is_instance_valid(ui) and (is_instance_valid(ui.panel) or is_instance_valid(ui.map_viewer) or is_instance_valid(ui.navigation_confirm)):
+		Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;return
 	if is_instance_valid(ui) and is_instance_valid(ui.scoreboard) and ui.scoreboard.pinned:Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;return
 	if is_instance_valid(touch):Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;return
 	# Browser capture must originate in an active input callback, not an RPC,
