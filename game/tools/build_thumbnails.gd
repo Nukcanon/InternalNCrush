@@ -15,13 +15,14 @@ func run():
 	for variant in range(3):jobs.append(["armor"+str(variant),3,0,"a1",variant])
 	var generated=0
 	for job in jobs:
-		if "--v125" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("gadget")):continue
-		if "--v124" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("gadget") or (job[1]==1 and Catalog.get_weapon(job[3]).slot==1)):continue
-		if "--v123" in OS.get_cmdline_user_args() and job[0] not in ["role1","role5","dual_pistols"]:continue
-		if "--v122" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("armor")):continue
-		if "--v121" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or job[0] in ["gadget4_0","gadget4_1","gadget2_0"]):continue
-		if "--v119" in OS.get_cmdline_user_args() and FileAccess.file_exists("res://assets/thumbnails/"+str(job[0])+".png") and not (job[0] in ["repair","remote","h4","gadget2_0"] or (Catalog.weapons.has(job[0]) and Catalog.get_weapon(job[0]).slot==1 and Catalog.get_weapon(job[0]).kind=="gun")):continue
-		if "--v118" in OS.get_cmdline_user_args() and not (job[0] in ["m1","m3","h4","gadget4_0","gadget4_1"] or str(job[0]).ends_with("_8")):continue
+		var missing=not FileAccess.file_exists("res://assets/thumbnails/"+str(job[0])+".png")
+		if not missing and "--v125" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("gadget")):continue
+		if not missing and "--v124" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("gadget") or (job[1]==1 and Catalog.get_weapon(job[3]).slot==1)):continue
+		if not missing and "--v123" in OS.get_cmdline_user_args() and job[0] not in ["role1","role5","dual_pistols"]:continue
+		if not missing and "--v122" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or str(job[0]).begins_with("armor")):continue
+		if not missing and "--v121" in OS.get_cmdline_user_args() and not (str(job[0]).begins_with("role") or job[0] in ["gadget4_0","gadget4_1","gadget2_0"]):continue
+		if not missing and "--v119" in OS.get_cmdline_user_args() and FileAccess.file_exists("res://assets/thumbnails/"+str(job[0])+".png") and not (job[0] in ["repair","remote","h4","gadget2_0"] or (Catalog.weapons.has(job[0]) and Catalog.get_weapon(job[0]).slot==1 and Catalog.get_weapon(job[0]).kind=="gun")):continue
+		if not missing and "--v118" in OS.get_cmdline_user_args() and not (job[0] in ["m1","m3","h4","gadget4_0","gadget4_1"] or str(job[0]).ends_with("_8")):continue
 		if "--only-new" in OS.get_cmdline_user_args() and FileAccess.file_exists("res://assets/thumbnails/"+job[0]+".png"):continue
 		preview.display(job[1],job[2],0,job[3],job[4])
 		if job[1]==1:preview.camera.size*=.65

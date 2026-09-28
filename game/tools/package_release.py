@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse
 import hashlib
+import json
 import re
 import struct
 import zipfile
@@ -28,6 +29,8 @@ def validate_native_pack(path: Path):
         for kind in ('turret', 'cover'):
             for team in range(2):
                 assert f'assets/models/device_{kind}{team}.scn' in entries, 'Missing baked deployment geometry'
+        for weapon in json.loads((PROJECT / 'assets/weapons.json').read_text(encoding='utf-8')):
+            assert f'assets/thumbnails/{weapon}.png.import' in entries, 'Missing equipment thumbnail: ' + weapon
         for gender in ('male', 'female'):
             name = f'assets/human/textures/{gender}.png.import'
             assert name in entries, 'Missing native face import: ' + name
