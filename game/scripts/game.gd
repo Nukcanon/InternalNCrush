@@ -1084,6 +1084,8 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 		dir.y=0.;dir=dir.normalized()
 		if (Basis(Vector3.UP,actors[target].aim_yaw)*Vector3.FORWARD).dot(dir)>.4:amount*=.15
 	var armored=p.armor>0 and weapon_id!="fall"
+	# Bonus consumes armor only; any base damage left after breaking armor remains unscaled.
+	if armored and weapon_id=="h6":amount+=minf(float(p.armor),amount*1.3)*(1.-1./1.3)
 	var absorb=minf(p.armor,amount) if weapon_id!="fall" else 0.;p.armor-=absorb;p.hp-=amount-absorb;p.last_hit=clock
 	if target<0 and bot_navigation:bot_navigation.danger(actors[target].position)
 	var origin=hit_origin if hit_origin.is_finite() else actors[source].position if actors.has(source) and source!=target else actors[target].position
