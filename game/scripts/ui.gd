@@ -92,6 +92,7 @@ var internet_rooms=[]
 const MENU_SCALE=.88
 var ACTION_HEIGHT=84 if TouchControls.supported() else 40
 func _ready():
+	add_child(preload("res://scripts/button_text_fit.gd").new())
 	lan_lobby=LanLobby.new(self)
 	root=Control.new();root.size=Vector2(1280,720);root.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(root)
 	get_viewport().size_changed.connect(scale_interface);scale_interface()
