@@ -1,0 +1,224 @@
+{
+  "published_version": "1.2.8",
+  "release_tag": "internal-n-crush-v1.2.8-hotfix.1",
+  "source_commit": "61ef2b4be90332b9df1b11fa7144ab165ffa41ce",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.2.8-hotfix.1",
+  "published_at": "2026-09-28T02:44:39Z",
+  "verified_at": "2026-09-28T02:49:01.975342+00:00",
+  "status": "published_with_documented_validation_limits",
+  "previous_publication_record": "PUBLICATION_STATUS_V127.json",
+  "assets": [
+    {
+      "name": "InternalNCrush_NAS_Linux_v1.2.8.zip",
+      "bytes": 15582,
+      "sha256": "413582a5145d28d4ea9a5168692381fb8d02515cf471f1eb18b6720d55943adc",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.8-hotfix.1/InternalNCrush_NAS_Linux_v1.2.8.zip"
+    },
+    {
+      "name": "InternalNCrush_Web_v1.2.8.zip",
+      "bytes": 83968373,
+      "sha256": "b50420222acedec72f79d5d2b9812a03d21eeb95be29aed94de71b180ae16ca5",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.8-hotfix.1/InternalNCrush_Web_v1.2.8.zip"
+    },
+    {
+      "name": "InternalNCrush_Windows_v1.2.8.zip",
+      "bytes": 163536670,
+      "sha256": "a4b89ff250d4b4440704d3afb00801c7989b8e46f506a779db811d58b10b1d6d",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.8-hotfix.1/InternalNCrush_Windows_v1.2.8.zip"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 301,
+      "sha256": "44cd7f5f9d737962b1ceb4446406dd9faf7535fef81e98589c3da080522b578e",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.8-hotfix.1/SHA256SUMS.txt"
+    },
+    {
+      "name": "WEB_RELEASE_v1.2.8.json",
+      "bytes": 173,
+      "sha256": "8661ebd9381ea9956f3ccfb51097abf8de9bc8a757fa7e9a90790e8df061e6a6",
+      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.2.8-hotfix.1/WEB_RELEASE_v1.2.8.json"
+    }
+  ],
+  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=b50420222ace",
+  "site_install_commit": "13954fc",
+  "site_installer_run": 36370948506,
+  "pages_run": 36371007031,
+  "web_pack": {
+    "path": "game-61ef2b4be903.pck",
+    "bytes": 78751808,
+    "sha256": "0ac9548848b95df2256bddf02510f0d1ef4839be25015b8b24fb4fd14537b6d1"
+  },
+  "graphics": {
+    "native_and_web_default": "automatic",
+    "normal_maps": true,
+    "automatic_resolution_changes": false,
+    "low": "fixed material shading; no detail normal, dynamic sun shadows or pooled practical lights",
+    "high": "normal detail, sun shadows, four nearby practical lights and MSAA"
+  },
+  "validation": {
+    "functional_groups": 49,
+    "route_checks": "508/508",
+    "physical_traversal": "26/26",
+    "room_routes": "8/8",
+    "native_web_physics_maps": 32,
+    "rendered_new_designs": 270,
+    "new_setdressing_designs": 200,
+    "window_designs": 40,
+    "tree_designs": 30,
+    "building_tiles": 100,
+    "resource_regression": "72000 shots and 1800 healing updates",
+    "probe_release_identical_entries": 932,
+    "soak": {
+      "native": {
+        "cycles": 24,
+        "mean_frame_ms": 16.66214870472682,
+        "largest_sample_frame_ms": 116.932,
+        "tail_nodes": [
+          2537
+        ],
+        "tail_resources": [
+          1088
+        ]
+      },
+      "web": {
+        "cycles": 24,
+        "mean_frame_ms": 16.67431169221005,
+        "largest_sample_frame_ms": 250.299,
+        "tail_nodes": [
+          2541
+        ],
+        "tail_resources": [
+          1014
+        ],
+        "wasm_capacity_bytes": [
+          100466688.0
+        ],
+        "heap_bytes_range": [
+          111335879.0,
+          147488370.0
+        ]
+      }
+    },
+    "fixed_view_render_benchmark": [
+      {
+        "draw_calls_mean": 260.0,
+        "drawn_frames": 7226,
+        "frames": 7226,
+        "map": 17,
+        "max_ms": 3.025,
+        "mean_ms": 0.830322861887627,
+        "p95_ms": 1.272,
+        "p99_ms": 1.691,
+        "players": 8,
+        "quality": "low",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 118490505.0
+      },
+      {
+        "draw_calls_mean": 271.0,
+        "drawn_frames": 7179,
+        "frames": 7179,
+        "map": 17,
+        "max_ms": 3.13,
+        "mean_ms": 0.835745786321217,
+        "p95_ms": 1.252,
+        "p99_ms": 1.612,
+        "players": 8,
+        "quality": "medium",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 120620697.0
+      },
+      {
+        "draw_calls_mean": 412.0,
+        "drawn_frames": 6767,
+        "frames": 6767,
+        "map": 17,
+        "max_ms": 2.104,
+        "mean_ms": 0.886599822668831,
+        "p95_ms": 1.108,
+        "p99_ms": 1.439,
+        "players": 8,
+        "quality": "medium_shadow",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 120620697.0
+      },
+      {
+        "draw_calls_mean": 412.0,
+        "drawn_frames": 6433,
+        "frames": 6433,
+        "map": 17,
+        "max_ms": 2.48,
+        "mean_ms": 0.932684284159803,
+        "p95_ms": 1.19,
+        "p99_ms": 1.556,
+        "players": 8,
+        "quality": "high",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 146425497.0
+      },
+      {
+        "draw_calls_mean": 384.0,
+        "drawn_frames": 7299,
+        "frames": 7299,
+        "map": 0,
+        "max_ms": 1.888,
+        "mean_ms": 0.821960542540069,
+        "p95_ms": 0.976,
+        "p99_ms": 1.321,
+        "players": 32,
+        "quality": "low",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 173876301.0
+      },
+      {
+        "draw_calls_mean": 392.0,
+        "drawn_frames": 6940,
+        "frames": 6940,
+        "map": 0,
+        "max_ms": 3.739,
+        "mean_ms": 0.864640778097993,
+        "p95_ms": 1.101,
+        "p99_ms": 1.411,
+        "players": 32,
+        "quality": "medium",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 173876301.0
+      },
+      {
+        "draw_calls_mean": 499.0,
+        "drawn_frames": 6400,
+        "frames": 6400,
+        "map": 0,
+        "max_ms": 2.149,
+        "mean_ms": 0.937556874999996,
+        "p95_ms": 1.112,
+        "p99_ms": 1.457,
+        "players": 32,
+        "quality": "medium_shadow",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 173876301.0
+      },
+      {
+        "draw_calls_mean": 504.0,
+        "drawn_frames": 5874,
+        "frames": 5874,
+        "map": 0,
+        "max_ms": 2.027,
+        "mean_ms": 1.02143479741233,
+        "p95_ms": 1.206,
+        "p99_ms": 1.53,
+        "players": 32,
+        "quality": "high",
+        "renderer": "NVIDIA GeForce RTX 4080 SUPER",
+        "video_bytes": 199681101.0
+      }
+    ],
+    "benchmark_note": "1280x720, RTX4080SUPER, fixed camera and paused actor physics; render-only, not full-match FPS."
+  },
+  "limits": [
+    "Intel 10th/11th-generation integrated graphics and physical mobile hardware not available for measured FPS.",
+    "Two 349524-byte GLES texture cleanup warnings remain at native process shutdown. Live soak node/resource counts are stable; this is not a proof of zero leaks on every path.",
+    "Initial shader/resource warm-up frames and one 92.8ms Web frame at cycle 6 remain; no claim of zero frame spikes.",
+    "Asset inventory counts do not imply every asset appears on every map. Earlier character replacement requests are not a new character replacement in this patch."
+  ]
+}

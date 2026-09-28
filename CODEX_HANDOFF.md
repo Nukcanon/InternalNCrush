@@ -1,3 +1,13 @@
+# Published 1.3 — current checkpoint
+
+1.3 is live. Runtime source `ba0da924851739a9a7aec1e34c18ce47271419b1`, release `internal-n-crush-v1.3.0`, public Web build `e777495bdc55`. Read `V13_VALIDATION.md`, `PUBLICATION_STATUS.json` and `RELEASE_NOTES_V13.md` before older notes below.
+
+Added 40 ceiling + 40 roof + 20 soffit finishes and paired normals; straight material boundaries; roof/terrain seams; original scopes/reticles; browser lock-state sync; pending-settings confirmation; knife/pistol room rules. All 32 geometry audits pass; final spawn filtering removes dressing-obstructed candidates. Native/Web 24-cycle probes pass with bounded resources. See measured frame costs and remaining startup spikes / shutdown warnings in the validation report. Physical Intel/mobile and ordinary-browser Alt+Tab checks remain unavailable. Full CI 36375283761 is running; targeted regressions and publication checks passed.
+
+Do not overwrite unrelated `output/` or `game/tools/inspect_character_source.py`. All older sections are historical, not current completion claims.
+
+---
+
 # Published 1.2.8 material hotfix — current checkpoint
 
 Source build `61ef2b4be90332b9df1b11fa7144ab165ffa41ce`; release
