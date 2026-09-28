@@ -28,3 +28,11 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Assault plates: three charges, 25 separate durability per plate, one active at a time; consume before armor, with muted purple HUD segment and duplicate-use warning.
 - Passive gadgets remain visible with automatic-use labels. Human and bot team entries reserve identical name/control rows. Combat notifications no longer overwrite menu help; command responses still appear in menus.
 - Same version, native/Web rebuild; additional gameplay tests omitted as requested.
+
+
+## Cover and team-menu correction
+- Restore the complete original cover assembly, including feet, bolts, latches and trim; vary main paint and depth only.
+- Pair human/bot team cells in a two-column grid with explicit single-line name bounds and compact two-row entries.
+- Keep armor plus plate gauge maximum at 75.
+- Important match/administration announcements remain visible over menus; combat hit/skill chatter stays in HUD. Settings feedback also has a timed menu overlay.
+- Same-version native/Web rebuild; no additional gameplay tests requested.

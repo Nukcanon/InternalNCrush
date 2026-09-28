@@ -134,11 +134,14 @@ static func prepare_devices():
 			if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
 static func device(parent:Node3D,kind:String,team:int,variant:int=1):
 	if kind=="cover":
-		var depth=[.30,.55,.80][clampi(variant,0,2)];var finish=Color(["dfbd35","438b50","454950"][clampi(variant,0,2)])
-		M.box(parent,Vector3(0,.625,0),Vector3(3.4,1.25,depth),finish)
-		for x in [-1.1,0,1.1]:
-			M.box(parent,Vector3(x,.64,-depth*.5-.015),Vector3(.96,1.06,.03),finish.lightened(.12))
-		M.merge_children(parent);return
+		var variant_key="cover_detail_"+str(team)+"_"+str(clampi(variant,0,2))
+		if not device_templates.has(variant_key):
+			var source=Node3D.new();source.name="CoverAssembly"
+			build_device(source,kind,team,clampi(variant,0,2))
+			source.scale.z=[.30,.55,.80][clampi(variant,0,2)]/.65
+			MeshFactory.own_recursive(source,source)
+			var packed=PackedScene.new();packed.pack(source);source.free();device_templates[variant_key]=packed
+		parent.add_child(device_templates[variant_key].instantiate());return
 	var key=kind+str(team);var path="res://assets/models/device_"+key+".scn"
 	if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
 	if device_templates.has(key):
@@ -149,9 +152,11 @@ static func device(parent:Node3D,kind:String,team:int,variant:int=1):
 		baked.free();return
 	# Editable source fallback only; release builds always contain baked assemblies.
 	build_device(parent,kind,team)
-static func build_device(parent:Node3D,kind:String,team:int):
+static func build_device(parent:Node3D,kind:String,team:int,variant:int=-1):
 	var color=Color("378fb2") if team==0 else Color("ba7440");var metal=Color("354d5c")
 	if kind=="cover":
+		if variant>=0:
+			color=Color(["dfbd35","438b50","454950"][variant]);metal=color.darkened(.25)
 		M.box(parent,Vector3(0,.64,0),Vector3(3.4,1.25,.55),metal)
 		for x in [-1.1,0,1.1]:
 			M.box(parent,Vector3(x,.68,-.30),Vector3(1.0,1.1,.08),color);M.box(parent,Vector3(x,.9,-.35),Vector3(.65,.035,.018),Color("d6e8e2"))

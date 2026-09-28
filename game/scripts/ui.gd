@@ -46,6 +46,7 @@ var notice_label:Label
 var notice_until=0
 var notice_queue=[]
 var toast_label:Label
+var menu_notice_overlay:Label
 var redeploy_button:Button
 var practice_hint_until=0
 var hit_until=0
@@ -376,26 +377,33 @@ func refresh_teams():
 		if control.get_popup().visible:return
 	team_signature=signature
 	for node in team_columns.get_children():team_columns.remove_child(node);node.queue_free()
+	var grid=GridContainer.new();grid.columns=2;grid.size_flags_horizontal=Control.SIZE_EXPAND_FILL;grid.add_theme_constant_override("h_separation",18);grid.add_theme_constant_override("v_separation",8);team_columns.add_child(grid)
+	var teams=[[],[]]
+	for p in game.players.values():
+		if int(p.team) in [0,1]:teams[int(p.team)].append(p)
 	for side in range(2):
-		var box=VBoxContainer.new();box.size_flags_horizontal=Control.SIZE_EXPAND_FILL;team_columns.add_child(box)
-		var head=label(("◆ BLUE" if side==0 else "● ORANGE")+"   "+str(game.team_count(side))+"명",23,box);head.modulate=Color("63c5ff") if side==0 else Color("ffa35f")
-		for p in game.players.values():
-			if p.team!=side:continue
-			var row=HBoxContainer.new();box.add_child(row)
-			var name=label(p.nick+("  · 나" if p.id==game.local_id else "")+"  /  "+Rules.CLASSES[p.role],15,row);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-			row.custom_minimum_size.y=48;name.clip_text=true
-			var bot_controls=HBoxContainer.new();bot_controls.custom_minimum_size.y=64;box.add_child(bot_controls)
-			if int(p.id)<0:BotSettings.controls(game,bot_controls,p)
-			var allowed=TeamBalance.allowed(game,game.local_id,int(p.id))
-			if allowed and game.options.mode!=1:
-				var pid=int(p.id);var target=1-side
-				var full=game.team_count(target)>=16
+		var head=label(("◆ BLUE" if side==0 else "● ORANGE")+"   "+str(game.team_count(side))+"명",23,grid);head.modulate=Color("63c5ff") if side==0 else Color("ffa35f");head.size_flags_horizontal=Control.SIZE_EXPAND_FILL;head.autowrap_mode=TextServer.AUTOWRAP_OFF
+	for index in range(maxi(teams[0].size(),teams[1].size())):
+		for side in range(2):
+			var cell=VBoxContainer.new();cell.size_flags_horizontal=Control.SIZE_EXPAND_FILL;cell.add_theme_constant_override("separation",3);grid.add_child(cell)
+			var row=HBoxContainer.new();row.custom_minimum_size.y=38 if TouchControls.supported() else 30;cell.add_child(row)
+			var controls=HBoxContainer.new();controls.custom_minimum_size.y=44 if TouchControls.supported() else 38;cell.add_child(controls)
+			if index>=teams[side].size():continue
+			var p=teams[side][index]
+			var name=label(p.nick+("  · 나" if p.id==game.local_id else "")+"  /  "+Rules.CLASSES[p.role],15,row)
+			name.autowrap_mode=TextServer.AUTOWRAP_OFF;name.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS;name.custom_minimum_size=Vector2(120,row.custom_minimum_size.y);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.size_flags_vertical=Control.SIZE_FILL;name.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+			if int(p.id)<0:BotSettings.controls(game,controls,p)
+			for control in controls.get_children():control.size_flags_vertical=Control.SIZE_SHRINK_CENTER
+			if TeamBalance.allowed(game,game.local_id,int(p.id)) and game.options.mode!=1:
+				var pid=int(p.id);var target=1-side;var full=game.team_count(target)>=16
 				var move=button("교환…" if full and TeamBalance.host(game,game.local_id) else "→ "+("BLUE" if target==0 else "ORANGE"),func():
 					if full and TeamBalance.host(game,game.local_id):team_swap_menu(pid)
 					else:game.command("team",{"player_id":pid,"team":target}),row)
-				move.disabled=not TeamBalance.can_move(game,game.local_id,pid,target);move.custom_minimum_size.y=28;move.add_theme_font_size_override("font_size",13)
+				move.disabled=not TeamBalance.can_move(game,game.local_id,pid,target);move.custom_minimum_size=Vector2(96,32);move.size_flags_vertical=Control.SIZE_SHRINK_CENTER;move.add_theme_font_size_override("font_size",13)
+	for side in range(2):
+		var footer=VBoxContainer.new();grid.add_child(footer)
 		if game.phase=="lobby" and game.players.has(game.local_id) and game.players[game.local_id].team!=side and game.options.mode!=1:
-			var selected=side;button("이 팀으로 참가",func():game.command("team",{"team":selected}),box)
+			var selected=side;button("이 팀으로 참가",func():game.command("team",{"team":selected}),footer)
 func team_swap_menu(first:int):
 	if not TeamBalance.host(game,game.local_id) or not game.players.has(first):return
 	make_panel("참가자 팀 교환",780)
@@ -820,11 +828,11 @@ func show_hud():
 	if is_instance_valid(game.touch):
 		root.move_child(game.touch,-1)
 	game.capture_pointer()
-func notice(message:String,gameplay=false):
+func notice(message:String,gameplay=false,important=false):
 	if message.is_empty():return
 	if lan_lobby and not gameplay:lan_lobby.notice(message)
 	notice_until=Time.get_ticks_msec()+3500
-	notice_queue.append({"text":message,"until":notice_until})
+	notice_queue.append({"text":message,"until":notice_until,"menu":important or not gameplay})
 	while notice_queue.size()>3:notice_queue.pop_front()
 	if not gameplay and is_instance_valid(notice_label):notice_label.text=message
 	if game.phase=="menu" and message.contains("버전"):
@@ -839,6 +847,12 @@ func refresh():
 		var lines=PackedStringArray()
 		for item in notice_queue:lines.append(str(item.text))
 		toast_label.text="\n".join(lines)
+	if not is_instance_valid(menu_notice_overlay):
+		menu_notice_overlay=Label.new();menu_notice_overlay.position=Vector2(32,22);menu_notice_overlay.size=Vector2(760,100);menu_notice_overlay.z_index=120;menu_notice_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE;menu_notice_overlay.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;menu_notice_overlay.add_theme_font_size_override("font_size",20);menu_notice_overlay.add_theme_color_override("font_shadow_color",Color.BLACK);menu_notice_overlay.add_theme_constant_override("shadow_offset_x",2);menu_notice_overlay.add_theme_constant_override("shadow_offset_y",2);root.add_child(menu_notice_overlay)
+	var menu_lines=PackedStringArray()
+	for item in notice_queue:
+		if item.get("menu",false):menu_lines.append(str(item.text))
+	menu_notice_overlay.text="\n".join(menu_lines);menu_notice_overlay.visible=is_instance_valid(panel) and not menu_lines.is_empty()
 	if lan_lobby:lan_lobby.refresh_connection()
 	refresh_gear_economy()
 	refresh_vote();refresh_members()

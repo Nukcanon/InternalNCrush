@@ -1233,7 +1233,7 @@ func use_skill(id:int):
 			for qid in players:
 				if players[qid].alive and enemies(p,players[qid]) and a.position.distance_to(actors[qid].position)<radius and players[qid].get("cleanse",0)<=clock:
 					TargetReveal.mark(self,qid,id,4.);feedback(qid,"","하드비트센서 노출 · 4초 동안 위치가 표시됩니다.")
-			p.skill_ready=clock+40.;announce(p.nick+" · 하드비트센서")
+			p.skill_ready=clock+40.;announce(p.nick+" · 하드비트센서",false)
 		2:p.shield=clock+6.;p.skill_ready=clock+AbilityBalance.COOLDOWNS[2]
 		3:Deployment.begin(self,id,"turret");return
 		4:
@@ -1582,10 +1582,10 @@ func personal(sound:String,message:String,menu_notice=false):
 	if not sound.is_empty():play_sound(sound,Vector3.ZERO,false)
 	ui.notice(message,not menu_notice)
 	if sound in ["hit","confirm"]:ui.hit_until=Time.get_ticks_msec()+180
-func announce(message:String):
-	announcement.rpc(message)
+func announce(message:String,important=true):
+	announcement.rpc(message,important)
 @rpc("authority","call_local","reliable",0)
-func announcement(message:String):ui.notice(message,true)
+func announcement(message:String,important=true):ui.notice(message,true,important)
 @rpc("authority","call_local","reliable",0)
 func zone_announcement(index:int,team:int):
 	if index<0 or index>=3 or team not in [0,1]:return
