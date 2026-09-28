@@ -47,3 +47,5 @@ Post-publication: Pages succeeded; critical HTML/JS/PCK/WASM/cache-worker hashes
 - Final shotgun override (including MENDER): falloff start x3 and falloff end x2.5 relative to pre-update values; replaces x2/x1.9 above.
 
 - Final machine-gun override: ANCHOR/BASTION also receive x2 falloff start and x1.9 falloff end; trace range reaches the new endpoint. ARC, rockets and LINK remain unchanged.
+
+- Final machine-gun cap: falloff ends at 180 m for both ANCHOR and BASTION (start 80/90 m); maximum trace distance remains the original 220 m. Overrides x1.9 above.

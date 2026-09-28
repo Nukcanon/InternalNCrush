@@ -501,7 +501,7 @@
     "ads_move_scale": 0.45,
     "recovery_delay": 0.126,
     "pattern_scale": 1.644,
-    "falloff_end": 218.5,
+    "falloff_end": 180.0,
     "min_damage_scale": 0.55,
     "zone_multipliers": {
       "head": 1.75,
@@ -551,7 +551,7 @@
     "ads_move_scale": 0.45,
     "recovery_delay": 0.149,
     "pattern_scale": 1.795,
-    "falloff_end": 237.5,
+    "falloff_end": 180.0,
     "min_damage_scale": 0.6,
     "zone_multipliers": {
       "head": 1.7,
@@ -560,7 +560,7 @@
     },
     "ads_speed": 3.87,
     "move_speed_scale": 0.904,
-    "max_range": 237.5,
+    "max_range": 220,
     "recoil_kick": 0.93,
     "spray_build_seconds": 1.85,
     "spray_width": 2.15,
