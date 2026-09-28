@@ -15,10 +15,12 @@ def main():
     shutil.copytree(SOURCE, STAGE, ignore=shutil.ignore_patterns('.godot', '*.glb', '*.scn', '*.uid', '__pycache__'))
     # Selected small CC0 models are needed while baking the shared map geometry.
     # Packed arenas embed their mesh/material data; source GLBs stay export-excluded.
-    for pack in ['industrial', 'car', 'nature', 'watercraft', 'district_original']:
+    for pack in ['industrial', 'car', 'nature', 'watercraft', 'district_original', 'transport_original', 'doors_original', 'places_original']:
         models = SOURCE / 'assets/models' / pack
         if models.exists():
             shutil.copytree(models, STAGE / 'assets/models' / pack, dirs_exist_ok=True)
+    if (SOURCE/'assets/door_leaves').exists():
+        shutil.copytree(SOURCE/'assets/door_leaves', STAGE/'assets/door_leaves',dirs_exist_ok=True)
     project = STAGE / "project.godot"
     project.write_text(project.read_text().replace("[application]", "[application]\nconfig/web_assets=true"))
     # Comic operators/hands no longer load photo atlases. Remove only assets

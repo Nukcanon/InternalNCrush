@@ -427,6 +427,7 @@ func settings():
 	var update_visibility=func():
 		resolution.disabled=OS.has_feature("web");dimensions.visible=not OS.has_feature("web") and resolution.selected==resolutions.size()
 		mode_help.text=["크기를 조절할 수 있는 창으로 플레이합니다.","테두리 없는 창을 화면 가득 표시합니다. 다른 앱으로 전환하기 편합니다.","독점 전체 화면입니다. 게임에 집중하는 모드이며 앱 전환 때 잠깐 깜빡일 수 있습니다."][mode.selected]
+		if OS.has_feature("web"):mode_help.text="웹 화면 크기는 브라우저가 정합니다. 내부 렌더링 해상도는 그래픽 탭의 ‘3D 선명도’에서 직접 조절하세요."
 	var update_choices=func():
 		var native=DisplayServer.screen_get_size(monitor.selected)
 		if native.x<640 or native.y<360:native=Vector2i(1280,720)
@@ -455,7 +456,7 @@ func settings():
 			seconds[0]-=1;confirm.dialog_text="이 화면을 유지할까요? %d초 후 이전 설정으로 돌아갑니다."%seconds[0]
 			if seconds[0]<=0:rollback.call())
 		confirm.dialog_text="이 화면을 유지할까요? 15초 후 이전 설정으로 돌아갑니다.";confirm.popup_centered(Vector2i(660,170));timer.start())
-	label("전체 화면에서도 게임 해상도를 낮출 수 있습니다. 낮을수록 화면은 덜 선명하지만 그래픽 부하가 줄어듭니다.",17)
+	label("웹은 그래픽 탭에서 3D 선명도를 100%·85%·70%로 선택할 수 있습니다. 자동 설정은 선명도를 바꾸지 않습니다." if OS.has_feature("web") else "전체 화면에서도 게임 해상도를 낮출 수 있습니다. 낮을수록 화면은 덜 선명하지만 그래픽 부하가 줄어듭니다.",17)
 	sensitivity_control("마우스 감도",float(game.profile.sensitivity)/.0023,.15,4.,func(v):game.profile.sensitivity=v*.0023;game.save_profile())
 	sensitivity_control("정조준 감도 배율",float(game.profile.ads_sensitivity),.2,1.5,func(v):game.profile.ads_sensitivity=v;game.save_profile())
 	sensitivity_control("저격 조준 마우스 감도",float(game.profile.sniper_mouse_sensitivity),.1,2.,func(v):game.profile.sniper_mouse_sensitivity=v;game.save_profile())

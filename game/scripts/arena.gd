@@ -27,8 +27,8 @@ var vertical_map=false
 var props_authoritative=false
 var props={}
 var doors={}
-func add_door(pos:Vector3,yaw:float=0.):
-	var door=InteractiveDoor.new();add_child(door);var id=doors.size()+1;door.build(self,id,pos,yaw);doors[id]=door
+func add_door(pos:Vector3,yaw:float=0.,opening:float=InteractiveDoor.WIDTH):
+	var door=InteractiveDoor.new();add_child(door);var id=doors.size()+1;door.build(self,id,pos,yaw,opening);doors[id]=door
 func door_states() -> Array:
 	var states=[]
 	for door in doors.values():states.append({"id":door.door_id,"open":door.opened,"progress":door.progress})
@@ -269,12 +269,16 @@ func apply_surface_detail():
 	for mesh in list:
 		if mesh.name=="Geometry":mesh.material_override=material
 func wading(pos:Vector3) -> bool:
-	if has_meta("district_water"):return pos.y<-.25 and Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),get_meta("district_water"))
+	if has_meta("district_water"):return pos.y<float(get_meta("water_height",-.35))+.1 and Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),get_meta("district_water"))
 	if map_index==5:
 		for z in [-27,0,27]:
 			if absf(pos.z-z)<2.5:return false
 	return has_water and water_rect.has_point(Vector2(pos.x,pos.z)) and pos.y<.61
 func submerged(pos:Vector3) -> bool:return wading(pos) and pos.y<=.61
+func fatal_water(pos:Vector3) -> bool:
+	if get_meta("water_kind","river")!="sea" or pos.y>=float(get_meta("water_height",-.35))-.65:return false
+	if pos.x>bounds.x*.52 and DistrictLayout.heights(self,pos).is_empty():return true
+	return wading(pos) or (not playable_polygon.is_empty() and not Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),playable_polygon))
 
 func solid_rotated(pos:Vector3,size:Vector3,color:Color,yaw:float) -> Node3D:
 	var prior=building;building=false

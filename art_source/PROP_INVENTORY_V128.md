@@ -1,41 +1,216 @@
-# Original Blender props (1.2.8 candidate)
+# Original Blender asset catalogue — 1.2.8
 
-32 original models; one material each; total GLB size 1,763,088 bytes.
-Editable Blender sources: art_source/district_original/.
-Runtime GLBs: game/assets/models/district_original/.
-Curated map rosters: game/scripts/district_art.gd.
+210 authored models; catalogue count is not a claim that every model is placed in a shipped map. One opaque vertex-colour material per model. Editable sources live beside this inventory; generators are in game/tools.
 
-| Model | Triangles | GLB bytes |
-|---|---:|---:|
-| produce_stall | 1440 | 163168 |
-| library_bookcase | 3008 | 303516 |
-| instrument_cabinet | 1056 | 106928 |
-| water_pump | 652 | 54908 |
-| work_cart | 632 | 61216 |
-| garden_planter | 456 | 56904 |
-| reading_desk | 512 | 49820 |
-| dock_rescue | 304 | 28700 |
-| park_bench | 424 | 44056 |
-| cafe_parasol | 260 | 21932 |
-| timber_stack | 928 | 95660 |
-| cargo_pallet | 368 | 37380 |
-| ventilation_fan | 484 | 43876 |
-| transformer | 640 | 56952 |
-| stone_fountain | 344 | 27716 |
-| solar_array | 372 | 36344 |
-| potting_bench | 572 | 52324 |
-| hose_reel | 724 | 57472 |
-| stone_bench | 220 | 23804 |
-| air_compressor | 320 | 29764 |
-| fruit_cart | 632 | 53812 |
-| bakery_display | 524 | 45664 |
-| fish_table | 264 | 30944 |
-| mooring_bollards | 264 | 23016 |
-| rope_crate | 548 | 53224 |
-| drill_press | 212 | 20584 |
-| workshop_lathe | 276 | 27328 |
-| staff_lockers | 408 | 41836 |
-| laboratory_sink | 160 | 16028 |
-| sample_rack | 768 | 65144 |
-| memorial_stone | 180 | 19312 |
-| notice_board | 128 | 13756 |
+| Pack | Asset | Triangles | GLB bytes |
+|---|---|---:|---:|
+| district_original | produce_stall | 1440 | 163168 |
+| district_original | library_bookcase | 3008 | 303516 |
+| district_original | instrument_cabinet | 1056 | 106928 |
+| district_original | water_pump | 652 | 54908 |
+| district_original | work_cart | 632 | 61216 |
+| district_original | garden_planter | 456 | 56904 |
+| district_original | reading_desk | 512 | 49820 |
+| district_original | dock_rescue | 304 | 28700 |
+| district_original | park_bench | 424 | 44056 |
+| district_original | cafe_parasol | 260 | 21932 |
+| district_original | timber_stack | 928 | 95660 |
+| district_original | cargo_pallet | 368 | 37380 |
+| district_original | ventilation_fan | 484 | 43876 |
+| district_original | transformer | 640 | 56952 |
+| district_original | stone_fountain | 344 | 27716 |
+| district_original | solar_array | 372 | 36344 |
+| district_original | potting_bench | 572 | 52324 |
+| district_original | hose_reel | 724 | 57472 |
+| district_original | stone_bench | 220 | 23804 |
+| district_original | air_compressor | 320 | 29764 |
+| district_original | fruit_cart | 632 | 53812 |
+| district_original | bakery_display | 524 | 45664 |
+| district_original | fish_table | 264 | 30944 |
+| district_original | mooring_bollards | 264 | 23016 |
+| district_original | rope_crate | 548 | 53224 |
+| district_original | drill_press | 212 | 20584 |
+| district_original | workshop_lathe | 276 | 27328 |
+| district_original | staff_lockers | 408 | 41836 |
+| district_original | laboratory_sink | 160 | 16028 |
+| district_original | sample_rack | 768 | 65144 |
+| district_original | memorial_stone | 180 | 19312 |
+| district_original | notice_board | 128 | 13756 |
+| places_original | dining_chair | 160 | 17144 |
+| places_original | school_chair | 160 | 17144 |
+| places_original | office_chair | 388 | 37520 |
+| places_original | armchair | 292 | 30600 |
+| places_original | patio_chair | 152 | 16036 |
+| places_original | bar_stool | 92 | 10388 |
+| places_original | picnic_bench | 160 | 17140 |
+| places_original | station_bench | 152 | 16040 |
+| places_original | folding_chair | 184 | 19400 |
+| places_original | wheelchair | 404 | 38668 |
+| places_original | picnic_table | 140 | 14904 |
+| places_original | round_cafe_table | 168 | 16140 |
+| places_original | writing_desk | 140 | 14904 |
+| places_original | drafting_table | 116 | 12652 |
+| places_original | folding_table | 116 | 12652 |
+| places_original | billiard_table | 236 | 22880 |
+| places_original | reception_desk | 116 | 12652 |
+| places_original | console_table | 104 | 11524 |
+| places_original | kitchen_cupboard | 112 | 12564 |
+| places_original | wardrobe | 100 | 11400 |
+| places_original | utility_cabinet | 136 | 14800 |
+| places_original | tool_chest | 380 | 39500 |
+| places_original | filing_cabinet | 268 | 28276 |
+| places_original | medicine_cabinet | 112 | 12544 |
+| places_original | equipment_locker | 112 | 12544 |
+| places_original | storage_bin | 60 | 6996 |
+| places_original | open_crate | 60 | 6992 |
+| places_original | metal_shelving | 108 | 11516 |
+| places_original | shoe_shelf | 108 | 11504 |
+| places_original | parcel_lockers | 212 | 22648 |
+| places_original | stove_station | 292 | 26380 |
+| places_original | range_station | 348 | 31988 |
+| places_original | refrigerator | 168 | 18196 |
+| places_original | microwave_counter | 204 | 20580 |
+| places_original | oven_station | 204 | 20572 |
+| places_original | dishwashing_sink | 156 | 16064 |
+| places_original | kettle_counter | 160 | 16084 |
+| places_original | coffee_station | 184 | 18872 |
+| places_original | toaster_counter | 204 | 20576 |
+| places_original | food_service_counter | 260 | 27252 |
+| places_original | monitor_desk | 160 | 17112 |
+| places_original | computer_station | 184 | 19376 |
+| places_original | printer_station | 160 | 17144 |
+| places_original | server_rack | 604 | 60960 |
+| places_original | television_stand | 148 | 16016 |
+| places_original | radio_desk | 252 | 24524 |
+| places_original | telephone_station | 188 | 20436 |
+| places_original | projector_cart | 180 | 18320 |
+| places_original | pa_speaker | 256 | 24048 |
+| places_original | security_camera_post | 104 | 10976 |
+| places_original | stretcher | 324 | 30788 |
+| places_original | medical_bed | 348 | 33048 |
+| places_original | iv_stand | 64 | 7012 |
+| places_original | oxygen_station | 128 | 11632 |
+| places_original | first_aid_station | 160 | 17144 |
+| places_original | defibrillator_station | 160 | 17152 |
+| places_original | medical_cart | 260 | 24076 |
+| places_original | examination_chair | 304 | 31744 |
+| places_original | scanner_station | 160 | 17144 |
+| places_original | privacy_screen | 60 | 7016 |
+| places_original | forklift | 284 | 26308 |
+| places_original | pallet_jack | 236 | 21800 |
+| places_original | welding_cart | 216 | 20608 |
+| places_original | portable_generator | 136 | 14856 |
+| places_original | electrical_panel | 192 | 20472 |
+| places_original | industrial_press | 104 | 10404 |
+| places_original | conveyor | 428 | 37720 |
+| places_original | pipe_valve | 144 | 12776 |
+| places_original | boiler | 128 | 11588 |
+| places_original | fuel_pump | 124 | 13712 |
+| places_original | gas_cylinder_rack | 288 | 24192 |
+| places_original | bench_grinder | 256 | 23000 |
+| places_original | large_compressor | 128 | 11608 |
+| places_original | chain_hoist | 80 | 8668 |
+| places_original | rock_hopper | 92 | 10324 |
+| places_original | ventilation_duct | 84 | 9256 |
+| places_original | fire_hydrant | 124 | 11080 |
+| places_original | postbox | 112 | 12580 |
+| places_original | payphone | 124 | 13708 |
+| places_original | bus_shelter | 84 | 9272 |
+| places_original | ticket_machine | 124 | 13720 |
+| places_original | cash_machine | 124 | 13716 |
+| places_original | drinks_vending | 232 | 23872 |
+| places_original | snacks_vending | 232 | 23872 |
+| places_original | recycling_station | 200 | 21600 |
+| places_original | litter_bin | 100 | 11460 |
+| places_original | traffic_signal | 224 | 20132 |
+| places_original | street_lamp | 104 | 10952 |
+| places_original | bicycle_rack | 108 | 11528 |
+| places_original | bicycle | 120 | 11648 |
+| places_original | parking_meter | 104 | 10956 |
+| places_original | road_barrier | 96 | 10400 |
+| places_original | lifering_rack | 156 | 13928 |
+| places_original | fishing_net_rack | 168 | 17176 |
+| places_original | anchor_display | 60 | 7000 |
+| places_original | mooring_buoy | 88 | 8228 |
+| places_original | harbour_beacon | 132 | 12720 |
+| places_original | dock_winch | 144 | 12776 |
+| places_original | gangway | 108 | 11476 |
+| places_original | fish_crates | 176 | 19328 |
+| places_original | wheelbarrow | 128 | 13200 |
+| places_original | watering_can | 96 | 9296 |
+| places_original | shovel_rack | 228 | 22216 |
+| places_original | seedling_trays | 524 | 51020 |
+| places_original | terracotta_pots | 524 | 51020 |
+| places_original | garden_trellis | 96 | 10336 |
+| places_original | birdbath | 104 | 9368 |
+| places_original | beehive | 236 | 24912 |
+| places_original | water_butt | 100 | 9348 |
+| places_original | compost_bin | 148 | 15916 |
+| places_original | cement_mixer | 216 | 20116 |
+| places_original | scaffold | 156 | 15972 |
+| places_original | ladder | 120 | 12604 |
+| places_original | toolbox_station | 148 | 16016 |
+| places_original | brick_stack | 1068 | 110196 |
+| places_original | sawhorse | 60 | 6988 |
+| places_original | cable_drum | 180 | 15160 |
+| places_original | roadworks_sign | 80 | 9248 |
+| transport_original | vehicle_compact | 1100 | 103016 |
+| transport_original | vehicle_hatch | 1100 | 103012 |
+| transport_original | vehicle_sedan | 1100 | 103012 |
+| transport_original | vehicle_estate | 1100 | 103012 |
+| transport_original | vehicle_taxi | 1144 | 107496 |
+| transport_original | vehicle_utility | 1124 | 105272 |
+| transport_original | vehicle_pickup | 1124 | 105268 |
+| transport_original | vehicle_van | 1100 | 103008 |
+| transport_original | vehicle_minibus | 1172 | 109768 |
+| transport_original | vehicle_ambulance | 1144 | 107504 |
+| transport_original | vehicle_flatbed | 1232 | 116460 |
+| transport_original | vehicle_box | 1368 | 128900 |
+| transport_original | vehicle_reefer | 1572 | 145972 |
+| transport_original | vehicle_delivery | 1368 | 128912 |
+| transport_original | vehicle_tanker | 1528 | 137260 |
+| transport_original | vehicle_dump | 1320 | 125448 |
+| transport_original | vehicle_refuse | 1524 | 142504 |
+| transport_original | vehicle_crane | 1468 | 135312 |
+| transport_original | vehicle_tow | 1468 | 135312 |
+| transport_original | vehicle_fire | 1780 | 167284 |
+| transport_original | vessel_rowboat | 140 | 15092 |
+| transport_original | vessel_canoe | 140 | 15092 |
+| transport_original | vessel_skiff | 140 | 15092 |
+| transport_original | vessel_rescue | 708 | 64980 |
+| transport_original | vessel_fishing | 696 | 64380 |
+| transport_original | vessel_trawler | 696 | 64324 |
+| transport_original | vessel_tug | 888 | 79252 |
+| transport_original | vessel_barge | 340 | 32108 |
+| transport_original | vessel_ferry | 672 | 62644 |
+| transport_original | vessel_pontoon | 340 | 30024 |
+| doors_original | door_wood_panel | 484 | 46512 |
+| doors_original | door_wood_plank | 620 | 64228 |
+| doors_original | door_cottage | 484 | 46504 |
+| doors_original | door_arched_plank | 836 | 84536 |
+| doors_original | door_barn_cross | 668 | 68740 |
+| doors_original | door_sliding_shoji | 372 | 37392 |
+| doors_original | door_glass_store | 180 | 19340 |
+| doors_original | door_frosted_office | 180 | 19344 |
+| doors_original | door_lab_observation | 228 | 23860 |
+| doors_original | door_hospital_swing | 204 | 21600 |
+| doors_original | door_fire_exit | 116 | 12612 |
+| doors_original | door_steel_security | 228 | 23856 |
+| doors_original | door_warehouse_shutter | 516 | 50944 |
+| doors_original | door_loading_bay | 372 | 37388 |
+| doors_original | door_container | 364 | 35224 |
+| doors_original | door_submarine | 676 | 60336 |
+| doors_original | door_ship_bulkhead | 676 | 60344 |
+| doors_original | door_maintenance_louver | 372 | 37404 |
+| doors_original | door_server_access | 228 | 23856 |
+| doors_original | door_vault | 580 | 53416 |
+| doors_original | door_cell_gate | 348 | 35128 |
+| doors_original | door_chain_gate | 492 | 48676 |
+| doors_original | door_garden_gate | 668 | 68740 |
+| doors_original | door_ornate_gate | 436 | 42000 |
+| doors_original | door_station_ticket | 204 | 21600 |
+| doors_original | door_school_classroom | 204 | 21604 |
+| doors_original | door_hotel_panel | 660 | 62356 |
+| doors_original | door_restroom | 204 | 21588 |
+| doors_original | door_cold_store | 204 | 21592 |
+| doors_original | door_garage_fold | 252 | 26108 |

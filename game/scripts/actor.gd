@@ -235,7 +235,10 @@ func simulate(dt:float,now:float,can_move:bool):
 				pushed[body.get_instance_id()]=true
 				body.push_by_character(push,target_velocity.length(),dt);velocity.x*=.82;velocity.z*=.82
 	update_spread(dt,now)
+	if game.server and game.phase=="combat" and is_instance_valid(game.arena) and game.arena.fatal_water(global_position):
+		game.damage(pid,10000.,pid,false,"water")
 	var bound=game.arena.bounds if is_instance_valid(game.arena) else Vector2(100,90)
+	if is_instance_valid(game.arena) and game.arena.get_meta("water_kind","")=="sea":bound+=Vector2.ONE*7.
 	global_position.x=clampf(global_position.x,-bound.x+2,bound.x-2);global_position.z=clampf(global_position.z,-bound.y+2,bound.y-2)
 	if global_position.y< (-12. if game.arena and game.arena.vertical_map else -4.):
 		# Irregular maps have genuine voids. Raising Y at the same X/Z would

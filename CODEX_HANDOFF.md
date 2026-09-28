@@ -1,3 +1,13 @@
+# Active 1.2.8 publication work — latest checkpoint
+
+User authorized publishing before extended performance/soak tests, then reporting measured impact. Branch work/v1.2.8-districts-mobile. The first 32-prop snapshot 1fa10b6 passed CI 36361431769, but subsequent expanded changes require fresh builds and checks.
+
+210 original Blender models are generated: 32 district props, 118 furnished props, 30 transport, 30 doors. Functional doors, sea/river logic, macro material variation and native automatic graphics are implemented locally. Catalogue generation is not placement coverage. Native auto test passes; final map caches are being rebuilt at revision 135 after fixing coastal generation order. Public site remains 1.2.7 until publication is confirmed. Earlier notes below are historical and must not be read as current completion claims.
+
+Remaining: finish final build, basic route/startup verification, publish current packages, then native/Web rendered performance and memory tests. Record exact commit/hashes and device limits. Character replacement is still not integrated. Preserve unrelated output/ and inspect_character_source.py.
+
+---
+
 # Current work: 1.2.8 candidate, not yet published
 
 Work continues on `work/v1.2.8-districts-mobile`. Read
@@ -20,6 +30,14 @@ Additional user instruction: make about **30 vehicle/vessel types** with distinc
 sizes and purposes, included in the 200+ catalogue. Use sea-appropriate boats at
 coasts/ports and small shallow-draft boats in rivers. Include cars and trucks;
 place with plausible scale, waterline and road/berth clearance. Still pending.
+
+Latest steering expands the follow-up to every existing map: reduce obvious
+texture repetition, increase environmental colour saturation without obscuring
+players, and use purpose-specific floor/wall/door materials per room/district.
+Add about **30 door types**, included in 200+, with actual usable doors connecting
+interior combat spaces and alternative routes. Do not place decorative doors in
+solid walls and imply they are usable. Current quadrant material variations are
+not a completed implementation of this broader room-based renewal.
 
 ## Published baseline: 1.2.7
 

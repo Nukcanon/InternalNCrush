@@ -347,6 +347,10 @@ def export(name, fn):
     bpy.ops.export_scene.gltf(filepath=str(OUT/(name+'.glb')),export_format='GLB',use_selection=True)
     return {'name':name,'triangles':triangles,'bytes':(OUT/(name+'.glb')).stat().st_size,'materials':1}
 
-records=[export(name,fn) for name,fn in [('produce_stall',stall),('library_bookcase',bookcase),('instrument_cabinet',cabinet),('water_pump',pump),('work_cart',work_cart),('garden_planter',planter),('reading_desk',reading_desk),('dock_rescue',dock_supply),('park_bench',bench),('cafe_parasol',cafe),('timber_stack',timber_stack),('cargo_pallet',cargo_pallet),('ventilation_fan',fan),('transformer',transformer),('stone_fountain',fountain),('solar_array',solar),('potting_bench',greenhouse),('hose_reel',hose_reel),('stone_bench',stone_bench),('air_compressor',compressor),('fruit_cart',fruit_cart),('bakery_display',bakery),('fish_table',fish_table),('mooring_bollards',bollards),('rope_crate',rope_crate),('drill_press',drill),('workshop_lathe',lathe),('staff_lockers',lockers),('laboratory_sink',lab_sink),('sample_rack',sample_rack),('memorial_stone',memorial),('notice_board',notice_board)]]
-(OUT/'manifest.json').write_text(json.dumps({'provenance':'Original project assets authored with Blender; no third-party source assets','assets':records},indent=2))
-print('THEMED_PROPS_COMPLETE '+json.dumps(records))
+def main():
+    records=[export(name,fn) for name,fn in [('produce_stall',stall),('library_bookcase',bookcase),('instrument_cabinet',cabinet),('water_pump',pump),('work_cart',work_cart),('garden_planter',planter),('reading_desk',reading_desk),('dock_rescue',dock_supply),('park_bench',bench),('cafe_parasol',cafe),('timber_stack',timber_stack),('cargo_pallet',cargo_pallet),('ventilation_fan',fan),('transformer',transformer),('stone_fountain',fountain),('solar_array',solar),('potting_bench',greenhouse),('hose_reel',hose_reel),('stone_bench',stone_bench),('air_compressor',compressor),('fruit_cart',fruit_cart),('bakery_display',bakery),('fish_table',fish_table),('mooring_bollards',bollards),('rope_crate',rope_crate),('drill_press',drill),('workshop_lathe',lathe),('staff_lockers',lockers),('laboratory_sink',lab_sink),('sample_rack',sample_rack),('memorial_stone',memorial),('notice_board',notice_board)]]
+    (OUT/'manifest.json').write_text(json.dumps({'provenance':'Original project assets authored with Blender; no third-party source assets','assets':records},indent=2))
+    print('THEMED_PROPS_COMPLETE '+json.dumps(records))
+
+if __name__ == "__main__":
+    main()

@@ -1,6 +1,6 @@
 extends RefCounted
 class_name WorldSurface
-## One texture lookup, no lights/shadows required. Shared native/Web identity.
+## Shared native/Web identity, with one small low-frequency variation texture.
 static var shader:Shader
 static var cache={}
 # Wall material / floor material / wall tint. Keep destinations recognizable
@@ -23,6 +23,7 @@ const THEMES=[
 	["stone","paving","c3d7df"], ["concrete","metal","c1d9db"],
 	["sandstone","moss","d6c5a2"], ["concrete","paving","c7d3d1"]]
 static func material(kind:String,index:int,vertex_paint:bool=false,zone:int=0) -> ShaderMaterial:
+	if kind=="quay_edge":kind="wall"
 	var key=str([kind,index,vertex_paint,zone])
 	if cache.has(key):return cache[key]
 	if shader==null:
@@ -30,6 +31,7 @@ static func material(kind:String,index:int,vertex_paint:bool=false,zone:int=0) -
 render_mode cull_disabled, specular_disabled;
 // district_surface: never replace this material with flat Web paint.
 uniform sampler2D surface_texture:source_color,filter_linear_mipmap,repeat_enable;
+uniform sampler2D district_variation:filter_linear_mipmap,repeat_enable;
 uniform vec4 tint:source_color=vec4(1.0);
 uniform float tile_meters=3.0;
 uniform bool vertex_paint=false;
@@ -54,8 +56,10 @@ void fragment(){
  // Never modulo interpolated height: at a storey boundary subpixel rounding
  // alternated between dark and light, looking exactly like z-fighting.
  float foot=mix(.94,1.,smoothstep(0.,.8,surface_p.y));
- float variation=.96+.04*sin(surface_p.x*.17+surface_p.z*.23);
+ vec3 macro=texture(district_variation,(surface_p.xz+vec2(surface_p.y*.31,surface_p.y*.17))/93.).rgb;
+ float variation=.88+.24*macro.r;
  vec3 base=paint*mix(vec3(.98),sqrt(max(tex,vec3(0.))),vertex_paint?.16:.62)*foot*variation;
+ if(!vertex_paint)base*=mix(vec3(.93,1.02,.96),vec3(1.04,.97,.93),macro.g);
  ALBEDO=dynamic_lighting?base*.78:vec3(0.);
  EMISSION=dynamic_lighting?base*.22:base*facing;
  ROUGHNESS=.86;
@@ -73,6 +77,7 @@ void fragment(){
 		"roof":texture="roof";color=Color("ba7860") if market else Color("718994")
 		"ceiling":texture="wood" if market else "concrete";color=Color("bac8cc")
 		"water":texture="concrete";color=Color("478ca1");meters=8.
+		"waterbed":texture="earth";color=Color("aba273");meters=4.
 		"trim":texture="metal";color=Color("cfaa63");meters=2.
 		"stair_detail":texture="concrete";color=Color("c0cdd0");meters=2.4
 		"detail":texture="concrete";color=Color.WHITE;meters=1.8
@@ -105,5 +110,8 @@ void fragment(){
 		else:
 			texture=recipe[1][zone%4];color=Color(recipe[2][zone%4])
 	if kind=="stair_detail":texture=THEMES[index][1];color=Color("c7c9b6");meters=2.4
+	if not vertex_paint and kind not in ["water","waterbed"]:
+		color=Color.from_hsv(color.h,minf(.58,color.s*1.45+.055),minf(1.,color.v*1.035),color.a)
 	var mat=ShaderMaterial.new();mat.shader=shader;mat.set_shader_parameter("surface_texture",load("res://assets/textures/world/"+texture+".png"));mat.set_shader_parameter("tint",color);mat.set_shader_parameter("tile_meters",meters);mat.set_shader_parameter("vertex_paint",vertex_paint)
+	mat.set_shader_parameter("district_variation",load("res://assets/textures/world/district_variation.png"))
 	cache[key]=mat;return mat

@@ -56,6 +56,7 @@ jobs:
           timeout 90 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_motion_v115.gd -- --no-save-profile --no-update-check
           timeout 90 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_ragdoll_v115.gd
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_door_leaves.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_arenas.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
       - name: Validate revised grips, turret timing and mobile layout
@@ -149,6 +150,7 @@ jobs:
           mkdir -p web/build
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_models.gd
+          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_door_leaves.gd
           /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_arenas.gd
           python3 -c 'import json; assert json.load(open("game/assets/arenas/physics_signatures.json"))==json.load(open("web/staging/game/assets/arenas/physics_signatures.json")), "Native/Web collision mismatch"'
           timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd

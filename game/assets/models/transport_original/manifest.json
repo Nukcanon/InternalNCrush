@@ -1,0 +1,275 @@
+{
+  "provenance": "Original Blender authored transport; no third-party sources",
+  "assets": [
+    {
+      "name": "vehicle_compact",
+      "triangles": 1100,
+      "bytes": 103016,
+      "materials": 1,
+      "category": "road",
+      "length_m": 3.25,
+      "width_m": 1.55
+    },
+    {
+      "name": "vehicle_hatch",
+      "triangles": 1100,
+      "bytes": 103012,
+      "materials": 1,
+      "category": "road",
+      "length_m": 3.8,
+      "width_m": 1.72
+    },
+    {
+      "name": "vehicle_sedan",
+      "triangles": 1100,
+      "bytes": 103012,
+      "materials": 1,
+      "category": "road",
+      "length_m": 4.45,
+      "width_m": 1.82
+    },
+    {
+      "name": "vehicle_estate",
+      "triangles": 1100,
+      "bytes": 103012,
+      "materials": 1,
+      "category": "road",
+      "length_m": 4.8,
+      "width_m": 1.84
+    },
+    {
+      "name": "vehicle_taxi",
+      "triangles": 1144,
+      "bytes": 107496,
+      "materials": 1,
+      "category": "road",
+      "length_m": 4.55,
+      "width_m": 1.84
+    },
+    {
+      "name": "vehicle_utility",
+      "triangles": 1124,
+      "bytes": 105272,
+      "materials": 1,
+      "category": "road",
+      "length_m": 4.2,
+      "width_m": 1.92
+    },
+    {
+      "name": "vehicle_pickup",
+      "triangles": 1124,
+      "bytes": 105268,
+      "materials": 1,
+      "category": "road",
+      "length_m": 5.1,
+      "width_m": 1.95
+    },
+    {
+      "name": "vehicle_van",
+      "triangles": 1100,
+      "bytes": 103008,
+      "materials": 1,
+      "category": "road",
+      "length_m": 5.2,
+      "width_m": 2.0
+    },
+    {
+      "name": "vehicle_minibus",
+      "triangles": 1172,
+      "bytes": 109768,
+      "materials": 1,
+      "category": "road",
+      "length_m": 6.0,
+      "width_m": 2.15
+    },
+    {
+      "name": "vehicle_ambulance",
+      "triangles": 1144,
+      "bytes": 107504,
+      "materials": 1,
+      "category": "road",
+      "length_m": 5.8,
+      "width_m": 2.15
+    },
+    {
+      "name": "vehicle_flatbed",
+      "triangles": 1232,
+      "bytes": 116460,
+      "materials": 1,
+      "category": "road",
+      "length_m": 6.0,
+      "width_m": 2.3
+    },
+    {
+      "name": "vehicle_box",
+      "triangles": 1368,
+      "bytes": 128900,
+      "materials": 1,
+      "category": "road",
+      "length_m": 6.3,
+      "width_m": 2.3
+    },
+    {
+      "name": "vehicle_reefer",
+      "triangles": 1572,
+      "bytes": 145972,
+      "materials": 1,
+      "category": "road",
+      "length_m": 6.6,
+      "width_m": 2.4
+    },
+    {
+      "name": "vehicle_delivery",
+      "triangles": 1368,
+      "bytes": 128912,
+      "materials": 1,
+      "category": "road",
+      "length_m": 5.8,
+      "width_m": 2.2
+    },
+    {
+      "name": "vehicle_tanker",
+      "triangles": 1528,
+      "bytes": 137260,
+      "materials": 1,
+      "category": "road",
+      "length_m": 7.4,
+      "width_m": 2.5
+    },
+    {
+      "name": "vehicle_dump",
+      "triangles": 1320,
+      "bytes": 125448,
+      "materials": 1,
+      "category": "road",
+      "length_m": 6.4,
+      "width_m": 2.5
+    },
+    {
+      "name": "vehicle_refuse",
+      "triangles": 1524,
+      "bytes": 142504,
+      "materials": 1,
+      "category": "road",
+      "length_m": 7.0,
+      "width_m": 2.5
+    },
+    {
+      "name": "vehicle_crane",
+      "triangles": 1468,
+      "bytes": 135312,
+      "materials": 1,
+      "category": "road",
+      "length_m": 7.4,
+      "width_m": 2.5
+    },
+    {
+      "name": "vehicle_tow",
+      "triangles": 1468,
+      "bytes": 135312,
+      "materials": 1,
+      "category": "road",
+      "length_m": 6.8,
+      "width_m": 2.4
+    },
+    {
+      "name": "vehicle_fire",
+      "triangles": 1780,
+      "bytes": 167284,
+      "materials": 1,
+      "category": "road",
+      "length_m": 7.8,
+      "width_m": 2.5
+    },
+    {
+      "name": "vessel_rowboat",
+      "triangles": 140,
+      "bytes": 15092,
+      "materials": 1,
+      "category": "river",
+      "length_m": 3.2,
+      "width_m": 1.3
+    },
+    {
+      "name": "vessel_canoe",
+      "triangles": 140,
+      "bytes": 15092,
+      "materials": 1,
+      "category": "river",
+      "length_m": 4.2,
+      "width_m": 0.9
+    },
+    {
+      "name": "vessel_skiff",
+      "triangles": 140,
+      "bytes": 15092,
+      "materials": 1,
+      "category": "river",
+      "length_m": 4.8,
+      "width_m": 1.8
+    },
+    {
+      "name": "vessel_rescue",
+      "triangles": 708,
+      "bytes": 64980,
+      "materials": 1,
+      "category": "river",
+      "length_m": 5.5,
+      "width_m": 2.1
+    },
+    {
+      "name": "vessel_fishing",
+      "triangles": 696,
+      "bytes": 64380,
+      "materials": 1,
+      "category": "sea",
+      "length_m": 7.2,
+      "width_m": 2.6
+    },
+    {
+      "name": "vessel_trawler",
+      "triangles": 696,
+      "bytes": 64324,
+      "materials": 1,
+      "category": "sea",
+      "length_m": 10.0,
+      "width_m": 3.5
+    },
+    {
+      "name": "vessel_tug",
+      "triangles": 888,
+      "bytes": 79252,
+      "materials": 1,
+      "category": "sea",
+      "length_m": 9.0,
+      "width_m": 3.8
+    },
+    {
+      "name": "vessel_barge",
+      "triangles": 340,
+      "bytes": 32108,
+      "materials": 1,
+      "category": "sea",
+      "length_m": 13.0,
+      "width_m": 4.5
+    },
+    {
+      "name": "vessel_ferry",
+      "triangles": 672,
+      "bytes": 62644,
+      "materials": 1,
+      "category": "sea",
+      "length_m": 11.0,
+      "width_m": 3.7
+    },
+    {
+      "name": "vessel_pontoon",
+      "triangles": 340,
+      "bytes": 30024,
+      "materials": 1,
+      "category": "river",
+      "length_m": 6.0,
+      "width_m": 2.8
+    }
+  ]
+}

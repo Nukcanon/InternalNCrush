@@ -4,10 +4,12 @@ extends RefCounted
 static var scenes={}
 static var palettes={}
 static var geometry={}
-static func build(parent:Node3D,asset:String,max_size:Vector3,pack:String="industrial"):
+static func build(parent:Node3D,asset:String,max_size:Vector3,pack:String="industrial",metre_scale:bool=false):
 	var key=pack+"/"+asset;var palette_path="res://assets/models/"+pack+"/Textures/colormap.png"
 	if not palettes.has(pack):palettes[pack]=load(palette_path) if ResourceLoader.exists(palette_path) else null
-	if not scenes.has(key):scenes[key]=load("res://assets/models/"+key+".glb")
+	if not scenes.has(key):
+		var baked="res://assets/door_leaves/"+asset+".scn"
+		scenes[key]=load(baked) if pack=="doors_original" and ResourceLoader.exists(baked) else load("res://assets/models/"+key+".glb")
 	var model=scenes[key].instantiate();parent.add_child(model)
 	var list=model.find_children("*","MeshInstance3D",true,false);var bounds=AABB();var first=true
 	for mesh in list:
@@ -25,6 +27,7 @@ static func build(parent:Node3D,asset:String,max_size:Vector3,pack:String="indus
 		mesh.mesh=geometry[geometry_key]
 		var box=local*mesh.get_aabb();bounds=box if first else bounds.merge(box);first=false
 	var factor=minf(max_size.x/bounds.size.x,minf(max_size.y/bounds.size.y,max_size.z/bounds.size.z))
+	if metre_scale:factor=1.
 	for mesh in list:
 		var local=parent.global_transform.affine_inverse()*mesh.global_transform
 		mesh.reparent(parent);local.origin-=(bounds.position+Vector3(bounds.size.x*.5,0,bounds.size.z*.5));local.origin*=factor;local.basis=local.basis.scaled(Vector3.ONE*factor);mesh.transform=local

@@ -1,20 +1,9 @@
-# Internal N Crush 1.2.8 candidate
+# Internal N Crush 1.2.8
 
-Not published yet. Release gates and remaining checks are recorded in
-VALIDATION_V128_PARTIAL.md.
+- Rebuild 21 competitive layouts with distinct grounded terraces, stairs and circulation. Keep one rectangle and one supported crossing per capacity.
+- Add an original Blender catalogue of 210 props, vehicles/vessels and door leaves. Curate placement by map theme and region; add working pocket-sliding doors.
+- Add sea/coast water with fatal immersion and shallow riverbeds. Regional material colour and low-frequency variation reduce repeated tiling.
+- Repair mobile map pinch anchoring, fixed-size toggles, circular controls, slide gestures/button, crouch/jump sizing and killcam/HUD overlap.
+- Add native automatic graphics without automatic resolution changes. Fix manual sun shadows and clarify browser 3D sharpness settings.
 
-- Rebuild 21 competitive maps with distinct grounded terraces, stairs and
-  circulation. Retain one rectangular and one supported-crossing map per
-  supported capacity, plus the practice arena.
-- Add 32 original Blender props, curated by map theme, and regional wall/floor
-  palettes. Share imported geometry/materials to avoid per-instance duplication.
-- Correct mobile map pinch anchoring, fixed-size auto-fire/sprint controls,
-  circular touch controls under nonuniform viewport scaling, and slide gestures.
-- Restore an explicit forward-slide touch button. Match crouch/jump sizes and
-  avoid the equipment button with the smaller mobile killcam bar.
-- Keep match score/time hidden when closing equipment during a killcam.
-
-The user's subsequent request is a separate follow-up after this stabilization:
-expand the distinct prop catalogue beyond 200; visually distinguish open sea
-(fatal immersion) from shallow, safely traversable rivers. These are not claimed
-as implemented in this candidate.
+Validation and publication evidence is recorded separately. Intel integrated GPUs and physical phones have not been measured here. Character replacement is not part of this release. The asset catalogue is not a claim that every model is used in every map. All door types currently use pocket-sliding interaction.

@@ -25,7 +25,9 @@ static func build(a:Node,index:int):
 	a.bounds=Vector2(plan.dimensions[0],plan.dimensions[1])*.5;a.vertical_map=true;a.has_water=false;a.indoors=index in CombatLayout.INDOOR
 	a.set_meta("district_spawns",[Vector2(plan.spawns[0][0],plan.spawns[0][1]),Vector2(plan.spawns[1][0],plan.spawns[1][1])])
 	a.set_meta("district",true);a.set_meta("night",index in [4,15,23,28,30])
-	if not plan.get("water",[]).is_empty():a.has_water=true;a.set_meta("district_water",ring(plan.water[0]))
+	if not plan.get("water",[]).is_empty():
+		a.has_water=true;a.set_meta("district_water",ring(plan.water[0]))
+		a.set_meta("water_kind",plan.get("water_kind","river"));a.set_meta("water_height",float(plan.get("water_height",-.35)))
 	a.playable_polygon=ring(plan.border[0]);a.district_surfaces=[]
 	for source in plan.surfaces:
 		var surface={"rings":[],"plane":Vector3(source.plane[0],source.plane[1],source.plane[2])}
@@ -46,6 +48,9 @@ static func build(a:Node,index:int):
 		st.index();var mesh=st.commit()
 		var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;a.architecture.add_child(body);body.position=origin
 		var visual=MeshInstance3D.new();visual.mesh=mesh;visual.material_override=WorldSurface.material(group.kind,index,false,(1 if origin.x>0 else 0)+(2 if origin.z>0 else 0));body.add_child(visual)
+		if group.kind=="water":
+			visual.material_override=WaterSurface.material(plan.get("water_kind","river")=="sea")
+			visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if group.kind in ["water","stair_detail"]:continue
 		var collision=CollisionShape3D.new();var shape=ConcavePolygonShape3D.new();shape.set_faces(mesh.get_faces());shape.backface_collision=true;collision.shape=shape;body.add_child(collision)
 	# Vertical fascia gives elevated paths visible thickness without changing cover.

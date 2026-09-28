@@ -5,7 +5,7 @@ func _initialize():
 		var scene=load("res://assets/arenas/complete/map_%02d.scn"%index).instantiate()
 		var revision=int(scene.get_meta("revision",0));var state=scene.get_meta("state")
 		if revision!=ArenaCache.REVISION:failed=true;printerr("STALE_CACHE ",index," ",revision)
-		states[str(index)]={"revision":revision,"props":state.props,"spawns":state.spawn_points,"zones":state.zones,"surfaces":state.district_surfaces}
+		states[str(index)]={"revision":revision,"props":state.props,"spawns":state.spawn_points,"zones":state.zones,"surfaces":state.district_surfaces,"doors":state.doors,"metadata":state.metadata}
 		scene.free()
 	var output="res://../validation/v128-cache-state.json"
 	for arg in OS.get_cmdline_user_args():

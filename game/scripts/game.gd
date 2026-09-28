@@ -111,6 +111,7 @@ var internet:InternetLobby
 var rtc:RtcTransport
 var touch:TouchControls
 var web_graphics:WebGraphics
+var native_graphics:NativeGraphics
 var join_ticket=""
 func _ready():
 	if demo_mode:
@@ -135,6 +136,8 @@ func _ready():
 		profile.map_quality_revision=126
 	if OS.has_feature("web"):
 		web_graphics=WebGraphics.new();web_graphics.game=self;add_child(web_graphics)
+	else:
+		native_graphics=NativeGraphics.new();native_graphics.game=self;add_child(native_graphics)
 	if not OS.has_feature("web") and int(profile.display_revision)<115 and DisplayServer.get_name()!="headless":
 		profile.monitor=DisplayServer.window_get_current_screen()
 		var native_size=DisplayServer.screen_get_size(int(profile.monitor))

@@ -13,6 +13,7 @@ addons/webrtc_native/lib/
 assets/arenas/geometry/
 
 assets/arenas/complete/
+assets/door_leaves/
 
 # Reused approved build artifact; CI downloads exact 1.2.2 images.
 assets/menu_slides/

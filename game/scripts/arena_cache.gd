@@ -1,6 +1,6 @@
 class_name ArenaCache
 extends RefCounted
-const REVISION=133
+const REVISION=135
 const FIELDS=["district_surfaces","water_rect","has_water","spawn_points","ffa_spawns","sites","zones","obstacles","map_index","indoors","bounds","playable_polygon","walk_surfaces","floor_holes","navigation_goals","navigation_blocks","vertical_map","chunk_count"]
 static func restore(arena:Node,index:int) -> bool:
 	var path="res://assets/arenas/complete/map_%02d.scn"%index
@@ -17,7 +17,7 @@ static func restore(arena:Node,index:int) -> bool:
 	for item in state.supplies:arena.supplies.append({"pos":item.pos,"ready":0.,"node":arena.get_node(item.path)})
 	for item in state.props:
 		var prop=InteractiveProp.new();prop.configure(item.id,item.kind,arena.props_authoritative);prop.transform=item.transform;arena.add_child(prop);arena.props[item.id]=prop
-	for item in state.doors:arena.add_door(item.pos,item.yaw)
+	for item in state.doors:arena.add_door(item.pos,item.yaw,float(item.get("opening",InteractiveDoor.WIDTH)))
 	arena.set_meta("navigation_cache",source.get_meta("navigation_cache"))
 	source.free();GraphicsOptions.apply_world(arena)
 	if OS.has_feature("web"):
@@ -31,7 +31,7 @@ static func save(arena:Node,path:String) -> Error:
 	for i in range(arena.supplies.size()):arena.supplies[i].node.name="Supply_%d"%i
 	for item in arena.supplies:state.supplies.append({"pos":item.pos,"path":arena.get_path_to(item.node)})
 	for prop in arena.props.values():state.props.append({"id":prop.prop_id,"kind":prop.kind,"transform":prop.transform})
-	for door in arena.doors.values():state.doors.append({"pos":door.position,"yaw":door.rotation.y})
+	for door in arena.doors.values():state.doors.append({"pos":door.position,"yaw":door.rotation.y,"opening":door.opening_width})
 	for child in arena.get_children():
 		if child is InteractiveProp or child is InteractiveDoor or child.is_queued_for_deletion():continue
 		source.add_child(child.duplicate())

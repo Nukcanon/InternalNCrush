@@ -1,0 +1,831 @@
+{
+  "provenance": "Original Blender authored furnished props; no third-party sources",
+  "assets": [
+    {
+      "name": "dining_chair",
+      "triangles": 160,
+      "bytes": 17144,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "school_chair",
+      "triangles": 160,
+      "bytes": 17144,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "office_chair",
+      "triangles": 388,
+      "bytes": 37520,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "armchair",
+      "triangles": 292,
+      "bytes": 30600,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "patio_chair",
+      "triangles": 152,
+      "bytes": 16036,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "bar_stool",
+      "triangles": 92,
+      "bytes": 10388,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "picnic_bench",
+      "triangles": 160,
+      "bytes": 17140,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "station_bench",
+      "triangles": 152,
+      "bytes": 16040,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "folding_chair",
+      "triangles": 184,
+      "bytes": 19400,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "wheelchair",
+      "triangles": 404,
+      "bytes": 38668,
+      "materials": 1,
+      "theme": "seating"
+    },
+    {
+      "name": "picnic_table",
+      "triangles": 140,
+      "bytes": 14904,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "round_cafe_table",
+      "triangles": 168,
+      "bytes": 16140,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "writing_desk",
+      "triangles": 140,
+      "bytes": 14904,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "drafting_table",
+      "triangles": 116,
+      "bytes": 12652,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "folding_table",
+      "triangles": 116,
+      "bytes": 12652,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "billiard_table",
+      "triangles": 236,
+      "bytes": 22880,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "reception_desk",
+      "triangles": 116,
+      "bytes": 12652,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "console_table",
+      "triangles": 104,
+      "bytes": 11524,
+      "materials": 1,
+      "theme": "tables"
+    },
+    {
+      "name": "kitchen_cupboard",
+      "triangles": 112,
+      "bytes": 12564,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "wardrobe",
+      "triangles": 100,
+      "bytes": 11400,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "utility_cabinet",
+      "triangles": 136,
+      "bytes": 14800,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "tool_chest",
+      "triangles": 380,
+      "bytes": 39500,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "filing_cabinet",
+      "triangles": 268,
+      "bytes": 28276,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "medicine_cabinet",
+      "triangles": 112,
+      "bytes": 12544,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "equipment_locker",
+      "triangles": 112,
+      "bytes": 12544,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "storage_bin",
+      "triangles": 60,
+      "bytes": 6996,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "open_crate",
+      "triangles": 60,
+      "bytes": 6992,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "metal_shelving",
+      "triangles": 108,
+      "bytes": 11516,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "shoe_shelf",
+      "triangles": 108,
+      "bytes": 11504,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "parcel_lockers",
+      "triangles": 212,
+      "bytes": 22648,
+      "materials": 1,
+      "theme": "storage"
+    },
+    {
+      "name": "stove_station",
+      "triangles": 292,
+      "bytes": 26380,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "range_station",
+      "triangles": 348,
+      "bytes": 31988,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "refrigerator",
+      "triangles": 168,
+      "bytes": 18196,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "microwave_counter",
+      "triangles": 204,
+      "bytes": 20580,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "oven_station",
+      "triangles": 204,
+      "bytes": 20572,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "dishwashing_sink",
+      "triangles": 156,
+      "bytes": 16064,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "kettle_counter",
+      "triangles": 160,
+      "bytes": 16084,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "coffee_station",
+      "triangles": 184,
+      "bytes": 18872,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "toaster_counter",
+      "triangles": 204,
+      "bytes": 20576,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "food_service_counter",
+      "triangles": 260,
+      "bytes": 27252,
+      "materials": 1,
+      "theme": "kitchen"
+    },
+    {
+      "name": "monitor_desk",
+      "triangles": 160,
+      "bytes": 17112,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "computer_station",
+      "triangles": 184,
+      "bytes": 19376,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "printer_station",
+      "triangles": 160,
+      "bytes": 17144,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "server_rack",
+      "triangles": 604,
+      "bytes": 60960,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "television_stand",
+      "triangles": 148,
+      "bytes": 16016,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "radio_desk",
+      "triangles": 252,
+      "bytes": 24524,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "telephone_station",
+      "triangles": 188,
+      "bytes": 20436,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "projector_cart",
+      "triangles": 180,
+      "bytes": 18320,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "pa_speaker",
+      "triangles": 256,
+      "bytes": 24048,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "security_camera_post",
+      "triangles": 104,
+      "bytes": 10976,
+      "materials": 1,
+      "theme": "office"
+    },
+    {
+      "name": "stretcher",
+      "triangles": 324,
+      "bytes": 30788,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "medical_bed",
+      "triangles": 348,
+      "bytes": 33048,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "iv_stand",
+      "triangles": 64,
+      "bytes": 7012,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "oxygen_station",
+      "triangles": 128,
+      "bytes": 11632,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "first_aid_station",
+      "triangles": 160,
+      "bytes": 17144,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "defibrillator_station",
+      "triangles": 160,
+      "bytes": 17152,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "medical_cart",
+      "triangles": 260,
+      "bytes": 24076,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "examination_chair",
+      "triangles": 304,
+      "bytes": 31744,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "scanner_station",
+      "triangles": 160,
+      "bytes": 17144,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "privacy_screen",
+      "triangles": 60,
+      "bytes": 7016,
+      "materials": 1,
+      "theme": "medical"
+    },
+    {
+      "name": "forklift",
+      "triangles": 284,
+      "bytes": 26308,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "pallet_jack",
+      "triangles": 236,
+      "bytes": 21800,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "welding_cart",
+      "triangles": 216,
+      "bytes": 20608,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "portable_generator",
+      "triangles": 136,
+      "bytes": 14856,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "electrical_panel",
+      "triangles": 192,
+      "bytes": 20472,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "industrial_press",
+      "triangles": 104,
+      "bytes": 10404,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "conveyor",
+      "triangles": 428,
+      "bytes": 37720,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "pipe_valve",
+      "triangles": 144,
+      "bytes": 12776,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "boiler",
+      "triangles": 128,
+      "bytes": 11588,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "fuel_pump",
+      "triangles": 124,
+      "bytes": 13712,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "gas_cylinder_rack",
+      "triangles": 288,
+      "bytes": 24192,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "bench_grinder",
+      "triangles": 256,
+      "bytes": 23000,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "large_compressor",
+      "triangles": 128,
+      "bytes": 11608,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "chain_hoist",
+      "triangles": 80,
+      "bytes": 8668,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "rock_hopper",
+      "triangles": 92,
+      "bytes": 10324,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "ventilation_duct",
+      "triangles": 84,
+      "bytes": 9256,
+      "materials": 1,
+      "theme": "industry"
+    },
+    {
+      "name": "fire_hydrant",
+      "triangles": 124,
+      "bytes": 11080,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "postbox",
+      "triangles": 112,
+      "bytes": 12580,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "payphone",
+      "triangles": 124,
+      "bytes": 13708,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "bus_shelter",
+      "triangles": 84,
+      "bytes": 9272,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "ticket_machine",
+      "triangles": 124,
+      "bytes": 13720,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "cash_machine",
+      "triangles": 124,
+      "bytes": 13716,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "drinks_vending",
+      "triangles": 232,
+      "bytes": 23872,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "snacks_vending",
+      "triangles": 232,
+      "bytes": 23872,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "recycling_station",
+      "triangles": 200,
+      "bytes": 21600,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "litter_bin",
+      "triangles": 100,
+      "bytes": 11460,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "traffic_signal",
+      "triangles": 224,
+      "bytes": 20132,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "street_lamp",
+      "triangles": 104,
+      "bytes": 10952,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "bicycle_rack",
+      "triangles": 108,
+      "bytes": 11528,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "bicycle",
+      "triangles": 120,
+      "bytes": 11648,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "parking_meter",
+      "triangles": 104,
+      "bytes": 10956,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "road_barrier",
+      "triangles": 96,
+      "bytes": 10400,
+      "materials": 1,
+      "theme": "street"
+    },
+    {
+      "name": "lifering_rack",
+      "triangles": 156,
+      "bytes": 13928,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "fishing_net_rack",
+      "triangles": 168,
+      "bytes": 17176,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "anchor_display",
+      "triangles": 60,
+      "bytes": 7000,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "mooring_buoy",
+      "triangles": 88,
+      "bytes": 8228,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "harbour_beacon",
+      "triangles": 132,
+      "bytes": 12720,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "dock_winch",
+      "triangles": 144,
+      "bytes": 12776,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "gangway",
+      "triangles": 108,
+      "bytes": 11476,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "fish_crates",
+      "triangles": 176,
+      "bytes": 19328,
+      "materials": 1,
+      "theme": "coast"
+    },
+    {
+      "name": "wheelbarrow",
+      "triangles": 128,
+      "bytes": 13200,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "watering_can",
+      "triangles": 96,
+      "bytes": 9296,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "shovel_rack",
+      "triangles": 228,
+      "bytes": 22216,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "seedling_trays",
+      "triangles": 524,
+      "bytes": 51020,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "terracotta_pots",
+      "triangles": 524,
+      "bytes": 51020,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "garden_trellis",
+      "triangles": 96,
+      "bytes": 10336,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "birdbath",
+      "triangles": 104,
+      "bytes": 9368,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "beehive",
+      "triangles": 236,
+      "bytes": 24912,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "water_butt",
+      "triangles": 100,
+      "bytes": 9348,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "compost_bin",
+      "triangles": 148,
+      "bytes": 15916,
+      "materials": 1,
+      "theme": "garden"
+    },
+    {
+      "name": "cement_mixer",
+      "triangles": 216,
+      "bytes": 20116,
+      "materials": 1,
+      "theme": "construction"
+    },
+    {
+      "name": "scaffold",
+      "triangles": 156,
+      "bytes": 15972,
+      "materials": 1,
+      "theme": "construction"
+    },
+    {
+      "name": "ladder",
+      "triangles": 120,
+      "bytes": 12604,
+      "materials": 1,
+      "theme": "construction"
+    },
+    {
+      "name": "toolbox_station",
+      "triangles": 148,
+      "bytes": 16016,
+      "materials": 1,
+      "theme": "construction"
+    },
+    {
+      "name": "brick_stack",
+      "triangles": 1068,
+      "bytes": 110196,
+      "materials": 1,
+      "theme": "construction"
+    },
+    {
+      "name": "sawhorse",
+      "triangles": 60,
+      "bytes": 6988,
+      "materials": 1,
+      "theme": "construction"
+    },
+    {
+      "name": "cable_drum",
+      "triangles": 180,
+      "bytes": 15160,
+      "materials": 1,
+      "theme": "construction"
+    },
+    {
+      "name": "roadworks_sign",
+      "triangles": 80,
+      "bytes": 9248,
+      "materials": 1,
+      "theme": "construction"
+    }
+  ]
+}

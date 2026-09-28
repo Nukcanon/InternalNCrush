@@ -10,6 +10,7 @@ nas/.env
 **/node_modules/
 **/.wrangler/
 web/build/
+web/build-*/
 nas/*.zip
 nas/.env.backup-*
 services/cloudflare-directory/.dev.vars*

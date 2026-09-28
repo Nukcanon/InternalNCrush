@@ -1,0 +1,185 @@
+{
+  "provenance": "Original Blender authored doors; no third-party sources",
+  "assets": [
+    {
+      "name": "door_wood_panel",
+      "triangles": 484,
+      "bytes": 46512,
+      "materials": 1
+    },
+    {
+      "name": "door_wood_plank",
+      "triangles": 620,
+      "bytes": 64228,
+      "materials": 1
+    },
+    {
+      "name": "door_cottage",
+      "triangles": 484,
+      "bytes": 46504,
+      "materials": 1
+    },
+    {
+      "name": "door_arched_plank",
+      "triangles": 836,
+      "bytes": 84536,
+      "materials": 1
+    },
+    {
+      "name": "door_barn_cross",
+      "triangles": 668,
+      "bytes": 68740,
+      "materials": 1
+    },
+    {
+      "name": "door_sliding_shoji",
+      "triangles": 372,
+      "bytes": 37392,
+      "materials": 1
+    },
+    {
+      "name": "door_glass_store",
+      "triangles": 180,
+      "bytes": 19340,
+      "materials": 1
+    },
+    {
+      "name": "door_frosted_office",
+      "triangles": 180,
+      "bytes": 19344,
+      "materials": 1
+    },
+    {
+      "name": "door_lab_observation",
+      "triangles": 228,
+      "bytes": 23860,
+      "materials": 1
+    },
+    {
+      "name": "door_hospital_swing",
+      "triangles": 204,
+      "bytes": 21600,
+      "materials": 1
+    },
+    {
+      "name": "door_fire_exit",
+      "triangles": 116,
+      "bytes": 12612,
+      "materials": 1
+    },
+    {
+      "name": "door_steel_security",
+      "triangles": 228,
+      "bytes": 23856,
+      "materials": 1
+    },
+    {
+      "name": "door_warehouse_shutter",
+      "triangles": 516,
+      "bytes": 50944,
+      "materials": 1
+    },
+    {
+      "name": "door_loading_bay",
+      "triangles": 372,
+      "bytes": 37388,
+      "materials": 1
+    },
+    {
+      "name": "door_container",
+      "triangles": 364,
+      "bytes": 35224,
+      "materials": 1
+    },
+    {
+      "name": "door_submarine",
+      "triangles": 676,
+      "bytes": 60336,
+      "materials": 1
+    },
+    {
+      "name": "door_ship_bulkhead",
+      "triangles": 676,
+      "bytes": 60344,
+      "materials": 1
+    },
+    {
+      "name": "door_maintenance_louver",
+      "triangles": 372,
+      "bytes": 37404,
+      "materials": 1
+    },
+    {
+      "name": "door_server_access",
+      "triangles": 228,
+      "bytes": 23856,
+      "materials": 1
+    },
+    {
+      "name": "door_vault",
+      "triangles": 580,
+      "bytes": 53416,
+      "materials": 1
+    },
+    {
+      "name": "door_cell_gate",
+      "triangles": 348,
+      "bytes": 35128,
+      "materials": 1
+    },
+    {
+      "name": "door_chain_gate",
+      "triangles": 492,
+      "bytes": 48676,
+      "materials": 1
+    },
+    {
+      "name": "door_garden_gate",
+      "triangles": 668,
+      "bytes": 68740,
+      "materials": 1
+    },
+    {
+      "name": "door_ornate_gate",
+      "triangles": 436,
+      "bytes": 42000,
+      "materials": 1
+    },
+    {
+      "name": "door_station_ticket",
+      "triangles": 204,
+      "bytes": 21600,
+      "materials": 1
+    },
+    {
+      "name": "door_school_classroom",
+      "triangles": 204,
+      "bytes": 21604,
+      "materials": 1
+    },
+    {
+      "name": "door_hotel_panel",
+      "triangles": 660,
+      "bytes": 62356,
+      "materials": 1
+    },
+    {
+      "name": "door_restroom",
+      "triangles": 204,
+      "bytes": 21588,
+      "materials": 1
+    },
+    {
+      "name": "door_cold_store",
+      "triangles": 204,
+      "bytes": 21592,
+      "materials": 1
+    },
+    {
+      "name": "door_garage_fold",
+      "triangles": 252,
+      "bytes": 26108,
+      "materials": 1
+    }
+  ]
+}

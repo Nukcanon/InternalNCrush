@@ -60,19 +60,44 @@ static func build(a:Node,plan:Dictionary):
 		for mesh in chunk.get_children():
 			if mesh is MeshInstance3D:mesh.set_meta("district_detail",true);mesh.material_override=WorldSurface.material("detail",index,true);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	a.set_meta("wall_fixtures",fixtures)
+	for entry in plan.get("doors",[]):
+		var origin=Vector3(entry[0],entry[2],entry[1]);var yaw=float(entry[3]);var basis=Basis(Vector3.UP,yaw)
+		var opening=3.2
+		var wall_height=6.8 if a.indoors else 3.1
+		for side in [-1,1]:
+			var extent=float(entry[4] if side<0 else entry[5]);var width=extent-opening*.5
+			var centre=origin+basis*Vector3(side*(opening*.5+width*.5),wall_height*.5,0)
+			var prior_blocks=a.navigation_blocks.size();var prior_obstacles=a.obstacles.size()
+			var body=a.solid_rotated(centre,Vector3(width,wall_height,.28),Color("8e9f94"),yaw)
+			# Narrow navigation bounds follow diagonal walls instead of sealing
+			# the doorway with the large rotated box's enclosing rectangle.
+			a.navigation_blocks.resize(prior_blocks);a.obstacles.resize(prior_obstacles)
+			var sections=maxi(1,ceili(width/.5))
+			for section in range(sections):
+				var local=AABB(Vector3(-width*.5+section*width/sections,-wall_height*.5,-.14),Vector3(width/sections,wall_height,.28))
+				a.navigation_blocks.append(Transform3D(basis,centre)*local)
+			for child in body.get_children():
+				if child is MeshInstance3D:child.material_override=WorldSurface.material("wall",index)
+		a.solid_rotated(origin+Vector3.UP*(2.8+wall_height)*.5,Vector3(opening,wall_height-2.8,.30),Color("b7c5b0"),yaw)
+		a.add_door(origin,yaw,opening)
 	var anchors=plan.props.duplicate()
-	if not plan.get("water_boat",[]).is_empty():anchors.append(plan.water_boat)
+	anchors.append_array(plan.get("vehicles",[]));anchors.append_array(plan.get("boats",[]))
 	for i in range(anchors.size()):
-		var floating=i==plan.props.size();var p=anchors[i];var pos=Vector3(p[0],-.5 if floating else float(p[2]) if p.size()>2 else 0.,p[1]);var kind="boat" if floating else "tree" if garden or (market and i%4==0) else "container" if coastal and i%3==0 else "car" if market or coastal else "tank"
+		var p=anchors[i];var transport=p.size()>4
+		var pos=Vector3(p[0],float(p[2]) if p.size()>2 else 0.,p[1]);var region=(1 if pos.x>0 else 0)+(2 if pos.z>0 else 0)
+		var kind=str(p[4]) if transport else DistrictArt.prop(index,i,region)
 		# One dock service cabin, not an identical room cloned into every map.
 		if index==0 and i==0:
 			utility_room(a,pos);continue
-		if not floating:kind=DistrictArt.prop(index,i)
 		var node=Node3D.new();a.architecture.add_child(node);node.position=pos
+		node.set_meta("prop_asset",kind)
 		if p.size()>3:node.rotation.y=float(p[3])
 		var imported=true
-		if DistrictArt.original(kind):
-			ImportedWorldProp.build(node,kind,Vector3(2.5,2.8,2.),"district_original")
+		if transport:
+			ImportedWorldProp.build(node,kind,Vector3.ONE,"transport_original",true)
+		elif DistrictArt.original(kind):
+			var pack=DistrictArt.pack(kind)
+			ImportedWorldProp.build(node,kind,Vector3(2.5,2.8,2.),pack,pack=="places_original")
 		elif kind in ["container","tank"]:
 			ImportedWorldProp.build(node,("shipping-container-a" if i%2==0 else "shipping-container-b") if kind=="container" else ("detail-tank" if i%2==0 else "detail-tank-large"),Vector3(2.2,2.8,4.))
 		elif kind=="tree":

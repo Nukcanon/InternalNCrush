@@ -13,6 +13,7 @@ ROOT=Path(__file__).resolve().parents[3]
 OUT=ROOT/'game/assets/arenas/districts'
 OUT.mkdir(exist_ok=True)
 plans=json.loads((OUT.parent/'district_specs.json').read_text(encoding='utf-8'))
+transport=json.loads((ROOT/'game/assets/models/transport_original/manifest.json').read_text())['assets']
 
 def polygons(g):
     if g.is_empty:return []
@@ -25,6 +26,7 @@ def triangles(g):
         for t in constrained_delaunay_triangles(p).geoms:yield list(t.exterior.coords)[:3]
 
 for plan in plans:
+    sea=plan['id']-1 in [0,1,23,28]
     w,h=plan['dimensions'];ox,oz=w/2,h/2
     floor=shape(plan['floor']); border=shape(plan['border'])
     # Bounds are exact; the preview's buffer may extend a few metres outside.
@@ -59,6 +61,9 @@ for plan in plans:
         # triangulating so a visible pixel never has two coplanar floor faces.
         for (kind,plane,walk),pieces in pending_faces.items():
             merged=unary_union(pieces)
+            if kind in ['water','waterbed']:
+                emit_face(merged,plane,kind,walk)
+                continue
             for region,offset in bands:
                 clipped=merged.intersection(region)
                 if not clipped.is_empty:
@@ -103,13 +108,18 @@ for plan in plans:
         for p in polygons(poly):
             for ring in rings(p):
                 for a,b in zip(ring,ring[1:]):
+                    if kind=='perimeter' and sea and (a[0]+b[0])*.5>w*.76:
+                        # The coastal edge opens onto the sea; remaining sides
+                        # retain the map boundary and its collision.
+                        continue
                     segment=LineString([a,b])
                     for region,offset in bands:
                         piece=segment.intersection(region)
                         if piece.is_empty or piece.geom_type!='LineString':continue
                         u,v=list(piece.coords)[0],list(piece.coords)[-1]
                         uy=terrain_y(*u);vy=terrain_y(*v)
-                        for tri in [[(u[0],low+uy,u[1]),(v[0],low+vy,v[1]),(u[0],high+uy,u[1])],[(v[0],low+vy,v[1]),(v[0],high+vy,v[1]),(u[0],high+uy,u[1])]]:emit(tri,kind)
+                        top=.35 if kind=='quay_edge' and (a[0]+b[0])*.5>w*.76 else high
+                        for tri in [[(u[0],low+uy,u[1]),(v[0],low+vy,v[1]),(u[0],top+uy,u[1])],[(v[0],low+vy,v[1]),(v[0],top+vy,v[1]),(u[0],top+uy,u[1])]]:emit(tri,kind)
     def level(path,height,width):
         # Two graded entrances and a level middle, with a maximum 1:3 slope.
         line=LineString(path)
@@ -185,23 +195,55 @@ for plan in plans:
     # real occlusion. Open courtyards remain roofless; selected side rooms get
     # ceilings at runtime, never across the stair entrances.
     for p in polygons(architecture_floor):
-        walls(Polygon(p.exterior),0,wall_height,'wall')
+        walls(Polygon(p.exterior),0,wall_height,'quay_edge' if sea else 'wall')
         for hole in p.interiors:
             island=Polygon(hole);walls(island,0,.45 if island.equals(water) else wall_height,'wall')
-    face(border.difference(architecture_floor).difference(water),[0,0,wall_height],'roof',False)
+    coastal_margin=border.difference(unary_union([Polygon(p.exterior) for p in polygons(architecture_floor)])).intersection(box(w*.76,-h,w*2,h*2)) if sea else Polygon()
+    face(border.difference(architecture_floor).difference(water).difference(coastal_margin),[0,0,wall_height],'roof',False)
+    water_y=min([terrain_y(x,z) for x,z in water.exterior.coords],default=0.)-.35 if not water.is_empty else -.35
     if not water.is_empty:
-        face(water,[0,0,-.6],'lower')
-        face(water,[0,0,-.35],'water',False)
+        face(water,[0,0,water_y-(4.5 if sea else .55)],'waterbed',not sea)
+        face(water,[0,0,water_y],'water',False)
+    if sea:
+        face(box(-w*2,-h*2,w*3,h*3).difference(border).union(coastal_margin),[0,0,water_y],'water',False)
     walls(border,0,max(7.2,wall_height),'perimeter')
     flush_faces()
     def centered(p):return [round(p[0]-ox,4),round(p[1]-oz,4)]
     routes=unary_union([LineString(path) for path in plan['paths']])
+    doors=[]
+    for path in plan['paths']:
+        for start,end in zip(path,path[1:]):
+            dx,dz=end[0]-start[0],end[1]-start[1];distance=math.hypot(dx,dz)
+            if distance<12:continue
+            x,z=(start[0]+end[0])*.5,(start[1]+end[1])*.5
+            if any(math.dist((x,z),q)<11 for q in plan['spawns']+plan['targets']):continue
+            if any(math.dist((x-ox,z-oz),q[:2])<22 for q in doors):continue
+            if (not upper.is_empty and upper.distance(Point(x,z))<5) or (not lower.is_empty and lower.distance(Point(x,z))<5):continue
+            nx,nz=dz/distance,-dx/distance
+            cross=LineString([(x-nx*12,z-nz*12),(x+nx*12,z+nz*12)])
+            cut=floor.intersection(cross)
+            lines=[cut] if cut.geom_type=='LineString' else list(getattr(cut,'geoms',[]))
+            chosen=next((line for line in lines if line.geom_type=='LineString' and line.distance(Point(x,z))<.001),None)
+            if chosen is None or not 4.5<chosen.length<18:continue
+            ends=list(chosen.coords);left=math.dist((x,z),ends[0]);right=math.dist((x,z),ends[-1])
+            if min(left,right)<2.:continue
+            if max(terrain_y(x+nx*s,z+nz*s) for s in [-left,0,right])-min(terrain_y(x+nx*s,z+nz*s) for s in [-left,0,right])>.04:continue
+            doors.append([*centered((x,z)),terrain_y(x,z),math.atan2(dx,dz),left,right])
+            if len(doors)>=3:break
+        if len(doors)>=3:break
+    def near_door(x,z,padding):
+        for door in doors:
+            dx,dz=x-ox-door[0],z-oz-door[1];yaw=door[3]
+            across=math.cos(yaw)*dx-math.sin(yaw)*dz
+            along=math.sin(yaw)*dx+math.cos(yaw)*dz
+            if abs(along)<padding and -door[4]-padding<across<door[5]+padding:return True
+        return False
     props=[];prop_candidates=[]
     for x in range(6,int(w)-6,4):
         for z in range(6,int(h)-6,4):
             point=Point(x,z)
             if plan['id']==32 and abs(x-ox)<44 and abs(z-oz)<48:continue
-            if not floor.contains(point.buffer(1.8)):continue
+            if not floor.contains(point.buffer(1.8)) or near_door(x,z,2.5):continue
             if max(terrain_y(x+dx,z+dz) for dx,dz in [(-2,-2),(2,2)])-min(terrain_y(x+dx,z+dz) for dx,dz in [(-2,-2),(2,2)])>.05:continue
             if routes.distance(point)<3.2:continue
             if not upper.is_empty and upper.distance(point)<3:continue
@@ -211,7 +253,23 @@ for plan in plans:
     # Stable spatial shuffle prevents every budgeted prop ending up on the west
     # side just because the old scan iterated x before z.
     prop_candidates.sort(key=lambda p:((int(p[0])*73856093)^(int(p[1])*19349663)^(plan['id']*83492791))%2147483647)
+    vehicles=[];vehicle_clearance=[]
+    road_rosters={0:['flatbed','tanker','delivery'],1:['crane','tow','flatbed'],2:['tanker','dump','flatbed'],4:['utility','box','pickup'],5:['compact','estate','delivery'],6:['taxi','minibus','van'],7:['hatch','sedan','taxi'],8:['tow','pickup','van'],9:['compact','hatch'],13:['reefer','box','delivery'],15:['refuse','flatbed'],17:['van','reefer','pickup'],18:['dump','crane'],19:['utility','flatbed'],21:['pickup','van'],23:['tow','crane'],25:['dump','tanker'],28:['utility','ambulance','fire']}
+    if plan['id']-1 in road_rosters:
+        names=road_rosters[plan['id']-1]
+        roster=[next(a for a in transport if a['name']=='vehicle_'+name) for name in names]
+        for ordinal in range(3 if plan['capacity']>=16 else 2):
+            asset=roster[ordinal%len(roster)]
+            radius=math.hypot(asset['length_m'],asset['width_m'])*.5+.35
+            for x,z in prop_candidates:
+                pt=Point(x,z)
+                if not floor.contains(pt.buffer(radius)) or near_door(x,z,radius+.5):continue
+                if routes.distance(pt)<radius+1.:continue
+                if any(math.hypot(x-q[0],z-q[1])<radius+q[2]+1. for q in vehicle_clearance):continue
+                if abs(terrain_y(x-radius,z-radius)-terrain_y(x+radius,z+radius))>.05:continue
+                vehicles.append([*centered((x,z)),terrain_y(x,z),0.,asset['name']]);vehicle_clearance.append((x,z,radius));break
     for p in prop_candidates:
+        if any(math.dist(p,q[:2])<q[2]+2. for q in vehicle_clearance):continue
         if any(math.dist(p,q)<6 for q in props):continue
         props.append(p)
         if len(props)>=min(56,plan['capacity']*3):break
@@ -222,12 +280,13 @@ for plan in plans:
         for z in range(4,int(h)-4,4):
             point=Point(x,z)
             if plan['id']==32 and abs(x-ox)<44 and abs(z-oz)<48:continue
-            if not floor.contains(point.buffer(.9)):continue
+            if not floor.contains(point.buffer(.9)) or near_door(x,z,1.5):continue
             if abs(terrain_y(x+.8,z+.8)-terrain_y(x-.8,z-.8))>.05:continue
             if routes.distance(point)<min(3.,plan['corridor_m']*.28):continue
             if min(math.dist((x,z),p) for p in plan['spawns']+plan['targets'])<9:continue
             if (not upper.is_empty and upper.distance(point)<2) or (not lower.is_empty and lower.distance(point)<2):continue
             if any(math.dist((x,z),p)<3.5 for p in props+loose):continue
+            if any(math.dist((x,z),q[:2])<q[2]+1. for q in vehicle_clearance):continue
             loose.append((x,z))
             if len(loose)>=12:break
         if len(loose)>=12:break
@@ -275,6 +334,18 @@ for plan in plans:
                 if not floor.contains(Point(x,z).buffer(.35)):continue
                 if min(math.dist((x,z),v) for v in plan['spawns']+targets)<5:continue
                 supports.append([*centered((x,z)),round(top,4)])
+    boats=[];boat_clearance=[]
+    if not water.is_empty:
+        roster=[a for a in transport if a['category']==('sea' if sea else 'river')]
+        candidates=[(x,z) for x in range(4,int(w)-4,5) for z in range(4,int(h)-4,5)]
+        for ordinal in range(3):
+            asset=roster[(plan['id']+ordinal)%len(roster)]
+            radius=math.hypot(asset['length_m'],asset['width_m'])*.55
+            for x,z in candidates:
+                if not water.contains(Point(x,z).buffer(radius+.5)):continue
+                if any(math.hypot(x-q[0],z-q[1])<radius+q[2]+1. for q in boat_clearance):continue
+                depth=.50 if asset['length_m']<6 else .85
+                boats.append([*centered((x,z)),water_y-depth*.32,0.,asset['name']]);boat_clearance.append((x,z,radius));break
     def prop_anchor(p):
         boundary=floor.boundary
         nearest=boundary.interpolate(boundary.project(Point(p)))
@@ -290,12 +361,13 @@ for plan in plans:
           'terrain':terrain,'elevated_crossing':plan.get('elevated_crossing',False),
           'spawn_heights':[terrain_y(*p) for p in plan['spawns']], 'target_heights':[terrain_y(*p) for p in targets],
           'water':[[centered(p) for p in ring] for ring in rings(water)] if not water.is_empty else [],
+          'vehicles':vehicles,'boats':boats,'doors':doors,'water_kind':'sea' if sea else 'river','water_height':water_y,
           'water_boat':centered((water.representative_point().x,water.representative_point().y)) if not water.is_empty else []}
     (OUT/('map_%02d.json'%data['index'])).write_text(json.dumps(data,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     preview={k:v for k,v in data.items() if k!='groups'}
     preview['triangles']={key:[] for key in ['ground','upper','lower']}
     for surface in surfaces:
         poly=Polygon(surface['rings'][0],surface['rings'][1:]).buffer(0)
-        for tri in triangles(poly):preview['triangles'][surface['layer']].extend(tri)
+        for tri in triangles(poly):preview['triangles']['lower' if surface['layer']=='waterbed' else surface['layer']].extend(tri)
     (OUT/('plan_%02d.json'%data['index'])).write_text(json.dumps(preview,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     print(data['index'],data['name'],len(surfaces),'surfaces',len(groups),'tiles')

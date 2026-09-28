@@ -16,6 +16,10 @@ const PRESETS=[
 
 static func apply(game:Node):
 	var settings=WebGraphics.resolve(game.profile,game.web_graphics.level if is_instance_valid(game.web_graphics) else 1) if OS.has_feature("web") else game.profile
+	if not OS.has_feature("web") and game.profile.get("graphics_auto",false):
+		settings=game.profile.duplicate();settings.merge(PRESETS[1],true)
+		var auto_level=game.native_graphics.level if is_instance_valid(game.native_graphics) else 1
+		settings.decor_quality=auto_level;settings.physics_effects=auto_level;settings.corpse_quality=auto_level
 	detail=clampi(int(settings.get("decor_quality",1)),0,2)
 	lighting=clampi(int(settings.get("lighting_quality",1)),0,2)
 	physics_effects=clampi(int(settings.get("physics_effects",1)),0,2)
@@ -51,7 +55,11 @@ static func build(ui:Node):
 		WebGraphics.build(ui);return
 	else:
 		var controls=[]
-		var preset=ui.option("품질 프리셋",["낮음 · 저사양","중간 · 기본","높음 · 세부 표현","사용자 설정"],int(profile.get("graphics_quality",1)),func(i):
+		var preset=ui.option("품질 프리셋",["낮음 · 저사양","중간 · 기본","높음 · 세부 표현","사용자 설정","자동 · 성능에 맞춤"],4 if profile.get("graphics_auto",false) else int(profile.get("graphics_quality",1)),func(i):
+			profile.graphics_auto=i==4
+			if i==4:
+				if is_instance_valid(ui.game.native_graphics):ui.game.native_graphics.reset()
+				return
 			if i==3:return
 			profile.graphics_quality=i;profile.merge(PRESETS[i],true)
 			for item in controls:
@@ -59,18 +67,19 @@ static func build(ui:Node):
 				else:item.control.select(int(profile[item.key])))
 		for spec in [["lighting_quality","광원",["고정 카툰 명암","주 광원 1개","주 광원 + 보조 4개"]],["shadow_quality","그림자",["사용 안 함","1024 · 가까운 그림자","2048 · 먼 그림자"]],["antialias","안티앨리어싱",["사용 안 함","MSAA 2×","MSAA 4×","MSAA 8×"]],["decor_quality","장식 효과",["최소","중간","풍부하게"]],["physics_effects","장식 물리",["최소","기본","풍부하게"]],["corpse_quality","피격·사망 물리",["가벼운 낙하·눕기","관절 시체 · 최대 2명","관절 시체 · 최대 4명"]]]:
 			var key:String=spec[0]
-			var control=ui.option(spec[1],spec[2],int(profile[key]),func(i):profile[key]=i;profile.graphics_quality=3;preset.select(3))
+			var control=ui.option(spec[1],spec[2],int(profile[key]),func(i):profile[key]=i;profile.graphics_auto=false;profile.graphics_quality=3;preset.select(3))
 			controls.append({"key":key,"control":control})
-		var fog_control=ui.check("배경 안개",bool(profile.fog_enabled),func(on):profile.fog_enabled=on;profile.graphics_quality=3;preset.select(3))
+		var fog_control=ui.check("배경 안개",bool(profile.fog_enabled),func(on):profile.fog_enabled=on;profile.graphics_auto=false;profile.graphics_quality=3;preset.select(3))
 		controls.append({"key":"fog_enabled","control":fog_control})
 		ui.label("시체 물리는 피격 방향과 바닥 충돌을 반영합니다. 작은 통·상자·콘은 모든 품질에서 밀거나 쏴서 움직일 수 있으며, 멀티플레이에서는 방장이 동일하게 판정합니다.",17)
 		ui.check("유혈 효과",bool(profile.get("blood_effects",false)),func(on):profile.blood_effects=on)
 		ui.check("메뉴 배경 전투 · 다음 메인 화면부터",bool(profile.get("menu_animation",true)),func(on):profile.menu_animation=on)
 		ui.option("최대 프레임",["제한 없음","30 FPS","60 FPS","90 FPS","120 FPS","144 FPS"],maxi(0,[0,30,60,90,120,144].find(int(profile.frame_limit))),func(i):profile.frame_limit=[0,30,60,90,120,144][i])
 		ui.label("중간 기본값: 기본 재질, 주 광원 1개, 그림자·MSAA 끄기, 제한된 장식 물리. 이동·충돌·총격 판정과 게임 규칙은 품질 설정과 무관합니다. 광원을 끄면 그림자도 꺼집니다.",17)
+		ui.label("자동은 해상도를 유지하며 장식·시체 물리와 거리별 모델 세부 표현을 조절합니다. 그림자는 높음 또는 사용자 설정에서 켤 수 있습니다.",17)
 	if not OS.has_feature("web"):
 		ui.button("기본설정으로 복원",func():
-			profile.graphics_quality=1;profile.merge(PRESETS[1],true);profile.frame_limit=60;profile.menu_animation=true
+			profile.graphics_auto=false;profile.graphics_quality=1;profile.merge(PRESETS[1],true);profile.frame_limit=60;profile.menu_animation=true
 			profile.monitor=DisplayServer.window_get_current_screen();var size=DisplayServer.screen_get_size(int(profile.monitor))
 			profile.width=size.x;profile.height=size.y;profile.display_mode=1;profile.window=false
 			ui.game.apply_display_settings();apply(ui.game);ui.game.save_profile();ui.settings())
@@ -99,7 +108,9 @@ static func apply_world(root:Node):
 		if light is OmniLight3D or light is SpotLight3D:
 			light.visible=lighting==2 and points<4 and not pooled;light.shadow_enabled=false;points+=1
 		elif light is DirectionalLight3D:
-			light.visible=lighting>0;light.shadow_enabled=lighting>0 and shadows>0 and bool(light.get_meta("quality_shadow"))
+			# A map's indoor flag must not permanently disable the user's sun
+			# shadows: rebuilt districts may contain both courtyards and rooms.
+			light.visible=lighting>0;light.shadow_enabled=lighting>0 and shadows>0 and (light.name=="Sun" or bool(light.get_meta("quality_shadow")))
 			light.directional_shadow_max_distance=35. if shadows==1 else 65.
 			light.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	for world in root.find_children("*","WorldEnvironment",true,false):

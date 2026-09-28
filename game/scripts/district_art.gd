@@ -34,9 +34,30 @@ const PROPS=[
 	["instrument_cabinet","ventilation_fan","transformer","staff_lockers","work_cart"],
 	["memorial_stone","stone_bench","timber_stack","garden_planter","notice_board"],
 	["notice_board","cargo_pallet","work_cart","park_bench"]]
-static func prop(index:int,ordinal:int) -> String:
+static var place_groups={}
+static var place_names={}
+static func load_places():
+	if not place_groups.is_empty():return
+	var manifest=JSON.parse_string(FileAccess.get_file_as_string("res://assets/models/places_original/manifest.json"))
+	for item in manifest.assets:
+		if not place_groups.has(item.theme):place_groups[item.theme]=[]
+		place_groups[item.theme].append(item.name);place_names[item.name]=true
+static func prop(index:int,ordinal:int,zone:int=0) -> String:
 	var roster=PROPS[clampi(index,0,PROPS.size()-1)]
-	return roster[ordinal%roster.size()]
+	if ordinal%4==0:return roster[(ordinal/4)%roster.size()]
+	load_places()
+	var areas=["street","kitchen","tables","seating"]
+	if index in [0,1,5,21,23,28]:areas=["coast","industry","storage","street"]
+	elif index in [2,8,11,13,15,18,25]:areas=["industry","storage","construction","office"]
+	elif index in [3,14,20,29]:areas=["medical","office","industry","storage"]
+	elif index in [10,26]:areas=["garden","garden","seating","construction"]
+	elif index in [4,12,19,24,30]:areas=["garden","storage","construction","seating"]
+	elif index==22:areas=["office","storage","tables","seating"]
+	elif index==27:areas=["storage","office","industry","seating"]
+	var group=place_groups[areas[zone%4]]
+	return group[(ordinal+index*11)%group.size()]
+static func pack(kind:String) -> String:
+	load_places();return "places_original" if place_names.has(kind) else "district_original"
 static func original(kind:String) -> bool:
 	return kind not in ["car","tree","boat","container","tank"]
 static func loose(index:int,ordinal:int) -> String:
