@@ -71,16 +71,21 @@ func beam(from:Vector3,to:Vector3,heal=false):
 	if tracer_mesh==null:
 		tracer_mesh=CylinderMesh.new();tracer_mesh.height=1.;tracer_mesh.top_radius=1.;tracer_mesh.bottom_radius=1.;tracer_mesh.radial_segments=6
 		tracer_materials=[glow(Color(1,.81,.40,.72)),glow(Color(.3,1,.73,.85))]
-	if tracers.size()<MAX_TRACERS:
+	var now=Time.get_ticks_msec();var available=-1
+	for offset in range(tracers.size()):
+		var candidate=(tracer_cursor+offset)%tracers.size()
+		if int(tracers[candidate].until)<=now:available=candidate;break
+	if available>=0:tracer_cursor=available
+	elif tracers.size()<MAX_TRACERS:
 		var mesh=MeshInstance3D.new();mesh.mesh=tracer_mesh;mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(mesh)
 		tracers.append({"node":mesh,"until":0})
 		tracer_cursor=tracers.size()-1
-	var item=tracers[tracer_cursor];tracer_cursor=(tracer_cursor+1)%MAX_TRACERS
+	var item=tracers[tracer_cursor];tracer_cursor=(tracer_cursor+1)%tracers.size()
 	var node:MeshInstance3D=item.node
 	node.position=(from+to)*.5;node.quaternion=Quaternion(Vector3.UP,(to-from)/length)
 	var width=.018 if heal else .010
 	node.scale=Vector3(width,length,width);node.material_override=tracer_materials[1 if heal else 0];node.show()
-	item.until=Time.get_ticks_msec()+(100 if heal else 48)
+	item.until=now+(100 if heal else 48)
 func burst(kind:String,pos:Vector3,color:Color):
 	if kind in ["explosion","turret_break","cover_break"]:explosion(pos,kind!="cover_break");return
 	var node=group(pos+Vector3.UP*.15);var explosive=kind=="explosion";var radius=5.5 if explosive else 1.9 if kind=="flash" else 1.15

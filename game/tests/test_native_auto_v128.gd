@@ -10,7 +10,7 @@ func run():
 	assert(game.profile==before,"Auto must not rewrite saved display or custom settings")
 	game.native_graphics.level=2;GraphicsOptions.apply(game)
 	assert(GraphicsOptions.detail==2 and GraphicsOptions.physics_effects==2)
-	assert(GraphicsOptions.antialias==0 and GraphicsOptions.shadows==0,"Automatic never reallocates costly shadow/MSAA buffers")
+	assert(GraphicsOptions.antialias==2 and GraphicsOptions.shadows==1,"Automatic high enables full quality without altering resolution")
 	game.profile.graphics_auto=false;game.profile.shadow_quality=1;game.profile.lighting_quality=2;game.profile.antialias=2
 	GraphicsOptions.apply(game)
 	assert(GraphicsOptions.shadows==1 and GraphicsOptions.antialias==2,"Manual settings take over")

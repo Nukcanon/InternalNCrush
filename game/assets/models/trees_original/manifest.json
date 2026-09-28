@@ -1,0 +1,185 @@
+{
+  "provenance": "Original local Blender construction; no third-party inputs",
+  "assets": [
+    {
+      "name": "tree_00",
+      "triangles": 264,
+      "bytes": 29972,
+      "materials": 1
+    },
+    {
+      "name": "tree_01",
+      "triangles": 308,
+      "bytes": 34728,
+      "materials": 1
+    },
+    {
+      "name": "tree_02",
+      "triangles": 352,
+      "bytes": 39480,
+      "materials": 1
+    },
+    {
+      "name": "tree_03",
+      "triangles": 152,
+      "bytes": 13724,
+      "materials": 1
+    },
+    {
+      "name": "tree_04",
+      "triangles": 184,
+      "bytes": 16292,
+      "materials": 1
+    },
+    {
+      "name": "tree_05",
+      "triangles": 216,
+      "bytes": 18860,
+      "materials": 1
+    },
+    {
+      "name": "tree_06",
+      "triangles": 152,
+      "bytes": 13724,
+      "materials": 1
+    },
+    {
+      "name": "tree_07",
+      "triangles": 184,
+      "bytes": 16292,
+      "materials": 1
+    },
+    {
+      "name": "tree_08",
+      "triangles": 216,
+      "bytes": 18860,
+      "materials": 1
+    },
+    {
+      "name": "tree_09",
+      "triangles": 376,
+      "bytes": 41476,
+      "materials": 1
+    },
+    {
+      "name": "tree_10",
+      "triangles": 376,
+      "bytes": 41476,
+      "materials": 1
+    },
+    {
+      "name": "tree_11",
+      "triangles": 376,
+      "bytes": 41476,
+      "materials": 1
+    },
+    {
+      "name": "tree_12",
+      "triangles": 332,
+      "bytes": 36720,
+      "materials": 1
+    },
+    {
+      "name": "tree_13",
+      "triangles": 332,
+      "bytes": 36720,
+      "materials": 1
+    },
+    {
+      "name": "tree_14",
+      "triangles": 332,
+      "bytes": 36716,
+      "materials": 1
+    },
+    {
+      "name": "tree_15",
+      "triangles": 376,
+      "bytes": 41476,
+      "materials": 1
+    },
+    {
+      "name": "tree_16",
+      "triangles": 376,
+      "bytes": 41476,
+      "materials": 1
+    },
+    {
+      "name": "tree_17",
+      "triangles": 376,
+      "bytes": 41476,
+      "materials": 1
+    },
+    {
+      "name": "tree_18",
+      "triangles": 424,
+      "bytes": 52060,
+      "materials": 1
+    },
+    {
+      "name": "tree_19",
+      "triangles": 468,
+      "bytes": 56816,
+      "materials": 1
+    },
+    {
+      "name": "tree_20",
+      "triangles": 512,
+      "bytes": 61568,
+      "materials": 1
+    },
+    {
+      "name": "tree_21",
+      "triangles": 264,
+      "bytes": 29972,
+      "materials": 1
+    },
+    {
+      "name": "tree_22",
+      "triangles": 308,
+      "bytes": 34728,
+      "materials": 1
+    },
+    {
+      "name": "tree_23",
+      "triangles": 352,
+      "bytes": 39476,
+      "materials": 1
+    },
+    {
+      "name": "tree_24",
+      "triangles": 264,
+      "bytes": 29976,
+      "materials": 1
+    },
+    {
+      "name": "tree_25",
+      "triangles": 308,
+      "bytes": 34728,
+      "materials": 1
+    },
+    {
+      "name": "tree_26",
+      "triangles": 352,
+      "bytes": 39480,
+      "materials": 1
+    },
+    {
+      "name": "tree_27",
+      "triangles": 264,
+      "bytes": 29972,
+      "materials": 1
+    },
+    {
+      "name": "tree_28",
+      "triangles": 308,
+      "bytes": 34728,
+      "materials": 1
+    },
+    {
+      "name": "tree_29",
+      "triangles": 352,
+      "bytes": 39480,
+      "materials": 1
+    }
+  ]
+}

@@ -20,7 +20,8 @@ static func simplify(material:Material) -> Material:
 static func apply(root:Node):
 	if not RenderStyle.web():return
 	for node in root.find_children("*","MeshInstance3D",true,false):
-		node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON if GraphicsOptions.shadows>0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# Keep authored caster flags. Turning the sun's shadows off disables the
+		# shadow pass; auto high can re-enable it without traversing all meshes.
 		if node.material_override:node.material_override=simplify(node.material_override)
 		elif node.mesh:
 			for i in range(node.mesh.get_surface_count()):

@@ -1,0 +1,245 @@
+{
+  "provenance": "Original local Blender construction; no third-party inputs",
+  "assets": [
+    {
+      "name": "window_00",
+      "triangles": 192,
+      "bytes": 19400,
+      "materials": 1
+    },
+    {
+      "name": "window_01",
+      "triangles": 228,
+      "bytes": 22784,
+      "materials": 1
+    },
+    {
+      "name": "window_02",
+      "triangles": 264,
+      "bytes": 26168,
+      "materials": 1
+    },
+    {
+      "name": "window_03",
+      "triangles": 264,
+      "bytes": 26168,
+      "materials": 1
+    },
+    {
+      "name": "window_04",
+      "triangles": 300,
+      "bytes": 29552,
+      "materials": 1
+    },
+    {
+      "name": "window_05",
+      "triangles": 180,
+      "bytes": 18272,
+      "materials": 1
+    },
+    {
+      "name": "window_06",
+      "triangles": 216,
+      "bytes": 21656,
+      "materials": 1
+    },
+    {
+      "name": "window_07",
+      "triangles": 252,
+      "bytes": 25040,
+      "materials": 1
+    },
+    {
+      "name": "window_08",
+      "triangles": 252,
+      "bytes": 25040,
+      "materials": 1
+    },
+    {
+      "name": "window_09",
+      "triangles": 288,
+      "bytes": 28424,
+      "materials": 1
+    },
+    {
+      "name": "window_10",
+      "triangles": 300,
+      "bytes": 29552,
+      "materials": 1
+    },
+    {
+      "name": "window_11",
+      "triangles": 336,
+      "bytes": 32936,
+      "materials": 1
+    },
+    {
+      "name": "window_12",
+      "triangles": 372,
+      "bytes": 36320,
+      "materials": 1
+    },
+    {
+      "name": "window_13",
+      "triangles": 372,
+      "bytes": 36324,
+      "materials": 1
+    },
+    {
+      "name": "window_14",
+      "triangles": 408,
+      "bytes": 39708,
+      "materials": 1
+    },
+    {
+      "name": "window_15",
+      "triangles": 108,
+      "bytes": 11504,
+      "materials": 1
+    },
+    {
+      "name": "window_16",
+      "triangles": 120,
+      "bytes": 12632,
+      "materials": 1
+    },
+    {
+      "name": "window_17",
+      "triangles": 132,
+      "bytes": 13760,
+      "materials": 1
+    },
+    {
+      "name": "window_18",
+      "triangles": 108,
+      "bytes": 11500,
+      "materials": 1
+    },
+    {
+      "name": "window_19",
+      "triangles": 120,
+      "bytes": 12632,
+      "materials": 1
+    },
+    {
+      "name": "window_20",
+      "triangles": 120,
+      "bytes": 12632,
+      "materials": 1
+    },
+    {
+      "name": "window_21",
+      "triangles": 132,
+      "bytes": 13756,
+      "materials": 1
+    },
+    {
+      "name": "window_22",
+      "triangles": 144,
+      "bytes": 14884,
+      "materials": 1
+    },
+    {
+      "name": "window_23",
+      "triangles": 120,
+      "bytes": 12632,
+      "materials": 1
+    },
+    {
+      "name": "window_24",
+      "triangles": 132,
+      "bytes": 13760,
+      "materials": 1
+    },
+    {
+      "name": "window_25",
+      "triangles": 96,
+      "bytes": 10372,
+      "materials": 1
+    },
+    {
+      "name": "window_26",
+      "triangles": 108,
+      "bytes": 11500,
+      "materials": 1
+    },
+    {
+      "name": "window_27",
+      "triangles": 120,
+      "bytes": 12628,
+      "materials": 1
+    },
+    {
+      "name": "window_28",
+      "triangles": 96,
+      "bytes": 10372,
+      "materials": 1
+    },
+    {
+      "name": "window_29",
+      "triangles": 108,
+      "bytes": 11500,
+      "materials": 1
+    },
+    {
+      "name": "window_30",
+      "triangles": 84,
+      "bytes": 9244,
+      "materials": 1
+    },
+    {
+      "name": "window_31",
+      "triangles": 96,
+      "bytes": 10372,
+      "materials": 1
+    },
+    {
+      "name": "window_32",
+      "triangles": 108,
+      "bytes": 11500,
+      "materials": 1
+    },
+    {
+      "name": "window_33",
+      "triangles": 84,
+      "bytes": 9244,
+      "materials": 1
+    },
+    {
+      "name": "window_34",
+      "triangles": 96,
+      "bytes": 10372,
+      "materials": 1
+    },
+    {
+      "name": "window_35",
+      "triangles": 144,
+      "bytes": 14884,
+      "materials": 1
+    },
+    {
+      "name": "window_36",
+      "triangles": 144,
+      "bytes": 14860,
+      "materials": 1
+    },
+    {
+      "name": "window_37",
+      "triangles": 144,
+      "bytes": 14852,
+      "materials": 1
+    },
+    {
+      "name": "window_38",
+      "triangles": 144,
+      "bytes": 14884,
+      "materials": 1
+    },
+    {
+      "name": "window_39",
+      "triangles": 144,
+      "bytes": 14888,
+      "materials": 1
+    }
+  ]
+}

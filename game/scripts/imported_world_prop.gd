@@ -39,5 +39,5 @@ static func build(parent:Node3D,asset:String,max_size:Vector3,pack:String="indus
 			if palettes[pack]!=null:material.albedo_texture=palettes[pack]
 			material.set_meta("authored_world",true);material.roughness=.85;material.metallic=0.;material.normal_enabled=false
 			mesh.mesh.surface_set_material(i,material)
-			mesh.set_surface_override_material(i,material)
+			mesh.set_surface_override_material(i,PropFinish.material(material,pack))
 	model.free()

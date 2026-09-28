@@ -19,7 +19,9 @@ static func route_spec(index:int) -> Dictionary:
 # Immutable polygon data is compiled once, then ArenaCache stores the complete
 # scene and navigation graph. No polygon construction runs during a match.
 static func read_plan(index:int) -> Dictionary:
-	return JSON.parse_string(FileAccess.get_file_as_string("res://assets/arenas/districts/map_%02d.json"%index))
+	var path="res://assets/arenas/districts/map_%02d.json"%index
+	if FileAccess.file_exists(path):return JSON.parse_string(FileAccess.get_file_as_string(path))
+	return JSON.parse_string(FileAccess.get_file_as_bytes(path+".gz").decompress_dynamic(32*1024*1024,FileAccess.COMPRESSION_GZIP).get_string_from_utf8())
 static func build(a:Node,index:int):
 	var plan=read_plan(index)
 	a.bounds=Vector2(plan.dimensions[0],plan.dimensions[1])*.5;a.vertical_map=true;a.has_water=false;a.indoors=index in CombatLayout.INDOOR

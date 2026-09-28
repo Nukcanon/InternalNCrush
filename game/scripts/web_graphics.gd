@@ -5,7 +5,7 @@ const WINDOW_SECONDS=3.
 const AUTO_MIN_SCALE=1.
 const PRESETS=[
 	{"lighting_quality":0,"shadow_quality":0,"antialias":0,"decor_quality":0,"fog_enabled":false},
-	{"lighting_quality":0,"shadow_quality":0,"antialias":0,"decor_quality":1,"fog_enabled":false},
+	{"lighting_quality":1,"shadow_quality":0,"antialias":0,"decor_quality":1,"fog_enabled":false},
 	{"lighting_quality":2,"shadow_quality":1,"antialias":1,"decor_quality":2,"fog_enabled":false}]
 const NAMES=["낮음","중간","높음"]
 signal changed(description:String)
@@ -32,9 +32,9 @@ static func resolve(profile:Dictionary,auto_level:int=1) -> Dictionary:
 	settings.shadow_quality=clampi(int(settings.shadow_quality),0,1)
 	settings.antialias=clampi(int(settings.antialias),0,2)
 	settings.decor_quality=clampi(int(settings.decor_quality),0,2)
-	# Automatic adjustments must not allocate MSAA/shadow buffers or switch lighting
-	# while the player is fighting. Manual high/custom still enables those features.
-	if mode<0:settings.lighting_quality=0;settings.shadow_quality=0;settings.antialias=0
+	# Automatic quality covers lighting and shadows; hysteresis limits switches.
+	# Output resolution remains fixed.
+
 	settings.physics_effects=0
 	return settings
 static func render_scale(profile:Dictionary,auto_scale:float=1.) -> float:
@@ -50,12 +50,13 @@ func describe() -> String:
 func observe(fps:float,target:float) -> bool:
 	if not is_finite(fps) or fps<=0. or target<=0.:return false
 	if hold_windows>0:
-		hold_windows-=1;slow_windows=0;fast_windows=0;return false
+		hold_windows-=1
+		if fps>=target*.82:slow_windows=0;fast_windows=0;return false
 	slow_windows=slow_windows+1 if fps<target*.82 else 0
 	fast_windows=fast_windows+1 if fps>=target*.97 else 0
 	var before=Vector2(level,scale_3d)
 	if slow_windows>=2:
-		# Automatic mode only adjusts decorative effects. Resolution stays fixed.
+		# Automatic mode adjusts visual quality only. Resolution stays fixed.
 		if level>0:level-=1
 		elif scale_3d>AUTO_MIN_SCALE:scale_3d=AUTO_MIN_SCALE
 	elif fast_windows>=5:
@@ -87,7 +88,7 @@ func _process(dt:float):
 	if observe(fps,target):
 		# Auto only changes bounded effect budgets. Traversing every
 		# mesh/light and replacing materials here caused mid-combat main-thread stalls.
-		GraphicsOptions.detail=int(resolve(game.profile,level).decor_quality)
+		GraphicsOptions.apply(game,true)
 		changed.emit(describe())
 static func apply_settings(game:Node):
 	GraphicsOptions.apply(game);game.apply_display_settings();game.save_profile()
@@ -132,7 +133,7 @@ static func build(ui:Node):
 	controls.append({"key":"web_render_scale","control":resolution})
 	refresh_controls.call()
 	ui.option("최대 프레임",["제한 없음","30 FPS","60 FPS","90 FPS","120 FPS"],maxi(0,[0,30,60,90,120].find(int(profile.frame_limit))),func(i):profile.frame_limit=[0,30,60,90,120][i];apply_settings(ui.game))
-	ui.label("자동은 전투 중 장식 효과만 조절하며 해상도와 선명도를 바꾸지 않습니다. 항목을 직접 바꾸면 사용자 설정으로 전환합니다. 광원을 끄면 그림자도 꺼집니다.",17)
+	ui.label("자동은 낮음부터 높음까지 재질·노말맵·조명·그림자·효과를 조절하며 해상도와 선명도를 바꾸지 않습니다. 항목을 직접 바꾸면 사용자 설정으로 전환합니다. 광원을 끄면 그림자도 꺼집니다.",17)
 	ui.label("모든 품질에서 가까운 캐릭터·무기·지형의 기본 형태와 카툰 색상을 유지합니다. 연습장·봇·킬 리플레이·5개 모드와 연막의 전술적 효과는 동일합니다.",17)
 	ui.button("기본설정으로 복원",func():profile.web_render_scale=1.;profile.web_options={};profile.frame_limit=60;preset.select(0);preset.item_selected.emit(0))
 

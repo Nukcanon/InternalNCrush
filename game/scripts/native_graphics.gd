@@ -27,6 +27,4 @@ func _process(dt:float):
 	if sampler.observe(fps,float(mini(cap,60) if cap>0 else 60)):
 		level=sampler.level
 		# Constant-time budgets; no scene-wide material rebuild mid-fight.
-		GraphicsOptions.detail=level;GraphicsOptions.physics_effects=level
-		GraphicsOptions.corpse_quality=level
-		game.get_viewport().mesh_lod_threshold=[2.5,1.5,1.0][level]
+		GraphicsOptions.apply(game,true)

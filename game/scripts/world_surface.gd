@@ -28,10 +28,15 @@ static func material(kind:String,index:int,vertex_paint:bool=false,zone:int=0) -
 	if cache.has(key):return cache[key]
 	if shader==null:
 		shader=Shader.new();shader.code="""shader_type spatial;
-render_mode cull_disabled, specular_disabled;
+render_mode cull_disabled;
+#include "res://shaders/material_normal.gdshaderinc"
 // district_surface: never replace this material with flat Web paint.
 uniform sampler2D surface_texture:source_color,filter_linear_mipmap,repeat_enable;
 uniform sampler2D district_variation:filter_linear_mipmap,repeat_enable;
+uniform sampler2D building_atlas:source_color,filter_linear_mipmap,repeat_disable;
+uniform float atlas_family=-1.;
+uniform float map_seed=0.;
+uniform sampler2D building_normals:hint_normal,filter_linear_mipmap,repeat_disable;
 uniform vec4 tint:source_color=vec4(1.0);
 uniform float tile_meters=3.0;
 uniform bool vertex_paint=false;
@@ -51,6 +56,15 @@ void vertex(){
 void fragment(){
  if(!FRONT_FACING)NORMAL=-NORMAL;
  vec3 tex=texture(surface_texture,surface_uv).rgb;
+ vec3 bump=vec3(.5,.5,1.);
+ if(atlas_family>=0. && !vertex_paint){
+   vec2 lot=floor(surface_p.xz/12.);
+   float variant=mod(abs(lot.x*17.+lot.y*37.+map_seed*11.),10.);
+   vec2 cell=vec2(variant,atlas_family);
+   vec2 atlas_uv=(cell*136.+vec2(4.5)+fract(surface_uv)*127.)/1360.;
+   tex=textureGrad(building_atlas,atlas_uv,dFdx(surface_uv)*127./1360.,dFdy(surface_uv)*127./1360.).rgb;
+   if(material_detail_enabled)bump=textureGrad(building_normals,atlas_uv,dFdx(surface_uv)*127./1360.,dFdy(surface_uv)*127./1360.).rgb;
+ }
  vec3 n=normalize(surface_n);if(!FRONT_FACING)n=-n;
  float facing=.82+.18*max(0.,dot(n,normalize(vec3(.35,.85,.4))));
  // Never modulo interpolated height: at a storey boundary subpixel rounding
@@ -63,6 +77,11 @@ void fragment(){
  ALBEDO=dynamic_lighting?base*.78:vec3(0.);
  EMISSION=dynamic_lighting?base*.22:base*facing;
  ROUGHNESS=.86;
+ if(material_detail_enabled){
+   if(atlas_family<0. || vertex_paint)bump=texture(detail_normal,surface_uv*3.).rgb;
+   NORMAL=detail_surface_normal(NORMAL,VERTEX,surface_uv,bump,.65);
+   ROUGHNESS=.78;SPECULAR=.22;
+ }
 }
 """
 	var market=index in [7,9,12,17,19,22,24,30];var coast=index in [0,1,5,21,23,28];var garden=index in [10,26]
@@ -114,4 +133,12 @@ void fragment(){
 		color=Color.from_hsv(color.h,minf(.58,color.s*1.45+.055),minf(1.,color.v*1.035),color.a)
 	var mat=ShaderMaterial.new();mat.shader=shader;mat.set_shader_parameter("surface_texture",load("res://assets/textures/world/"+texture+".png"));mat.set_shader_parameter("tint",color);mat.set_shader_parameter("tile_meters",meters);mat.set_shader_parameter("vertex_paint",vertex_paint)
 	mat.set_shader_parameter("district_variation",load("res://assets/textures/world/district_variation.png"))
+	mat.set_shader_parameter("building_atlas",load("res://assets/textures/district/building_atlas.png"))
+	var family={"brick":0.,"plaster":1.,"painted":1.,"concrete":2.,"stone":3.,"sandstone":3.,"wood":4.,"metal":5.,"rust":5.,"roof":6.,"paving":8.}.get(texture,-1.)
+	if kind=="roof":family=6. if market else 7.
+	if kind=="ground" and index in [3,14,22,27,29]:family=9.
+	if kind in ["detail","trim","water","waterbed"]:family=-1.
+	mat.set_shader_parameter("atlas_family",family);mat.set_shader_parameter("map_seed",float(index))
+	mat.set_shader_parameter("building_normals",load("res://assets/textures/district/building_normals.png"))
+	mat.set_shader_parameter("detail_normal",load("res://assets/textures/district/metal_normal.png"))
 	cache[key]=mat;return mat

@@ -39,6 +39,6 @@ func run():
 	ToonMaterials.configure(true);ToonMaterials.configure(false)
 	expect(shader==material.shader and code==shader.code,"graphics changes do not compile a new shader")
 	var high_auto=WebGraphics.resolve({"web_quality":-1},2)
-	expect(high_auto.antialias==0 and high_auto.shadow_quality==0 and high_auto.lighting_quality==0,"automatic mode avoids mid-combat GPU buffer changes")
+	expect(high_auto.antialias==1 and high_auto.shadow_quality==1 and high_auto.lighting_quality==2,"automatic high quality enables lighting shadows and antialiasing")
 	world.free();await process_frame
 	print("DETAILS_V116_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

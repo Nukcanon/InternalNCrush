@@ -3,7 +3,7 @@
 Requires Shapely 2.1. No runtime CSG, textures, lights, or physics per prop.
 Coordinates and walk surfaces are shared by native and Web exports.
 """
-import json, math
+import json, math, gzip
 from pathlib import Path
 from shapely import constrained_delaunay_triangles
 from shapely.geometry import Polygon, LineString, Point, box
@@ -183,7 +183,7 @@ for plan in plans:
         architecture_floor=floor
         lower=Polygon();upper=Polygon()
     face(floor,[0,0,0],'ground')
-    indoor=plan['id']-1 in [2,3,8,11,14,15]
+    indoor=plan['id']-1 in [2,3,8,11,14,15,22,27,29]
     wall_height=max(6.8,plan.get('upper_height',4.2)+2.6) if indoor else 3.1
     if indoor:
         face(architecture_floor,[0,0,wall_height],'ceiling',False)
@@ -199,7 +199,30 @@ for plan in plans:
         for hole in p.interiors:
             island=Polygon(hole);walls(island,0,.45 if island.equals(water) else wall_height,'wall')
     coastal_margin=border.difference(unary_union([Polygon(p.exterior) for p in polygons(architecture_floor)])).intersection(box(w*.76,-h,w*2,h*2)) if sea else Polygon()
-    face(border.difference(architecture_floor).difference(water).difference(coastal_margin),[0,0,wall_height],'roof',False)
+    buildings=border.difference(architecture_floor).difference(water).difference(coastal_margin)
+    # Individually supported building lots. Disjoint roofs, no stacked coplanar
+    # roof sheets. Only the taller neighbour owns each internal step face.
+    lots={}
+    for ix in range(math.floor(-ox/12),math.ceil(ox/12)):
+        for iz in range(math.floor(-oz/12),math.ceil(oz/12)):
+            lot=buildings.intersection(box(ix*12+ox,iz*12+oz,(ix+1)*12+ox,(iz+1)*12+oz))
+            if lot.is_empty:continue
+            extra=[0.,.65,1.3,2.1][abs(ix*17+iz*37+(plan['id']-1)*11)%4]
+            lots[ix,iz]=(lot,wall_height+extra)
+            face(lot,[0,0,wall_height+extra],'roof',False)
+    for (ix,iz),(lot,top) in lots.items():
+        for poly in polygons(lot):
+            for ring in rings(poly):
+                for a,b in zip(ring,ring[1:]):
+                    mid=((a[0]+b[0])*.5,(a[1]+b[1])*.5)
+                    low=wall_height
+                    for neighbour in [(ix-1,iz),(ix+1,iz),(ix,iz-1),(ix,iz+1)]:
+                        if neighbour in lots and lots[neighbour][0].distance(Point(mid))<.001:
+                            low=max(low,lots[neighbour][1])
+                    if top<=low+.001:continue
+                    uy=terrain_y(*a);vy=terrain_y(*b)
+                    emit([(a[0],low+uy,a[1]),(b[0],low+vy,b[1]),(a[0],top+uy,a[1])],'wall')
+                    emit([(b[0],low+vy,b[1]),(b[0],top+vy,b[1]),(a[0],top+uy,a[1])],'wall')
     water_y=min([terrain_y(x,z) for x,z in water.exterior.coords],default=0.)-.35 if not water.is_empty else -.35
     if not water.is_empty:
         face(water,[0,0,water_y-(4.5 if sea else .55)],'waterbed',not sea)
@@ -273,6 +296,14 @@ for plan in plans:
         if any(math.dist(p,q)<6 for q in props):continue
         props.append(p)
         if len(props)>=min(56,plan['capacity']*3):break
+    trees=[]
+    if not indoor:
+        for p in prop_candidates:
+            if not floor.contains(Point(p).buffer(3.2)):continue
+            if any(math.dist(p,q)<5.5 for q in props+trees):continue
+            if any(math.dist(p,q[:2])<q[2]+4 for q in vehicle_clearance):continue
+            trees.append(p)
+            if len(trees)>=min(18,plan['capacity']):break
     # Small movable objects use a separate, less restrictive edge allowance.
     # They are kept out of the central route, spawns, objectives and ramps.
     loose=[]
@@ -285,7 +316,7 @@ for plan in plans:
             if routes.distance(point)<min(3.,plan['corridor_m']*.28):continue
             if min(math.dist((x,z),p) for p in plan['spawns']+plan['targets'])<9:continue
             if (not upper.is_empty and upper.distance(point)<2) or (not lower.is_empty and lower.distance(point)<2):continue
-            if any(math.dist((x,z),p)<3.5 for p in props+loose):continue
+            if any(math.dist((x,z),p)<3.5 for p in props+trees+loose):continue
             if any(math.dist((x,z),q[:2])<q[2]+1. for q in vehicle_clearance):continue
             loose.append((x,z))
             if len(loose)>=12:break
@@ -357,13 +388,14 @@ for plan in plans:
           'border':[[centered(p) for p in ring] for ring in rings(max(polygons(border),key=lambda p:p.area))],
           'spawns':[centered(p) for p in plan['spawns']], 'targets':[centered(p) for p in targets],
           'goals':goals,'corridor_m':plan['corridor_m'],'capacity':plan['capacity'],
-          'props':[prop_anchor(p) for p in props], 'loose_props':[[*centered(p),terrain_y(*p)] for p in loose], 'facades':[f+[terrain_y(f[0]+ox,f[1]+oz)] for f in facades],'supports':supports,
+          'props':[prop_anchor(p) for p in props], 'trees':[[*centered(p),terrain_y(*p)] for p in trees], 'ceiling_height':wall_height if indoor else 0., 'loose_props':[[*centered(p),terrain_y(*p)] for p in loose], 'facades':[f+[terrain_y(f[0]+ox,f[1]+oz)] for f in facades],'supports':supports,
           'terrain':terrain,'elevated_crossing':plan.get('elevated_crossing',False),
           'spawn_heights':[terrain_y(*p) for p in plan['spawns']], 'target_heights':[terrain_y(*p) for p in targets],
           'water':[[centered(p) for p in ring] for ring in rings(water)] if not water.is_empty else [],
           'vehicles':vehicles,'boats':boats,'doors':doors,'water_kind':'sea' if sea else 'river','water_height':water_y,
           'water_boat':centered((water.representative_point().x,water.representative_point().y)) if not water.is_empty else []}
     (OUT/('map_%02d.json'%data['index'])).write_text(json.dumps(data,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    (OUT/('map_%02d.json.gz'%data['index'])).write_bytes(gzip.compress(json.dumps(data,ensure_ascii=False,separators=(',',':')).encode('utf-8'),mtime=0))
     preview={k:v for k,v in data.items() if k!='groups'}
     preview['triangles']={key:[] for key in ['ground','upper','lower']}
     for surface in surfaces:

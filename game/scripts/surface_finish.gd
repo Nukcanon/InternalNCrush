@@ -9,6 +9,7 @@ static func human_material(role:int=0) -> ShaderMaterial:
 	if humans.has(role):return humans[role]
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
+#include "res://shaders/material_normal.gdshaderinc"
 uniform sampler2D operator_atlas:source_color,filter_linear_mipmap_anisotropic;
 uniform sampler2D anatomy_detail:source_color,filter_linear_mipmap;
 // Two shared CC0 diffuse maps, importer-capped to 512px; never loaded in Web.
@@ -34,6 +35,7 @@ void fragment(){
  }
  ROUGHNESS=clamp(UV2.x+(relief-1.)*.10,.58,.97);
  METALLIC=0.;SPECULAR=kind==0.?.24:.14;
+ if(material_detail_enabled)NORMAL=detail_surface_normal(NORMAL,VERTEX,coords*8.,texture(detail_normal,coords*8.).rgb,kind==0. || kind==4.?.10:.55);
  // Face only: clean painted colors, without photographic pores or glossy highlights.
  if(kind==4.){
    ALBEDO=COLOR.rgb;ROUGHNESS=.78;SPECULAR=.16;
@@ -50,13 +52,14 @@ void fragment(){
 	var human=ShaderMaterial.new();human.shader=shader
 	human.set_shader_parameter("operator_atlas",load("res://assets/textures/operator_materials_v11.png"))
 	human.set_shader_parameter("anatomy_detail",load("res://assets/human/textures/female.png" if role in HumanModel.FEMALE_ROLES else "res://assets/human/textures/male.png"))
-	humans[role]=human;return human
+	human.set_shader_parameter("detail_normal",load("res://assets/textures/district/cloth_normal.png"));humans[role]=human;return human
 static func hand_material(color:Color,kind:int) -> ShaderMaterial:
 	if RenderStyle.web():return ToonMaterials.color_material(color)
 	var key=str(color)+str(kind)
 	if hand_materials.has(key):return hand_materials[key]
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
+#include "res://shaders/material_normal.gdshaderinc"
 uniform sampler2D operator_atlas:source_color,filter_linear_mipmap_anisotropic;
 uniform vec4 tint:source_color;
 uniform float kind=0.;
@@ -69,10 +72,11 @@ void fragment(){
  if(OUTPUT_IS_SRGB){t=pow(t,vec3(2.2));}
  float mid=kind==0.?.35:kind==1.?.14:.075;
  float detail=clamp(dot(t,vec3(.2126,.7152,.0722))/mid,.6,1.5);
+ if(material_detail_enabled)NORMAL=detail_surface_normal(NORMAL,VERTEX,coords*8.,texture(detail_normal,coords*8.).rgb,kind==0.?.15:.55);
  ALBEDO=tint.rgb*mix(1.,detail,.32);ROUGHNESS=kind==0.?.7:.89;SPECULAR=.2;
 }
 """
-	var mat=ShaderMaterial.new();mat.shader=shader;mat.set_shader_parameter("tint",color);mat.set_shader_parameter("kind",float(kind));mat.set_shader_parameter("operator_atlas",load("res://assets/textures/operator_materials_v11.png"));hand_materials[key]=mat;return mat
+	var mat=ShaderMaterial.new();mat.shader=shader;mat.set_shader_parameter("tint",color);mat.set_shader_parameter("kind",float(kind));mat.set_shader_parameter("operator_atlas",load("res://assets/textures/operator_materials_v11.png"));mat.set_shader_parameter("detail_normal",load("res://assets/textures/district/skin_normal.png" if kind==0 else "res://assets/textures/district/cloth_normal.png"));hand_materials[key]=mat;return mat
 static func material_kind(color:Color) -> int:
 	var hex=color.to_html(false)
 	if hex in ["ae8b5d","dbc099","d0b186","c8a577","87745a","987851","b18b61"]:return 2
@@ -84,6 +88,7 @@ static func equipment_material() -> ShaderMaterial:
 	if equipment:return equipment
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
+#include "res://shaders/material_normal.gdshaderinc"
 uniform bool rich_detail=false;
 uniform float finish_roughness=-1.0;
 uniform float finish_metallic=-1.0;
@@ -96,6 +101,8 @@ void fragment(){
  float cloth=step(.75,UV2.x)*(1.0-clamp(UV2.y,0.,1.));
  float detail=mix(grain*.022,weave*.025,cloth)*clamp(1.0-footprint*140.0,0.0,1.0);
  vec3 paint=OUTPUT_IS_SRGB?pow(max(COLOR.rgb,vec3(0.)),vec3(.454545)):COLOR.rgb;
+ vec3 axis=abs(NORMAL);vec2 coords=axis.y>.65?p.xz:(axis.x>axis.z?p.zy:p.xy);
+ if(material_detail_enabled)NORMAL=detail_surface_normal(NORMAL,VERTEX,coords*8.,texture(detail_normal,coords*8.).rgb,.6);
  ALBEDO=paint*(1.0+detail);
  EMISSION=paint*.10;
  ROUGHNESS=clamp(UV2.x+detail,.24,.96);METALLIC=clamp(UV2.y,0.,1.);
@@ -111,12 +118,13 @@ void light(){
  SPECULAR_LIGHT+=LIGHT_COLOR*ATTENUATION*pow(max(dot(NORMAL,h),0.0),mix(64.,12.,ROUGHNESS))*(.08+METALLIC*.28);
 }
 """
-	equipment=ShaderMaterial.new();equipment.shader=shader;return equipment
+	equipment=ShaderMaterial.new();equipment.shader=shader;equipment.set_shader_parameter("detail_normal",load("res://assets/textures/district/metal_normal.png"));return equipment
 static func world_material() -> ShaderMaterial:
 	if RenderStyle.web():return ToonMaterials.vertex_material()
 	if architecture:return architecture
 	var shader=Shader.new();shader.code="""
 shader_type spatial;
+#include "res://shaders/material_normal.gdshaderinc"
 uniform bool rich_detail=false;
 uniform sampler2D material_atlas:source_color,filter_linear_mipmap_anisotropic;
 uniform bool texture_detail=true;
@@ -146,9 +154,10 @@ void fragment(){
  float midpoint=kind==0.?.48:kind==1.?.30:kind==2.?.22:.12;
  float tactile=clamp(detail/max(midpoint,.08),.48,1.45);
  ALBEDO=COLOR.rgb*mix(1.,tactile,.32)*patina*mix(1.,mortar,step(.85,rough)*(1.-metal)*.3);
+ if(material_detail_enabled)NORMAL=detail_surface_normal(NORMAL,VERTEX,uv*3.,texture(detail_normal,uv*3.).rgb,.55);
  ROUGHNESS=clamp(rough+(large-.5)*.10+(detail-midpoint)*.20,.28,.98);METALLIC=metal;SPECULAR=.30;
  }
 }
 """
-	architecture=ShaderMaterial.new();architecture.shader=shader;architecture.set_shader_parameter("material_atlas",load("res://assets/textures/field_materials_v103.png"));return architecture
+	architecture=ShaderMaterial.new();architecture.shader=shader;architecture.set_shader_parameter("detail_normal",load("res://assets/textures/district/wood_normal.png"));architecture.set_shader_parameter("material_atlas",load("res://assets/textures/field_materials_v103.png"));return architecture
 

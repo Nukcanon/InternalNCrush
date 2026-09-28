@@ -11,7 +11,7 @@ func run():
 	var camera=Camera3D.new();world.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.size=16.;camera.position=Vector3(6,12,17);camera.look_at(Vector3(0,1.,0));camera.current=true
 	DirAccess.make_dir_recursive_absolute("res://../validation/v128/catalogue")
 	var count=0
-	for pack in ["district_original","transport_original","doors_original","places_original"]:
+	for pack in ["windows_original","trees_original","setdress_original"]:
 		var manifest=JSON.parse_string(FileAccess.get_file_as_string("res://assets/models/"+pack+"/manifest.json"))
 		var groups={}
 		for i in range(manifest.assets.size()):
@@ -27,7 +27,7 @@ func run():
 				assert(holder.get_child_count()>0)
 				for mesh in holder.get_children():
 					assert(mesh is MeshInstance3D and mesh.mesh.get_surface_count()==1)
-					assert(mesh.get_active_material(0).vertex_color_use_as_albedo)
+					assert(mesh.get_active_material(0) is ShaderMaterial and mesh.get_active_material(0).get_shader_parameter("vertex_paint"))
 				count+=1
 			for frame in range(5):await process_frame
 			await RenderingServer.frame_post_draw

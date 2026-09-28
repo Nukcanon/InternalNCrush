@@ -208,6 +208,12 @@ func navigate(destination:Vector3,dt:float):
 	var query=PhysicsRayQueryParameters3D.create(a.position+Vector3.UP*.65,a.position+Vector3.UP*.65+desired*1.25,a.collision_mask);query.exclude=[a.get_rid()]
 	var hit=a.get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
+		# A closed door is an interaction, not a permanent obstacle to steer
+		# around. The movement ray also works when aiming at an enemy elsewhere.
+		var door=hit.collider.get_meta("door") if hit.collider.has_meta("door") else null
+		if door is InteractiveDoor and game.server:
+			if not door.opened:door.toggle(game.actors);game.effect.rpc("door",door.global_position,Vector3.ZERO,id)
+			return
 		var found=false
 		for angle in [.65,-.65,1.2,-1.2]:
 			var candidate=Basis(Vector3.UP,angle)*desired

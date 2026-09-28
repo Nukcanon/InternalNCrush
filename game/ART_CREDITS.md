@@ -37,3 +37,15 @@ These objects use original vertex palettes and no third-party source meshes.
 ## Expanded original 1.2.8 catalogue
 
 118 furnished props, 30 vehicles/vessels and 30 door leaves extend the original 32 objects to 210. Generated locally with Blender by build_places_v128.py, build_vehicles_v128.py and build_doors_v128.py; editable sources and manifests record provenance and geometry counts. No third-party models or textures are used in these four original packs. district_variation.png is an original deterministic seamless procedural colour field.
+
+## 1.2.8 material and district hotfix
+
+40 complete window designs, 30 trees and 200 tabletop props were authored locally
+with Blender (`build_civic_v128.py`, `build_setdress_v128.py`). The Web window
+variants retain the panes, shutters and frames, omitting small bevels. They are
+variants of the same 40 designs, not 40 additional designs.
+
+100 wall/floor/roof tiles and their relief-derived normal atlas, plus skin,
+fabric, wood and metal micro-normal textures, are original procedural work in
+`build_building_textures.py`. No downloaded proprietary game assets are used.
+Editable Blender files, tile sources and geometry manifests are retained.

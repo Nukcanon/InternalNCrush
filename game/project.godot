@@ -29,3 +29,9 @@ worker_pool/max_threads=2
 [editor]
 import/use_multiple_threads=false
 
+[shader_globals]
+material_detail_enabled={
+"type": "bool",
+"value": false
+}
+

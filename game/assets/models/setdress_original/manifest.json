@@ -1,0 +1,1605 @@
+{
+  "provenance": "Original authored tabletop set dressing; no third-party inputs",
+  "assets": [
+    {
+      "name": "set_apple_tray",
+      "triangles": 180,
+      "bytes": 23540,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_pear_basket",
+      "triangles": 180,
+      "bytes": 23528,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_orange_crate",
+      "triangles": 180,
+      "bytes": 23544,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_lemon_bowl",
+      "triangles": 180,
+      "bytes": 23540,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_tomato_tray",
+      "triangles": 180,
+      "bytes": 23544,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_aubergine_basket",
+      "triangles": 180,
+      "bytes": 23552,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_carrot_bundle",
+      "triangles": 180,
+      "bytes": 23548,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_cabbage_head",
+      "triangles": 80,
+      "bytes": 9756,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_melon_half",
+      "triangles": 80,
+      "bytes": 9736,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_pepper_basket",
+      "triangles": 180,
+      "bytes": 23548,
+      "materials": 1,
+      "theme": "produce",
+      "non_collision": true
+    },
+    {
+      "name": "set_baguette_board",
+      "triangles": 100,
+      "bytes": 12536,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_croissant_tray",
+      "triangles": 120,
+      "bytes": 15296,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_bread_loaf",
+      "triangles": 140,
+      "bytes": 18048,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_bread_rolls",
+      "triangles": 160,
+      "bytes": 20812,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_layer_cake",
+      "triangles": 180,
+      "bytes": 16176,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_fruit_pie",
+      "triangles": 156,
+      "bytes": 14976,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_pretzel_board",
+      "triangles": 140,
+      "bytes": 18056,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_muffin_tin",
+      "triangles": 160,
+      "bytes": 20808,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_biscuit_jar",
+      "triangles": 148,
+      "bytes": 13876,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_pastry_box",
+      "triangles": 104,
+      "bytes": 11496,
+      "materials": 1,
+      "theme": "bakery",
+      "non_collision": true
+    },
+    {
+      "name": "set_stock_pot",
+      "triangles": 68,
+      "bytes": 7052,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_frying_pan",
+      "triangles": 72,
+      "bytes": 7080,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_saucepan",
+      "triangles": 68,
+      "bytes": 7048,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_tea_kettle",
+      "triangles": 140,
+      "bytes": 12768,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_chopping_board",
+      "triangles": 192,
+      "bytes": 19424,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_dish_stack",
+      "triangles": 300,
+      "bytes": 24296,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_utensil_holder",
+      "triangles": 156,
+      "bytes": 13928,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_spice_rack",
+      "triangles": 560,
+      "bytes": 46948,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_colander",
+      "triangles": 68,
+      "bytes": 7048,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_mortar_pestle",
+      "triangles": 96,
+      "bytes": 9340,
+      "materials": 1,
+      "theme": "kitchen",
+      "non_collision": true
+    },
+    {
+      "name": "set_keyboard",
+      "triangles": 500,
+      "bytes": 47668,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_computer_mouse",
+      "triangles": 140,
+      "bytes": 13832,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_desk_phone",
+      "triangles": 168,
+      "bytes": 16100,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_stapler",
+      "triangles": 140,
+      "bytes": 13816,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_tape_dispenser",
+      "triangles": 140,
+      "bytes": 13832,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_pen_cup",
+      "triangles": 280,
+      "bytes": 25220,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_desk_calendar",
+      "triangles": 152,
+      "bytes": 14956,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_paper_tray",
+      "triangles": 152,
+      "bytes": 14952,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_hole_punch",
+      "triangles": 168,
+      "bytes": 16104,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_document_scanner",
+      "triangles": 140,
+      "bytes": 13832,
+      "materials": 1,
+      "theme": "office",
+      "non_collision": true
+    },
+    {
+      "name": "set_microscope",
+      "triangles": 196,
+      "bytes": 18384,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_beaker_set",
+      "triangles": 540,
+      "bytes": 45796,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_test_tube_rack",
+      "triangles": 540,
+      "bytes": 45804,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_mini_centrifuge",
+      "triangles": 184,
+      "bytes": 17268,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_bunsen_burner",
+      "triangles": 168,
+      "bytes": 16108,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_sample_box",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_pipette_stand",
+      "triangles": 540,
+      "bytes": 45804,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_digital_balance",
+      "triangles": 140,
+      "bytes": 13832,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_reagent_bottle",
+      "triangles": 240,
+      "bytes": 21824,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_slide_tray",
+      "triangles": 140,
+      "bytes": 13820,
+      "materials": 1,
+      "theme": "laboratory",
+      "non_collision": true
+    },
+    {
+      "name": "set_bandage_rolls",
+      "triangles": 192,
+      "bytes": 17312,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_first_aid_pouch",
+      "triangles": 56,
+      "bytes": 6988,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_stethoscope",
+      "triangles": 80,
+      "bytes": 9240,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_thermometer_box",
+      "triangles": 128,
+      "bytes": 11652,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_medicine_blister",
+      "triangles": 80,
+      "bytes": 9248,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_oxygen_mask",
+      "triangles": 56,
+      "bytes": 6952,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_syringe_tray",
+      "triangles": 192,
+      "bytes": 17312,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_medical_gloves",
+      "triangles": 56,
+      "bytes": 6988,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_gauze_tin",
+      "triangles": 192,
+      "bytes": 17304,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_splint_bundle",
+      "triangles": 128,
+      "bytes": 11648,
+      "materials": 1,
+      "theme": "medical",
+      "non_collision": true
+    },
+    {
+      "name": "set_claw_hammer",
+      "triangles": 72,
+      "bytes": 8188,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_spanner_set",
+      "triangles": 64,
+      "bytes": 7088,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_cordless_drill",
+      "triangles": 208,
+      "bytes": 19576,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_hand_saw",
+      "triangles": 148,
+      "bytes": 14980,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_bench_vice",
+      "triangles": 92,
+      "bytes": 9364,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_screwdriver_rack",
+      "triangles": 72,
+      "bytes": 8200,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_pliers",
+      "triangles": 64,
+      "bytes": 7076,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_socket_case",
+      "triangles": 208,
+      "bytes": 19568,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_measuring_tape",
+      "triangles": 148,
+      "bytes": 14988,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_soldering_iron",
+      "triangles": 92,
+      "bytes": 9372,
+      "materials": 1,
+      "theme": "workshop",
+      "non_collision": true
+    },
+    {
+      "name": "set_multimeter",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_battery_pack",
+      "triangles": 316,
+      "bytes": 27556,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_wire_spool",
+      "triangles": 192,
+      "bytes": 17832,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_circuit_board",
+      "triangles": 316,
+      "bytes": 27560,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_power_adapter",
+      "triangles": 140,
+      "bytes": 13828,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_fuse_box",
+      "triangles": 316,
+      "bytes": 27548,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_extension_reel",
+      "triangles": 192,
+      "bytes": 17840,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_terminal_block",
+      "triangles": 316,
+      "bytes": 27560,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_switch_unit",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_charger_dock",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "electrical",
+      "non_collision": true
+    },
+    {
+      "name": "set_coiled_rope",
+      "triangles": 160,
+      "bytes": 16408,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_miniature_anchor",
+      "triangles": 112,
+      "bytes": 10544,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_mooring_cleat",
+      "triangles": 112,
+      "bytes": 10536,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_navigation_compass",
+      "triangles": 184,
+      "bytes": 17272,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_lifebuoy_small",
+      "triangles": 160,
+      "bytes": 16416,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_fishing_reel",
+      "triangles": 184,
+      "bytes": 17260,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_net_float",
+      "triangles": 184,
+      "bytes": 17256,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_signal_horn",
+      "triangles": 160,
+      "bytes": 16412,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_deck_shackle",
+      "triangles": 184,
+      "bytes": 17260,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_boat_pulley",
+      "triangles": 160,
+      "bytes": 16412,
+      "materials": 1,
+      "theme": "harbour",
+      "non_collision": true
+    },
+    {
+      "name": "set_brick_pile",
+      "triangles": 36,
+      "bytes": 4760,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_tile_bundle",
+      "triangles": 36,
+      "bytes": 4760,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_cement_bag",
+      "triangles": 36,
+      "bytes": 4760,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_spirit_level",
+      "triangles": 148,
+      "bytes": 14988,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_paint_roller",
+      "triangles": 92,
+      "bytes": 9368,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_caulking_gun",
+      "triangles": 72,
+      "bytes": 8192,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_trowel",
+      "triangles": 64,
+      "bytes": 7076,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_plaster_float",
+      "triangles": 208,
+      "bytes": 19572,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_work_gloves",
+      "triangles": 148,
+      "bytes": 14984,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_masonry_chisel",
+      "triangles": 92,
+      "bytes": 9372,
+      "materials": 1,
+      "theme": "construction",
+      "non_collision": true
+    },
+    {
+      "name": "set_book_stack",
+      "triangles": 44,
+      "bytes": 5852,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_open_book",
+      "triangles": 100,
+      "bytes": 11472,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_ring_binder",
+      "triangles": 132,
+      "bytes": 14836,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_archive_folder",
+      "triangles": 176,
+      "bytes": 19332,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_rolled_blueprints",
+      "triangles": 44,
+      "bytes": 5864,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_folded_newspaper",
+      "triangles": 88,
+      "bytes": 10356,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_magazine_rack",
+      "triangles": 156,
+      "bytes": 17096,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_map_case",
+      "triangles": 176,
+      "bytes": 19320,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_clipboard",
+      "triangles": 56,
+      "bytes": 6980,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_index_card_box",
+      "triangles": 88,
+      "bytes": 10348,
+      "materials": 1,
+      "theme": "paper",
+      "non_collision": true
+    },
+    {
+      "name": "set_hand_fork",
+      "triangles": 72,
+      "bytes": 8184,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_garden_trowel",
+      "triangles": 64,
+      "bytes": 7092,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_pruning_shears",
+      "triangles": 208,
+      "bytes": 19576,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_seed_packet_box",
+      "triangles": 12,
+      "bytes": 2460,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_nursery_pots",
+      "triangles": 236,
+      "bytes": 24968,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_bonsai_pot",
+      "triangles": 236,
+      "bytes": 24964,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_succulent_tray",
+      "triangles": 236,
+      "bytes": 24972,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_twine_hank",
+      "triangles": 44,
+      "bytes": 4792,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_potting_scoop",
+      "triangles": 148,
+      "bytes": 14988,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_plant_labels",
+      "triangles": 92,
+      "bytes": 9368,
+      "materials": 1,
+      "theme": "garden",
+      "non_collision": true
+    },
+    {
+      "name": "set_menu_stand",
+      "triangles": 96,
+      "bytes": 10388,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_price_board",
+      "triangles": 108,
+      "bytes": 11520,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_reserved_sign",
+      "triangles": 120,
+      "bytes": 12624,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_caution_placard",
+      "triangles": 132,
+      "bytes": 13784,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_directional_plaque",
+      "triangles": 96,
+      "bytes": 10404,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_opening_hours_board",
+      "triangles": 108,
+      "bytes": 11508,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_numbered_sign",
+      "triangles": 120,
+      "bytes": 12652,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_sale_stand",
+      "triangles": 132,
+      "bytes": 13776,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_information_holder",
+      "triangles": 96,
+      "bytes": 10376,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_queue_marker",
+      "triangles": 108,
+      "bytes": 11520,
+      "materials": 1,
+      "theme": "signage",
+      "non_collision": true
+    },
+    {
+      "name": "set_football",
+      "triangles": 20,
+      "bytes": 4144,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_basketball",
+      "triangles": 20,
+      "bytes": 4148,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_tennis_racket",
+      "triangles": 108,
+      "bytes": 12148,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_tennis_ball_tin",
+      "triangles": 20,
+      "bytes": 4160,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_badminton_racket",
+      "triangles": 108,
+      "bytes": 12156,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_shuttle_box",
+      "triangles": 80,
+      "bytes": 9768,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_table_tennis_paddles",
+      "triangles": 108,
+      "bytes": 12164,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_baseball_glove",
+      "triangles": 80,
+      "bytes": 9776,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_skipping_rope",
+      "triangles": 80,
+      "bytes": 9772,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_water_flask",
+      "triangles": 100,
+      "bytes": 9364,
+      "materials": 1,
+      "theme": "sport",
+      "non_collision": true
+    },
+    {
+      "name": "set_wooden_caddy",
+      "triangles": 128,
+      "bytes": 11644,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_wicker_basket",
+      "triangles": 56,
+      "bytes": 6984,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_wire_basket",
+      "triangles": 80,
+      "bytes": 9240,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_tool_tote",
+      "triangles": 128,
+      "bytes": 11640,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_insulated_box",
+      "triangles": 80,
+      "bytes": 9244,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_transparent_bin",
+      "triangles": 56,
+      "bytes": 6960,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_metal_parts_tray",
+      "triangles": 128,
+      "bytes": 11652,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_ceramic_bowl",
+      "triangles": 56,
+      "bytes": 6984,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_fabric_satchel",
+      "triangles": 80,
+      "bytes": 9244,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_parcel_box",
+      "triangles": 128,
+      "bytes": 11640,
+      "materials": 1,
+      "theme": "containers",
+      "non_collision": true
+    },
+    {
+      "name": "set_cleaning_bucket",
+      "triangles": 128,
+      "bytes": 11652,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_spray_bottle",
+      "triangles": 200,
+      "bytes": 17384,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_folded_towels",
+      "triangles": 80,
+      "bytes": 9244,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_scrub_brush",
+      "triangles": 128,
+      "bytes": 11644,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_soap_dispenser",
+      "triangles": 200,
+      "bytes": 17384,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_detergent_jug",
+      "triangles": 300,
+      "bytes": 25376,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_sponge_stack",
+      "triangles": 128,
+      "bytes": 11644,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_dustpan",
+      "triangles": 56,
+      "bytes": 6972,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_floor_brush",
+      "triangles": 80,
+      "bytes": 9240,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_cleaning_caddy",
+      "triangles": 128,
+      "bytes": 11648,
+      "materials": 1,
+      "theme": "cleaning",
+      "non_collision": true
+    },
+    {
+      "name": "set_tin_can_group",
+      "triangles": 100,
+      "bytes": 9388,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_bottled_water",
+      "triangles": 200,
+      "bytes": 17384,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_milk_carton",
+      "triangles": 80,
+      "bytes": 9240,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_cereal_box",
+      "triangles": 128,
+      "bytes": 11640,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_rice_sack",
+      "triangles": 80,
+      "bytes": 9236,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_coffee_bag",
+      "triangles": 56,
+      "bytes": 6952,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_oil_bottle",
+      "triangles": 100,
+      "bytes": 9384,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_egg_carton",
+      "triangles": 56,
+      "bytes": 6980,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_tea_box",
+      "triangles": 80,
+      "bytes": 9232,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_stacked_tins",
+      "triangles": 100,
+      "bytes": 9388,
+      "materials": 1,
+      "theme": "packaged_food",
+      "non_collision": true
+    },
+    {
+      "name": "set_cash_tray",
+      "triangles": 140,
+      "bytes": 13820,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_card_reader",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_shop_scale",
+      "triangles": 184,
+      "bytes": 17256,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_barcode_scanner",
+      "triangles": 140,
+      "bytes": 13832,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_receipt_printer",
+      "triangles": 140,
+      "bytes": 13832,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_shopping_bag",
+      "triangles": 152,
+      "bytes": 14956,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_folded_shirts",
+      "triangles": 152,
+      "bytes": 14956,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_hat_display",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_shoe_pair",
+      "triangles": 180,
+      "bytes": 19344,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_jewelry_stand",
+      "triangles": 196,
+      "bytes": 18388,
+      "materials": 1,
+      "theme": "retail",
+      "non_collision": true
+    },
+    {
+      "name": "set_brake_disc",
+      "triangles": 156,
+      "bytes": 14980,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_gear_pair",
+      "triangles": 156,
+      "bytes": 14976,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_piston",
+      "triangles": 72,
+      "bytes": 7088,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_crankshaft",
+      "triangles": 72,
+      "bytes": 7096,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_oil_filter",
+      "triangles": 156,
+      "bytes": 14980,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_spark_plug_box",
+      "triangles": 140,
+      "bytes": 13828,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_car_battery",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_jack_stand",
+      "triangles": 140,
+      "bytes": 13820,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_hub_cap",
+      "triangles": 156,
+      "bytes": 14972,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_bearing_tray",
+      "triangles": 156,
+      "bytes": 14984,
+      "materials": 1,
+      "theme": "mechanics",
+      "non_collision": true
+    },
+    {
+      "name": "set_hand_radio",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_flashlight",
+      "triangles": 184,
+      "bytes": 17256,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_fire_extinguisher_small",
+      "triangles": 240,
+      "bytes": 21840,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_padlock",
+      "triangles": 184,
+      "bytes": 17252,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_key_board",
+      "triangles": 140,
+      "bytes": 13820,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_binoculars",
+      "triangles": 140,
+      "bytes": 13824,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_alarm_clock",
+      "triangles": 184,
+      "bytes": 17260,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_portable_speaker",
+      "triangles": 140,
+      "bytes": 13836,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_power_tool_case",
+      "triangles": 140,
+      "bytes": 13832,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    },
+    {
+      "name": "set_emergency_lamp",
+      "triangles": 152,
+      "bytes": 14956,
+      "materials": 1,
+      "theme": "utility",
+      "non_collision": true
+    }
+  ]
+}

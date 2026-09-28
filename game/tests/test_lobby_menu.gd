@@ -108,6 +108,7 @@ func run():
 	await capture("graphics")
 	tabs.current_tab=2;await capture("hud-settings")
 	for quality in [0,1,2]:
+		g.profile.graphics_auto=false
 		g.profile.physics_effects=2;g.profile.decor_quality=quality;g.profile.shadow_quality=quality;g.profile.antialias=quality;GraphicsOptions.apply(g)
 		var burst=BurstVisual.new();g.add_child(burst);burst.build(true)
 		expect(burst.puffs.size()==24 and burst.puffs.filter(func(p):return p.flame).size()==7,"quality %d preserves full fire/smoke explosion signal"%quality)
