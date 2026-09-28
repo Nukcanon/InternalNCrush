@@ -29,6 +29,12 @@ var rng=RandomNumberGenerator.new()
 var stats={"repaths":0,"gadgets":0,"skills":0,"heals":0,"repairs":0,"interactions":0}
 func setup(world:Node,pid:int):
 	game=world;id=pid;difficulty=clampi(int(game.players[id].get("bot_difficulty",game.options.get("bot_difficulty",2))),0,2);rng.seed=abs(id)*7189+227;goal=game.arena.zones[abs(id)%3];previous_pos=game.actors[id].position;roam_index=abs(id)%5
+func reset_after_spawn():
+	path.clear();waypoint=0;target=0;device_target=0;visible_target=false
+	ally=0;repair_target=0;action="patrol";last_seen=-100.
+	next_path=0.;next_decision=0.;next_perception=0.;next_utility=0.;next_click=0.;ready_to_fire=0.
+	previous_pos=game.actors[id].position;progress_time=0.;stuck_count=0
+	goal=previous_pos
 func tick(dt:float):
 	var p=game.players[id];var a=game.actors[id];var now=game.clock
 	var previous_yaw=float(a.input_state.yaw)
@@ -95,7 +101,7 @@ func tick(dt:float):
 		if a.position.distance_to(goal)>13:a.input_state.sprint=true
 	# Navigation produces a world direction before the head turns. Keep that direction.
 	var world_move=Basis(Vector3.UP,previous_yaw)*Vector3(a.input_state.x,0,a.input_state.z)
-	if combat_move!=Vector3.INF:world_move=combat_move
+	if combat_move!=Vector3.INF and (combat_move.length_squared()>.01 or world_move.length_squared()<.01):world_move=combat_move
 	var corrected=Basis(Vector3.UP,float(a.input_state.yaw)).inverse()*world_move
 	a.input_state.x=corrected.x;a.input_state.z=corrected.z
 	var wid=p.primary if p.slot==0 else p.secondary
@@ -200,12 +206,23 @@ func set_goal(pos:Vector3):
 func navigate(destination:Vector3,dt:float):
 	var a=game.actors[id];var now=game.clock
 	if a.position.distance_to(destination)<1.6:return
+	progress_time+=dt
+	if progress_time>1.5:
+		if a.position.distance_to(previous_pos)<.35:
+			stuck_count+=1;next_path=0.;path.clear()
+			game.bot_navigation.danger(a.position,2.)
+			if stuck_count>=2 and not visible_target and action in ["patrol","investigate","resupply"]:
+				var goals=game.arena.navigation_goals+game.arena.zones
+				if not goals.is_empty():
+					roam_index=(roam_index+1)%goals.size();set_goal(goals[roam_index]);destination=goal
+		else:stuck_count=0
+		previous_pos=a.position;progress_time=0.
 	if now>=next_path and game.bot_navigation.request_route(now):
 		path=game.bot_navigation.route(a.position,destination);waypoint=0
 		# Unreachable goals must obey backoff too; an empty path used to retry at 60 Hz.
 		next_path=now+(.35+rng.randf()*.12 if path.is_empty() else 1.4+rng.randf()*.4);stats.repaths+=1
 	if path.is_empty():return
-	while waypoint<path.size()-1 and a.position.distance_to(path[waypoint])<.45:waypoint+=1
+	while waypoint<path.size()-1 and Vector2(a.position.x-path[waypoint].x,a.position.z-path[waypoint].z).length()<.45 and absf(a.position.y-path[waypoint].y)<1.:waypoint+=1
 	var toward=path[waypoint]-a.position;toward.y=0
 	if toward.length()<.22:return
 	var desired=toward.normalized()
@@ -227,11 +244,7 @@ func navigate(destination:Vector3,dt:float):
 		if not found:next_path=minf(next_path,now+.25);return
 	var local_dir=Basis(Vector3.UP,float(a.input_state.yaw)).inverse()*desired
 	a.input_state.x=local_dir.x;a.input_state.z=local_dir.z
-	progress_time+=dt
-	if progress_time>.85:
-		if a.position.distance_to(previous_pos)<.4:stuck_count+=1;next_path=0.;game.bot_navigation.danger(a.position+desired*2,1.)
-		else:stuck_count=0
-		previous_pos=a.position;progress_time=0.
+
 func look(at:Vector3,dt:float,enemy:bool):
 	var a=game.actors[id];var p=game.players[id];var delta=at-a.eye();var yaw=atan2(-delta.x,-delta.z);var pitch=atan2(delta.y,Vector2(delta.x,delta.z).length())
 	if enemy:

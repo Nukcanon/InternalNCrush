@@ -11,10 +11,13 @@ func draw_rangefinder(a:Node,center:Vector2,radius:float):
 		range_ready=Time.get_ticks_msec()+100
 		var eye:Vector3=a.eye();var hit=game.ray(eye,eye+a.direction()*10000.,[a.get_rid()])
 		range_m=eye.distance_to(hit.position) if not hit.is_empty() else INF
-	var box=Rect2(center+Vector2(radius*.30,-radius*.42),Vector2(radius*.53,radius*.16))
+	var font=get_theme_default_font();var font_size=14
+	var extent=font.get_string_size("1000.0 m",HORIZONTAL_ALIGNMENT_LEFT,-1,font_size)
+	var box=Rect2(center+Vector2(radius*.30,-radius*.42),Vector2(extent.x+10,font.get_height(font_size)+6))
 	draw_rect(box,Color(.025,.055,.065,.84));draw_rect(box,Color(.5,.74,.69,.8),false,1.)
-	var font_size=clampi(roundi(radius*.07),12,24)
-	draw_string(get_theme_default_font(),box.position+Vector2(3,box.size.y*.72),distance_text(range_m),HORIZONTAL_ALIGNMENT_CENTER,box.size.x-6,font_size,Color("c5f2dc"))
+	var baseline=(box.size.y-font.get_height(font_size))*.5+font.get_ascent(font_size)
+	draw_string(font,box.position+Vector2(5,baseline),distance_text(range_m),HORIZONTAL_ALIGNMENT_CENTER,box.size.x-10,font_size,Color("c5f2dc"))
+
 func marker_position(actor:Node,camera:Camera3D) -> Vector2:
 	var point=actor.character.head.global_position+Vector3.UP*.26 if is_instance_valid(actor.character) and is_instance_valid(actor.character.head) else actor.eye()+Vector3.UP*.20
 	if camera.is_position_behind(point):return Vector2.INF

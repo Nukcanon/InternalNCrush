@@ -424,16 +424,16 @@
   "ui": {
     "file": "res://assets/audio/ui.wav",
     "category": "ui_volume",
-    "gain_db": -5,
-    "sha256": "2e171f1cd2b5579e6b2bde70e52fc41110c10ab20142ef6964bda00dbb926fe4",
+    "gain_db": -8,
+    "sha256": "6536c1d64ede8b5e2c4521e325e3685fc6ed4990c726e38a19b26623c3839565",
     "license": "CC0-1.0",
-    "duration": 0.1
+    "duration": 0.075
   },
   "switch": {
     "file": "res://assets/audio/switch.wav",
     "category": "combat",
     "gain_db": -5,
-    "sha256": "44a22d61c9e06f9aa2d21d73064ed2daf4894133dd31bd48d86181d9f25c65ef",
+    "sha256": "ef0d189340968133927e011c1235c8082e530b0de3d0557aef147ae20b047699",
     "license": "CC0-1.0",
     "duration": 0.19
   },
@@ -441,47 +441,47 @@
     "file": "res://assets/audio/reload.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "7ef8dbdb7ed28965509ba8068b57832ab2576d2309a99d62ed79b0d782a0f6e2",
+    "sha256": "09ac68bf978a4fb18bcb07f03fa03915edb23f1dcab212cca4a524cfbe986576",
     "license": "CC0-1.0",
-    "duration": 0.24
+    "duration": 0.28
   },
   "magazine": {
     "file": "res://assets/audio/magazine.wav",
     "category": "combat",
     "gain_db": 1,
-    "sha256": "d0b34fdba3934ba12e451975b08df0441997f65737ff02fe77c11f32d210333e",
+    "sha256": "d8d6fb7a703ea89de6f8257ade08cead3469eeceb6f14a1d2de6564e3154e0ac",
     "license": "CC0-1.0",
-    "duration": 0.22
+    "duration": 0.11
   },
   "bolt": {
     "file": "res://assets/audio/bolt.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "6dd9449e641622b03a01f5afaf5b1f4bf089f47ecf52710949c55635830df1bc",
+    "sha256": "7b5dab81ceccb36c88c6c8bcf2e5bf89bc8fb7e1f209185a69eb8b402774c3e1",
     "license": "CC0-1.0",
-    "duration": 0.8
+    "duration": 0.18
   },
   "action_close": {
     "file": "res://assets/audio/action_close.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "994aadc713ce00c5044b7e2b082f220b202446afea76d9259553e73ca3caf3c3",
+    "sha256": "a19026674e42ba8c72cbc7cda7292a020a94fe9da224bdfbc3885ea7b35a3768",
     "license": "CC0-1.0",
-    "duration": 0.12
+    "duration": 0.11
   },
   "shell_insert": {
     "file": "res://assets/audio/shell_insert.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "0052ab0829147b30e89a45d9f4803e2c6eaaa98354e68a7ea37bcb183b7d5fcd",
+    "sha256": "57a852677f2fc4a43d0e53f2320a0ae5a0ca301b8d29665c7421607f476eddc3",
     "license": "CC0-1.0",
-    "duration": 0.57
+    "duration": 0.22
   },
   "rocket_insert": {
     "file": "res://assets/audio/rocket_insert.wav",
     "category": "combat",
     "gain_db": 1,
-    "sha256": "bedf8fa34ff3ad7b7748cac87ee732974f25a16384fe69fa803d82dbe55b074b",
+    "sha256": "4fccab17527c206d3715a52a7f21f358074f68630281d0b22b76a0a2b6193df6",
     "license": "CC0-1.0",
     "duration": 0.42
   },
@@ -489,7 +489,7 @@
     "file": "res://assets/audio/heal.wav",
     "category": "combat",
     "gain_db": -3,
-    "sha256": "14b8dba154d747af17aa24ec60fa78c1e008094e5f88dabfc58dc06c8ef872c4",
+    "sha256": "7b1d81ca72eb8b38b48376a67584d218bfafd237da8e27dfdd3740f0c1d3f32b",
     "license": "CC0-1.0",
     "duration": 0.23
   },
@@ -513,7 +513,7 @@
     "file": "res://assets/audio/bomb_defuse.wav",
     "category": "combat",
     "gain_db": -5,
-    "sha256": "ff542480a5747c1a284b8f1ba062005ef0dc89fcae765fbed67aa544daab44a4",
+    "sha256": "e29de4afc5de09604fd53d6f05a5b05237bc5ce1d422a1cc566823c36badc01a",
     "license": "CC0-1.0",
     "duration": 0.32
   },
@@ -641,7 +641,7 @@
     "file": "res://assets/audio/skill.wav",
     "category": "combat",
     "gain_db": -4,
-    "sha256": "0509ef97a9bdb75e5ed36f2df5e4fd85af80abc6e079814f4a5aab5011e7501b",
+    "sha256": "de085f944f403fb03346c5c4d0556aa458524d4ab1a7496b4467d3009fe166d5",
     "license": "CC0-1.0",
     "duration": 0.32
   },
@@ -657,7 +657,7 @@
     "file": "res://assets/audio/turret_detect.wav",
     "category": "combat",
     "gain_db": -3,
-    "sha256": "88cf18ec0723af2da58f01f798e4af54aaa284092ee06b2e89337c112fd60acc",
+    "sha256": "b824a3632a0d7233fd45d3550db184e5646a63dade9c01a3ae0a574c199e9a76",
     "license": "CC0-1.0",
     "duration": 0.16
   },
@@ -753,7 +753,7 @@
     "file": "res://assets/audio/wrench_repair.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "5f434907e5df37ecf9d362e4dd3b192670533672927ad7b82ed78d45054b4486",
+    "sha256": "b9b1a93327863430ba6f3543d58447707dafcce5f743d1fcad9ea5ddc30026d6",
     "license": "CC0-1.0",
     "duration": 0.18
   },
@@ -781,20 +781,20 @@
     "license": "CC0-1.0",
     "duration": 2.0
   },
-  "door": {
-    "file": "res://assets/audio/door.wav",
-    "category": "combat",
-    "gain_db": -1,
-    "sha256": "1fb064e12c24826c02db55bc5a61d7088cb98757b11664508518a1afe42cfc06",
-    "license": "CC0-1.0",
-    "duration": 0.77
-  },
   "link_fire": {
     "file": "res://assets/audio/heal.wav",
     "category": "combat",
     "gain_db": -3,
-    "sha256": "14b8dba154d747af17aa24ec60fa78c1e008094e5f88dabfc58dc06c8ef872c4",
+    "sha256": "7b1d81ca72eb8b38b48376a67584d218bfafd237da8e27dfdd3740f0c1d3f32b",
     "license": "CC0-1.0",
     "duration": 0.23
+  },
+  "door": {
+    "file": "res://assets/audio/door.wav",
+    "category": "combat",
+    "gain_db": -1,
+    "sha256": "c3fb52d8cb66ca239d19a19cd3f72f36411a4e2cb394cc962d839265d0f5b014",
+    "license": "CC0-1.0",
+    "duration": 0.77
   }
 }

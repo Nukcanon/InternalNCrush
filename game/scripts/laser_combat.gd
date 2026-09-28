@@ -4,7 +4,7 @@ const HEAT_SECONDS=3.2
 const LOCK_SECONDS=2.
 const COOL_SECONDS=1.8
 const BATTERY_SECONDS=5.
-static func dps(heat:float) -> float:return lerpf(100.,300.,clampf(heat/.98,0.,1.))
+static func dps(heat:float) -> float:return lerpf(60.,120.,clampf(heat/.98,0.,1.))
 static func tick(g:Node,id:int,dt:float):
 	var p=g.players[id];var a=g.actors[id];var w=g.current_weapon(p)
 	var heat=float(p.get("laser_heat",0.))

@@ -53,7 +53,7 @@ func run():
 	a.input_state.fire=false
 	for i in range(11):g.clock+=.1;LaserCombat.tick(g,1,.1)
 	expect(p.laser_heat<.001,"overheat cooldown finishes at zero")
-	expect(LaserCombat.dps(0.)==100. and LaserCombat.dps(.98)==300.,"heat damage endpoints")
+	expect(LaserCombat.dps(0.)==60. and LaserCombat.dps(.98)==120.,"heat damage endpoints")
 	expect(is_equal_approx(CombatBalance.range_factor(Catalog.get_weapon("h6"),100.),1.) and is_equal_approx(CombatBalance.range_factor(Catalog.get_weapon("h6"),150.),.3),"laser range endpoints")
 	var reticle=load("res://scripts/reticle.gd")
 	expect(reticle.distance_text(1234.56)=="1234.6 m" and reticle.distance_text(10000.)=="∞ m","rangefinder formatting and maximum")

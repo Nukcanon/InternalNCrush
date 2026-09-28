@@ -48,15 +48,23 @@ for suffix,voice in [('', 'hurt_male'),('_female','hurt_female')]:
  armor=lowpass(sample('impactGeneric_light_000',.85,.11),1700)
  write('armor_hurt'+suffix,mix(.62,(grunt,.95,0),(armor,.22,.003)),gain=0)
 
-slide=highpass(lowpass(sample('footstep_grass_1',1.05,.24),4800),600)
-seat=lowpass(sample('impactGeneric_light_000',1.1,.09),3300)
-write('ui',mix(.10,(seat,.75,0),(slide,.15,.01)),'ui_volume',-5)
-write('reload',mix(.24,(slide,.64,0)),gain=0)
-write('magazine',mix(.22,(slide,.32,0),(seat,.8,.10)),gain=1)
-write('bolt',highpass(lowpass(sample('rack_dry',1.18,.8),4200),200),gain=0)
-write('shell_insert',highpass(lowpass(sample('shell_feed',1.15,.57),3600),180),gain=0)
-write('action_close',mix(.12,(seat,.92,0)),gain=0)
-write('rocket_insert',mix(.42,(sample('footstep_grass_1',.66,.37),.45,0),(seat,.38,.29)),gain=1)
+def dry_click(seconds=.075,seed=913):
+ rng=random.Random(seed)
+ noise=[rng.uniform(-1,1)*math.exp(-i/rate*95) for i in range(int(rate*seconds))]
+ return highpass(lowpass(noise,7800),1400)
+def swish(seconds=.28):
+ rng=random.Random(914)
+ noise=[rng.uniform(-1,1)*math.sin(math.pi*i/(rate*seconds))**1.5 for i in range(int(rate*seconds))]
+ return highpass(lowpass(noise,5800),850)
+slide=swish()
+seat=dry_click(.085,915)
+write('ui',mix(.075,(dry_click(),.7,0),(dry_click(.04,916),.25,.022)),'ui_volume',-8)
+write('reload',mix(.28,(slide,.75,0)),gain=0)
+write('magazine',mix(.11,(seat,.95,0),(dry_click(.05,917),.35,.035)),gain=1)
+write('bolt',mix(.18,(swish(.14),.6,0),(seat,.7,.11)),gain=0)
+write('shell_insert',mix(.22,(swish(.18),.6,0),(seat,.6,.13)),gain=0)
+write('action_close',mix(.11,(seat,.92,0)),gain=0)
+write('rocket_insert',mix(.42,(swish(.37),.65,0),(seat,.38,.32)),gain=1)
 write('switch',mix(.19,(slide,.38,0),(seat,.34,.07)),gain=-5)
 write('bomb_defuse',mix(.32,(slide,.24,0),(seat,.45,.12),(seat,.30,.23)),gain=-5)
 write('wrench_repair',mix(.18,(seat,.8,0),(lowpass(sample('impactMetal_heavy_000',1.3,.15),1400),.20,.006)),gain=0)

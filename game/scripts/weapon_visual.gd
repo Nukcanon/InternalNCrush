@@ -27,6 +27,7 @@ var grip_boxes:Array=[]
 var length=.7
 var reload_style="rifle"
 var reload_round_count=3
+var reload_tube=0
 var reload_tactical=false
 var metal=Color("39444d")
 var edge=Color("71808a")
@@ -357,7 +358,7 @@ func calibrate_grips(visible_round=true):
 		if reload_style=="rocket":
 			tube(reload_round,Vector3.ZERO,.06,.36,Color("6e805b"))
 			tube(reload_round,Vector3(0,0,.225),.023,.13,Color("45513c"))
-			M.cylinder(reload_round,Vector3(0,0,-.23),.06,.10,Color("bdab76"),Vector3(PI/2,0,0),.008,12)
+			M.cylinder(reload_round,Vector3(0,0,-.23),.06,.10,Color("bdab76"),Vector3(-PI/2,0,0),.008,12)
 			for x in [-1,1]:block(reload_round,Vector3(x*.066,0,.13),Vector3(.035,.008,.09),edge)
 		elif reload_style=="revolver":
 			for i in range(6):
@@ -419,7 +420,9 @@ func animate_reload(t:float,recoil:float,shot_age=10.):
 		"rocket":
 			# Rear-load through the open breech, within the support arm reach.
 			var take=smoothstep(.05,.25,t);var insert=smoothstep(.32,.72,t);var release=smoothstep(.74,.94,t)
-			var round_pos=Vector3(-.23,-.24,.20).lerp(Vector3(0,.065,.35),take).lerp(Vector3(0,.065,-.10),insert)
+			var socket=Vector3(0,.065,0)
+			if spec.get("single_load",false):socket=Vector3(-.075 if reload_tube%2==0 else .075,-.04 if reload_tube<2 else .11,0)
+			var round_pos=Vector3(-.23,-.24,.20).lerp(socket+Vector3(0,0,.35),take).lerp(socket+Vector3(0,0,-.10),insert)
 			left_hand.position=hand_origin.lerp(round_pos+Vector3(-.065,-.015,.30),take)
 			if t>=.72:left_hand.position=Vector3(-.25,-.13,.26).lerp(hand_origin,smoothstep(.82,.98,t))
 			if is_instance_valid(reload_round):reload_round.position=round_pos;reload_round.visible=t>.08 and t<.74

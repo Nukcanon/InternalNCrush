@@ -146,7 +146,7 @@ func make_panel(title:String,width=780,compact=false):
 			panel.position=(root.size-panel.size*MENU_SCALE)*.5
 	)
 	panel_body=VBoxContainer.new();panel_body.add_theme_constant_override("separation",14);panel.add_child(panel_body)
-	var scroll=ScrollContainer.new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,560);panel_body.add_child(scroll)
+	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,560);panel_body.add_child(scroll)
 	var inset=MarginContainer.new();inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;inset.add_theme_constant_override("margin_right",0);scroll.add_child(inset)
 	var bar=scroll.get_v_scroll_bar()
 	bar.visibility_changed.connect(func():inset.add_theme_constant_override("margin_right",18 if bar.visible else 0))
@@ -487,15 +487,15 @@ func settings():
 	sensitivity_control("HUD 배경 농도",float(game.profile.hud_opacity),.1,.8,func(v):game.profile.hud_opacity=v;HudLayout.apply(self);preview.queue_redraw();game.save_profile())
 	label("기본 크기 80% · 배경 농도 38%. 낮은 농도일수록 뒤의 전장이 더 잘 보입니다. 조준점과 피격 판정에는 영향을 주지 않습니다.",17)
 	stack=tabs[3]
-	button("피격음 미리 듣기 · 신음",func():game.play_sound("hurt",Vector3.ZERO,false))
-	button("방어구 피격음 미리 듣기",func():game.play_sound("armor_hurt",Vector3.ZERO,false))
 	sound_slider("전체 음량", "volume")
 	label("총소리·발소리·전투 효과는 전체 음량에 함께 적용됩니다.",17)
 	sound_slider("명중 알림", "hit_volume")
 	sound_slider("메뉴 소리", "ui_volume")
 	var reduction=check("총소리 저감 · 여성 목소리 효과음",game.profile.get("gunfire_reduction",false),func(value):game.profile.gunfire_reduction=value;game.save_profile())
 	reduction.disabled=not VocalGunfire.ready()
-	var samples=HBoxContainer.new();stack.add_child(samples);button("총소리 미리 듣기",func():game.play_sound("gun_a1",Vector3.ZERO,false),samples);button("발소리 미리 듣기",func():game.play_sound("step_stone_0",Vector3.ZERO,false),samples)
+	button("피격음 듣기",func():game.play_sound("hurt",Vector3.ZERO,false))
+	button("총소리 듣기",func():game.play_sound("gun_a1",Vector3.ZERO,false))
+	button("발소리 듣기",func():game.play_sound("step_stone_0",Vector3.ZERO,false))
 	stack=tabs[4]
 	var diagram=ControlsDiagram.new();diagram.custom_minimum_size=Vector2(885,415);stack.add_child(diagram)
 	label("마우스 휠: 무기 전환  /  E: 문 열기·닫기  /  E 길게: 설치·해체  /  F: 스킬 · 포탑 강화  /  Q: 즉시 근접 / 5: 근접 무기 장착 / C: 의료 카빈 회복\nG: 가젯 · 수류탄은 누른 뒤 놓아 투척  /  V: 가젯 종류  /  F6·F7: 강퇴 투표",18)
@@ -582,7 +582,7 @@ func gear():
 	for i in range(5):
 		var category=i;var tab=button(["주무기","보조","가젯","방어구","스킬"][i],func():gear_category=category;preview_secondary=category==1;preview_kind=[1,1,2,3,4][category];refresh_gear_detail();refresh_gear_cards(),tabs);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.toggle_mode=true;tab.button_pressed=i==gear_category
 		if WeaponRules.mode(game.options)>0:tab.disabled=i in [0,4] or (i==1 and WeaponRules.mode(game.options)==1)
-	var scroll=ScrollContainer.new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;scroll.custom_minimum_size=Vector2(625,260);form.add_child(scroll)
+	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;scroll.custom_minimum_size=Vector2(625,260);form.add_child(scroll)
 	var cards_inset=MarginContainer.new();cards_inset.add_theme_constant_override("margin_right",18);scroll.add_child(cards_inset)
 	gear_cards=GridContainer.new();gear_cards.columns=3;gear_cards.add_theme_constant_override("h_separation",8);gear_cards.add_theme_constant_override("v_separation",8);cards_inset.add_child(gear_cards)
 	role_detail=label("",17,form);role_detail.modulate=Color("8fcbed")

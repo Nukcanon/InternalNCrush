@@ -18,7 +18,7 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 		var font=button.get_theme_font("font");var font_size=20
 		while font_size>12 and font.get_string_size(button.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x>width-28.:font_size-=1
 		button.add_theme_font_size_override("font_size",font_size)
-		var affirmative=button==positive and not navigation
+		var affirmative=(button!=positive) if navigation else (button==positive)
 		for state in ["normal","hover","pressed","focus"]:
 			var style=StyleBoxFlat.new();style.set_corner_radius_all(5);style.set_border_width_all(1)
 			style.bg_color=Color("285a43") if affirmative else Color("593b4b")

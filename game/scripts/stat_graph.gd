@@ -5,7 +5,7 @@ var weapon:Dictionary={}
 func configure(kind:int,w:Dictionary,role:int,variant:int):
 	rows.clear();weapon={};visible=true
 	if kind==1 and w.get("laser",false):
-		weapon=w;rows=[["피해 / 초",300.,300.,"100 → 300"],["과열 / 냉각",3.2,5.,"3.2초 / 2초"],["배터리 / 교체",5.,5.,"5초 / %.1f초"%w.reload],["아군 설치물 수리",30.,100.,"30 / 초"],["유효 거리",100.,150.,"100 m"]]
+		weapon=w;rows=[["피해 / 초",120.,300.,"60 → 120"],["과열 / 냉각",3.2,5.,"3.2초 / 2초"],["배터리 / 교체",5.,5.,"5초 / %.1f초"%w.reload],["아군 설치물 수리",30.,100.,"30 / 초"],["유효 거리",100.,150.,"100 m"]]
 	elif kind==1 and w.kind=="gun":
 		weapon=w
 		rows=[["피해 / 1발",float(w.damage)*int(w.pellets),150.,"%d%s"%[w.damage," × %d"%w.pellets if w.pellets>1 else ""]],
