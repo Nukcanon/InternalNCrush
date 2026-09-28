@@ -1,3 +1,7 @@
+# Latest same-version release: cursor ownership, MENDER and ammunition updates
+
+Source `3dccae0`: alternating gray row cards, centered participant rows, expanding result list, PULSE/FOLD partial-reload exit delay with unchanged full-reload times, shotgun reserves 50 and rocket reserves 20, MONOLITH total 24 and SCOUT total 36, MENDER 80 RPM with PULSE reload, native cursor ownership and menu keyboard fixes, automatic ammo salvage and 10% owned consumable gadget refill. Native/Web exported; Windows pointer regression passed 11 checks. PUBLICATION_STATUS.json has current source and assets.
+
 # Latest same-version release: roster, voting and shell reloads
 
 Source `adbd03f`: shared paired roster rows, host team/bot management, 15-second kick vote with 9/0 keys, chamber ammo pips, per-shell PULSE/FOLD reloads, mobile map button and surface contrast. Native/Web exported; no additional gameplay tests requested. PUBLICATION_STATUS.json has current source and assets.
