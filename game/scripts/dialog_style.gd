@@ -2,13 +2,21 @@ class_name DialogStyle
 extends RefCounted
 static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	dialog.theme=theme
+	# One keyboard handler owns cancellation. AcceptDialog's native Escape
+	# handler runs before window_input, so enabling both closes the dialog twice.
+	dialog.dialog_close_on_escape=false
 	dialog.window_input.connect(func(event):
 		if not event is InputEventKey or not event.pressed or event.echo:return
+		if event.alt_pressed or event.ctrl_pressed or event.meta_pressed:return
 		if event.keycode not in [KEY_ESCAPE,KEY_ENTER,KEY_KP_ENTER]:return
 		dialog.set_input_as_handled()
-		if event.keycode in [KEY_ENTER,KEY_KP_ENTER]:
-			if not dialog.get_ok_button().disabled:dialog.hide();dialog.confirmed.emit()
-		else:dialog.hide();dialog.canceled.emit())
+		if dialog.get_meta("keyboard_close_pending",false):return
+		var accepted=event.keycode in [KEY_ENTER,KEY_KP_ENTER]
+		if accepted and dialog.get_ok_button().disabled:return
+		dialog.set_meta("keyboard_close_pending",true)
+		# A native Window must survive its current input dispatch. Hiding it
+		# here destroys the OS window while Godot is still routing this key.
+		finish_keyboard.bind(dialog,accepted).call_deferred())
 	var positive=dialog.get_ok_button();var row=positive.get_parent();var buttons=[]
 	for child in row.get_children():
 		if child is Button:buttons.append(child)
@@ -31,4 +39,12 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 			style.content_margin_left=12;style.content_margin_right=12;style.content_margin_top=8;style.content_margin_bottom=8
 			button.add_theme_stylebox_override(state,style)
 		button.add_theme_color_override("font_color",Color.WHITE)
+
+static func finish_keyboard(dialog,accepted:bool):
+	if not is_instance_valid(dialog) or dialog.is_queued_for_deletion():return
+	if not dialog.visible:return
+	dialog.hide()
+	if accepted:dialog.confirmed.emit()
+	else:dialog.canceled.emit()
+	if is_instance_valid(dialog) and not dialog.is_queued_for_deletion():dialog.set_meta("keyboard_close_pending",false)
 
