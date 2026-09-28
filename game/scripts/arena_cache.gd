@@ -19,6 +19,7 @@ static func restore(arena:Node,index:int) -> bool:
 		var prop=InteractiveProp.new();prop.configure(item.id,item.kind,arena.props_authoritative);prop.transform=item.transform;arena.add_child(prop);arena.props[item.id]=prop
 	for item in state.doors:arena.add_door(item.pos,item.yaw,float(item.get("opening",InteractiveDoor.WIDTH)))
 	arena.set_meta("navigation_cache",source.get_meta("navigation_cache"))
+	if arena.has_meta("district"):DistrictLayout.validate_spawns(arena)
 	source.free();GraphicsOptions.apply_world(arena)
 	if OS.has_feature("web"):
 		var batch=WebPropBatch.new();arena.add_child(batch);batch.build(arena.props)

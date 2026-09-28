@@ -20,6 +20,8 @@ func run():
 	for index in range(19,32):
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.spawn_points[0].size()>=6 and arena.spawn_points[1].size()>=6,"new map has valid team starts "+str(index))
+		for team in [0,1]:
+			expect(arena.spawn_points[team].all(func(pos):return arena.point_clear(pos)),"final dressing leaves all starts clear %d/%d"%[index,team])
 		if index<31:
 			var s=DefusalLayout.spec(index);signatures[JSON.stringify(s.links)+str(s.points)]=true
 			for team in [0,1]:

@@ -131,6 +131,14 @@ static func build(a:Node,index:int):
 	for goal in a.zones:
 		var pos=goal+Vector3(4.2,0,3.8)
 		if a.point_clear(pos) and a.point_clear(pos+Vector3(2,0,1)):a.crate(pos,Vector3(2.6,1.25,1.8))
+	validate_spawns(a)
+static func validate_spawns(a:Node):
+	# Dressing is added after candidate starts; reject starts covered by props.
+	a.ffa_spawns.clear()
+	for team in range(2):
+		var clear=a.spawn_points[team].filter(func(pos):return a.point_clear(pos))
+		if not clear.is_empty():a.spawn_points[team]=clear
+		a.ffa_spawns.append_array(a.spawn_points[team])
 static func ring(points:Array) -> PackedVector2Array:
 	var result=PackedVector2Array()
 	for point in points:result.append(Vector2(point[0],point[1]))
