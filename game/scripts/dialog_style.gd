@@ -15,8 +15,6 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	for button in buttons:
 		button.custom_minimum_size=Vector2(width,48)
 		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button.clip_text=true
-		button.resized.connect(func():fit_text(button))
-		fit_text.call_deferred(button)
 		var affirmative=(button!=positive) if navigation else (button==positive)
 		for state in ["normal","hover","pressed","focus"]:
 			var style=StyleBoxFlat.new();style.set_corner_radius_all(5);style.set_border_width_all(1)
@@ -27,11 +25,3 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 			button.add_theme_stylebox_override(state,style)
 		button.add_theme_color_override("font_color",Color.WHITE)
 
-static func fit_text(button:Button):
-	if not is_instance_valid(button):return
-	var style=button.get_theme_stylebox("normal")
-	var available=maxf(1.,button.size.x-style.get_minimum_size().x-8.)
-	var font=button.get_theme_font("font");var font_size=20
-	while font_size>1 and font.get_string_size(button.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x>available:
-		font_size-=1
-	if button.get_theme_font_size("font_size")!=font_size:button.add_theme_font_size_override("font_size",font_size)

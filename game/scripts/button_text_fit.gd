@@ -9,6 +9,12 @@ func _watch(node:Node):
 		_register.call_deferred(node)
 func _register(button:Button):
 	if not is_instance_valid(button):return
+	# Text-sized controls keep native sizing. Constrained controls must not use
+	# text width as their minimum, otherwise shrinking feeds back into layout.
+	var constrained=button.clip_text or button.custom_minimum_size.x>0. or (button.size_flags_horizontal & Control.SIZE_EXPAND)!=0
+	if not constrained:return
+	button.clip_text=true
+	if button is OptionButton:button.fit_to_longest_item=false
 	button.set_meta("auto_text_base",button.get_theme_font_size("font_size"))
 	var refresh=func():
 		if is_instance_valid(button):fit.call_deferred(button)
