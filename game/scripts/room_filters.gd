@@ -19,16 +19,17 @@ static func select(rooms:Array,filter:Dictionary) -> Array:
 		if primary==0:return str(a.name).naturalnocasecmp_to(str(b.name))<0
 		return primary<0)
 	return selected
-# Row 1: name search with an explicit search button. Row 2: four equal-width
-# filters. The name filter applies on the button or Enter, not on every key.
-static func build(ui:Node,parent:Node,filter:Dictionary,changed:Callable,search:Callable=Callable()):
-	var first=HBoxContainer.new();first.add_theme_constant_override("separation",10);parent.add_child(first)
+# Row 1: name search (widest) with an explicit search button; callers may pass
+# their own toolbar row to share it. Row 2: four equal-width filters. The name
+# filter applies on the button or Enter, not on every key.
+static func build(ui:Node,parent:Node,filter:Dictionary,changed:Callable,search:Callable=Callable(),first:HBoxContainer=null) -> Dictionary:
+	if first==null:first=HBoxContainer.new();first.add_theme_constant_override("separation",10);parent.add_child(first)
 	var name=LineEdit.new();name.name="RoomSearch";name.placeholder_text="방 이름 검색";name.text=str(filter.name);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.custom_minimum_size.y=ui.ACTION_HEIGHT;first.add_child(name)
 	var submit=func():
 		filter.name=name.text.strip_edges()
 		if search.is_valid():search.call()
 		else:changed.call()
-	var button=ui.button("검색하기",submit,first);button.name="RoomSearchButton";button.custom_minimum_size.x=150 if TouchControls.supported() else 130
+	var button=tool_button(ui,first,"검색하기",submit,true);button.name="RoomSearchButton"
 	name.text_submitted.connect(func(_value):submit.call())
 	var second=HBoxContainer.new();second.name="RoomFilterRow";second.add_theme_constant_override("separation",10);parent.add_child(second)
 	var mode=choice(second,["모든 게임 모드"]+Rules.MODES,int(filter.mode)+1,func(value):filter.mode=value-1;changed.call())
@@ -36,6 +37,13 @@ static func build(ui:Node,parent:Node,filter:Dictionary,changed:Callable,search:
 	choice(second,["인원 전체","빈 방","1–4명","5–8명","9–16명","17–32명"],int(filter.players),func(value):filter.players=value;changed.call()).name="PlayerFilter"
 	choice(second,["핑 제한 없음","50 ms 이하","100 ms 이하","150 ms 이하","250 ms 이하"],maxi(0,[0,50,100,150,250].find(int(filter.ping))),func(value):filter.ping=[0,50,100,150,250][value];changed.call()).name="PingFilter"
 	choice(second,["방 이름순","낮은 핑순","많은 인원순","적은 인원순"],int(filter.sort),func(value):filter.sort=value;changed.call()).name="SortFilter"
+	return {"toolbar":first,"filters":second,"search":name}
+# Toolbar buttons are as wide as their text; primary actions use the yellow accent.
+static func tool_button(ui:Node,parent:Node,text:String,callback:Callable,accent:bool=false) -> Button:
+	var b=ui.button(text,callback,parent);b.clip_text=false;b.custom_minimum_size.x=0;b.size_flags_horizontal=Control.SIZE_SHRINK_BEGIN
+	b.set_meta("auto_text_fit",true) # keep full text; never shrink to fit
+	if accent:ui.lan_lobby.accent(b)
+	return b
 static func choice(parent:Node,items:Array,selected:int,callback:Callable) -> OptionButton:
 	var option=OptionButton.new();option.fit_to_longest_item=false;option.clip_text=true
 	option.size_flags_horizontal=Control.SIZE_EXPAND_FILL;option.size_flags_stretch_ratio=1.;option.custom_minimum_size=Vector2(1,48 if not TouchControls.supported() else 64)

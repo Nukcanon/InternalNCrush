@@ -986,22 +986,21 @@ func internet_menu(auto_connect=true):
 	make_panel("온라인 로비",980);screen="internet"
 	var service=game.internet
 	var footer=HBoxContainer.new();footer.add_theme_constant_override("separation",12);stack.add_child(footer);pin_actions(footer)
-	var address=edit("로비 서버",str(game.profile.get("lobby_url","")),func(_v):pass)
-	address.placeholder_text="https://play.example.com"
-	lobby_connect_button=button("서버 연결",func():connect_online_lobby(address.text,panel),footer)
+	# Server label, address and connect button share one row.
+	var server_row=HBoxContainer.new();server_row.name="ServerRow";server_row.add_theme_constant_override("separation",10);stack.add_child(server_row)
+	var server_label=label("서버",20,server_row);server_label.autowrap_mode=TextServer.AUTOWRAP_OFF;server_label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	var address=LineEdit.new();address.name="ServerAddress";address.text=str(game.profile.get("lobby_url",""));address.placeholder_text="https://play.example.com";address.size_flags_horizontal=Control.SIZE_EXPAND_FILL;address.custom_minimum_size.y=ACTION_HEIGHT;server_row.add_child(address)
+	lobby_connect_button=RoomFilters.tool_button(self,server_row,"서버 연결",func():connect_online_lobby(address.text,panel),true)
 	if service.token.is_empty():
 		label("기본 공용 로비에 자동으로 연결합니다. 별도 서버 프로그램은 필요하지 않습니다.\n연결 실패 시 서버 연결로 다시 시도하거나 운영 중인 다른 로비 주소를 입력하세요.",17)
 	else:
-		RoomFilters.build(self,stack,internet_filter,render_internet_rooms,refresh_internet_rooms)
+		var rows=RoomFilters.build(self,stack,internet_filter,render_internet_rooms,refresh_internet_rooms)
+		RoomFilters.tool_button(self,rows.filters,"새로고침",refresh_internet_rooms,true).name="RefreshRooms"
 		button("빠른 참가",quick_join_dialog,footer).name="QuickJoin"
-		button("목록 새로고침",refresh_internet_rooms)
 		label("예상 핑은 로비까지의 왕복 시간과 방장 응답 시간을 합친 값입니다. 게임에서는 직접 연결 핑을 표시합니다.",16)
 		room_list=VBoxContainer.new();room_list.add_theme_constant_override("separation",6);stack.add_child(room_list)
 		refresh_internet_rooms()
 	notice_label=label("",17)
-	# Connected rooms need start/create/back; reconnect lives above the list.
-	if not service.token.is_empty():
-		var connect=footer.get_child(0);connect.reparent(stack);stack.move_child(connect,3)
 	var create=button("공개 방 만들기",internet_create,footer)
 	create.name="CreateRoom";create.disabled=service.token.is_empty();create.tooltip_text="로비 서버에 연결하면 방을 만들 수 있습니다." if create.disabled else "새 방을 만들고 방장으로 참가합니다."
 	button("메인메뉴",menu,footer)
