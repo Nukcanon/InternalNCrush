@@ -41,7 +41,7 @@ static func populate(g:Node,parent:Node,results:bool):
 				small_button(actions,"제거",func():g.command("bot_remove",{"target":pid}))
 			if results:
 				var detail=small_button(cell,"기록",func():
-					var d=AcceptDialog.new();d.title=str(p.nick)+" · 상세 기록";d.dialog_text="처치 %d / 사망 %d\n도움점 %d · 치료점 %d\n설치점 %d · 목표점 %d"%[p.kills,p.deaths,Rules.score_parts(p).assists,Rules.score_parts(p).healing,Rules.score_parts(p).builds,Rules.score_parts(p).objectives];d.theme=g.ui.theme;g.ui.root.add_child(d);d.confirmed.connect(d.queue_free);d.canceled.connect(d.queue_free);d.popup_centered(Vector2i(420,180)))
+					var d=AcceptDialog.new();d.title=str(p.nick)+" · 상세 기록";d.dialog_text="처치 %d / 사망 %d\n도움점 %d · 치료점 %d\n설치점 %d · 목표점 %d"%[p.kills,p.deaths,Rules.score_parts(p).assists,Rules.score_parts(p).healing,Rules.score_parts(p).builds,Rules.score_parts(p).objectives];g.ui.root.add_child(d);d.confirmed.connect(d.queue_free);d.canceled.connect(d.queue_free);DialogStyle.apply(d,g.ui.theme);DialogStyle.popup(d))
 				detail.size_flags_vertical=Control.SIZE_SHRINK_CENTER
 			if int(g.options.mode)!=1 and TeamBalance.allowed(g,g.local_id,pid):
 				var target=1-side;var full=g.team_count(target)>=int(g.options.max_players)/2

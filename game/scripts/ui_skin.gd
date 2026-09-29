@@ -31,7 +31,7 @@ static func faces(bg:Color,touch:=false) -> Dictionary:
 	var normal=box(bg,INK,3,7,14,pad)
 	var hover=box(bg.lightened(.18),INK,3,7,14,pad)
 	var pressed=box(bg.darkened(.08),INK,3,3,14,Vector4(pad.x,pad.y+4,pad.z,pad.w))
-	var focus=box(Color(0,0,0,0),ACCENT,3,3,16,pad);focus.draw_center=false
+	var focus=StyleBoxEmpty.new() # keyboard focus needs no extra ring on chunky buttons
 	var disabled=box(DISABLED,Color("a39c8c"),3,5,14,pad)
 	return {"normal":normal,"hover":hover,"pressed":pressed,"hover_pressed":pressed,"focus":focus,"disabled":disabled}
 static func paint(button:Button,kind:String):
@@ -48,10 +48,16 @@ static func build(font:Font,touch:bool) -> Theme:
 	# Panels and windows.
 	var paper=box(PAPER,INK,4,4,24,Vector4(22,16,22,16));paper.shadow_color=Color(.1,.08,.05,.45);paper.shadow_size=3;paper.shadow_offset=Vector2(0,10)
 	theme.set_stylebox("panel","PanelContainer",paper)
-	for type in ["AcceptDialog","ConfirmationDialog"]:theme.set_stylebox("panel",type,box(PAPER,PAPER,0,0,0,Vector4(18,14,18,14)))
-	var window=box(PAPER,INK,4,4,20,Vector4(8,40,8,8));window.expand_margin_top=36;window.shadow_color=Color(.1,.08,.05,.45);window.shadow_size=3;window.shadow_offset=Vector2(0,8)
+	# The window border draws one continuous outline just outside the body.
+	var body=box(PAPER,PAPER,0,0,0,Vector4(18,14,18,14))
+	for type in ["AcceptDialog","ConfirmationDialog"]:theme.set_stylebox("panel",type,body)
+	# The outline sits outside the content (the body panel would cover it).
+	var window=box(PAPER,INK,4,4,16,Vector4(8,40,8,8));window.expand_margin_top=40;window.expand_margin_left=8;window.expand_margin_right=8;window.expand_margin_bottom=8
 	theme.set_stylebox("embedded_border","Window",window);theme.set_stylebox("embedded_unfocused_border","Window",window)
 	theme.set_color("title_color","Window",INK);theme.set_font_size("title_font_size","Window",20)
+	# Escape / the buttons close dialogs; no tiny title-bar close mark.
+	var blank=ImageTexture.create_from_image(Image.create(1,1,false,Image.FORMAT_RGBA8))
+	for key in ["close","close_pressed"]:theme.set_icon(key,"Window",blank)
 	# Text.
 	for type in ["Label","RichTextLabel"]:theme.set_color("font_color" if type=="Label" else "default_color",type,INK)
 	theme.set_constant("outline_size","Label",0)

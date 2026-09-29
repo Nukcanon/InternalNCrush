@@ -229,24 +229,21 @@ func button(text:String,callback:Callable,parent:Node=null) -> Button:
 		UiSkin.paint(b,"stop")
 		if parent==null and is_instance_valid(panel_body) and is_instance_valid(panel_scroll) and screen!="menu":pin_actions(b)
 	return b
-func confirm_navigation(callback:Callable,destination:String):
+func confirm_navigation(callback:Callable,destination:String,title:="",text:="",ok:=""):
 	if is_instance_valid(navigation_confirm):return
-	navigation_confirm=ConfirmationDialog.new();navigation_confirm.title="이동 확인";navigation_confirm.dialog_text="메인메뉴로 이동할까요?" if destination=="메인메뉴" else "이전 화면으로 돌아갈까요?"
-	navigation_confirm.ok_button_text="이동하기";navigation_confirm.cancel_button_text="계속 머물기";root.add_child(navigation_confirm)
+	navigation_confirm=ConfirmationDialog.new();navigation_confirm.title=title if title!="" else "이동 확인"
+	navigation_confirm.dialog_text=text if text!="" else ("메인메뉴로 이동할까요?" if destination=="메인메뉴" else "이전 화면으로 돌아갈까요?")
+	navigation_confirm.ok_button_text=ok if ok!="" else "이동하기";navigation_confirm.cancel_button_text="계속 머물기";root.add_child(navigation_confirm)
 	navigation_confirm.confirmed.connect(func():
 		var dialog=navigation_confirm;navigation_confirm=null;dialog.queue_free();callback.call())
 	navigation_confirm.canceled.connect(func():navigation_confirm.queue_free();navigation_confirm=null)
-	DialogStyle.apply(navigation_confirm,theme,true);navigation_confirm.popup_centered(Vector2i(440,160))
+	# Title and text are final before the window opens: it appears at its fitted size.
+	DialogStyle.apply(navigation_confirm,theme,true);DialogStyle.popup(navigation_confirm)
 func confirm_room_leave():
 	if is_instance_valid(navigation_confirm):return
-	confirm_navigation(func():game.request_leave(),"메인메뉴")
-	navigation_confirm.title="방 나가기"
-	navigation_confirm.dialog_text="현재 방에서 나가 메인메뉴로 이동할까요?"
-	navigation_confirm.ok_button_text="나가기"
+	confirm_navigation(func():game.request_leave(),"메인메뉴","방 나가기","현재 방에서 나가 메인메뉴로 이동할까요?","나가기")
 func confirm_practice():
-	confirm_navigation(func():clear_panel();PracticeSession.start(game),"연습장")
-	if is_instance_valid(navigation_confirm):
-		navigation_confirm.title="연습장";navigation_confirm.dialog_text="연습장으로 이동하시겠습니까?";navigation_confirm.ok_button_text="연습장 입장"
+	confirm_navigation(func():clear_panel();PracticeSession.start(game),"연습장","연습장","연습장으로 이동하시겠습니까?","연습장 입장")
 func option(title:String,items:Array,selected:int,callback:Callable=Callable(),parent:Node=null) -> OptionButton:
 	var row=HBoxContainer.new();(parent if parent else stack).add_child(row);var l=Label.new();l.text=title;l.custom_minimum_size.x=155;row.add_child(l)
 	var b=OptionButton.new();b.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -505,7 +502,7 @@ func settings():
 		timer.timeout.connect(func():
 			seconds[0]-=1;confirm.dialog_text="이 화면을 유지할까요? %d초 후 이전 설정으로 돌아갑니다."%seconds[0]
 			if seconds[0]<=0:rollback.call())
-		confirm.dialog_text="이 화면을 유지할까요? 15초 후 이전 설정으로 돌아갑니다.";DialogStyle.apply(confirm,theme);confirm.popup_centered(Vector2i(660,170));timer.start())
+		confirm.dialog_text="이 화면을 유지할까요? 15초 후 이전 설정으로 돌아갑니다.";DialogStyle.apply(confirm,theme);DialogStyle.popup(confirm);timer.start())
 	label("웹은 그래픽 탭에서 3D 선명도를 100%·85%·70%로 선택할 수 있습니다. 자동 설정은 선명도를 바꾸지 않습니다." if OS.has_feature("web") else "전체 화면에서도 게임 해상도를 낮출 수 있습니다. 낮을수록 화면은 덜 선명하지만 그래픽 부하가 줄어듭니다.",17)
 	sensitivity_control("마우스 감도",float(game.profile.sensitivity)/.0023,.15,4.,func(v):game.profile.sensitivity=v*.0023;game.save_profile())
 	sensitivity_control("정조준 감도 배율",float(game.profile.ads_sensitivity),.2,1.5,func(v):game.profile.ads_sensitivity=v;game.save_profile())
@@ -676,12 +673,12 @@ func confirm_redeploy():
 	dialog.dialog_text="시작 위치로 돌아가 선택한 장비를 적용하시겠습니까?" if game.options.get("practice",false) else RedeployRules.warning(int(game.options.mode))
 	dialog.ok_button_text="확인 · 적용";dialog.cancel_button_text="취소";root.add_child(dialog)
 	dialog.confirmed.connect(func():selection.immediate=true;selection.redeploy_confirmed=true;selection.confirmed=true;game.command("loadout",selection);dialog.queue_free())
-	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(580,220))
+	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);DialogStyle.popup(dialog)
 func submit_loadout():
 	var selection=selected_loadout();var p=game.players[game.local_id]
 	if int(game.options.mode)==4 and DefusalEconomy.replacement(p,selection):
 		var dialog=ConfirmationDialog.new();dialog.title="구매 장비 변경";dialog.dialog_text="병과를 변경하면 구매한 장비를 잃습니다. 선택한 장비로 변경하시겠습니까?" if int(selection.role)!=int(p.role) else "현재 장비를 교체하고 새 장비를 구매하시겠습니까?"
-		root.add_child(dialog);dialog.confirmed.connect(func():selection.confirmed=true;game.command("loadout",selection);dialog.queue_free());dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(560,170))
+		root.add_child(dialog);dialog.confirmed.connect(func():selection.confirmed=true;game.command("loadout",selection);dialog.queue_free());dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);DialogStyle.popup(dialog)
 	else:game.command("loadout",selection)
 func economy_box(parent:Node,title:String,color:Color) -> Label:
 	var box=PanelContainer.new();box.custom_minimum_size=Vector2(158,66);parent.add_child(box)
@@ -883,7 +880,7 @@ func notice(message:String,gameplay=false,important=false):
 	if game.phase=="menu" and message.contains("버전"):
 		var dialog=AcceptDialog.new();dialog.title="게임 버전 확인";dialog.dialog_text=message;dialog.ok_button_text="확인";root.add_child(dialog);dialog.add_button("다운로드",false,"download");dialog.custom_action.connect(func(action):
 			if action=="download":OS.shell_open(VersionCheck.PAGE))
-		dialog.confirmed.connect(dialog.queue_free);dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(680,210))
+		dialog.confirmed.connect(dialog.queue_free);dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);DialogStyle.popup(dialog)
 
 func refresh():
 	if is_instance_valid(redeploy_button):redeploy_button.visible=RedeployRules.available(game,game.players.get(game.local_id,{}))
@@ -1096,7 +1093,7 @@ func internet_password(room_id:String):
 	var dialog=ConfirmationDialog.new();dialog.title="방 비밀번호";dialog.ok_button_text="접속";dialog.cancel_button_text="돌아가기";root.add_child(dialog)
 	var password=LineEdit.new();password.secret=true;password.placeholder_text="방 비밀번호";password.custom_minimum_size=Vector2(350,45);dialog.add_child(password)
 	dialog.confirmed.connect(func():game.options.password=password.text;dialog.queue_free();wait_internet_room(room_id))
-	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(420,150));password.grab_focus()
+	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);DialogStyle.popup(dialog);password.grab_focus()
 func internet_create():
 	make_panel("공개 방 만들기",760);screen="internet_create"
 	WeaponRules.build(self)
