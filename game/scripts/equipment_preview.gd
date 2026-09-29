@@ -46,7 +46,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 			bounds=box if first else bounds.merge(box);first=false
 		var focus=bounds.get_center();camera.position=focus+Vector3(0,.35,-3);camera.look_at(focus);camera.size=maxf(.52,bounds.size.x*.70)
 	elif kind==3:
-		ArmorVisual.build(model,gadget,RenderStyle.web())
+		GearModels.vest(model,clampi(gadget,1,2),0,Vector3(0,.2,0),Vector3(.15,.2,.11))
 		camera.position=Vector3(.5,.6,-3);camera.look_at(Vector3(0,.15,0));camera.size=1.0
 	elif kind==4:
 		if not is_instance_valid(skill_symbol):skill_symbol=SkillIcon.new();add_child(skill_symbol);skill_symbol.size=Vector2(76,76)
@@ -82,71 +82,8 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 func _gui_input(event):
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:dragging=event.pressed
 	if event is InputEventMouseMotion and dragging and model:model.rotation.y+=event.relative.x*.013
-static var gadget_templates={}
+# Gear preview uses the in-game cartoon gear (GearModels.held).
+# Instances share the cached held-gadget template meshes.
 static func gadget_model(parent:Node3D,role:int,variant:int):
-	var key=str([role,variant,RenderStyle.web()])
-	if not gadget_templates.has(key):
-		var source=Node3D.new();source.name="Equipment"
-		build_gadget_model(source,role,variant);GadgetDetail.finish(source,role,variant)
-		MeshFactory.merge_rig(source);WebMaterials.apply(source);MeshFactory.own_recursive(source,source)
-		var packed=PackedScene.new();packed.pack(source);source.free()
-		MeshFactory.bound_cache(gadget_templates,80);gadget_templates[key]=packed
-	parent.add_child(gadget_templates[key].instantiate())
-static func build_gadget_model(parent:Node3D,role:int,variant:int):
-	if variant==8:
-		grenade_model(parent);return
-	if variant==9:
-		MeshFactory.box(parent,Vector3.ZERO,Vector3(.45,.22,.32),Color("d2b869"))
-		MeshFactory.box(parent,Vector3(0,.13,0),Vector3(.18,.04,.12),Color("425869"));return
-	var m=MeshFactory;var dark=Color("304955");var light=Color("c2d4d8");var accent=HeroStyle.ROLE_ACCENT[role]
-	match role:
-		0:
-			if variant==1:
-				grenade_model(parent);return
-			m.box(parent,Vector3(0,.25,0),Vector3(.43,.55,.09),Color("7294ae"),Vector3.ZERO,.55);m.box(parent,Vector3(0,.26,-.055),Vector3(.27,.35,.025),dark,Vector3.ZERO,.4)
-		1:
-			m.box(parent,Vector3(0,.19,0),Vector3(.24,.34,.09),dark,Vector3.ZERO,.55)
-			m.box(parent,Vector3(0,.235,-.048),Vector3(.18,.18,.012),light)
-			m.box(parent,Vector3(0,.235,-.057),Vector3(.15,.15,.007),Color("21414b"))
-			m.cylinder(parent,Vector3(.078,.46,0),.012,.25,dark)
-		2:
-			m.box(parent,Vector3(0,.48,0),Vector3(.20,.07,.14),dark,Vector3.ZERO,.3)
-			m.box(parent,Vector3(0,.527,0),Vector3(.14,.025,.10),light)
-			for side in [-1,1]:
-				var hinge=Vector3(side*.075,.46,0);var knee=Vector3(side*.18,.25,0);var foot=Vector3(side*.30,.025,0)
-				m.cylinder(parent,hinge,.038,.09,light,Vector3(PI/2,0,0))
-				rod(parent,hinge,knee,.026,dark);rod(parent,knee,foot,.018,Color("68777e"))
-				var spring_a=hinge+Vector3(side*.033,-.025,.035);var spring_b=knee+Vector3(side*.032,.03,.035)
-				rod(parent,spring_a,spring_b,.012,light)
-				for i in range(3 if RenderStyle.web() else 12):
-					var pt=spring_a.lerp(spring_b,i/(2. if RenderStyle.web() else 11.))
-					var coil=m.cylinder(parent,pt,.018,.006,dark);coil.quaternion=Quaternion(Vector3.UP,(spring_b-spring_a).normalized())
-				m.box(parent,foot,Vector3(.082,.034,.10),Color("202a30"),Vector3(0,0,side*.12),.3)
-
-		3:
-			var cover=Node3D.new();parent.add_child(cover);CombatFX.device(cover,"cover",0,variant);cover.scale=Vector3.ONE*.32
-		4:
-			# Flash grenade: vented steel cage. Smoke: squat painted canister.
-			var flash=variant==1;var paint=Color("d4c691") if flash else Color("81a292")
-			m.cylinder(parent,Vector3(0,.2,0),.087 if flash else .105,.35,paint,Vector3.ZERO,-1,8 if RenderStyle.web() else 16)
-			m.box(parent,Vector3(0,.4,0),Vector3(.12,.07,.12),dark)
-			for side in [-1,1]:
-				m.box(parent,Vector3(side*.088,.20,0),Vector3(.025,.25,.14),light if flash else dark)
-				if flash:
-					for y in [.12,.19,.26]:m.box(parent,Vector3(side*.103,y,0),Vector3(.006,.025,.10),dark)
-			m.box(parent,Vector3(0,.21,-.107),Vector3(.12,.12,.008),Color("eee6c6"))
-			m.box(parent,Vector3(0,.21,-.113),Vector3(.07,.018,.008),dark)
-		5:
-			m.box(parent,Vector3(0,.22,0),Vector3(.55,.4,.18),light,Vector3.ZERO,.5);m.box(parent,Vector3(0,.22,-.1),Vector3(.07,.25,.025),accent);m.box(parent,Vector3(0,.22,-.101),Vector3(.25,.07,.025),accent)
-static func grenade_model(parent:Node3D):
-	var m=MeshFactory;var shell=Color("657350");var steel=Color("889895")
-	var sides=8 if RenderStyle.web() else 16
-	HumanModel.loft(parent,Vector3(0,.16,0),[Vector4(-.14,.04,.04,0),Vector4(-.10,.09,.09,0),Vector4(.06,.095,.095,0),Vector4(.13,.065,.065,0)],shell,sides)
-	for y in [.08,.16,.24]:m.cylinder(parent,Vector3(0,y,0),.098,.015,Color("36473c"),Vector3.ZERO,-1,sides)
-	m.cylinder(parent,Vector3(0,.31,0),.042,.055,steel)
-	m.box(parent,Vector3(.071,.20,0),Vector3(.022,.26,.047),steel,Vector3(0,0,.16))
-	var ring=TorusMesh.new();ring.inner_radius=.025;ring.outer_radius=.032;ring.rings=16;ring.ring_segments=6;m.instance(parent,ring,Vector3(-.05,.32,0),steel,Vector3(PI/2,0,0))
-
-static func rod(parent:Node3D,a:Vector3,b:Vector3,radius:float,color:Color):
-	var mesh=MeshFactory.cylinder(parent,(a+b)*.5,radius,a.distance_to(b),color)
-	mesh.quaternion=Quaternion(Vector3.UP,(b-a).normalized())
+	var holder=GadgetVisual.new();holder.name="Equipment";parent.add_child(holder)
+	holder.build(role,variant,false)

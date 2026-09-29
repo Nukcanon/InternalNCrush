@@ -87,3 +87,8 @@ static func tinted(color:Color,outlined:bool,gloss:float) -> ShaderMaterial:
 	if materials.has(key):return materials[key]
 	var m=toon_material(outlined,gloss).duplicate();m.set_shader_parameter("tint",color);m.set_shader_parameter("vertex_color",0.)
 	materials[key]=m;return m
+# Releases every cached shader/material/mesh (tests and shutdown).
+static func clear_cache():
+	materials.clear();smoothed.clear();toon=null;outline=null;sphere_mesh=null
+	GunModel.bases.clear();GadgetVisual.templates.clear();CombatFX.device_templates.clear()
+	HeroCharacter.scenes.clear();HeroCharacter.libraries.clear();HeroCharacter.bodies.clear()

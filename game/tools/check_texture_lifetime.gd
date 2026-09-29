@@ -18,6 +18,6 @@ func run():
 		game.host_game(OfflineMultiplayerPeer.new());game.start_match();game.ui.clear_panel()
 	for i in range(60):await process_frame
 	holder.free();ToonMaterials.clear_cache();SurfaceFinish.clear_cache()
-	CharacterVisual.templates.clear();OperatorSkin.templates.clear();WeaponVisual.web_templates.clear()
+	HeroCharacter.scenes.clear();HeroCharacter.libraries.clear();GunModel.bases.clear()
 	for i in range(12):await process_frame
 	print("TEXTURE_LIFETIME ",mode);quit()

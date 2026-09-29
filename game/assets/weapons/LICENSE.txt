@@ -1,0 +1,5 @@
+﻿Characters: "Ultimate Modular Men Pack" and "Ultimate Modular Women Pack" by Quaternius (quaternius.com), CC0 1.0.
+Animations: clips shipped with those packs, and "Universal Animation Library" 1 and 2 (Standard) by Quaternius, CC0 1.0,
+retargeted to the character skeleton by tools/bake_heroes.gd and tools/clip_retarget.gd.
+Weapons (assets/weapons): "Toon Shooter Game Kit" by Quaternius, CC0 1.0, rebaked by tools/bake_weapons.gd.
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/

@@ -20,20 +20,6 @@ func expect(ok:bool,message:String):
 	if not ok:failures+=1;printerr("FAIL ",message)
 func run():
 	Catalog.load_all()
-	for role in HumanModel.FEMALE_ROLES:
-		var crown=OperatorHair.point(0.,1.,role,false)
-		expect(crown.y<.15 and crown.y>.12,"native hair crown fits authored skull rather than oversized cap")
-		var rig=CartoonModel.build(role,0);root.add_child(rig)
-		var head=rig.get_node("Hips/Chest/Head");var painted=false
-		for mesh in head.find_children("*","MeshInstance3D",true,false):
-			if mesh.material_override is ShaderMaterial:
-				var colors=mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
-				if colors!=null and colors.size()>0:
-					var dark=false;var skin=false
-					for color in colors:dark=dark or color.r<.1;skin=skin or color.r>.2
-					painted=dark and skin
-		expect(painted,"web hairline shares the original head surface with preserved skin/hair colors")
-		rig.free()
 	var hud_game=HudFixture.new();root.add_child(hud_game)
 	var p={"primary":"a1","secondary":"pistol","slot":0,"mag":{"a1":30,"pistol":12},"reserve":{"a1":90},"reload":0.,"energy":180}
 	hud_game.players[1]=p;var pips=AmmoPips.new();pips.game=hud_game
@@ -70,7 +56,7 @@ func run():
 			expect(a.find_children("*","Light3D",true,false).is_empty(),"held gadgets add no dynamic lights")
 			a.free();b.free()
 	ProjectSettings.set_setting("application/config/web_assets",false)
-	expect(EquipmentPreview.gadget_templates.size()<=80,"gadget scene cache remains bounded")
+	expect(GadgetVisual.templates.size()<=80,"gadget scene cache remains bounded")
 	var fixture=NavigationFixture.new();root.add_child(fixture)
 	var actor=Node3D.new();fixture.add_child(actor);fixture.actors[-1]=actor
 	var brain=BotAgent.new();brain.game=fixture;brain.id=-1
@@ -135,5 +121,6 @@ func run():
 	fx.clear();await process_frame;await process_frame
 	expect(BurstVisual.debris_count==0,"all decorative rigid bodies released")
 	holder.free();await process_frame
+	HeroStyle.clear_cache();await process_frame
 	print("NATIVE_FINISH_RESULT ",checks-failures,"/",checks," hand_swap_ms=",elapsed," burst_resource_samples=",memory)
 	quit(1 if failures else 0)

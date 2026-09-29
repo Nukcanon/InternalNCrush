@@ -32,6 +32,11 @@ func run():
 	p.primary="r2";a.shown_weapon="";await settle([a]);await shot("fp-sniper-hip")
 	p.slot=1;p.secondary="pistol";a.shown_weapon="";await settle([a]);await shot("fp-pistol")
 	p.slot=0;p.primary="h4";a.shown_weapon="";await settle([a]);await shot("fp-rocket")
+	# Charge handling: keypad presses in first person.
+	g.options.mode=4;g.bomb={"planted":false,"site":0,"time":0.,"actor":1,"progress":.3,"position":Vector3.ZERO};p.slot=0;p.primary="a1";a.shown_weapon=""
+	for k in range(3):
+		g.clock=100.+k*.11;await settle([a],12);await shot("fp-bomb-%d"%k)
+	g.options.mode=0;g.bomb={"planted":false,"site":-1,"time":0.,"actor":0,"progress":0.,"position":Vector3.ZERO}
 	# Third person group.
 	var group=[]
 	var loadout=[[0,"a1"],[1,"r1"],[2,"h1"],[3,"e1"],[4,"c2"],[5,"m2"]]

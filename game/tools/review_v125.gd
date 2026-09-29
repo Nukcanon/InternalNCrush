@@ -12,18 +12,11 @@ func run():
 		ProjectSettings.set_setting("application/config/web_assets",web)
 		for role in ([1,5] if web else range(6)):
 			preview.display(0,role,0,Catalog.first(role),0,0)
-			for c in preview.model.get_children():c.free()
-			var rig=CharacterVisual.make_rig(role,0);preview.model.add_child(rig);OperatorSkin.install(rig,str(role)+("_web" if web else "_native"));WebMaterials.apply(rig)
+			# Hero face portraits (the preview already shows the 1.4 hero).
 			for angle in [0.,.8,1.57]:
-				preview.model.rotation.y=angle;var focus=Vector3(0,1.6*HumanModel.HEIGHTS[role]/1.8,0)
+				preview.model.rotation.y=angle;var focus=Vector3(0,1.6*HeroCharacter.HEIGHTS[role]/1.8,0)
 				preview.camera.position=focus+Vector3(0,0,-2);preview.camera.look_at(focus);preview.camera.size=.52
 				await capture(("web" if web else "native")+"-face"+str(role)+"-"+str(angle))
-			if role in [1,5]:
-				preview.model.rotation.y=1.0
-				for pitch in [-.35,.35]:
-					rig.get_node("Hips/Chest/Head").rotation.x=pitch
-					OperatorSkin.sync(rig,rig.get_node("DeformSkeleton"))
-					await capture("native-neck"+str(role)+"-pitch"+str(pitch))
 		ProjectSettings.set_setting("application/config/web_assets",web)
 		preview.display(1,0,0,"dual_pistols");await capture(("web" if web else "native")+"-duet")
 		for item in [[0,8],[4,0],[4,1],[5,0],[3,0],[2,0]]:

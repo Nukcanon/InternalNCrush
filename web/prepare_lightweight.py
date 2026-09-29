@@ -20,6 +20,9 @@ def main():
         models = SOURCE / 'assets/models' / pack
         if models.exists():
             shutil.copytree(models, STAGE / 'assets/models' / pack, dirs_exist_ok=True)
+    # 1.4 hero/weapon bakes are committed resources (their CC0 sources are not in CI).
+    for folder in ['assets/heroes', 'assets/weapons']:
+        shutil.copytree(SOURCE / folder, STAGE / folder, dirs_exist_ok=True)
     if (SOURCE/'assets/door_leaves').exists():
         shutil.copytree(SOURCE/'assets/door_leaves', STAGE/'assets/door_leaves',dirs_exist_ok=True)
     project = STAGE / "project.godot"

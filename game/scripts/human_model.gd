@@ -1,5 +1,7 @@
 extends RefCounted
 class_name HumanModel
+## 1.4: geometry helpers only (lofted volumes for trees, props, projectiles).
+## Heroes are HeroCharacter; the procedural operator models were removed.
 const M=preload("res://scripts/mesh_factory.gd")
 const HEIGHTS=[1.74,1.64,1.88,1.72,1.83,1.62]
 const WIDTHS=[1.0,.88,1.08,1.01,.98,.88]
@@ -8,20 +10,6 @@ const IDENTITIES=["MASON", "SERA", "BRIGGS", "REED", "VALE", "MINA"]
 const SKIN_COLORS=[Color("b3a28c"),Color("cbbcaf"),Color("89765f"),Color("b9a48a"),Color("9b866e"),Color("c7b6a8")]
 static var loft_meshes={}
 const LOFT_CACHE_LIMIT=128
-static func joint(parent:Node,label:String,pos:Vector3) -> Node3D:
-	var n=Node3D.new();n.name=label;n.position=pos;parent.add_child(n);return n
-static func pose_rig(which:int) -> Node3D:
-	var rig=Node3D.new();rig.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,1.0 if which in FEMALE_ROLES else WIDTHS[which])
-	var hips=joint(rig,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
-	joint(chest,"Head",Vector3(0,.36,0));joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
-	for side in [-1,1]:
-		var prefix="Left" if side<0 else "Right"
-		var arm=joint(chest,prefix+"Arm",Vector3(side*.207,.105,0))
-		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0));joint(elbow,"Hand",Vector3(0,-.275,0))
-		var leg=joint(hips,prefix+"Leg",Vector3(side*.099,-.025,0));var knee=joint(leg,"Knee",Vector3(0,-.415,0));joint(knee,"Foot",Vector3(0,-.415,0))
-	return rig
-# Elliptical cross sections make anatomical volumes and fabric, with continuous normals.
-# Each ring is (height, half-width, half-depth, depth-offset).
 static func loft(parent:Node,pos:Vector3,rings:Array,color:Color,sides:int=20,sculpt:bool=false) -> MeshInstance3D:
 	var cache_key=str([rings,sides,sculpt])
 	if loft_meshes.has(cache_key):return M.instance(parent,loft_meshes[cache_key],pos,color)
@@ -70,95 +58,3 @@ static func oval(parent:Node,pos:Vector3,size:Vector3,color:Color) -> MeshInstan
 static func cord(parent:Node,a:Vector3,b:Vector3,radius:float,color:Color):
 	var mesh=CapsuleMesh.new();mesh.radius=radius;mesh.height=a.distance_to(b)+radius*2.;mesh.radial_segments=12;mesh.rings=4
 	var n=M.instance(parent,mesh,(a+b)*.5,color);n.quaternion=Quaternion(Vector3.UP,(b-a).normalized());return n
-static func hand(parent:Node,skin:Color,glove:Color,side:float):
-	oval(parent,Vector3(0,-.01,0),Vector3(.085,.105,.055),glove)
-	oval(parent,Vector3(0,.025,.022),Vector3(.075,.04,.025),skin)
-	for finger in range(4):
-		var x=(finger-1.5)*.019;var length=.033+(.008 if finger in [1,2] else 0.)
-		cord(parent,Vector3(x,-.044,0),Vector3(x,-.044-length,-.01),.010,glove)
-		cord(parent,Vector3(x,-.044-length,-.01),Vector3(x,-.052-length,-.028),.009,skin)
-	cord(parent,Vector3(side*.039,.005,-.008),Vector3(side*.052,-.025,-.032),.014,glove)
-static func face(parent:Node,which:int,skin:Color,hair:Color):
-	var female=which in FEMALE_ROLES
-	var jaw=.052 if female else .063+which*.001
-	var eye_color=[Color("5d725f"),Color("796046"),Color("4c382b"),Color("6c858a"),Color("89734f"),Color("483b34")][which]
-	# Eyelids, nose, lips, ears and jaw are now the continuous authored mesh.
-	for eye in AuthoredHuman.eyes(which):
-		var center=Vector3(eye[0],eye[1],eye[2]);var side=signf(center.x)
-		oval(parent,center,Vector3(.022,.019,.022),Color("dad7cc")).set_meta("surface_kind",4)
-		oval(parent,center+Vector3(0,0,-.0108),Vector3(.010,.010,.002),eye_color).set_meta("surface_kind",4)
-		oval(parent,center+Vector3(0,0,-.012),Vector3(.004,.004,.001),Color("182023")).set_meta("surface_kind",4)
-		oval(parent,center+Vector3(-.001,.002,-.0125),Vector3(.0012,.0012,.0006),Color("e5ddd0")).set_meta("surface_kind",4)
-		cord(parent,center+Vector3(-side*.013,.017,-.012),center+Vector3(side*.010,.019,-.009),.0024,hair)
-	if female:OperatorHair.build(parent,which,RenderStyle.web())
-	# Native head shapes vary: remove the two generic undersized caps rather
-	# than letting them intersect the scalp. Hair and communication gear remain.
-	# Small communication headset leaves the face and human silhouette readable.
-	oval(parent,Vector3(.092,.012,.014),Vector3(.038,.059,.051),Color("414947"))
-	cord(parent,Vector3(.099,-.004,0),Vector3(.061,-.055,-.10),.005,Color("383f3f"))
-static func build(which:int,team:int) -> Node3D:
-	var root=Node3D.new();root.name="Operator";root.scale=Vector3(WIDTHS[which],HEIGHTS[which]/1.8,1.0 if which in FEMALE_ROLES else WIDTHS[which]);root.set_meta("height_m",HEIGHTS[which]);root.set_meta("gender","female" if which in FEMALE_ROLES else "male");root.set_meta("identity",IDENTITIES[which])
-	var skin=SKIN_COLORS[which]
-	var hair=[Color("463931"),Color("352f2d"),Color("302927"),Color("655346"),Color("55514b"),Color("583f31")][which]
-	var shirt=Color("718891") if team==0 else Color("98806a")
-	var trousers=Color("475963") if team==0 else Color("655e50")
-	var vest=Color("596552") if which!=5 else Color("b1b19b")
-	var team_color=Color("4d9ac0") if team==0 else Color("d29358")
-	var dark=Color("383d39")
-	var hips=joint(root,"Hips",Vector3(0,.94,0));var chest=joint(hips,"Chest",Vector3(0,.3,0))
-	loft(hips,Vector3.ZERO,[Vector4(-.15,.10,.10,0),Vector4(-.09,.168,.127,.01),Vector4(.02,.172,.13,0),Vector4(.105,.158,.115,0)],trousers)
-	loft(chest,Vector3.ZERO,[Vector4(-.23,.145,.101,0),Vector4(-.13,.156,.108,.009),Vector4(.01,.181,.125,0),Vector4(.115,.192,.126,0),Vector4(.19,.169,.097,0),Vector4(.245,.062,.055,0)],shirt,24)
-	# The collar binding is painted on the cut neckline, never a floating cylinder.
-
-	for side in [-1,1]:
-		var arm=joint(chest,"LeftArm" if side<0 else "RightArm",Vector3(side*.207,.105,0))
-		oval(arm,Vector3(-side*.028,-.025,0),Vector3(.119,.15,.131),shirt)
-		loft(arm,Vector3.ZERO,[Vector4(-.285,.046,.048,0),Vector4(-.20,.058,.058,0),Vector4(-.12,.061,.062,0),Vector4(-.045,.065,.068,0),Vector4(.016,.05,.056,0)],shirt)
-		loft(arm,Vector3.ZERO,[Vector4(-.19,.069,.069,0),Vector4(-.155,.075,.074,0)],team_color)
-		for y in [-.21,-.24]:loft(arm,Vector3.ZERO,[Vector4(y-.008,.056,.057,0),Vector4(y,.061,.061,0),Vector4(y+.008,.056,.057,0)],shirt.darkened(.04))
-		var elbow=joint(arm,"Elbow",Vector3(0,-.28,0))
-		loft(elbow,Vector3.ZERO,[Vector4(-.275,.031,.034,0),Vector4(-.22,.04,.043,0),Vector4(-.10,.059,.056,0),Vector4(-.02,.053,.052,0),Vector4(.02,.043,.044,0)],skin)
-		loft(elbow,Vector3.ZERO,[Vector4(-.065,.058,.057,0),Vector4(-.020,.058,.057,0),Vector4(.008,.052,.051,0)],shirt)
-		var palm=joint(elbow,"Hand",Vector3(0,-.275,0));pass # Hand geometry is weighted in AuthoredHuman.
-		var leg=joint(hips,"LeftLeg" if side<0 else "RightLeg",Vector3(side*.099,-.025,0))
-		loft(leg,Vector3.ZERO,[Vector4(-.43,.064,.069,0),Vector4(-.34,.068,.074,0),Vector4(-.17,.088,.093,.009),Vector4(-.03,.105,.102,0),Vector4(.02,.087,.096,0)],trousers)
-		oval(leg,Vector3(side*.065,-.19,.022),Vector3(.047,.13,.10),trousers.lightened(.06))
-		var knee=joint(leg,"Knee",Vector3(0,-.415,0))
-		loft(knee,Vector3.ZERO,[Vector4(-.407,.044,.049,.015),Vector4(-.31,.05,.06,.020),Vector4(-.17,.067,.074,.01),Vector4(-.05,.065,.065,0),Vector4(.023,.059,.062,0)],trousers)
-		oval(knee,Vector3(0,-.025,-.059),Vector3(.108,.126,.040),vest)
-		for y in [-.31,-.34]:loft(knee,Vector3.ZERO,[Vector4(y-.008,.049,.058,.01),Vector4(y,.055,.063,.01),Vector4(y+.01,.049,.058,.01)],trousers.lightened(.07))
-		var foot=joint(knee,"Foot",Vector3(0,-.415,0))
-		oval(foot,Vector3(0,.025,-.065),Vector3(.155,.14,.27),dark)
-		loft(foot,Vector3(0,0,-.06),[Vector4(-.045,.052,.08,0),Vector4(-.032,.079,.138,0),Vector4(-.015,.079,.136,0)],dark.darkened(.28))
-		for k in range(3):cord(foot,Vector3(-.038,.078,-.035-k*.025),Vector3(.038,.078,-.035-k*.025),.004,Color("9c947b"))
-	# Waist belt is painted on the authored body below; the old generic ellipse
-	# intersected its different contour and exposed triangular dark slivers.
-	M.box(hips,Vector3(0,.083,-.13),Vector3(.047,.03,.018),Color("9b9d89"),Vector3.ZERO,.6)
-	loft(chest,Vector3(0,.256,0),[Vector4(-.025,.059,.056,0),Vector4(.07,.055,.054,0)],skin)
-	var head=joint(chest,"Head",Vector3(0,.36,0));face(head,which,skin,hair)
-	if which in FEMALE_ROLES:
-		pass # Authored female anatomy shares the animation skeleton.
-	# Role-specific soft gear: radio, scout scarf, padded vest, tool roll, satchel, medical bag.
-	if which==2:carry_pack(chest,Vector3(0,-.015,.16),Vector3(.34,.40,.19),Color("6a715e"),false)
-	if which==3:
-		carry_pack(hips,Vector3(.213,-.105,.028),Vector3(.10,.19,.19),Color("987851"),false)
-		for i in range(3):cord(hips,Vector3(.26,-.12,.0+i*.04),Vector3(.26,.07,.0+i*.04),.011,Color("a8aa9b"))
-	if which==4:carry_pack(chest,Vector3(-.10,-.1,.167),Vector3(.26,.31,.16),Color("797970"),false)
-	if which==5:
-		carry_pack(chest,Vector3(0,-.04,.17),Vector3(.32,.36,.18),Color("bbb8a0"),true)
-	if which in [0,4]:
-		oval(chest,Vector3(.16,.06,.133),Vector3(.09,.16,.085),dark)
-		cord(chest,Vector3(.16,.13,.14),Vector3(.16,.29,.14),.004,dark)
-	joint(chest,"WeaponSocket",Vector3(.07,-.09,-.07))
-	AuthoredHuman.install(root,which,team,skin,shirt,trousers)
-	return root
-static func carry_pack(parent:Node,position:Vector3,size:Vector3,color:Color,medical:bool):
-	# Boxed fabric shell, folded flap and webbing read as equipment at a distance.
-	M.box(parent,position,size,color,Vector3.ZERO,.15)
-	M.box(parent,position+Vector3(0,size.y*.30,size.z*.51),Vector3(size.x*1.03,size.y*.29,.018),color.lightened(.08))
-	for side in [-1,1]:
-		M.box(parent,position+Vector3(side*size.x*.29,0,size.z*.53),Vector3(size.x*.10,size.y*.95,.016),Color("3c4946"))
-		M.box(parent,position+Vector3(side*size.x*.29,size.y*.15,size.z*.59),Vector3(size.x*.17,.034,.015),Color("a2a49a"))
-	if medical:
-		M.box(parent,position+Vector3(0,0,size.z*.54),Vector3(.033,.14,.014),Color("538e7e"))
-		M.box(parent,position+Vector3(0,0,size.z*.56),Vector3(.12,.033,.014),Color("538e7e"))

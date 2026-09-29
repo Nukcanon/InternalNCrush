@@ -127,109 +127,28 @@ func sync_fields(fields:Array,now:float):
 		if not live.has(key):field_nodes[key].queue_free();field_nodes.erase(key)
 static var device_templates={}
 static func prepare_devices():
-	# Load the four small, baked assemblies while the map is loading.
+	# Build every deployable template while the map is loading.
 	for kind in ["turret","cover"]:
 		for team in range(2):
-			var key=kind+str(team);var path="res://assets/models/device_"+key+".scn"
-			if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
+			for variant in ([0,1,2] if kind=="cover" else [1]):
+				var probe=Node3D.new();device(probe,kind,team,variant);probe.free()
+# 1.4 cartoon deployables (GearModels). Templates are cached per kind/team/tier;
+# children are moved into `parent` so game code finds "TurretHead" directly.
 static func device(parent:Node3D,kind:String,team:int,variant:int=1):
-	if kind=="cover":
-		var variant_key="cover_detail_"+str(team)+"_"+str(clampi(variant,0,2))
-		if not device_templates.has(variant_key):
-			var source=Node3D.new();source.name="CoverAssembly"
-			build_device(source,kind,team,clampi(variant,0,2))
-			source.scale.z=[.30,.55,.80][clampi(variant,0,2)]/.65
-			MeshFactory.own_recursive(source,source)
-			var packed=PackedScene.new();packed.pack(source);source.free();device_templates[variant_key]=packed
-		parent.add_child(device_templates[variant_key].instantiate());return
-	var key=kind+str(team);var path="res://assets/models/device_"+key+".scn"
-	if not device_templates.has(key) and ResourceLoader.exists(path):device_templates[key]=load(path)
-	if device_templates.has(key):
-		var baked=device_templates[key].instantiate()
-		for child in baked.get_children():
-			MeshFactory.own_recursive(child,null);child.owner=null
-			baked.remove_child(child);parent.add_child(child)
-		baked.free();return
-	# Editable source fallback only; release builds always contain baked assemblies.
-	build_device(parent,kind,team)
-static func build_device(parent:Node3D,kind:String,team:int,variant:int=-1):
-	var color=Color("378fb2") if team==0 else Color("ba7440");var metal=Color("354d5c")
-	if kind=="cover":
-		if variant>=0:
-			color=Color(["dfbd35","438b50","454950"][variant]);metal=color.darkened(.25)
-		M.box(parent,Vector3(0,.64,0),Vector3(3.4,1.25,.55),metal)
-		for x in [-1.1,0,1.1]:
-			M.box(parent,Vector3(x,.68,-.30),Vector3(1.0,1.1,.08),color);M.box(parent,Vector3(x,.9,-.35),Vector3(.65,.035,.018),Color("d6e8e2"))
-		for x in [-1.25,1.25]:M.box(parent,Vector3(x,.12,0),Vector3(.24,.22,1.),metal)
-	else:
-		M.cylinder(parent,Vector3(0,.18,0),.58,.22,metal,Vector3.ZERO,.42,12)
-		M.cylinder(parent,Vector3(0,.78,0),.13,1.15,color)
-		for i in range(3):
-			var a=TAU*i/3.;M.box(parent,Vector3(cos(a)*.37,.16,sin(a)*.37),Vector3(.18,.15,.8),metal,Vector3(0,-a+PI/2,0))
-		var head=Node3D.new();head.name="TurretHead";head.position.y=1.7;parent.add_child(head)
-		M.box(head,Vector3.ZERO,Vector3(.6,.32,.52),color)
-		for x in [-.16,.16]:
-			M.cylinder(head,Vector3(x,0,-.48),.063,.76,metal,Vector3(PI/2,0,0));M.cylinder(head,Vector3(x,0,-.86),.078,.055,Color("a4b9bd"),Vector3(PI/2,0,0))
-		M.sphere(head,Vector3(0,.08,-.30),Vector3(.12,.1,.035),Color("72eed4"));M.merge_children(head)
-	if kind=="turret":
-		var head=parent.get_node("TurretHead")
-		for side in [-1,1]:
-			M.tapered(head,Vector3(side*.33,-.035,.03),Vector3(.15,.40,.50),metal,.65)
-			M.cylinder(head,Vector3(side*.33,0,.02),.105,.16,Color("8e9b9c"),Vector3(0,0,PI/2),-1,16)
-			M.box(head,Vector3(side*.38,-.10,.11),Vector3(.18,.24,.33),color)
-			for z in [-.13,-.055,.02,.095]:M.box(head,Vector3(side*.402,.06,z),Vector3(.035,.12,.023),metal)
-			for i in range(5):M.cylinder(head,Vector3(side*.16,0,-.32-i*.07),.077,.018,Color("74858b"),Vector3(PI/2,0,0),-1,12)
-			M.cylinder(head,Vector3(side*.16,0,-.892),.049,.004,Color("121c23"),Vector3(PI/2,0,0),-1,12)
-		M.box(head,Vector3(0,.235,-.12),Vector3(.25,.14,.22),metal)
-		M.cylinder(head,Vector3(0,.235,-.242),.050,.012,Color("61d7dd"),Vector3(PI/2,0,0),-1,16)
-		M.cylinder(head,Vector3(.27,.30,.15),.012,.34,metal)
-		M.cylinder(parent,Vector3(0,1.10,0),.24,.14,Color("889da0"),Vector3.ZERO,-1,16)
-		M.cylinder(parent,Vector3(0,1.36,.05),.18,.45,metal,Vector3.ZERO,.21,20)
-		M.cylinder(parent,Vector3(0,1.52,.05),.25,.08,Color("9aa9a7"),Vector3.ZERO,-1,20)
-		for side in [-1,1]:M.box(parent,Vector3(side*.28,1.42,.04),Vector3(.10,.43,.25),metal,Vector3(0,0,side*.10))
-		for i in range(3):
-			var angle=TAU*i/3.
-			# Removed protruding pale braces; the broad base and dark legs carry the turret.
-			M.box(parent,Vector3(cos(angle)*.57,.07,sin(angle)*.57),Vector3(.24,.12,.26),metal)
-		M.merge_children(head)
-	else:
-		for x in [-1.1,0,1.1]:
-			M.box(parent,Vector3(x,.23,-.355),Vector3(.86,.20,.018),metal)
-			for dx in [-.38,.38]:
-				for y in [.25,1.08]:M.cylinder(parent,Vector3(x+dx,y,-.36),.025,.025,Color("b0bebd"),Vector3(PI/2,0,0),-1,8)
-			M.box(parent,Vector3(x,1.28,0),Vector3(.85,.08,.69),Color("7d939c"))
-	# A shared deployment language: anchored feet, team inserts, latches and status lamps.
-	var accent=Color("66cfff") if team==0 else Color("ffb465")
-	if kind=="turret":
-		var head=parent.get_node("TurretHead")
-		M.cylinder(parent,Vector3(0,.12,0),.77,.18,metal,Vector3.ZERO,.65,16)
-		M.tapered(parent,Vector3(0,.53,.04),Vector3(.74,.72,.68),color,.76)
-		M.cylinder(parent,Vector3(0,1.02,0),.30,.16,Color("92a1a4"),Vector3.ZERO,-1,16)
-		for side in [-1,1]:
-			M.box(parent,Vector3(side*.47,.75,.08),Vector3(.23,.67,.27),metal,Vector3(0,0,side*-.25))
-			M.cylinder(parent,Vector3(side*.40,1.04,.08),.12,.12,Color("bbc5bf"),Vector3(0,0,PI/2),-1,16)
-			M.box(head,Vector3(side*.39,-.06,.05),Vector3(.27,.44,.59),color)
-			M.box(head,Vector3(side*.55,-.04,.16),Vector3(.16,.34,.40),metal)
-			for z in [-.05,.02,.09]:M.box(head,Vector3(side*.48,.18,z),Vector3(.17,.025,.027),Color("131d23"))
-			for x in [side*.20,side*.36]:M.cylinder(head,Vector3(x,-.03,-.48),.031,.67,Color("89999e"),Vector3(PI/2,0,0),-1,12)
-			M.box(head,Vector3(side*.19,-.07,-.78),Vector3(.20,.13,.14),metal)
-			M.cylinder(head,Vector3(side*.19,-.07,-.858),.047,.012,Color("11181c"),Vector3(PI/2,0,0),-1,12)
-			M.box(parent,Vector3(side*.68,.12,.15),Vector3(.30,.20,.86),color,Vector3(0,side*.30,0))
-		M.box(head,Vector3(0,.20,-.14),Vector3(.24,.22,.30),metal)
-		var eye=M.sphere(head,Vector3(0,.21,-.301),Vector3(.13,.09,.018),accent);eye.material_override=glow(accent)
-		M.box(parent,Vector3(0,.62,-.315),Vector3(.42,.20,.025),metal)
-		for i in [-1,0,1]:
-			var lamp=M.box(parent,Vector3(i*.095,.64,-.334),Vector3(.052,.060,.015),accent);lamp.material_override=glow(accent)
-		M.merge_children(head)
-	else:
-		for x in [-1.3,1.3]:
-			M.box(parent,Vector3(x,.11,0),Vector3(.38,.18,1.15),metal)
-			M.box(parent,Vector3(x,.70,-.32),Vector3(.13,1.06,.08),accent)
-			M.box(parent,Vector3(x,1.33,0),Vector3(.32,.07,.45),metal)
-		for i in [-1,0,1]:
-			M.box(parent,Vector3(i*.19,.79,-.344),Vector3(.10,.28,.028),accent,Vector3(0,0,-.40))
-		M.box(parent,Vector3(0,1.04,-.35),Vector3(.40,.13,.032),metal)
-	M.merge_children(parent)
+	var key=kind+"_"+str(team)+"_"+str(clampi(variant,0,2) if kind=="cover" else 0)
+	if not device_templates.has(key):
+		var source=Node3D.new();source.name="DeviceAssembly"
+		build_device(source,kind,team,variant)
+		MeshFactory.own_recursive(source,source)
+		var packed=PackedScene.new();packed.pack(source);source.free();device_templates[key]=packed
+	var copy=device_templates[key].instantiate()
+	for child in copy.get_children():
+		MeshFactory.own_recursive(child,null);child.owner=null
+		copy.remove_child(child);parent.add_child(child)
+	copy.free()
+static func build_device(parent:Node3D,kind:String,team:int,variant:int=1):
+	if kind=="cover":GearModels.cover(parent,team,clampi(variant,0,2))
+	else:GearModels.turret(parent,team)
 func throw_item(from:Vector3,to:Vector3):
 	var node=group(from);M.cylinder(node,Vector3.ZERO,.08,.22,Color("a4b8a7"));M.cylinder(node,Vector3(0,.13,0),.055,.05,Color("e7d197"))
 	var tween=node.create_tween();tween.tween_method(func(t):
@@ -340,9 +259,8 @@ func sync_grenades(items:Array,now:float):
 		live[item.id]=true
 		if not grenade_nodes.has(item.id):
 			var node=Node3D.new();add_child(node)
-			if item.get("kind","frag")=="frag":EquipmentPreview.grenade_model(node)
-			else:EquipmentPreview.gadget_model(node,4,1 if item.kind=="flash" else 0)
-			M.merge_children(node);node.scale=Vector3.ONE*.45;grenade_nodes[item.id]=node
+			GearModels.grenade(node,str(item.get("kind","frag")))
+			grenade_nodes[item.id]=node
 		var node=grenade_nodes[item.id];node.position=item.pos-Vector3.UP*.08;node.rotation=Vector3.ZERO if item.held else Vector3(item.get("rotation",Vector3.ZERO))
 	for id in grenade_nodes.keys():
 		if not live.has(id):grenade_nodes[id].queue_free();grenade_nodes.erase(id)

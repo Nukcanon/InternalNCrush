@@ -1,8 +1,15 @@
 class_name BombHandling
 extends RefCounted
+## First-person charge handling (plant and defuse): the hero's left hand steadies
+## the case while the right index finger taps the keypad, key by key.
+const KEY_PERIOD=.22 # seconds per key press
 static func active(actor:Node) -> bool:
 	var g=actor.game
 	return int(g.options.mode)==4 and g.phase=="combat" and (int(g.bomb.get("actor",0))==int(actor.pid) or (actor.local and BombLogic.busy(g,actor.pid)))
+# Keypad (3x3) key centre in the view model's space; the charge is scaled .52.
+static func key_position(index:int) -> Vector3:
+	var column=index%3-1;var row=index/3-1
+	return Vector3(column*.028,.197,-.068+row*.02)
 static func view(actor:Node,p:Dictionary,now:float):
 	var working=active(actor)
 	if not working:
@@ -11,12 +18,18 @@ static func view(actor:Node,p:Dictionary,now:float):
 	if not is_instance_valid(actor.bomb_view):
 		var model=Node3D.new();model.name="BombHandling";actor.camera.add_child(model);actor.bomb_view=model
 		var payload=Node3D.new();payload.name="Payload";model.add_child(payload);BombLogic.model(payload);payload.scale=Vector3.ONE*.52
-		for side in [-1,1]:
-			var hand=HeldGrip.new();hand.name="HandLeft" if side<0 else "HandRight";model.add_child(hand);hand.build(int(p.role),.024);hand.scale.x=side
-			var wrist=Vector3(side*.17,.085,.04);hand.position=wrist
-			var arm=WeaponHand.forearm(model,int(p.role));WeaponHand.fit_forearm(arm,Vector3(side*.30,-.21,.35),wrist+Vector3(side*.04,0,.03))
-	actor.bomb_view.show();actor.bomb_view.position=Vector3(0,-.39,-.56)
-	actor.bomb_view.rotation=Vector3(.12,0,0)
-	actor.bomb_view.get_node("HandRight").position=Vector3(.13,.115+sin(now*12.)*.012,-.04)
+		# Wrist targets; the first-person hero arms reach them (actor.update_view_body).
+		var left=Marker3D.new();left.name="LeftGrip";left.position=Vector3(.19,.09,-.03);model.add_child(left)
+		var right=Marker3D.new();right.name="RightGrip";model.add_child(right)
+		# Fingers point down onto the keys.
+		right.basis=Basis(Vector3.UP,PI)*Basis(Vector3.RIGHT,-.95)
+	# Placed in camera space and turned so the keypad faces the player.
+	actor.bomb_view.show();actor.bomb_view.global_transform=actor.camera.global_transform*Transform3D(Basis.from_euler(Vector3(.22,0,0))*Basis(Vector3.UP,PI),Vector3(0,-.38,-.6))
+	# Key sequence: a pseudo-random key each period; press down, then lift.
+	var step=int(floor(now/KEY_PERIOD));var phase=fposmod(now,KEY_PERIOD)/KEY_PERIOD
+	var key=int(abs(sin(step*12.9898)*43758.5453))%9
+	var press=sin(clampf(phase/.45,0.,1.)*PI)
+	# The wrist sits behind and above the fingertip.
+	actor.bomb_view.get_node("RightGrip").position=key_position(key)+Vector3(-.02,.075-press*.028,-.075)
 	actor.view_weapon.hide();actor.item_model.hide()
 	if is_instance_valid(actor.melee_view):actor.melee_view.hide()

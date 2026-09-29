@@ -9,7 +9,7 @@ func run():
 	# Let the newly-created menu preview render before destroying its viewport.
 	for i in range(4):await process_frame
 	g.free();await process_frame;await process_frame
-	CharacterVisual.templates.clear();OperatorSkin.templates.clear();WeaponVisual.web_templates.clear()
+	HeroCharacter.scenes.clear();HeroCharacter.libraries.clear();GunModel.bases.clear()
 	SurfaceFinish.clear_cache()
 	ToonMaterials.clear_cache()
 	for i in range(5):await process_frame

@@ -43,7 +43,7 @@ var state={}
 var outlined=false
 # First person: the weapon frame follows this node (camera-space view mount).
 var frame_override:Node3D
-var armor_level=0
+var armor_level=-1
 static func scene(role_index:int) -> PackedScene:
 	var outfit=OUTFITS[clampi(role_index,0,5)]
 	if not scenes.has(outfit):scenes[outfit]=load("res://assets/heroes/"+outfit+".scn")
@@ -152,13 +152,16 @@ func solve_hands(s:Dictionary):
 	if weight<=.001:return
 	var right:Node3D=held.grip("R") if held.has_method("grip") else held.get_node_or_null("RightGrip")
 	var left:Node3D=held.grip("L") if held.has_method("grip") else held.get_node_or_null("LeftGrip")
-	if right:HeroIK.solve_arm(self,"R",right.global_transform,weight);HeroIK.curl(self,"R",weight)
+	if right:HeroIK.solve_arm(self,"R",right.global_transform,weight);HeroIK.curl(self,"R",weight,bool(s.get("point",false)))
 	if left and bool(s.get("two_hands",true)):
 		var lw=weight*float(s.get("left_hand",1.))
 		HeroIK.solve_arm(self,"L",left.global_transform,lw);HeroIK.curl(self,"L",lw)
-func hold(item:Node3D):
+# `mount`: false keeps the item where it is (e.g. a camera-space view model);
+# the hands still follow its grip markers.
+func hold(item:Node3D,mount:bool=true):
 	if is_instance_valid(held) and held!=item and held.get_parent()==weapon_frame:held.hide()
 	held=item
+	if is_instance_valid(item) and not mount:item.show();return
 	if is_instance_valid(item):
 		if item.get_parent()!=weapon_frame:
 			if item.get_parent():item.get_parent().remove_child(item)
@@ -170,7 +173,19 @@ func hide_parts(suffixes:Array):
 		for suffix in suffixes:
 			if str(mesh.name).ends_with(suffix):mesh.hide()
 # Armour tier (0..2) worn over the outfit; the vest model arrives with the gear pass.
-func set_armor(level:int):armor_level=clampi(level,0,2)
+func set_armor(level:int):
+	level=clampi(level,0,2)
+	if level==armor_level and (level==0 or skeleton.has_node("ChestMount")):return
+	armor_level=level
+	var mount=skeleton.get_node_or_null("ChestMount")
+	if mount:skeleton.remove_child(mount);mount.queue_free()
+	if level==0 or meshes().all(func(m):return not m.visible):return
+	HeroHitbox.load_volumes()
+	for v in HeroHitbox.volumes.get(OUTFITS[role],[]):
+		if v.bone=="Chest" and v.type=="ellipsoid":
+			mount=BoneAttachment3D.new();mount.name="ChestMount";mount.bone_name="Chest";skeleton.add_child(mount)
+			GearModels.vest(mount,level,team,HeroHitbox.v3(v.c),HeroHitbox.v3(v.e))
+			break
 # Bone-attached node on a hand (melee tools, thrown items).
 func hand_attachment(side:String) -> BoneAttachment3D:
 	var name="Hand"+side

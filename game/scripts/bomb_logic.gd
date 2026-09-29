@@ -87,10 +87,15 @@ static func detonate(game:Node):
 	game.event_fx.rpc("bomb_explosion",origin,Vector3(reach,0,0),0)
 	game.finish_round(MatchFlow.attackers(game),"폭탄 폭발")
 static func model(parent:Node3D):
-	MeshFactory.box(parent,Vector3(0,.16,0),Vector3(.60,.26,.42),Color("343e44"))
-	for x in [-.21,.21]:MeshFactory.box(parent,Vector3(x,.17,0),Vector3(.07,.28,.45),Color("aa8953"))
-	for x in [-.12,0,.12]:MeshFactory.cylinder(parent,Vector3(x,.31,.06),.048,.31,Color("797564"),Vector3(PI/2,0,0),-1.,10)
-	MeshFactory.box(parent,Vector3(0,.34,-.13),Vector3(.26,.055,.15),Color("182831"))
-	MeshFactory.box(parent,Vector3(0,.374,-.13),Vector3(.18,.015,.10),Color("e95145"))
+	# 1.4 cartoon charge: rounded hazard case, three canisters, glowing keypad.
+	var body=Node3D.new();body.name="ChargeBody";parent.add_child(body)
+	MeshFactory.box(body,Vector3(0,.15,0),Vector3(.6,.26,.42),Color("2e3440"),Vector3.ZERO,.6)
+	for x in [-.21,.21]:MeshFactory.box(body,Vector3(x,.16,0),Vector3(.08,.28,.45),Color("f2a33a"),Vector3.ZERO,.5)
+	for x in [-.12,0,.12]:MeshFactory.cylinder(body,Vector3(x,.31,.06),.05,.31,Color("d9483b"),Vector3(PI/2,0,0),.045,12)
+	MeshFactory.box(body,Vector3(0,.34,-.13),Vector3(.26,.06,.15),Color("1c222c"),Vector3.ZERO,.5)
+	MeshFactory.box(body,Vector3(0,.375,-.13),Vector3(.18,.016,.1),Color("7fe0ff"),Vector3.ZERO,.3)
+	MeshFactory.merge_children(body)
+	for mesh in body.get_children():
+		if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(false,.25)
 	var lamp=MeshFactory.sphere(parent,Vector3(.23,.35,-.15),Vector3(.085,.085,.085),Color("ff2920"));lamp.name="Beacon"
 	var material=StandardMaterial3D.new();material.albedo_color=Color("ff2920");material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;material.emission_enabled=true;material.emission=Color("ff2920");lamp.material_override=material

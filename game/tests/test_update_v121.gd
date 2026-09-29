@@ -25,15 +25,12 @@ func run():
 	var graph=StatGraph.new();root.add_child(graph);graph.configure(0,Catalog.get_weapon("h1"),2,0)
 	expect(graph.rows[0][0]=="최대 체력" and graph.rows[0][1]==150.,"character health graph")
 	graph.configure(3,Catalog.get_weapon("h1"),2,2);expect(graph.rows.size()==1 and graph.rows[0][0]=="추가 방어구","armor does not claim health");graph.free()
-	for radius in [.020,.025,.044]:
-		var grip=HeldGrip.new();root.add_child(grip);grip.build(0,radius)
-		for points in grip.finger_paths:
-			var length=0.
-			for i in range(points.size()):
-				expect(Vector2(points[i].x,points[i].z).length()>=radius+.011,"fingers outside object")
-				if i>0:length+=points[i].distance_to(points[i-1])
-			expect(length<=.087,"anatomical finger length")
-		expect(grip.wrist.z>.09,"wrist follows palm instead of exiting hand back");grip.free()
+	for role in range(6):
+		for variant in [0,1,2,8]:
+			var gear=GadgetVisual.new();root.add_child(gear);gear.build(role,variant,false)
+			expect(gear.right_socket.is_finite() and gear.find_children("*","MeshInstance3D",true,false).size()>=1,"cartoon gear has a model and a grip, role %d variant %d"%[role,variant])
+			gear.free()
+	GadgetVisual.templates.clear();GunModel.bases.clear()
 	var melee=MeleeVisual.new();root.add_child(melee);melee.build(false,0,true);melee.pose(MeleeCombat.CONTACT_START);var high=melee.pivot.position;melee.pose(MeleeCombat.CONTACT_END);var low=melee.pivot.position
 	expect(high.x>low.x and high.y>low.y,"cut travels upper-right to lower-left")
 	melee.pose(MeleeCombat.DURATION);expect(melee.pivot.position.is_equal_approx(Vector3(.16,-.08,-.08)),"single swing returns to ready");melee.free()
@@ -54,4 +51,5 @@ func run():
 	a.input_state.melee=false;g.clock+=.6;g.process_trigger(1);expect(p.melee_started<g.clock,"release stops repeated quick melee")
 	var invalid={"x":0.,"z":0.,"yaw":0.,"pitch":0.,"melee":"true"};expect(InputGuard.normalize(invalid).is_empty(),"network validates held melee type")
 	g.free();await process_frame
+	HeroStyle.clear_cache();await process_frame
 	print("V121_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

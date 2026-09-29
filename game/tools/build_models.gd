@@ -1,45 +1,29 @@
 extends SceneTree
+## 1.4: heroes and weapons are baked from their CC0 sources by
+## tools/bake_heroes.gd and tools/bake_weapons.gd (sources live outside the
+## repository). This step validates the committed bakes, warms the deployable
+## templates and writes the model manifest with attribution.
 func _initialize():call_deferred("run")
 func run():
 	Catalog.load_all();DirAccess.make_dir_recursive_absolute("res://assets/models")
-	var art_source="--with-art-source" in OS.get_cmdline_user_args()
-	var manifest={"license":"Original equipment + CC0 MakeHuman-derived anatomy; see assets/human/source/LICENSE.md","style":"Shared anatomy with reduced body geometry and protected facial detail" if RenderStyle.web() else "CC0 anatomical operators with original clothing, painted skin and GPU skinning","operators":[],"weapons":[],"animations":["idle","walk","run","crouch","crouch_walk","jump","fall","fire","reload","hit","land","death","fall_back","fall_front","fall_left","fall_right","fall_fold"]}
+	var manifest={"license":"Characters: Quaternius Ultimate Modular Men/Women (CC0). Animations: Quaternius Ultimate Modular + Universal Animation Library 1/2 (CC0). Weapons: Quaternius Toon Shooter Game Kit (CC0). See assets/heroes/LICENSE.txt.","operators":[],"weapons":[]}
 	for role in range(6):
-		for team in range(2):
-			var node=CharacterVisual.make_rig(role,team);root.add_child(node)
-			OperatorSkin.install(node,str(role)+"_"+str(team))
-			for hidden in node.find_children("*","MeshInstance3D",true,false):
-				if not hidden.visible:hidden.free()
-			var body=node.get_node("ContinuousBody");var importer=ImporterMesh.new()
-			importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,body.mesh.surface_get_arrays(0),[],{},SurfaceFinish.human_material(role))
-			importer.generate_lods(60.,60.,[]);body.mesh=importer.get_mesh();body.set_meta("lod_count",importer.get_surface_lod_count(0))
-			print("OPERATOR_LOD ",role,"/",team," levels=",importer.get_surface_lod_count(0))
-			print("OPERATOR_BUDGET ",role,"/",team," vertices=",body.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()," triangles=",body.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size()/3)
-			if node.has_meta("pose_nodes"):node.remove_meta("pose_nodes")
-			if node.has_meta("pose_owner"):node.remove_meta("pose_owner")
-			MeshFactory.own_recursive(node,node)
-			var scene=PackedScene.new();scene.pack(node);var path="res://assets/models/operator_%d_%d.scn"%[role,team];ResourceSaver.save(scene,path,ResourceSaver.FLAG_COMPRESS)
-			if art_source:
-				var document=GLTFDocument.new();var state=GLTFState.new();document.append_from_scene(node,state);document.write_to_filesystem(state,"res://assets/models/operator_%d_%d.glb"%[role,team])
-			manifest.operators.append({"role":Rules.CLASSES[role],"name":CharacterVisual.ROLE_NAMES[role],"identity":HumanModel.IDENTITIES[role],"gender":"female" if role in HumanModel.FEMALE_ROLES else "male","height_cm":roundi(HumanModel.HEIGHTS[role]*100),"team":team,"scene":path});node.queue_free();await process_frame
+		var hero=HeroCharacter.new();root.add_child(hero);hero.build(role,0)
+		var triangles=0
+		for mesh in hero.meshes():
+			for s in range(mesh.mesh.get_surface_count()):triangles+=mesh.mesh.surface_get_array_index_len(s)/3
+		if hero.skeleton.get_bone_count()<60 or hero.player.get_animation_list().size()<40:printerr("HERO_BAKE_INVALID ",role);quit(1);return
+		manifest.operators.append({"role":Rules.CLASSES[role],"identity":HeroCharacter.IDENTITIES[role],"outfit":HeroCharacter.OUTFITS[role],"gender":"female" if role in HeroCharacter.FEMALE_ROLES else "male","height_cm":roundi(HeroCharacter.HEIGHTS[role]*100),"triangles":triangles})
+		print("HERO ",role," triangles=",triangles," clips=",hero.player.get_animation_list().size())
+		hero.free();await process_frame
 	for id in Catalog.weapons:
-		var visual=WeaponVisual.new();root.add_child(visual);visual.build(Catalog.get_weapon(id),false,false);visual.name="Working_"+id
-		var model=Node3D.new();model.name=Catalog.get_weapon(id).name;root.add_child(model)
-		for child in visual.get_children():visual.remove_child(child);model.add_child(child)
-		MeshFactory.own_recursive(model,model);var packed=PackedScene.new();packed.pack(model);ResourceSaver.save(packed,"res://assets/models/weapon_"+id+".scn",ResourceSaver.FLAG_COMPRESS)
-		if art_source:
-			var document=GLTFDocument.new();var state=GLTFState.new();document.append_from_scene(model,state);document.write_to_filesystem(state,"res://assets/models/weapon_"+id+".glb")
-		manifest.weapons.append({"id":id,"name":model.name});model.queue_free();visual.queue_free();await process_frame
+		var gun=GunModel.new();root.add_child(gun);gun.build(Catalog.get_weapon(id))
+		if not is_instance_valid(gun.muzzle) or not is_instance_valid(gun.right_grip):printerr("WEAPON_INVALID ",id);quit(1);return
+		manifest.weapons.append({"id":id,"name":Catalog.get_weapon(id).name,"base":str(GunLooks.look(Catalog.get_weapon(id)).get("base",GunLooks.look(Catalog.get_weapon(id)).get("tool","")))})
+		gun.free()
 	for kind in ["turret","cover"]:
 		for team in range(2):
-			var model=Node3D.new();root.add_child(model);CombatFX.build_device(model,kind,team)
-			for visual in model.find_children("*","MeshInstance3D",true,false):
-				if not visual.mesh is ArrayMesh:continue
-				var importer=ImporterMesh.new()
-				for surface in range(visual.mesh.get_surface_count()):importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,visual.mesh.surface_get_arrays(surface),[],{},visual.mesh.surface_get_material(surface))
-				importer.generate_lods(60.,60.,[]);visual.mesh=importer.get_mesh()
-			for visual in model.find_children("*","MeshInstance3D",true,false):visual.set_meta("construction_wire",Construction.edge_geometry(visual.mesh))
-			WebMaterials.apply(model);MeshFactory.own_recursive(model,model);var packed=PackedScene.new();packed.pack(model)
-			ResourceSaver.save(packed,"res://assets/models/device_"+kind+str(team)+".scn",ResourceSaver.FLAG_COMPRESS);model.free();await process_frame
+			for variant in ([0,1,2] if kind=="cover" else [1]):
+				var probe=Node3D.new();root.add_child(probe);CombatFX.device(probe,kind,team,variant);probe.free()
 	var file=FileAccess.open("res://assets/models/manifest.json",FileAccess.WRITE);file.store_string(JSON.stringify(manifest,"\t"));file.close()
-	print("MODELS_BUILT operators=12 weapons=",Catalog.weapons.size()," clips=17_per_operator");quit()
+	print("MODELS_BUILT operators=6 weapons=",Catalog.weapons.size());quit()

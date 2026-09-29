@@ -23,6 +23,7 @@ var view_body:HeroCharacter
 var view_mount:Node3D
 var hit_time=-100.
 var held_holder:Node3D
+var view_item:Node3D # first-person gadget carried by view_body
 var protected_visual:MeshInstance3D
 var melee_view:MeleeVisual
 var melee_world:MeleeVisual
@@ -386,7 +387,9 @@ func visual(dt:float,p:Dictionary,now:float):
 		if signature!=item_signature:
 			item_signature=signature
 			for child in item_model.get_children():item_model.remove_child(child);child.queue_free()
-			var first=GadgetVisual.new();item_model.add_child(first);first.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
+			var first=GadgetVisual.new();first.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
+			if is_instance_valid(view_item):view_item.queue_free()
+			view_item=holder_for(first,first.right_socket,first.left_socket,first.two_handed);view_item.position=Vector3(-.14,.06,.12);item_model.add_child(view_item)
 			if is_instance_valid(held_holder):held_holder.queue_free()
 			gadget_world=GadgetVisual.new();gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
 			held_holder=holder_for(gadget_world,gadget_world.right_socket,gadget_world.left_socket,gadget_world.two_handed)
@@ -464,12 +467,10 @@ func visual(dt:float,p:Dictionary,now:float):
 	gun.position=gun.position.lerp(base,1.-exp(-dt*20));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22))
 	var cooking=p.get("cooking",0)>0
 	var throwing=p.get("throw_until",0)>now
-	for held_item in item_model.get_children():
-		var payload=held_item.get_node_or_null("Payload")
-		if payload:payload.visible=not throwing
-	if is_instance_valid(gadget_world):
-		var payload=gadget_world.get_node_or_null("Payload")
-		if payload:payload.visible=not throwing
+	for carried in [view_item,gadget_world]:
+		if is_instance_valid(carried):
+			var payload=carried.find_child("Payload",true,false)
+			if payload:payload.visible=not throwing
 	item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
 	if is_instance_valid(view_weapon):
 		view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now)
@@ -496,10 +497,17 @@ func visual(dt:float,p:Dictionary,now:float):
 var view_head_offset=Vector3(0,1.62,0)
 func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if not is_instance_valid(view_body):return
+	var item_up=is_instance_valid(view_item) and item_model.visible
+	if is_instance_valid(view_item):view_item.visible=item_up
+	var bomb_up=is_instance_valid(bomb_view) and bomb_view.visible
+	var melee_up=is_instance_valid(melee_view) and melee_view.visible and not bomb_up
 	var weapon_up=is_instance_valid(view_weapon) and view_weapon.visible
-	view_body.visible=weapon_up
-	if not weapon_up:return
-	if view_body.held!=view_weapon:view_body.hold(view_weapon)
+	view_body.visible=weapon_up or item_up or melee_up or bomb_up
+	if not view_body.visible:return
+	var carried:Node3D=bomb_view if bomb_up else melee_view if melee_up else view_item if item_up else view_weapon
+	if view_body.held!=carried:
+		if carried==bomb_view:view_body.hold(carried,false)
+		else:var keep=carried.global_transform;view_body.hold(carried);carried.global_transform=keep
 	var yaw=Basis(Vector3.UP,aim_yaw)
 	# View-model convention: a slightly larger body and a compact gun keep both
 	# hands on long rifles with the short cartoon arms.
@@ -509,6 +517,9 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	view_body.global_position=camera.global_position-yaw*view_head_offset+yaw*Vector3(0,-.30,-.30)
 	var state=pose_state(p,now,progress,false);state.velocity=Vector3.ZERO;state.hold=GunLooks.hold_kind(game.current_weapon(p))
 	if state.hold=="shoulder":state.hold="rifle"
+	if item_up:state.hold="item";state.two_hands=bool(view_item.get_meta("two_handed",false))
+	if melee_up:state.hold="item";state.two_hands=false;state.erase("melee")
+	if bomb_up:state.hold="item";state.two_hands=true;state.point=true;state.erase("plant")
 	state.hands=1.;state.sprint=false
 	view_body.drive(dt,state)
 	view_head_offset=yaw.inverse()*(view_body.head_position()-view_body.global_position)

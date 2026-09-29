@@ -79,6 +79,23 @@ static func grip_fingers(hero:HeroCharacter) -> Dictionary:
 			var b=hero.skeleton.find_bone(bone_name)
 			if b>=0:out[side][b]=anim.rotation_track_interpolate(t,float(FINGER_SOURCE[side][1]))
 	fingers[hero.role]=out;return out
-static func curl(hero:HeroCharacter,side:String,weight:float):
+# `pointing` keeps the index finger straight (bind pose) for pressing buttons.
+static func curl(hero:HeroCharacter,side:String,weight:float,pointing:bool=false):
 	var poses:Dictionary=grip_fingers(hero)[side]
-	for b in poses:hero.skeleton.set_bone_pose_rotation(b,hero.skeleton.get_bone_pose_rotation(b).slerp(poses[b],weight))
+	for b in poses:
+		var target:Quaternion=poses[b]
+		if pointing and hero.skeleton.get_bone_name(b).begins_with("Index"):target=straight(hero,b)
+		hero.skeleton.set_bone_pose_rotation(b,hero.skeleton.get_bone_pose_rotation(b).slerp(target,weight))
+# Local rotation of a bone in the skin bind (T) pose: a straight finger.
+static var straight_cache={}
+static func straight(hero:HeroCharacter,bone:int) -> Quaternion:
+	var key=str([hero.role,bone])
+	if not straight_cache.has(key):
+		var skin:Skin
+		for m in hero.meshes():
+			if m.skin:skin=m.skin;break
+		var binds={}
+		for i in range(skin.get_bind_count()):binds[skin.get_bind_bone(i) if skin.get_bind_name(i)=="" else hero.skeleton.find_bone(skin.get_bind_name(i))]=skin.get_bind_pose(i).affine_inverse()
+		var parent=hero.skeleton.get_bone_parent(bone)
+		straight_cache[key]=(binds[parent].basis.get_rotation_quaternion().inverse()*binds[bone].basis.get_rotation_quaternion()).normalized() if binds.has(parent) and binds.has(bone) else hero.skeleton.get_bone_pose_rotation(bone)
+	return straight_cache[key]

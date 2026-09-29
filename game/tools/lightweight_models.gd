@@ -23,21 +23,8 @@ func save_scene(node:Node,path:String) -> bool:
 	return packed.pack(node)==OK and ResourceSaver.save(packed,path,ResourceSaver.FLAG_COMPRESS)==OK
 func run():
 	var operator_indices=0;var weapon_indices=0;var map_indices=0
-	for role in range(6):
-		for team in range(2):
-			var path="res://assets/models/operator_%d_%d.scn"%[role,team]
-			var node=load(path).instantiate();root.add_child(node)
-			# Original comic geometry already has native distance LODs and skinning.
-			operator_indices+=prepare_meshes(node,false)
-			if not save_scene(node,path):quit(1);return
-			node.free();await process_frame
-	Catalog.load_all()
-	for id in Catalog.weapons:
-		var path="res://assets/models/weapon_"+id+".scn"
-		var node=load(path).instantiate();root.add_child(node)
-		weapon_indices+=prepare_meshes(node,true)
-		if not save_scene(node,path):quit(1);return
-		node.free();await process_frame
+	# 1.4 heroes/weapons ship as committed bakes (assets/heroes, assets/weapons);
+	# their meshes are already game-sized, so only the arenas are processed here.
 	for index in range(Rules.MAPS.size()):
 		var path="res://assets/arenas/complete/map_%02d.scn"%index
 		var node=load(path).instantiate();root.add_child(node)

@@ -16,11 +16,8 @@ func _process(dt:float):
 		var key=str(request)
 		if done.has(key):continue
 		done[key]=true
-		if request[0]=="grip":_grip(request[1],request[2])
-		else:GadgetVisual.prepare(request[1],request[2],request[3],request[4])
+		GadgetVisual.prepare(request[1],request[2],request[3],request[4])
 		return
-func _grip(role:int,radius:float):
-	var grip=HeldGrip.new();grip.build(role,radius);grip.free()
 func pending() -> Array:
 	var list=[]
 	var ids=game.players.keys();ids.sort_custom(func(a,b):return a==game.local_id and b!=game.local_id)
@@ -31,5 +28,4 @@ func pending() -> Array:
 		if role==3:
 			list.append(["gadget",role,gadget,false,true])
 			if id==game.local_id:list.append(["gadget",role,gadget,true,true])
-		if int(game.options.mode)==4:list.append(["grip",role,.024])
 	return list
