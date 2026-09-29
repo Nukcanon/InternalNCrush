@@ -6,13 +6,16 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	dialog.transparent_bg=true
 	# Menus are laid out at 1280x720 and scaled; dialogs follow the same scale.
 	var factor=scale_factor(dialog)
-	if absf(factor-1.)>.01:
-		dialog.content_scale_factor=factor
-		# The title bar is drawn by the parent window: scale it explicitly.
-		dialog.add_theme_font_size_override("title_font_size",roundi(20*factor));dialog.add_theme_constant_override("title_height",roundi(36*factor))
-		var border=theme.get_stylebox("embedded_border","Window")
-		if border is StyleBoxFlat:
-			border=border.duplicate();border.expand_margin_top=40*factor;border.expand_margin_left=8*factor;border.expand_margin_right=8*factor;border.expand_margin_bottom=8*factor;border.set_border_width_all(roundi(4*factor));border.set_corner_radius_all(roundi(16*factor));dialog.add_theme_stylebox_override("embedded_border",border);dialog.add_theme_stylebox_override("embedded_unfocused_border",border)
+	# The title bar is drawn by the parent window: size it like the body text
+	# (28 px on touch, 20 px on desktop) and scale it explicitly.
+	var title_size=theme.default_font_size if theme.has_default_font_size() else 20
+	var bar=title_size+20 # title bar tall enough for the larger touch title
+	dialog.add_theme_font_size_override("title_font_size",roundi(title_size*factor));dialog.add_theme_constant_override("title_height",roundi(bar*factor))
+	if absf(factor-1.)>.01:dialog.content_scale_factor=factor
+	# The outline is drawn outside the body; its top margin is the title bar.
+	var border=theme.get_stylebox("embedded_border","Window")
+	if border is StyleBoxFlat:
+		border=border.duplicate();border.expand_margin_top=bar*factor;border.expand_margin_left=8*factor;border.expand_margin_right=8*factor;border.expand_margin_bottom=8*factor;border.set_border_width_all(roundi(4*factor));border.set_corner_radius_all(roundi(16*factor));dialog.add_theme_stylebox_override("embedded_border",border);dialog.add_theme_stylebox_override("embedded_unfocused_border",border)
 	# Late text changes still refit (normally a no-op: popup() already fitted).
 	dialog.about_to_popup.connect(func():
 		(func():
@@ -26,7 +29,8 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	# Ignore platform-specific OK/Cancel ordering; every confirmation is LTR.
 	row.layout_direction=Control.LAYOUT_DIRECTION_LTR
 	row.move_child(positive,row.get_child_count()-1)
-	row.alignment=BoxContainer.ALIGNMENT_END
+	# Touch: the pair sits centred under the message; desktop keeps the usual right alignment.
+	row.alignment=BoxContainer.ALIGNMENT_CENTER if TouchControls.supported() else BoxContainer.ALIGNMENT_END
 	# Buttons are as wide as their caption (at least 120 px); the window fits them.
 	# Equal buttons, as wide as the longest caption (also refreshed on popup).
 	var caption=120.

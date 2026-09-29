@@ -28,6 +28,8 @@ var muzzle:Marker3D
 var right_grip:Marker3D
 var left_grip:Marker3D
 var aim_point:Marker3D # rear sight / optic centre, lined up with the camera when aiming
+var launcher=false # rocket launcher built by LauncherModels (visible rounds)
+var rounds:Array=[] # Round<i> nodes of a launcher, front to back order of loading
 var magazine:Node3D
 var mag_rest=Transform3D.IDENTITY
 var flash:Node3D
@@ -44,14 +46,19 @@ static func base_scene(name:String) -> PackedScene:
 	return bases[name]
 func build(w:Dictionary,ink:bool=false):
 	spec=w;outlined=ink;look=GunLooks.look(w)
-	base=GunLooks.build_tool(look.tool) if look.has("tool") else base_scene(look.base).instantiate()
+	launcher=look.has("launcher")
+	base=GunLooks.build_tool(look.tool) if look.has("tool") else LauncherModels.build(look.launcher) if launcher else base_scene(look.base).instantiate()
 	add_child(base)
 	base.scale=Vector3.ONE*float(look.get("scale",1.))
 	muzzle=base.get_node("Muzzle");right_grip=base.get_node("RightGrip");left_grip=base.get_node("LeftGrip")
 	var pistol=GunLooks.hold_kind(w)=="pistol"
-	aim_point=Marker3D.new();aim_point.name="AimPoint";base.add_child(aim_point)
-	aim_point.position=Vector3(0,muzzle.position.y+(.05 if pistol else .07),right_grip.position.z-(0. if pistol else .10))
+	if base.has_node("AimPoint"):aim_point=base.get_node("AimPoint")
+	else:
+		aim_point=Marker3D.new();aim_point.name="AimPoint";base.add_child(aim_point)
+		aim_point.position=Vector3(0,muzzle.position.y+(.05 if pistol else .07),right_grip.position.z-(0. if pistol else .10))
 	place_handles(base,look)
+	if launcher:
+		for i in range(int(base.get_meta("rounds",0))):rounds.append(base.get_node("Round%d"%i))
 	magazine=base.get_node_or_null("Magazine")
 	if magazine:mag_rest=magazine.transform
 	for mesh in base.find_children("*","MeshInstance3D",true,false):paint(mesh)
@@ -61,7 +68,8 @@ func build(w:Dictionary,ink:bool=false):
 		if kind=="dot":aim_point.position=Vector3(0,muzzle.position.y+.075,right_grip.position.z-.115)
 		elif kind=="scope":aim_point.position=Vector3(0,muzzle.position.y+.075,right_grip.position.z-.09)
 	muzzles=[muzzle];dual_guns=[base]
-	set_meta("grip_styles",{"R":"pistol","L":"support"})
+	# Launchers have vertical foregrips: both hands make a fist.
+	set_meta("grip_styles",{"R":"pistol","L":"pistol" if launcher else "support"})
 	if w.get("dual",false):
 		var second:Node3D=base_scene(look.base).instantiate();add_child(second);second.name="LeftPistol"
 		second.scale=base.scale;second.position=Vector3(-.2,0,.02)
@@ -86,8 +94,24 @@ static func place_handles(node:Node3D,l:Dictionary):
 	if h.has("right"):right.position=h.right
 	if h.has("left"):left.position=h.left;left.rotation=Vector3(0,0,.35)
 	if node.has_node("AimPoint") and h.has("sight"):node.get_node("AimPoint").position=h.sight
+## Launchers: show `count` loaded rockets; while reloading (`loading` 0..1) the
+## next rocket travels in from ahead of its tube (the support hand carries it).
+func set_rounds(count:int,loading:float=-1.):
+	if not launcher:return
+	for i in range(rounds.size()):
+		var round:Node3D=rounds[i];var seat:Vector3=round.get_meta("seat")
+		if i<count:round.visible=true;round.position=seat
+		elif i==count and loading>=.35:
+			var slide=smoothstep(.35,.8,loading)
+			round.visible=true;round.position=seat+Vector3(0,-.16,-.30-float(round.get_meta("length"))*.5).lerp(Vector3.ZERO,slide)
+		else:round.visible=false
+# Where the rocket being loaded sits (gun space) during reload progress `t`.
+func loading_round_position(count:int,t:float) -> Vector3:
+	if not launcher or count>=rounds.size():return Vector3.ZERO
+	var round:Node3D=rounds[count];var seat:Vector3=round.get_meta("seat")
+	return seat+Vector3(0,-.16,-.30-float(round.get_meta("length"))*.5).lerp(Vector3.ZERO,smoothstep(.35,.8,t))
 func paint(mesh:MeshInstance3D):
-	if look.has("tool"):
+	if look.has("tool") or launcher:
 		mesh.material_override=HeroStyle.toon_material(outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;return
 	var palette:Dictionary=look.get("palette",{})
 	for s in range(mesh.mesh.get_surface_count()):

@@ -1,6 +1,6 @@
 extends CanvasLayer
 const Reticle=preload("res://scripts/reticle.gd")
-const PRIMARY_ACTIONS=["확인","입장","참가","접속","장비 적용","구매하기","다음 부활부터 적용","방 만들기","방 만들고 참가","서버 연결","빠른 참가","팀 교환 적용","선택 적용","공개 방 만들기","검색하기","새로고침","다음 · 경기 시작"]
+const PRIMARY_ACTIONS=["확인","입장","참가","접속","장비 적용","구매하기","다음 부활부터 적용","방 만들기","방 만들고 참가","서버 연결","빠른 참가","팀 교환 적용","선택 적용","공개 방 만들기","검색하기","새로고침","경기 시작"]
 var hud_theme:Theme
 var map_viewer:MapViewer
 var map_refresh=Callable()
@@ -144,7 +144,9 @@ func _ready():
 	damage_indicator=DamageIndicator.new();damage_indicator.game=game;root.add_child(damage_indicator)
 	theme=Theme.new();install_check_icons();theme.default_font_size=28 if TouchControls.supported() else 20
 	if ResourceLoader.exists("res://assets/fonts/Rajdhani-SemiBold.ttf"):
-		var font=FontVariation.new();font.base_font=load("res://assets/fonts/Rajdhani-SemiBold.ttf");font.fallbacks=[load("res://assets/fonts/DoHyeon-Regular.ttf"),load("res://assets/Korean.ttf")];theme.default_font=font
+		# Symbols.ttf (Noto Sans KR subset: punctuation, arrows, shapes) comes first:
+		# DoHyeon lacks "·", "−", "…" and the Web build ships no full Korean font.
+		var font=FontVariation.new();font.base_font=load("res://assets/fonts/Rajdhani-SemiBold.ttf");font.fallbacks=[load("res://assets/fonts/DoHyeon-Regular.ttf"),load("res://assets/fonts/Symbols.ttf"),load("res://assets/Korean.ttf")];theme.default_font=font
 		for source_font in [font.base_font]+font.fallbacks:
 			source_font.multichannel_signed_distance_field=true;source_font.msdf_size=96
 	var style=StyleBoxFlat.new();style.bg_color=Color(.055,.09,.13,.86);style.border_color=Color("4c5f72");style.set_border_width_all(1);style.set_corner_radius_all(4);style.content_margin_left=18;style.content_margin_right=18;style.content_margin_top=12;style.content_margin_bottom=12
@@ -168,7 +170,7 @@ func _ready():
 	# 1.4: the dark theme stays with the in-match HUD; menus, lobbies and dialogs
 	# get the cartoon skin (explicitly assigned to each menu root).
 	hud_theme=theme
-	var menu_font=FontVariation.new();menu_font.base_font=load("res://assets/fonts/DoHyeon-Regular.ttf");menu_font.fallbacks=[load("res://assets/Korean.ttf")]
+	var menu_font=FontVariation.new();menu_font.base_font=load("res://assets/fonts/DoHyeon-Regular.ttf");menu_font.fallbacks=[load("res://assets/fonts/Symbols.ttf"),load("res://assets/Korean.ttf")]
 	theme=UiSkin.build(menu_font,TouchControls.supported())
 func clear_panel(keep_background=false):
 	if is_instance_valid(map_viewer):map_viewer.queue_free();map_viewer=null
@@ -317,6 +319,10 @@ func build_main_actions():
 	stack.add_child(HSeparator.new());button("게임 페이지" if OS.has_feature("web") else "게임 종료",func():
 		if OS.has_feature("web"):JavaScriptBridge.eval("window.location.href='https://nukcanon.github.io/nukcanon/internal-n-crush.html'")
 		else:game.exit_game())
+	# Desktop main menu: roomier buttons (1.5x the ordinary action height; the
+	# panel still fits a 720-unit screen).
+	for node in stack.find_children("*","Button",true,false):
+		if node is Button:node.custom_minimum_size.y=roundi(ACTION_HEIGHT*1.5)
 	notice_label=label("",17);update_version_badge()
 func scale_interface():
 	if is_instance_valid(role_cards):role_cards.columns=6 if get_viewport().get_visible_rect().size.x>=1100 else 3
@@ -366,7 +372,7 @@ func practice_menu():
 	map_selector()
 	ModeOptions.install(self)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
-	button("다음 · 경기 시작",func():
+	button("경기 시작",func():
 		if int(game.options.mode)==4:game.start_bot_match(bot_choice)
 		else:bot_setup=true;gear(),actions)
 	button("메인메뉴",menu,actions);pin_actions(actions)
@@ -677,7 +683,7 @@ func gear():
 	button("돌아가기",exit_gear,actions)
 	var spacer=Control.new();spacer.size_flags_horizontal=Control.SIZE_EXPAND_FILL;actions.add_child(spacer)
 	if int(game.options.mode)==4:
-		gear_buy_status=label("",14,actions);gear_buy_status.custom_minimum_size.x=125
+		gear_buy_status=label("",14,actions);gear_buy_status.custom_minimum_size.x=125;gear_buy_status.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;gear_buy_status.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;gear_buy_status.size_flags_vertical=Control.SIZE_EXPAND_FILL
 		gear_price=economy_box(actions,"선택 장비 가격",UiSkin.INK)
 		gear_cash=economy_box(actions,"보유 금액",UiSkin.GOLD)
 	else:
@@ -707,9 +713,10 @@ func submit_loadout():
 func economy_box(parent:Node,title:String,color:Color) -> Label:
 	var box=PanelContainer.new();box.custom_minimum_size=Vector2(158,66);parent.add_child(box)
 	box.add_theme_stylebox_override("panel",UiSkin.box(UiSkin.CARD_A,UiSkin.INK,3,5,14,Vector4(12,5,12,5)))
-	var content=VBoxContainer.new();content.add_theme_constant_override("separation",0);box.add_child(content)
-	var caption=label(title,14,content);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;caption.autowrap_mode=TextServer.AUTOWRAP_OFF
-	var value=label("0",32,content);value.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;value.autowrap_mode=TextServer.AUTOWRAP_OFF;value.add_theme_color_override("font_color",color)
+	# Caption and value are centred in the box both ways.
+	var content=VBoxContainer.new();content.add_theme_constant_override("separation",0);content.alignment=BoxContainer.ALIGNMENT_CENTER;content.size_flags_vertical=Control.SIZE_EXPAND_FILL;box.add_child(content)
+	var caption=label(title,14,content);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;caption.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;caption.autowrap_mode=TextServer.AUTOWRAP_OFF
+	var value=label("0",32,content);value.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;value.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;value.autowrap_mode=TextServer.AUTOWRAP_OFF;value.size_flags_vertical=Control.SIZE_EXPAND_FILL;value.add_theme_color_override("font_color",color)
 	return value
 func refresh_gear_economy():
 	if screen!="gear" or not is_instance_valid(gear_price) or weapon_ids.is_empty() or bot_setup:return

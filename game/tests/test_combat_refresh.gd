@@ -42,7 +42,10 @@ func run():
 	p.primary="h5";p.mag.h5=0;p.reserve.h5=4;p.reload=0.;g.begin_reload(1);g.clock=p.reload;MagazineReload.finish(g,1)
 	expect(p.mag.h5==1 and p.reserve.h5==3 and p.reload>g.clock,"QUAD loads one at a time and continues")
 	p.fire_ready=0.;p.switch_until=0.;a.last_sprint=false;a.sprint_release=0.;a.input_state.fire=true;a.input_state.trigger_seq=1;p.trigger_seen=0;p.fire_prev=false;g.process_trigger(1)
-	expect(p.mag.h5==0 and g.rockets.size()==1,"QUAD fires an inserted round during reload")
+	# 1.4.1: interrupting the tube reload settles for 0.2 s, then the queued shot leaves.
+	expect(p.reload<=0. and p.fire_ready>=g.clock+.19 and p.mag.h5==1,"interrupted QUAD reload settles before firing")
+	g.clock+=.25;g.process_trigger(1)
+	expect(p.mag.h5==0 and g.rockets.size()==1 and p.reload>g.clock,"QUAD fires an inserted round during reload; empty tubes reload by themselves")
 	p.role=2;p.primary="h6";p.mag.h6=600.;p.reload=0.;p.switch_until=0.;p.laser_heat=0.;p.laser_lock=0.;p.fire_ready=0.;a.last_sprint=false;a.sprint_release=0.;a.input_state.fire=true;a.input_state.ads=false;a.aim_yaw=PI
 	for i in range(40):g.clock+=.1;LaserCombat.tick(g,1,.1)
 	expect(is_equal_approx(p.laser_heat,1.) and p.laser_lock>g.clock,"laser overheats at 4 seconds")

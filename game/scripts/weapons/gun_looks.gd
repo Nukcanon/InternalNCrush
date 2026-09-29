@@ -39,8 +39,9 @@ static var LOOKS={
 	"FEATHER":{"base":"Pistol","scale":.98,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
 	"DUET":{"base":"Revolver_Small","scale":.95,"palette":palette(Color("7a808a"),DARK,Color("ffcf6b"),DARK)},
 	"MENDER":{"base":"Shotgun","scale":.88,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
-	"COMET":{"base":"RocketLauncher","scale":.82,"palette":palette(Color("56606c"),DARK,LIGHT),"shoulder":true},
-	"QUAD":{"base":"GrenadeLauncher","scale":1.1,"palette":palette(Color("5c6b4a"),DARK,Color("b9c98f"),DARK)},
+	# 1.4.1: launchers are built in code (LauncherModels) so the tubes show the rockets they hold.
+	"COMET":{"launcher":"comet","scale":.9,"palette":{},"shoulder":true},
+	"QUAD":{"launcher":"quad","scale":1.,"palette":{}},
 	"LINK":{"tool":"link","palette":{}},
 	"FIX · 원격 수리 도구":{"tool":"fix","palette":{}},
 	"TETHER · 포탑 원격 조종기":{"tool":"tether","palette":{}},
@@ -49,7 +50,7 @@ static func look(w:Dictionary) -> Dictionary:
 	return LOOKS.get(str(w.get("name","")),{"base":"Pistol" if int(w.get("slot",0))==1 else "AK","scale":1.,"palette":palette(STEEL,DARK,LIGHT)})
 static func hold_kind(w:Dictionary) -> String:
 	if look(w).has("tool"):return "item" if look(w).tool=="tether" else "pistol"
-	var b=str(look(w).base)
+	var b=str(look(w).get("base",""))
 	if b in ["Pistol","Revolver","Revolver_Small"]:return "pistol"
 	if bool(look(w).get("shoulder",false)):return "shoulder"
 	return "rifle"

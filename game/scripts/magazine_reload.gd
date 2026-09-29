@@ -3,6 +3,9 @@ extends RefCounted
 static func settle(g:Node,p:Dictionary,w:Dictionary):
 	if w.get("single_load",false) and w.reload_style in ["shell","break"]:
 		p.fire_ready=maxf(float(p.fire_ready),g.clock+.3)
+	elif w.get("single_load",false) and w.reload_style=="rocket":
+		# Interrupting a tube-by-tube rocket reload: a short settle before the shot.
+		p.fire_ready=maxf(float(p.fire_ready),g.clock+.2)
 static func chambered(w:Dictionary) -> bool:
 	return w.kind=="gun" and not w.get("rocket",false) and not w.get("laser",false) and w.name!="CHIME" and w.reload_style not in ["shell","break","box"]
 static func capacity(w:Dictionary,rounds:int) -> int:

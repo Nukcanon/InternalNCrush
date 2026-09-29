@@ -1087,7 +1087,12 @@ func fire(id:int):
 	if w.kind=="repair":repair(id);return
 	if int(p.mag.get(wid,0))<=0:begin_reload(id);return
 	p.mag[wid]-=1;p.fire_ready=clock+float(w.interval)
-	if w.get("rocket",false):RocketCombat.launch(self,id,w);begin_reload(id);return
+	if w.get("rocket",false):
+		# A launcher only reloads by itself when its tubes are empty; a QUAD
+		# fired mid-reload stays as loaded until reload is pressed again.
+		RocketCombat.launch(self,id,w)
+		if int(p.mag[wid])==0:begin_reload(id)
+		return
 	var spread=a.spread_angle
 	var spray=AimModel.current_spray(w,p,a.aim_progress,bool(a.input_state.crouch))
 	if GadgetLoadout.mounted(p,bool(a.input_state.crouch)):spray*=.4
@@ -1548,7 +1553,9 @@ func broadcast_state(force:bool,target_peer:int=0):
 		for peer in multiplayer.get_peers():
 			if (target_peer!=0 and peer!=target_peer) or not players.has(peer):continue
 			var link=multiplayer.multiplayer_peer.get_peer(peer)
-			if link is ENetPacketPeer and link.get_state()!=ENetPacketPeer.STATE_CONNECTED:continue
+			# A peer that is still handshaking or already tearing down has no
+			# channels yet: sending would only log "Unable to send packet".
+			if link is ENetPacketPeer and (link.get_state()!=ENetPacketPeer.STATE_CONNECTED or link.get_channels()==0):continue
 			if link is WebSocketPeer and (link.get_ready_state()!=WebSocketPeer.STATE_OPEN or link.get_current_outbound_buffered_amount()>24000):continue
 			if link is Dictionary and (not link.get("connected",false) or link.get("channels",[]).any(func(channel):return channel.get_ready_state()!=WebRTCDataChannel.STATE_OPEN)):continue
 			# Reliable syncs carry the same deflated bytes as snapshots. A raw

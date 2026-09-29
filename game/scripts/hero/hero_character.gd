@@ -217,6 +217,13 @@ func solve_hands(s:Dictionary):
 			var style=str(styles.R)
 			HeroIK.solve_arm(self,"R",HeroIK.wrist_target(right.global_transform,"R",style,hand_scale),weight,true);HeroIK.curl(self,"R",weight,style,point)
 		else:HeroIK.solve_arm(self,"R",right.global_transform,weight);HeroIK.curl(self,"R",weight,"pistol",point)
+	# Reloading (or pumping): the support hand works the gun instead of gripping it.
+	if held is GunModel and styles.has("L"):
+		var work:Dictionary=ReloadMotion.support(held,s)
+		if not work.is_empty():
+			var handle=held.global_transform*Transform3D(Basis.IDENTITY,work.position)
+			HeroIK.solve_arm(self,"L",HeroIK.wrist_target(handle,"L",str(work.style),hand_scale),weight,true);HeroIK.curl(self,"L",weight,str(work.style))
+			return
 	if bool(s.get("two_hands",true)):
 		if left==null:return
 		var lw=weight*float(s.get("left_hand",1.))

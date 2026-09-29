@@ -340,6 +340,8 @@ func pose_state(p:Dictionary,now:float,progress:float,item_visible:bool) -> Dict
 		"sprint":net_sprint if networked else last_sprint,"pitch":aim_pitch,"reload":progress,"reload_time":float(w.get("reload",2.)),
 		"shot":now-float(p.get("shot_time",-100.)),"hit":clampf(1.-(now-hit_time)/.3,0.,1.),"melee":now-float(p.get("melee_started",-100.))}
 	if p.is_empty():return s
+	# Reload hand work needs the chambered-round rule and the tube count.
+	s.reload_tactical=bool(p.get("reload_tactical",false));s.rounds=int(p.get("mag",{}).get(p.primary if p.slot==0 else p.secondary,0))
 	if p.get("slide_until",0)>now:s.slide=clampf((now-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.)
 	if p.get("cooking",0)>0 or float(p.get("throw_until",-100.))>now:
 		s.throw=clampf((now-float(p.get("grenade_started",now)))/maxf(.2,float(p.get("throw_until",now+.3))-float(p.get("grenade_started",now))),0.,1.)
@@ -424,7 +426,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	elif is_instance_valid(world_weapon):character.hold(world_weapon)
 	if is_instance_valid(world_weapon):
 		world_weapon.visible=state.hold in ["rifle","pistol"]
-		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.animate_reload(progress,recoil,age);world_weapon.set_rounds(int(p.mag.get(wid,0)),progress)
 		world_weapon.position=Vector3(0,0,recoil*.045);world_weapon.rotation=Vector3(recoil*.10,0,0)
 	if is_instance_valid(held_holder):held_holder.visible=state.hold=="item"
 	character.drive(dt,state)
@@ -490,7 +492,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
 	if is_instance_valid(view_weapon):
 		view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now)
-		view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.animate_reload(progress,recoil,age)
+		view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.animate_reload(progress,recoil,age);view_weapon.set_rounds(int(p.mag.get(wid,0)),progress)
 		# Hip: the right handle sits at the anchor (a pair is centred on it).
 		# Aim: the rear sight sits a little below the camera axis, close enough
 		# that only the gun from the sight forward is in view; a pair only

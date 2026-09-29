@@ -51,6 +51,21 @@ func run():
 	# Grenade held (cooking) in one hand.
 	p.slot=2;p.gadget=1;p.cooking=1;p.grenade_started=g.clock-.4;await settle([a]);await shot("fp-grenade-cook")
 	p.cooking=0;p.erase("grenade_started");p.slot=0
+	# Reload hand work: three phases per reload style (magazine out, swap, rack /
+	# shell to port / rocket into the tube), plus the launchers at rest.
+	for entry in [["a1",0,"rifle"],["pistol",1,"pistol"],["e1",0,"shotgun"],["h4",0,"comet"],["h5",0,"quad"],["h6",0,"laser"]]:
+		p.slot=entry[1]
+		if entry[1]==0:p.primary=entry[0]
+		else:p.secondary=entry[0]
+		a.shown_weapon="";p.reload=0.;p.mag[entry[0]]=0 if entry[2]!="quad" else 2;await settle([a])
+		if entry[2] in ["comet","quad"]:
+			p.mag[entry[0]]=1 if entry[2]=="comet" else 4;await settle([a]);await shot("fp-%s-loaded"%entry[2]);p.mag[entry[0]]=0 if entry[2]=="comet" else 2
+		var w=Catalog.get_weapon(entry[0]);p.reload_tactical=false;p.reload_weapon=entry[0]
+		for phase in [.15,.45,.7,.9]:
+			p.reload=g.clock+float(w.reload)*(1.-phase);p.reload_started=g.clock-float(w.reload)*phase
+			await settle([a],3);await shot("fp-reload-%s-%02d"%[entry[2],int(phase*100)])
+		p.reload=0.;p.mag[entry[0]]=int(w.mag)
+	p.slot=0;p.primary="a1";a.shown_weapon="";await settle([a])
 	# Left-handed (mirrored) player: rifle, aim, pistol, pair and knife.
 	p.hand=-1;p.primary="a1";a.shown_weapon="";await settle([a]);await shot("fp-left-rifle-hip")
 	aim.call(true);await settle([a]);await shot("fp-left-rifle-aim");aim.call(false)
@@ -73,7 +88,12 @@ func run():
 	a.set_local(false);a.visible=false
 	var camera=Camera3D.new();root.add_child(camera);camera.fov=55;camera.current=true
 	camera.position=a.position+Vector3(0,1.7,-1.2);camera.look_at(a.position+Vector3(0,1.1,-5.))
+	# BOT0 (rifle) and BOT2 (pistol) are mid-reload: the support hand works the gun.
+	for k in [0,2]:
+		var q=g.players[-(k+1)];var wq=Catalog.get_weapon(q.primary if q.slot==0 else q.secondary)
+		q.reload=g.clock+float(wq.reload)*.55;q.reload_started=g.clock-float(wq.reload)*.45;q.reload_tactical=false;q.reload_weapon=q.primary if q.slot==0 else q.secondary
 	await settle(group,30);await shot("tp-group")
+	for k in [0,2]:g.players[-(k+1)].reload=0.
 	for i in range(group.size()):group[i].input_state.crouch=i%2==0;group[i].aim_pitch=-.25+i*.1
 	await settle(group,30);await shot("tp-group-crouch-pitch")
 	# Close-up of the held items from the side.
