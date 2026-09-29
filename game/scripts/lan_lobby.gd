@@ -24,7 +24,7 @@ func show():
 	# Only the room list scrolls; the title, connection status and actions stay visible.
 	ui.stack.reparent(ui.panel_body);ui.panel_body.move_child(ui.stack,0)
 	ui.panel_scroll.queue_free();ui.panel_scroll=null
-	ui.panel.position.y=63;ui.panel.custom_minimum_size.y=632
+	ui.panel.position.y=63;ui.panel.custom_minimum_size.y=560 if TouchControls.supported() else 632
 	ui.stack.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	ui.stack.add_theme_constant_override("separation",8)
 	var hint=ui.label("같은 네트워크의 방에 참가하거나 새로운 방을 만드세요.",18)
@@ -41,7 +41,7 @@ func show():
 	column(heading,"참가",150 if TouchControls.supported() else 112)
 	room_scroll=ScrollContainer.new();room_scroll.name="RoomsScroll"
 	room_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
-	room_scroll.custom_minimum_size.y=220;room_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	room_scroll.custom_minimum_size.y=110 if TouchControls.supported() else 220;room_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	ui.stack.add_child(room_scroll)
 	ui.room_list=VBoxContainer.new();ui.room_list.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	ui.room_list.add_theme_constant_override("separation",8);room_scroll.add_child(ui.room_list)

@@ -9,6 +9,7 @@ func shot(name:String):
 	root.get_texture().get_image().save_png(OUT+name+".png")
 func run():
 	DirAccess.make_dir_recursive_absolute(OUT)
+	TouchControls.supported_cache=1
 	g=load("res://scripts/game.gd").new();root.add_child(g)
 	for i in range(20):await process_frame
 	for setup in [["phone",Vector2i(2400,1080),1],["4x3",Vector2i(1024,768),0]]:
@@ -24,4 +25,6 @@ func run():
 		ui.navigation_confirm.queue_free();ui.navigation_confirm=null
 		ui.bot_setup=true;ui.bot_choice={"role":0,"primary":"a1","secondary":"pistol","armor_max":0,"gadget":0,"team":0};ui.gear();await shot(setup[0]+"-loadout")
 		ui.bot_setup=false;ui.menu()
+		ui.settings();await shot(setup[0]+"-settings")
+		ui.menu()
 	quit()

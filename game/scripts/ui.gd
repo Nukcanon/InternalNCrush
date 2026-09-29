@@ -98,7 +98,12 @@ var quick_join:Control
 var quick_join_mode=-1
 var lobby_connect_button:Button
 const MENU_SCALE=.88
-var ACTION_HEIGHT=84 if TouchControls.supported() else 40
+# Evaluated on use: touch detection can change after the UI node is created.
+# Touch targets stay at least ~9 mm tall on phones (layout px x screen scale).
+var ACTION_HEIGHT:int:
+	get:return 96 if TouchControls.supported() else 40
+var MENU_SCALE_NOW:float:
+	get:return 1. if TouchControls.supported() else MENU_SCALE
 func menu_key(event:InputEvent) -> bool:
 	if not event is InputEventKey or not event.pressed or event.echo:return false
 	if event.alt_pressed or event.ctrl_pressed or event.meta_pressed:return false
@@ -183,7 +188,7 @@ func make_panel(title:String,width=640,compact=false):
 	if is_instance_valid(background):
 		for child in background.get_children():
 			if child is Label or child==version_box or child.has_meta("menu_brand"):child.hide()
-	panel=PanelContainer.new();panel.theme=theme;panel.z_index=100;panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);keep_proportion(panel,MENU_SCALE);panel.set_meta("center_panel",true)
+	panel=PanelContainer.new();panel.theme=theme;panel.z_index=100;panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);keep_proportion(panel,MENU_SCALE_NOW);panel.set_meta("center_panel",true)
 	panel.minimum_size_changed.connect(func():
 		if is_instance_valid(panel):panel.set_deferred("size",panel.get_combined_minimum_size())
 	)
@@ -193,7 +198,7 @@ func make_panel(title:String,width=640,compact=false):
 			panel.position=(root.size-panel.size*panel.scale)*.5
 	)
 	panel_body=VBoxContainer.new();panel_body.add_theme_constant_override("separation",14);panel.add_child(panel_body)
-	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,560);panel_body.add_child(scroll)
+	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,500 if TouchControls.supported() else 560);panel_body.add_child(scroll)
 	var inset=MarginContainer.new();inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;inset.add_theme_constant_override("margin_right",0);scroll.add_child(inset)
 	var bar=scroll.get_v_scroll_bar()
 	bar.visibility_changed.connect(func():inset.add_theme_constant_override("margin_right",18 if bar.visible else 0))
@@ -203,7 +208,7 @@ func make_panel(title:String,width=640,compact=false):
 func pin_actions(node:Control):
 	node.set_meta("pinned_actions",true)
 	node.get_parent().remove_child(node);panel_body.add_child(node)
-	panel_scroll.custom_minimum_size.y=535
+	panel_scroll.custom_minimum_size.y=470 if TouchControls.supported() else 535
 	if node is BoxContainer:
 		node.alignment=BoxContainer.ALIGNMENT_END
 		for child in node.get_children():
@@ -261,7 +266,7 @@ func install_check_icons():
 		var texture=ImageTexture.create_from_image(image)
 		for key in (["checked","checked_disabled"] if selected else ["unchecked","unchecked_disabled"]):theme.set_icon(key,"CheckBox",texture)
 func check(title:String,value:bool,callback:Callable) -> CheckBox:
-	var b=CheckBox.new();b.text=title;b.button_pressed=value;b.toggled.connect(callback);b.custom_minimum_size.y=40
+	var b=CheckBox.new();b.text=title;b.button_pressed=value;b.toggled.connect(callback);b.custom_minimum_size.y=64 if TouchControls.supported() else 40
 	# Keep icon/text in the exact same layout for normal, hover and toggled states.
 	var style=StyleBoxEmpty.new();style.content_margin_left=8;style.content_margin_right=8;style.content_margin_top=6;style.content_margin_bottom=6
 	for state in ["normal","hover","pressed","hover_pressed","disabled","focus"]:b.add_theme_stylebox_override(state,style)
@@ -276,7 +281,7 @@ func menu():
 	clear_panel(true);screen="menu";Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	ensure_menu_background()
 	for child in background.get_children():child.show()
-	panel=PanelContainer.new();panel.theme=theme;panel.position=Vector2(795,94);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);keep_proportion(panel,MENU_SCALE)
+	panel=PanelContainer.new();panel.theme=theme;panel.position=Vector2(795,94);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);keep_proportion(panel,MENU_SCALE_NOW)
 	build_main_actions()
 func ensure_menu_background():
 	if is_instance_valid(background):return
@@ -1143,7 +1148,7 @@ func build_touch_main_actions():
 		if child is Label or child==version_box or child.has_meta("menu_brand"):child.hide()
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",14);panel.add_child(stack)
 	label("INTERNAL N CRUSH",38)
-	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=64;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
+	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=84;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
 	var network_actions=[["온라인 로비",internet_menu]] if OS.has_feature("web") else [["내부망 로비",join_menu],["인터넷 로비",internet_menu]]
 	for items in [network_actions,[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)
