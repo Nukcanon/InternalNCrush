@@ -5,8 +5,8 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	# Rounded body corners show the window background: keep it transparent.
 	dialog.transparent_bg=true
 	# Menus are laid out at 1280x720 and scaled; dialogs follow the same scale.
-	var factor=clampf(dialog.get_tree().root.size.y/720.,1.,3.) if dialog.is_inside_tree() else 1.
-	if factor>1.01:
+	var factor=scale_factor(dialog)
+	if absf(factor-1.)>.01:
 		dialog.content_scale_factor=factor
 		# The title bar is drawn by the parent window: scale it explicitly.
 		dialog.add_theme_font_size_override("title_font_size",roundi(20*factor));dialog.add_theme_constant_override("title_height",roundi(36*factor))
@@ -50,7 +50,10 @@ static func finish_keyboard(dialog,accepted:bool):
 	if is_instance_valid(dialog) and not dialog.is_queued_for_deletion():dialog.set_meta("keyboard_close_pending",false)
 
 static func scale_factor(dialog:Window) -> float:
-	return clampf(dialog.get_tree().root.size.y/720.,1.,3.) if dialog.is_inside_tree() else 1.
+	# Same uniform scale as the menus (smaller axis of the 1280x720 layout).
+	if not dialog.is_inside_tree():return 1.
+	var size=Vector2(dialog.get_tree().root.size)
+	return clampf(minf(size.x/1280.,size.y/720.),.75,3.)
 ## Window size for the dialog's final message and buttons (equal-width
 ## buttons as wide as the longest caption), in window pixels.
 static func fitted_size(dialog:AcceptDialog) -> Vector2i:

@@ -105,7 +105,7 @@ func show_direct(ip="",room_name=""):
 	close_dialog()
 	dialog=Control.new();dialog.theme=ui.theme;dialog.name="DirectConnect";dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);dialog.z_index=100;ui.root.add_child(dialog)
 	var dim=ColorRect.new();dim.color=Color(0.01,.02,.04,.8);dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);dialog.add_child(dim)
-	var box=PanelContainer.new();box.set_anchors_and_offsets_preset(Control.PRESET_CENTER);box.position=Vector2(-320,-220);box.custom_minimum_size=Vector2(640,0);dialog.add_child(box)
+	var box=PanelContainer.new();box.set_anchors_and_offsets_preset(Control.PRESET_CENTER);box.position=Vector2(-320,-220);box.custom_minimum_size=Vector2(640,0);dialog.add_child(box);box.pivot_offset=Vector2(320,220);ui.keep_proportion(box)
 	var content=VBoxContainer.new();content.add_theme_constant_override("separation",16);box.add_child(content)
 	ui.label("IP로 접속" if room_name.is_empty() else "비밀번호가 있는 방",30,content)
 	var hint=ui.label("접속할 서버의 IP와 방 비밀번호를 입력하세요." if room_name.is_empty() else room_name.left(40),18,content);hint.modulate=UiSkin.MUTED

@@ -183,14 +183,14 @@ func make_panel(title:String,width=640,compact=false):
 	if is_instance_valid(background):
 		for child in background.get_children():
 			if child is Label or child==version_box or child.has_meta("menu_brand"):child.hide()
-	panel=PanelContainer.new();panel.theme=theme;panel.z_index=100;panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
+	panel=PanelContainer.new();panel.theme=theme;panel.z_index=100;panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);keep_proportion(panel,MENU_SCALE);panel.set_meta("center_panel",true)
 	panel.minimum_size_changed.connect(func():
 		if is_instance_valid(panel):panel.set_deferred("size",panel.get_combined_minimum_size())
 	)
 	panel.resized.connect(func():
 		if is_instance_valid(panel):
 			panel.set_deferred("size",Vector2(width,panel.get_combined_minimum_size().y))
-			panel.position=(root.size-panel.size*MENU_SCALE)*.5
+			panel.position=(root.size-panel.size*panel.scale)*.5
 	)
 	panel_body=VBoxContainer.new();panel_body.add_theme_constant_override("separation",14);panel.add_child(panel_body)
 	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,560);panel_body.add_child(scroll)
@@ -276,7 +276,7 @@ func menu():
 	clear_panel(true);screen="menu";Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	ensure_menu_background()
 	for child in background.get_children():child.show()
-	panel=PanelContainer.new();panel.theme=theme;panel.position=Vector2(795,94);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
+	panel=PanelContainer.new();panel.theme=theme;panel.position=Vector2(795,94);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);keep_proportion(panel,MENU_SCALE)
 	build_main_actions()
 func ensure_menu_background():
 	if is_instance_valid(background):return
@@ -288,10 +288,10 @@ func ensure_menu_background():
 	# A soft left-side wash keeps the logo readable over the live match.
 	var shade=TextureRect.new();var fade=GradientTexture2D.new();var ramp=Gradient.new();ramp.set_color(0,Color(.1,.14,.22,.55));ramp.set_color(1,Color(.1,.14,.22,0.));fade.gradient=ramp;fade.fill_to=Vector2(1,0)
 	shade.texture=fade;shade.stretch_mode=TextureRect.STRETCH_SCALE;shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(shade)
-	var brand=Label.new();brand.text="NUKCANON";brand.position=Vector2(70,96);brand.theme=theme;brand.add_theme_font_size_override("font_size",22);brand.add_theme_color_override("font_color",UiSkin.PRIMARY);brand.add_theme_color_override("font_outline_color",UiSkin.INK);brand.add_theme_constant_override("outline_size",8);background.add_child(brand)
-	var title=UiSkin.logo(background,"INTERNAL\nN CRUSH",Vector2(60,140),84);title.theme=theme;title.set_meta("menu_brand",true)
-	var intro=Label.new();intro.text="친구들과 함께 하는 카툰 슈터\n6개 병과 · 31개 전장 · 5개 게임 모드";intro.position=Vector2(70,400);intro.theme=theme;intro.add_theme_font_size_override("font_size",24);intro.add_theme_color_override("font_color",Color.WHITE);intro.add_theme_color_override("font_outline_color",UiSkin.INK);intro.add_theme_constant_override("outline_size",8);background.add_child(intro)
-	version_box=VBoxContainer.new();version_box.theme=theme;version_box.position=Vector2(68,545);version_box.custom_minimum_size.x=560;background.add_child(version_box)
+	var brand=Label.new();brand.text="NUKCANON";brand.position=Vector2(70,96);brand.theme=theme;brand.add_theme_font_size_override("font_size",22);brand.add_theme_color_override("font_color",UiSkin.PRIMARY);brand.add_theme_color_override("font_outline_color",UiSkin.INK);brand.add_theme_constant_override("outline_size",8);background.add_child(brand);keep_proportion(brand)
+	var title=UiSkin.logo(background,"INTERNAL\nN CRUSH",Vector2(60,140),84);title.theme=theme;title.set_meta("menu_brand",true);keep_proportion(title)
+	var intro=Label.new();intro.text="친구들과 함께 하는 카툰 슈터\n6개 병과 · 31개 전장 · 5개 게임 모드";intro.position=Vector2(70,400);intro.theme=theme;intro.add_theme_font_size_override("font_size",24);intro.add_theme_color_override("font_color",Color.WHITE);intro.add_theme_color_override("font_outline_color",UiSkin.INK);intro.add_theme_constant_override("outline_size",8);background.add_child(intro);keep_proportion(intro)
+	version_box=VBoxContainer.new();version_box.theme=theme;keep_proportion(version_box);version_box.position=Vector2(68,545);version_box.custom_minimum_size.x=560;background.add_child(version_box)
 func build_main_actions():
 	if TouchControls.supported():build_touch_main_actions();return
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",9);panel.add_child(stack)
@@ -318,6 +318,19 @@ func scale_interface():
 	if is_instance_valid(gear_tabs):gear_tabs.columns=5 if get_viewport().get_visible_rect().size.x>=1100 else 3
 	# Keep the established 1280x720 UI coordinates while rendering at the selected resolution.
 	root.scale=get_viewport().get_visible_rect().size/Vector2(1280,720)
+	# Menus, overlays and the logo keep their proportions on non-16:9 screens
+	# (4:3, ultrawide, phones); only the in-match HUD fills the canvas.
+	for node in root.find_children("*","Control",true,false):
+		if node.has_meta("uniform_base"):
+			node.scale=proportional(float(node.get_meta("uniform_base")))
+			if node.get_meta("center_panel",false):node.position=(root.size-node.size*node.scale)*.5
+## Counter-scale for root's per-axis scale: the node renders at a uniform scale.
+func proportional(base:float) -> Vector2:
+	var s:Vector2=root.scale if is_instance_valid(root) else Vector2.ONE
+	var k=minf(s.x,s.y)
+	return base*Vector2(k/maxf(s.x,.001),k/maxf(s.y,.001))
+func keep_proportion(node:Control,base:=1.):
+	node.set_meta("uniform_base",base);node.scale=proportional(base)
 func update_version_badge():
 	if screen!="menu" or not is_instance_valid(version_box):return
 	for child in version_box.get_children():version_box.remove_child(child);child.queue_free()
@@ -614,7 +627,7 @@ func gear():
 	make_panel("병과 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
 	if WeaponRules.mode(game.options)>0:
 		gear_category=2 if WeaponRules.mode(game.options)==1 else 1
-	var title=stack.get_child(stack.get_child_count()-1);stack.remove_child(title);var heading=HBoxContainer.new();stack.add_child(heading);heading.add_child(title);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button("맵 보기",show_current_map,heading)
+	var title=stack.get_child(stack.get_child_count()-1);stack.remove_child(title);var heading=HBoxContainer.new();stack.add_child(heading);heading.add_child(title);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button("맵 보기",show_current_map,heading).custom_minimum_size.x=190 if TouchControls.supported() else 130
 	if WeaponRules.mode(game.options)>0:label("칼 전용 · 가젯 사용 가능 · 스킬 사용 불가" if WeaponRules.mode(game.options)==1 else "권총 전용 · 가젯 사용 가능 · 스킬 사용 불가",18)
 	# Hidden selectors preserve one canonical loadout state for networking and menus.
 	gear_secondary=str(queued.get("secondary",p.secondary))
@@ -1060,7 +1073,7 @@ func quick_join_dialog():
 	quick_join=Control.new();quick_join.theme=theme;quick_join.name="QuickJoinDialog";quick_join.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quick_join.z_index=110;root.add_child(quick_join)
 	var dim=ColorRect.new();dim.color=Color(.01,.02,.04,.8);dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quick_join.add_child(dim)
 	var mobile=TouchControls.supported();var width=900. if mobile else 700.
-	var box=PanelContainer.new();box.set_anchors_and_offsets_preset(Control.PRESET_CENTER);box.position=Vector2(-width*.5,-250 if mobile else -200);box.custom_minimum_size=Vector2(width,0);quick_join.add_child(box)
+	var box=PanelContainer.new();box.set_anchors_and_offsets_preset(Control.PRESET_CENTER);box.position=Vector2(-width*.5,-250 if mobile else -200);box.custom_minimum_size=Vector2(width,0);quick_join.add_child(box);box.pivot_offset=Vector2(width*.5,250 if mobile else 200);keep_proportion(box)
 	var content=VBoxContainer.new();content.add_theme_constant_override("separation",14);box.add_child(content)
 	var title=label("빠른 참가",30,content);title.autowrap_mode=TextServer.AUTOWRAP_OFF
 	var hint=label("참가할 게임 모드를 선택하세요. 조건에 맞는 방에 자동으로 참가합니다.",18,content);hint.modulate=UiSkin.MUTED;hint.custom_minimum_size.x=width-40
@@ -1124,8 +1137,10 @@ func wait_internet_room(room_id:String):
 
 func build_touch_main_actions():
 	panel.position=Vector2(145,64);panel.custom_minimum_size=Vector2(1120,0)
+	# Centred horizontally at its proportional scale.
+	panel.position.x=(root.size.x-1120.*panel.scale.x)*.5
 	for child in background.get_children():
-		if child is Label or child==version_box:child.hide()
+		if child is Label or child==version_box or child.has_meta("menu_brand"):child.hide()
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",14);panel.add_child(stack)
 	label("INTERNAL N CRUSH",38)
 	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=64;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
