@@ -15,6 +15,9 @@ func run():
 	for i in range(30):await process_frame
 	var ui=g.ui
 	ui.menu();await shot("01-main-menu",90)
+	ui.host_settings();await shot("09-host-settings")
+	ui.training_menu();await shot("10-training")
+	ui.menu()
 	ui.settings();await shot("02-settings")
 	ui.practice_menu();await shot("03-bot-battle")
 	ui.bot_setup=true;ui.bot_choice={"role":0,"primary":"a1","secondary":"pistol","armor_max":0,"gadget":0,"team":0};ui.gear();await shot("04-loadout",30)

@@ -6,6 +6,11 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	var factor=clampf(dialog.get_tree().root.size.y/720.,1.,3.) if dialog.is_inside_tree() else 1.
 	if factor>1.01:
 		dialog.content_scale_factor=factor
+		# The title bar is drawn by the parent window: scale it explicitly.
+		dialog.add_theme_font_size_override("title_font_size",roundi(20*factor));dialog.add_theme_constant_override("title_height",roundi(36*factor))
+		var border=theme.get_stylebox("embedded_border","Window")
+		if border is StyleBoxFlat:
+			border=border.duplicate();border.expand_margin_top=36*factor;dialog.add_theme_stylebox_override("embedded_border",border);dialog.add_theme_stylebox_override("embedded_unfocused_border",border)
 		dialog.about_to_popup.connect(func():
 			(func():
 				if not is_instance_valid(dialog):return
