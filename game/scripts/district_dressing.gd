@@ -92,6 +92,8 @@ static func build(a:Node,plan:Dictionary):
 			for z in [footprint.position.z,footprint.end.z]:
 				var point=node.transform*Vector3(x,0,z);var levels=DistrictLayout.heights(a,point)
 				if levels.is_empty() or absf(float(levels[0])-pos.y)>.12:supported=false
+		# Never cover an objective or a navigation landing.
+		if (a.navigation_goals+a.zones).any(func(goal):return Vector2(goal.x-pos.x,goal.z-pos.z).length()<2.5+footprint.size.length()*.5 and absf(goal.y-pos.y)<2.):supported=false
 		if not supported:node.free();continue
 		if kind=="streetlight":
 			fixtures.append({"pos":node.transform*Vector3(0,4.3,.6),"direction":Vector3(0,-1,0),"color":Color("ffe2b0"),"range":9.,"energy":2.})

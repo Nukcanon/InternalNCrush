@@ -109,6 +109,10 @@ def is_symmetric(index):
 def terrain(index):
     rng = random.Random(900 + index)
     style = index % 4
+    # A sunken lane under a central hill would sit above the surrounding
+    # ground; tunnel maps use the stepped (side-high) profile instead.
+    if style == 0 and routes(index)[1]:
+        style = 3
     if style == 0:   # central hill
         h = rng.choice([2.8, 3.4, 4.2]); return ('z', [0, .24, .38, .62, .76, 1], [0, 0, h, h, 0, 0])
     if style == 1:   # central basin
@@ -126,6 +130,10 @@ def routes(index):
     # an unreachable island. Those maps use an elevated deck instead.
     if lower and MAP_KINDS[index] == 'diamond':
         upper, lower = (1, .22, .78, 4.8), None
+    # Central basins (terrain style 1) already give the map its vertical
+    # layer; a deck inside the bowl tangles its ramps with the basin slopes.
+    if index % 4 == 1:
+        upper = None
     return upper, lower
 
 REGULAR = range(19)

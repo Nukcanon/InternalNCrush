@@ -24,7 +24,9 @@ func run():
 				var normal=(points[2]-points[0]).cross(points[1]-points[0]).normalized()
 				for point in points:st.set_normal(normal);st.add_vertex(point)
 			st.index();var mesh=MeshInstance3D.new();mesh.mesh=st.commit();mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mesh.material_override=WorldSurface.material(group.kind,index,false,(1 if group.origin[0]>0 else 0)+(2 if group.origin[2]>0 else 0))
+			# The capture world has no lights: use the surface's unlit (baked key light) mode.
+			var surface_material:ShaderMaterial=WorldSurface.material(group.kind,index,false,(1 if group.origin[0]>0 else 0)+(2 if group.origin[2]>0 else 0)).duplicate()
+			surface_material.set_shader_parameter("dynamic_lighting",false);mesh.material_override=surface_material
 			mesh.set_meta("kind",group.kind);container.add_child(mesh);meshes.append(mesh)
 		# The training range adds walkable galleries after the district layout.
 		# Capture those actual surfaces as well, instead of showing the base map only.
@@ -39,7 +41,8 @@ func run():
 					var fraction=clampf((point.y-rect.position.y)/maxf(.001,rect.size.y),0.,1.)
 					st.set_normal(Vector3.UP);st.add_vertex(Vector3(point.x,lerpf(float(surface.low),float(surface.high),fraction)+.005,point.y))
 				var mesh=MeshInstance3D.new();mesh.mesh=st.commit();mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-				mesh.material_override=WorldSurface.material("upper",index,false,0);mesh.set_meta("kind","upper");container.add_child(mesh);meshes.append(mesh)
+				var gallery:ShaderMaterial=WorldSurface.material("upper",index,false,0).duplicate();gallery.set_shader_parameter("dynamic_lighting",false)
+				mesh.material_override=gallery;mesh.set_meta("kind","upper");container.add_child(mesh);meshes.append(mesh)
 			# Flush the temporary world's sky/render resources before disposing it.
 			for frame in range(3):await process_frame
 			arena.free()

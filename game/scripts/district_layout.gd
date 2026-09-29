@@ -118,6 +118,8 @@ static func build(a:Node,index:int):
 				if values.is_empty():continue
 				candidate.y=float(values[0]);var bucket=roundi(candidate.y)
 				if absf(candidate.y)<1.5 or seen.has(bucket) or not a.point_clear(candidate):continue
+				# Gate walls are added later by DistrictDressing; keep landings clear of them.
+				if plan.get("doors",[]).any(func(door):return Vector2(door[0]-candidate.x,door[1]-candidate.z).length()<float(maxf(door[4],door[5]))+2.):continue
 				# Roaming targets belong on broad landings, not clipped ramp edges.
 				var landing=true
 				for offset in [Vector3.LEFT,Vector3.RIGHT,Vector3.FORWARD,Vector3.BACK]:
@@ -133,7 +135,8 @@ static func build(a:Node,index:int):
 	# Cover is placed against courtyard edges, never in the centre of a route.
 	for goal in a.zones:
 		var pos=goal+Vector3(4.2,0,3.8)
-		if a.point_clear(pos) and a.point_clear(pos+Vector3(2,0,1)):a.crate(pos,Vector3(2.6,1.25,1.8))
+		var landing=a.navigation_goals.any(func(goal):return Vector2(goal.x-pos.x,goal.z-pos.z).length()<3.5 and absf(goal.y-pos.y)<2.)
+		if not landing and a.point_clear(pos) and a.point_clear(pos+Vector3(2,0,1)):a.crate(pos,Vector3(2.6,1.25,1.8))
 	validate_spawns(a)
 static func validate_spawns(a:Node):
 	# Dressing is added after candidate starts; reject starts covered by props.

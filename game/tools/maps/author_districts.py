@@ -147,13 +147,50 @@ for i,m in enumerate(old):
  if i<19:
   upper_chain,lower_chain,upper_height,lower_height=[],[],0.,0.
   up,low=layouts_v14.routes(i)
-  if up:upper_chain=list(_substring(LineString(paths[up[0]]),up[1],up[2],normalized=True).coords);upper_height=up[3]
+  if up:
+   # A deck never turns sharply (a hairpin would fold the deck onto itself):
+   # shrink the symmetric window until every interior turn is under 60 degrees.
+   def turns(chain):
+    worst=0.
+    for a,b,c in zip(chain,chain[1:],chain[2:]):
+     u=(b[0]-a[0],b[1]-a[1]);v=(c[0]-b[0],c[1]-b[1]);lu=math.hypot(*u);lv=math.hypot(*v)
+     if lu<1e-6 or lv<1e-6:continue
+     worst=max(worst,math.degrees(math.acos(max(-1.,min(1.,(u[0]*v[0]+u[1]*v[1])/lu/lv)))))
+    return worst
+   # Ramps also start on level ground: a ramp climbing a terrain slope adds
+   # both gradients (too steep to walk).
+   axis,stops,levels=layouts_v14.terrain(i)
+   def ground(q):
+    t=(q[0]/dim[0]) if axis=='x' else (q[1]/dim[1])
+    for (s0,s1),(h0,h1) in zip(zip(stops,stops[1:]),zip(levels,levels[1:])):
+     if s0<=t<=s1:return h0+(h1-h0)*(t-s0)/max(s1-s0,1e-9)
+    return levels[-1]
+   def ramps_level(chain):
+    line=LineString(chain);run=min(abs(up[3])*3.5,line.length*.45)
+    for d in [x*.5 for x in range(int(run*2)+1)]+[line.length-x*.5 for x in range(int(run*2)+1)]:
+     a=line.interpolate(max(0.,d-.5));b=line.interpolate(min(line.length,d+.5))
+     if abs(ground((a.x,a.y))-ground((b.x,b.y)))>.05:return False
+    return True
+   lo,hi=up[1],up[2]
+   while True:
+    upper_chain=list(_substring(LineString(paths[up[0]]),lo,hi,normalized=True).coords)
+    if (turns(upper_chain)<60. and ramps_level(upper_chain)) or hi-lo<.2:break
+    lo+=.01;hi-=.01
+   upper_height=up[3]
+   if turns(upper_chain)>=60. or not ramps_level(upper_chain) or LineString(upper_chain).length<abs(up[3])*7.5:upper_chain=[];upper_height=0.
   if low:lower_chain=list(_substring(LineString(paths[low[0]]),low[1],low[2],normalized=True).coords);lower_height=low[3]
  elif i<31:
   (upper_chain,upper_height),(lower_chain,lower_height)=vertical_routes(i,paths)
  else:upper_chain,lower_chain,upper_height,lower_height=paths[1],paths[0],4.2,-4.2
  if i not in BRIDGES and i!=31 and i>=19:upper_chain=[];lower_chain=[];upper_height=lower_height=0.
  upper=LineString(upper_chain).buffer(max(2.7,width*.70)/2,join_style=2) if upper_chain else Polygon()
+ if upper_chain and i<19:
+  # Ground passes beside each deck ramp: where a ramp is still low it blocks
+  # the lane beneath it, which would otherwise cut the lane into an island.
+  deck=LineString(upper_chain);run=min(abs(upper_height)*3.5,deck.length*.45)+2.
+  for a,b in [(0.,run),(deck.length-run,deck.length)]:
+   floor=unary_union([floor,_substring(deck,a,b).buffer(max(2.7,width*.70)/2+2.2,join_style=2)]).buffer(0)
+  border=box(0,0,*dim) if i in rects else floor.buffer(7 if cap>=16 else 4,join_style=2).simplify(2,preserve_topology=True)
  lower=LineString(lower_chain).buffer(max(2.7,width*.65)/2,join_style=2) if lower_chain else Polygon()
  spawn=paths[0][0] if i<19 or i==31 else world(pts[0]);enemy=paths[0][-1] if i<19 or i==31 else world(pts[1])
  targets=[authored_paths[k][len(authored_paths[k])//2] for k in range(3)] if i<19 or i==31 else [world(pts[2]),world(pts[3])]
