@@ -48,6 +48,12 @@ def main():
         imported = Path(str(p) + '.import')
         # Preserve authored mipmap settings. Removing the import file silently
         # disabled mipmaps and made floors/roof patterns shimmer with angle.
+        # Map plan previews (96 flat-colour images) import lossy on the Web:
+        # lossless WebP put the single Pages file over GitHub's 100 MB limit.
+        if 'plans' in p.parts and imported.exists():
+            settings = imported.read_text(encoding='utf-8')
+            settings = settings.replace('compress/mode=0', 'compress/mode=1').replace('compress/lossy_quality=0.7', 'compress/lossy_quality=0.85')
+            imported.write_text(settings, encoding='utf-8')
     for p in (STAGE / 'scripts').glob('*.gd'):
         text = p.read_text(encoding='utf-8').replace('res://assets/Korean.ttf', 'res://assets/fonts/DoHyeon-Regular.ttf')
         if p.name=='surface_finish.gd':

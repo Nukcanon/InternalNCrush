@@ -26,9 +26,19 @@ def validate_native_pack(path: Path):
             pack.read(20)
             entries[name] = (offset + base, size)
 
-        for kind in ('turret', 'cover'):
-            for team in range(2):
-                assert f'assets/models/device_{kind}{team}.scn' in entries, 'Missing baked deployment geometry'
+        # 1.4 baked cartoon assets: heroes, weapons, props, packed arenas and the
+        # menu photographs (deployables are built at runtime by GearModels).
+        for outfit in ('men_swat', 'women_soldier', 'men_spacesuit', 'men_worker', 'men_adventurer', 'women_scifi'):
+            for suffix in ('.scn', '_clips.res'):
+                assert f'assets/heroes/{outfit}{suffix}' in entries, 'Missing hero bake: ' + outfit + suffix
+        assert 'assets/heroes/hitboxes.json' in entries, 'Missing hero hit volumes'
+        for base in ('ak', 'smg', 'pistol', 'revolver', 'revolver_small', 'shotgun', 'shortcannon', 'sniper', 'sniper_2', 'rocketlauncher', 'grenadelauncher', 'knife_1', 'shovel', 'grenade', 'firegrenade'):
+            assert f'assets/weapons/{base}.scn' in entries, 'Missing weapon bake: ' + base
+        assert 'assets/props/manifest.json' in entries and 'assets/props/streetlight.res' in entries, 'Missing baked props'
+        for index in range(32):
+            assert f'assets/arenas/complete/map_{index:02d}.scn' in entries, f'Missing packed arena {index}'
+        for slide in range(1, 13):
+            assert f'assets/menu_slides/{slide:02d}.jpg.import' in entries, f'Missing menu photograph {slide}'
         for weapon in json.loads((PROJECT / 'assets/weapons.json').read_text(encoding='utf-8')):
             assert f'assets/thumbnails/{weapon}.png.import' in entries, 'Missing equipment thumbnail: ' + weapon
         for gender in ('male', 'female'):
