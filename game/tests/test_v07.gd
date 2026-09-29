@@ -21,34 +21,26 @@ func run():
 	for i in range(60):a.simulate(.016,0.,true)
 	expect(Vector2(a.velocity.x,a.velocity.z).length()<.01,"braking settles fully without perpetual sliding")
 	a.visual(.016,g.players[1],0.)
-	var c=a.character
-	for i in range(12):c.update_pose(.016,Vector3(0,0,-8),true,false,true,0,-1,0,.25,0)
-	var swing=c.left_arm.rotation.x
-	for i in range(12):c.update_pose(.016,Vector3(0,0,-8),true,false,true,0,-1,0,.75,0)
-	expect(absf(swing-c.left_arm.rotation.x)>.25,"sprinting visibly counter-swings the support arm")
-	c.update_pose(.016,Vector3.ZERO,false,true,true,0,-1,0,0,0)
-	expect(c.visual_crouch>0 and c.visual_crouch<1,"crouching blends rather than snapping")
-	for i in range(40):c.update_pose(.016,Vector3.ZERO,false,true,true,0,-1,0,0,0)
-	expect(c.hips.position.y<.66,"crouch lowers hips with bent knees")
-	c.update_pose(.016,Vector3(0,5,0),false,false,false,0,-1,0,0,0)
-	expect(c.hips.get_node("LeftLeg/Knee").rotation.x<-.6,"stationary jump tucks the knees")
-	c.update_pose(.016,Vector3(0,-10,0),false,false,false,0,-1,0,0,0)
-	c.update_pose(.016,Vector3.ZERO,false,false,true,0,-1,0,0,0)
-	expect(c.landing_compression>.1,"landing absorbs impact through the pelvis")
-	for i in range(12):c.update_pose(.016,Vector3.ZERO,false,false,true,0,-1,0,0,2.)
-	expect(absf(c.pelvis_yaw)>.05,"turning in place separates lower body and aim rotation")
-	# Pose offsets are local to the mirrored/rotated rig; acceleration is in world space.
-	# Check both hands explicitly so the random spawn hand cannot change the assertion.
-	var original_hand=c.scale.x
-	for hand in [-1,1]:
-		for yaw in [0.,PI*.5,-PI*.7]:
-			a.reset_view(yaw);c.scale.x=hand
-			c.previous_velocity=Vector3.ZERO;c.lower_lag=Vector3.ZERO;c.lag_velocity=Vector3.ZERO
-			var movement=Vector3(6,0,-2)
-			c.update_pose(.016,movement,false,false,true,0,-1,0,.2,0)
-			var world_lag=c.global_basis*c.lower_lag
-			expect(world_lag.dot(movement)<0 and world_lag.length()<.13,"direction changes oppose world acceleration with bounded inertia (hand %d, yaw %.2f)"%[hand,yaw])
-	a.reset_view(0);c.scale.x=original_hand
+	var c:HeroCharacter=a.character
+	# 1.4 hero: AnimationTree layers blend instead of snapping.
+	var hips=func():return c.bone_world(c.bone.Hips).origin.y-c.global_position.y
+	for i in range(30):c.drive(.016,{"velocity":Vector3.ZERO,"grounded":true})
+	var standing=hips.call()
+	for i in range(12):c.drive(.016,{"velocity":Vector3(0,0,-6.5),"grounded":true,"sprint":true})
+	var memory=c.get_meta("anim_memory")
+	expect(float(memory.sprint)>.7 and float(c.tree.get("parameters/hold/blend_amount"))<.35,"sprinting lowers the weapon and blends the sprint cycle")
+	c.drive(.016,{"velocity":Vector3.ZERO,"grounded":true,"crouch":true})
+	memory=c.get_meta("anim_memory")
+	expect(float(memory.crouch)>0 and float(memory.crouch)<1,"crouching blends rather than snapping")
+	for i in range(40):c.drive(.016,{"velocity":Vector3.ZERO,"grounded":true,"crouch":true})
+	expect(hips.call()<standing-.12,"crouch lowers hips with bent knees")
+	for i in range(10):c.drive(.016,{"velocity":Vector3(0,5,0),"grounded":false})
+	expect(float(c.get_meta("anim_memory").air)>.5,"airborne pose blends in during a jump")
+	for i in range(30):c.drive(.016,{"velocity":Vector3.ZERO,"grounded":true})
+	expect(float(c.get_meta("anim_memory").air)<.1 and absf(hips.call()-standing)<.08,"landing returns to the standing pose")
+	# Aim pitch drives the upper-body aim blend.
+	c.drive(.016,{"velocity":Vector3.ZERO,"grounded":true,"pitch":.8})
+	expect(float(c.tree.get("parameters/aim/blend_position"))>.5,"looking up raises the aim layer")
 	for index in [7,9,16,17]:
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.playable_polygon.size()>4,"map %d has a nonrectangular perimeter"%index)

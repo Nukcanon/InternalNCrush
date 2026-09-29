@@ -69,7 +69,17 @@ static func measure(skel:Skeleton3D) -> Array:
 				var t=clampf(p.dot(axis),0.,length);along.append(p.dot(axis));radial.append((p-axis*t).length())
 			var r=percentile(radial,.70)*.9
 			out.append({"bone":g[0],"zone":g[1],"type":"capsule","a":vec(axis*maxf(0.,percentile(along,.02))),"b":vec(axis*minf(length,percentile(along,.98))),"r":r})
+	var thigh=out.filter(func(v):return v.bone=="UpperLeg.L")
+	if not thigh.is_empty():out.append(groin(bind,float(thigh[0].r)))
 	return out
+# Groin/pelvis floor: crotch vertices belong to the thigh bones, so neither the
+# hip ellipsoid nor the thigh capsules close the gap between the hip joints.
+# Hit rays through the lower pelvis must not pass between the legs.
+static func groin(bind:Dictionary,thigh_radius:float) -> Dictionary:
+	var frame:Transform3D=bind["Hips"]
+	var l=frame.affine_inverse()*bind["UpperLeg.L"].origin;var r=frame.affine_inverse()*bind["UpperLeg.R"].origin
+	var mid=(l+r)*.5
+	return {"bone":"Hips","zone":"torso","type":"ellipsoid","part":"groin","c":vec(mid+Vector3(0,-.05,0)),"e":vec(Vector3((l-r).length()*.5+thigh_radius*.7,.12,thigh_radius*1.1))}
 static func vec(v:Vector3) -> Array:return [snappedf(v.x,.0001),snappedf(v.y,.0001),snappedf(v.z,.0001)]
 static func save_all(all:Dictionary):
 	# Shared head: component-wise median of every outfit's head ellipsoid.
