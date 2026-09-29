@@ -1,5 +1,7 @@
 extends CanvasLayer
 const Reticle=preload("res://scripts/reticle.gd")
+const PRIMARY_ACTIONS=["확인","입장","참가","접속","장비 적용","구매하기","다음 부활부터 적용","방 만들기","방 만들고 참가","서버 연결","빠른 참가","팀 교환 적용","선택 적용","공개 방 만들기","검색하기","새로고침","다음 · 경기 시작"]
+var hud_theme:Theme
 var map_viewer:MapViewer
 var map_refresh=Callable()
 var reticle:Control
@@ -158,6 +160,11 @@ func _ready():
 	theme.set_constant("h_separation","ScrollContainer",18)
 	theme.set_color("font_color","Label",Color("e8f2f3"));theme.set_color("font_color","Button",Color("e8f2f3"));root.theme=theme
 	theme.set_color("font_outline_color","Label",Color(0.01,0.025,0.04,.65));theme.set_constant("outline_size","Label",1)
+	# 1.4: the dark theme stays with the in-match HUD; menus, lobbies and dialogs
+	# get the cartoon skin (explicitly assigned to each menu root).
+	hud_theme=theme
+	var menu_font=FontVariation.new();menu_font.base_font=load("res://assets/fonts/DoHyeon-Regular.ttf");menu_font.fallbacks=[load("res://assets/Korean.ttf")]
+	theme=UiSkin.build(menu_font,TouchControls.supported())
 func clear_panel(keep_background=false):
 	if is_instance_valid(map_viewer):map_viewer.queue_free();map_viewer=null
 	if is_instance_valid(hud):hud.visible=not (is_instance_valid(game.kill_replay) and game.kill_replay.active)
@@ -175,8 +182,8 @@ func make_panel(title:String,width=780,compact=false):
 	if is_instance_valid(hud):hud.hide()
 	if is_instance_valid(background):
 		for child in background.get_children():
-			if child is Label or child==version_box:child.hide()
-	panel=PanelContainer.new();panel.z_index=100;panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
+			if child is Label or child==version_box or child.has_meta("menu_brand"):child.hide()
+	panel=PanelContainer.new();panel.theme=theme;panel.z_index=100;panel.custom_minimum_size=Vector2(width,0);panel.size=Vector2(width,640);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
 	panel.minimum_size_changed.connect(func():
 		if is_instance_valid(panel):panel.set_deferred("size",panel.get_combined_minimum_size())
 	)
@@ -191,7 +198,7 @@ func make_panel(title:String,width=780,compact=false):
 	var bar=scroll.get_v_scroll_bar()
 	bar.visibility_changed.connect(func():inset.add_theme_constant_override("margin_right",18 if bar.visible else 0))
 	stack=VBoxContainer.new();stack.size_flags_horizontal=Control.SIZE_EXPAND_FILL;stack.add_theme_constant_override("separation",12);inset.add_child(stack)
-	var eyebrow=Label.new();eyebrow.text="NUKCANON  /  INTERNAL N CRUSH";eyebrow.add_theme_color_override("font_color",Color("5ce1c3"));eyebrow.add_theme_font_size_override("font_size",14);stack.add_child(eyebrow)
+	var eyebrow=Label.new();eyebrow.text="NUKCANON  /  INTERNAL N CRUSH";eyebrow.add_theme_color_override("font_color",UiSkin.ACCENT);eyebrow.add_theme_font_size_override("font_size",14);stack.add_child(eyebrow)
 	label(title,32)
 func pin_actions(node:Control):
 	node.set_meta("pinned_actions",true)
@@ -215,11 +222,11 @@ func button(text:String,callback:Callable,parent:Node=null) -> Button:
 	(parent if parent else stack).add_child(b)
 	if TouchControls.supported():
 		b.clip_text=true
+	if not returning and ("시작" in text or text in PRIMARY_ACTIONS):UiSkin.paint(b,"primary")
 	if parent and parent.get_meta("pinned_actions",false):
 		b.custom_minimum_size=Vector2(180,ACTION_HEIGHT);b.size_flags_horizontal=Control.SIZE_EXPAND_FILL;b.clip_text=true
 	if returning:
-		for state in ["normal","hover","pressed"]:
-			var style=theme.get_stylebox(state,"Button").duplicate();style.bg_color=Color("593b4b") if state=="normal" else Color("805263");style.border_color=Color("c28c9a");b.add_theme_stylebox_override(state,style)
+		UiSkin.paint(b,"stop")
 		if parent==null and is_instance_valid(panel_body) and is_instance_valid(panel_scroll) and screen!="menu":pin_actions(b)
 	return b
 func confirm_navigation(callback:Callable,destination:String):
@@ -272,7 +279,7 @@ func menu():
 	clear_panel(true);screen="menu";Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	ensure_menu_background()
 	for child in background.get_children():child.show()
-	panel=PanelContainer.new();panel.position=Vector2(795,94);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
+	panel=PanelContainer.new();panel.theme=theme;panel.position=Vector2(795,94);panel.custom_minimum_size=Vector2(456,0);root.add_child(panel);panel.scale=Vector2.ONE*MENU_SCALE
 	build_main_actions()
 func ensure_menu_background():
 	if is_instance_valid(background):return
@@ -281,15 +288,17 @@ func ensure_menu_background():
 		var live=load("res://scripts/menu_demo.gd").new();live.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(live)
 	else:
 		var slides=load("res://scripts/menu_slideshow.gd").new();slides.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(slides)
-	var shade=ColorRect.new();shade.color=Color(.015,.04,.065,.28);shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(shade)
-	var brand=Label.new();brand.text="NUKCANON  /  TACTICAL LAN FPS";brand.position=Vector2(68,102);brand.add_theme_font_size_override("font_size",19);brand.modulate=Color("7be4cd");background.add_child(brand)
-	var title=Label.new();title.text="INTERNAL\nN CRUSH";title.position=Vector2(62,166);title.add_theme_font_size_override("font_size",64);background.add_child(title)
-	var intro=Label.new();intro.text="내부망에서 자유롭게 하는 게임\n6개 병과 · 31개 전장 · 5개 게임 모드";intro.position=Vector2(68,400);intro.add_theme_font_size_override("font_size",22);intro.modulate=Color("d6e5ed");background.add_child(intro)
-	version_box=VBoxContainer.new();version_box.position=Vector2(68,545);version_box.custom_minimum_size.x=560;background.add_child(version_box)
+	# A soft left-side wash keeps the logo readable over the live match.
+	var shade=TextureRect.new();var fade=GradientTexture2D.new();var ramp=Gradient.new();ramp.set_color(0,Color(.1,.14,.22,.55));ramp.set_color(1,Color(.1,.14,.22,0.));fade.gradient=ramp;fade.fill_to=Vector2(1,0)
+	shade.texture=fade;shade.stretch_mode=TextureRect.STRETCH_SCALE;shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);background.add_child(shade)
+	var brand=Label.new();brand.text="NUKCANON";brand.position=Vector2(70,96);brand.theme=theme;brand.add_theme_font_size_override("font_size",22);brand.add_theme_color_override("font_color",UiSkin.PRIMARY);brand.add_theme_color_override("font_outline_color",UiSkin.INK);brand.add_theme_constant_override("outline_size",8);background.add_child(brand)
+	var title=UiSkin.logo(background,"INTERNAL\nN CRUSH",Vector2(60,140),84);title.theme=theme;title.set_meta("menu_brand",true)
+	var intro=Label.new();intro.text="친구들과 함께 하는 카툰 슈터\n6개 병과 · 31개 전장 · 5개 게임 모드";intro.position=Vector2(70,400);intro.theme=theme;intro.add_theme_font_size_override("font_size",24);intro.add_theme_color_override("font_color",Color.WHITE);intro.add_theme_color_override("font_outline_color",UiSkin.INK);intro.add_theme_constant_override("outline_size",8);background.add_child(intro)
+	version_box=VBoxContainer.new();version_box.theme=theme;version_box.position=Vector2(68,545);version_box.custom_minimum_size.x=560;background.add_child(version_box)
 func build_main_actions():
 	if TouchControls.supported():build_touch_main_actions();return
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",9);panel.add_child(stack)
-	var name=label("닉네임",19);name.modulate=Color("a7c5d4")
+	var name=label("닉네임",19);name.modulate=UiSkin.MUTED
 	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="게임에서 사용할 닉네임";nick.max_length=20;nick.custom_minimum_size.y=47;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
 	stack.add_child(HSeparator.new());label("플레이",23)
 	if OS.has_feature("web"):
@@ -315,9 +324,9 @@ func scale_interface():
 func update_version_badge():
 	if screen!="menu" or not is_instance_valid(version_box):return
 	for child in version_box.get_children():version_box.remove_child(child);child.queue_free()
-	var version=label(("WEB  /  v" if OS.has_feature("web") else "WINDOWS  /  v")+Rules.VERSION,18,version_box);version.modulate=Color("b2c8d5")
+	var version=label(("WEB  /  v" if OS.has_feature("web") else "WINDOWS  /  v")+Rules.VERSION,18,version_box);version.add_theme_color_override("font_color",Color.WHITE);version.add_theme_color_override("font_outline_color",UiSkin.INK);version.add_theme_constant_override("outline_size",6)
 	if game.version_check.state=="newer":
-		var warning=label("새 버전 "+game.version_check.latest+"이 있습니다.\n함께 접속할 사람들과 버전을 맞춰 주세요.",18,version_box);warning.modulate=Color("ffd18d")
+		var warning=label("새 버전 "+game.version_check.latest+"이 있습니다.\n함께 접속할 사람들과 버전을 맞춰 주세요.",18,version_box);warning.add_theme_color_override("font_color",UiSkin.PRIMARY);warning.add_theme_color_override("font_outline_color",UiSkin.INK);warning.add_theme_constant_override("outline_size",6)
 		button("새 버전으로 새로고침" if OS.has_feature("web") else "최신 버전 다운로드",func():
 			if OS.has_feature("web"):JavaScriptBridge.eval("window.incRefreshGame ? window.incRefreshGame() : window.location.replace(window.location.pathname + '?_refresh=' + Date.now());")
 			else:OS.shell_open(VersionCheck.PAGE)
@@ -628,12 +637,12 @@ func gear():
 	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;scroll.custom_minimum_size=Vector2(625,260);form.add_child(scroll)
 	var cards_inset=MarginContainer.new();cards_inset.add_theme_constant_override("margin_right",18);scroll.add_child(cards_inset)
 	gear_cards=GridContainer.new();gear_cards.columns=3;gear_cards.add_theme_constant_override("h_separation",8);gear_cards.add_theme_constant_override("v_separation",8);cards_inset.add_child(gear_cards)
-	role_detail=label("",17,form);role_detail.modulate=Color("8fcbed")
+	role_detail=label("",17,form);role_detail.modulate=UiSkin.ACCENT
 	var right=VBoxContainer.new();right.custom_minimum_size.x=440;right.size_flags_horizontal=Control.SIZE_EXPAND_FILL;split.add_child(right)
 	preview_widget=EquipmentPreview.new();right.add_child(preview_widget);preview_widget.custom_minimum_size=Vector2(440,160);preview_widget.size_flags_vertical=Control.SIZE_SHRINK_BEGIN
 	preview_caption=label("",21,right)
 	stat_graph=StatGraph.new()
-	gear_detail=label("",15,right);gear_detail.add_theme_font_size_override("font_size",14);gear_detail.modulate=Color("d2e2ec");right.add_child(stat_graph)
+	gear_detail=label("",15,right);gear_detail.add_theme_font_size_override("font_size",14);gear_detail.modulate=UiSkin.INK;right.add_child(stat_graph)
 	stack=outer
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);outer.add_child(actions);pin_actions(actions)
 	gear_submit=button("선택 적용",func():
@@ -648,11 +657,11 @@ func gear():
 	var spacer=Control.new();spacer.size_flags_horizontal=Control.SIZE_EXPAND_FILL;actions.add_child(spacer)
 	if int(game.options.mode)==4:
 		gear_buy_status=label("",14,actions);gear_buy_status.custom_minimum_size.x=125
-		gear_price=economy_box(actions,"선택 장비 가격",Color.WHITE)
-		gear_cash=economy_box(actions,"보유 금액",Color("ffda73"))
+		gear_price=economy_box(actions,"선택 장비 가격",UiSkin.INK)
+		gear_cash=economy_box(actions,"보유 금액",UiSkin.GOLD)
 	else:
-		gear_price=economy_box(actions,"장비 선택",Color("ffdc76"));gear_price.text="무료";gear_cash=null;gear_buy_status=null
-	notice_label=label("",14);notice_label.modulate=Color("80cfef")
+		gear_price=economy_box(actions,"장비 선택",UiSkin.GOLD);gear_price.text="무료";gear_cash=null;gear_buy_status=null
+	notice_label=label("",14);notice_label.modulate=UiSkin.ACCENT
 	refresh_weapons()
 	var wanted=queued.get("primary",p.primary)
 	if wanted in weapon_ids:gear_primary.select(weapon_ids.find(wanted))
@@ -676,7 +685,7 @@ func submit_loadout():
 	else:game.command("loadout",selection)
 func economy_box(parent:Node,title:String,color:Color) -> Label:
 	var box=PanelContainer.new();box.custom_minimum_size=Vector2(158,66);parent.add_child(box)
-	var style=StyleBoxFlat.new();style.bg_color=Color("142330");style.border_color=Color("596c7a");style.set_border_width_all(1);style.content_margin_left=12;style.content_margin_right=12;style.content_margin_top=5;style.content_margin_bottom=5;box.add_theme_stylebox_override("panel",style)
+	box.add_theme_stylebox_override("panel",UiSkin.box(UiSkin.CARD_A,UiSkin.INK,3,5,14,Vector4(12,5,12,5)))
 	var content=VBoxContainer.new();content.add_theme_constant_override("separation",0);box.add_child(content)
 	var caption=label(title,14,content);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;caption.autowrap_mode=TextServer.AUTOWRAP_OFF
 	var value=label("0",32,content);value.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;value.autowrap_mode=TextServer.AUTOWRAP_OFF;value.add_theme_color_override("font_color",color)
@@ -858,7 +867,7 @@ func show_hud():
 	reticle=Reticle.new();reticle.game=game;reticle.ui=self;reticle.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(reticle)
 	kill_feed=KillFeed.new();hud.add_child(kill_feed)
 	if is_instance_valid(scoreboard):scoreboard.queue_free()
-	scoreboard=MatchScoreboard.new();scoreboard.game=game;scoreboard.theme=theme;root.add_child(scoreboard);scoreboard.visible=false
+	scoreboard=MatchScoreboard.new();scoreboard.game=game;scoreboard.theme=hud_theme;root.add_child(scoreboard);scoreboard.visible=false
 	flash_overlay=ColorRect.new();flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);flash_overlay.color=Color(1,1,1,0);flash_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(flash_overlay)
 	HudLayout.attach(self)
 	if is_instance_valid(game.touch):
@@ -1051,13 +1060,13 @@ func render_internet_rooms():
 	if selected.is_empty():label("검색 조건에 맞는 방이 없습니다. 방을 만들거나 검색 조건을 바꿔 보세요.",17,room_list)
 func quick_join_dialog():
 	close_quick_join()
-	quick_join=Control.new();quick_join.name="QuickJoinDialog";quick_join.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quick_join.z_index=110;root.add_child(quick_join)
+	quick_join=Control.new();quick_join.theme=theme;quick_join.name="QuickJoinDialog";quick_join.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quick_join.z_index=110;root.add_child(quick_join)
 	var dim=ColorRect.new();dim.color=Color(.01,.02,.04,.8);dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quick_join.add_child(dim)
 	var mobile=TouchControls.supported();var width=900. if mobile else 700.
 	var box=PanelContainer.new();box.set_anchors_and_offsets_preset(Control.PRESET_CENTER);box.position=Vector2(-width*.5,-250 if mobile else -200);box.custom_minimum_size=Vector2(width,0);quick_join.add_child(box)
 	var content=VBoxContainer.new();content.add_theme_constant_override("separation",14);box.add_child(content)
 	var title=label("빠른 참가",30,content);title.autowrap_mode=TextServer.AUTOWRAP_OFF
-	var hint=label("참가할 게임 모드를 선택하세요. 조건에 맞는 방에 자동으로 참가합니다.",18,content);hint.modulate=Color("a7bacb");hint.custom_minimum_size.x=width-40
+	var hint=label("참가할 게임 모드를 선택하세요. 조건에 맞는 방에 자동으로 참가합니다.",18,content);hint.modulate=UiSkin.MUTED;hint.custom_minimum_size.x=width-40
 	var grid=GridContainer.new();grid.columns=2 if mobile else 3;grid.add_theme_constant_override("h_separation",10);grid.add_theme_constant_override("v_separation",10);content.add_child(grid)
 	var group=ButtonGroup.new()
 	var modes=[["모든 모드",-1]]
@@ -1137,7 +1146,7 @@ func show_current_map():
 	open_map(indices)
 func open_map(indices:Array):
 	if is_instance_valid(map_viewer) or indices.is_empty():return
-	map_viewer=MapViewer.new();root.add_child(map_viewer);map_viewer.build(indices);Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
+	map_viewer=MapViewer.new();map_viewer.theme=theme;root.add_child(map_viewer);map_viewer.build(indices);Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	map_viewer.closed.connect(func():
 		map_viewer=null
 		if not is_instance_valid(panel) and not Input.is_action_pressed("score"):game.capture_pointer(true))

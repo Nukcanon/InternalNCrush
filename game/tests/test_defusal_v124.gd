@@ -25,7 +25,7 @@ func run():
 	for i in range(20):
 		BombLogic.assign(g);expect(g.bomb.carrier==1,"only an attacking living player can receive bomb")
 	g.ui.gear();await process_frame
-	expect(g.ui.gear_cash.text=="8000" and g.ui.gear_cash.get_theme_color("font_color")==Color("ffda73"),"large yellow balance in store")
+	expect(g.ui.gear_cash.text=="8000" and g.ui.gear_cash.get_theme_color("font_color")==UiSkin.GOLD,"large yellow balance in store")
 	expect(g.ui.gear_cash.get_parent().get_parent() is PanelContainer and g.ui.gear_price.get_parent().get_parent() is PanelContainer,"separate rectangular balance and cost boxes")
 	expect(g.ui.gear_cash.get_theme_font_size("font_size")==32 and g.ui.gear_price.get_theme_font_size("font_size")==32,"large matching price typography")
 	g.ui.exit_gear();g.phase="combat";g.bomb.buy_until=g.clock+60.;g.actors[1].position=Vector3(staging.x,0,staging.y)

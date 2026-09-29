@@ -14,7 +14,7 @@ func _ready():
 	viewport=SubViewport.new();viewport.size=Vector2i(440,330);viewport.transparent_bg=true;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_WHEN_VISIBLE;viewport.msaa_3d=Viewport.MSAA_2X;add_child(viewport)
 	GraphicsOptions.apply_viewport(viewport)
 	stage=Node3D.new();viewport.add_child(stage)
-	var world=WorldEnvironment.new();var env=Environment.new();env.background_mode=Environment.BG_COLOR;env.background_color=Color("263b46");env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color.WHITE;env.ambient_light_energy=.45;world.environment=env;stage.add_child(world)
+	var world=WorldEnvironment.new();var env=Environment.new();env.background_mode=Environment.BG_COLOR;env.background_color=Color("bfe3f5");env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color.WHITE;env.ambient_light_energy=.45;world.environment=env;stage.add_child(world)
 	var key=DirectionalLight3D.new();key.rotation_degrees=Vector3(-35,150,0);key.light_energy=1.15;key.shadow_enabled=true;key.directional_shadow_max_distance=8.;key.shadow_bias=.03;stage.add_child(key)
 	viewport.positional_shadow_atlas_size=512
 	camera=Camera3D.new();stage.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.current=true

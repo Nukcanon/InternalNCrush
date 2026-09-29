@@ -76,14 +76,14 @@ func prepare():
 	bullet.hide();bullet_trail.hide()
 	overlay=CanvasLayer.new();overlay.layer=30;add_child(overlay);overlay.hide()
 	var mobile=TouchControls.supported()
-	var top=PanelContainer.new();top.position=Vector2(16 if mobile else 225,18);top.custom_minimum_size=Vector2(730 if mobile else 830,0);top.theme=game.ui.theme;overlay.add_child(top)
+	var top=PanelContainer.new();top.position=Vector2(16 if mobile else 225,18);top.custom_minimum_size=Vector2(730 if mobile else 830,0);top.theme=game.ui.hud_theme;overlay.add_child(top)
 	var text=VBoxContainer.new();top.add_child(text)
 	title=Label.new();title.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;title.add_theme_font_size_override("font_size",24);title.modulate=Color("ffc16e");text.add_child(title)
 	detail=Label.new();detail.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;detail.add_theme_font_size_override("font_size",16);text.add_child(detail)
 	if mobile:
 		title.clip_text=true;detail.clip_text=true;title.add_theme_font_size_override("font_size",20)
 	progress=ProgressBar.new();progress.show_percentage=false;progress.custom_minimum_size.y=4;progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;text.add_child(progress)
-	nickname=Label.new();nickname.position=Vector2(170,530);nickname.size=Vector2(940,100);nickname.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;nickname.add_theme_font_size_override("font_size",38);nickname.add_theme_color_override("font_outline_color",Color("101820"));nickname.add_theme_constant_override("outline_size",10);nickname.theme=game.ui.theme;overlay.add_child(nickname)
+	nickname=Label.new();nickname.position=Vector2(170,530);nickname.size=Vector2(940,100);nickname.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;nickname.add_theme_font_size_override("font_size",38);nickname.add_theme_color_override("font_outline_color",Color("101820"));nickname.add_theme_constant_override("outline_size",10);nickname.theme=game.ui.hud_theme;overlay.add_child(nickname)
 func warm_one():
 	# Spread preparation across frames while alive. begin() never builds a map or a rig.
 	if active or not is_instance_valid(game.arena):return

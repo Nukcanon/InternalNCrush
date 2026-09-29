@@ -39,11 +39,11 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 	else:visible=false
 	custom_minimum_size=Vector2(430,rows.size()*19+(67 if not weapon.is_empty() else 6));queue_redraw()
 func _draw():
-	var font=get_theme_default_font();var ink=Color("d2e2ec");var accent=Color("66d5c2");var width=maxf(430,size.x)
+	var font=get_theme_default_font();var ink=UiSkin.INK;var accent=UiSkin.ACCENT;var width=maxf(430,size.x)
 	for i in range(rows.size()):
 		var r=rows[i];var y=i*19.;var x=118.;var length=width-255.
 		draw_string(font,Vector2(0,y+15),r[0],HORIZONTAL_ALIGNMENT_LEFT,-1,14,ink)
-		draw_style_box(_bar(Color("2b4555")),Rect2(x,y+5,length,8))
+		draw_style_box(_bar(UiSkin.PAPER_DEEP),Rect2(x,y+5,length,8))
 		if float(r[1])>0.:draw_style_box(_bar(accent),Rect2(x,y+5,length*clampf(float(r[1])/float(r[2]),0.,1.),8))
 		draw_string(font,Vector2(width-127,y+15),r[3],HORIZONTAL_ALIGNMENT_LEFT,-1,13,ink)
 	if weapon.is_empty():return
@@ -52,7 +52,7 @@ func _draw():
 	draw_string(font,Vector2(0,y+33),"몸통 · DPS" if weapon.get("laser",false) else "몸통 · 1발",HORIZONTAL_ALIGNMENT_LEFT,-1,12,ink.darkened(.18))
 	var points=PackedVector2Array()
 	for i in range(51):points.append(origin+Vector2((width-255)*i/50.,-CombatBalance.range_factor(weapon,max_distance*i/50.)*30))
-	draw_line(origin,origin+Vector2(width-255,0),Color("607887"),1.);draw_polyline(points,accent,2.,true)
+	draw_line(origin,origin+Vector2(width-255,0),UiSkin.MUTED,1.);draw_polyline(points,accent,2.,true)
 	draw_string(font,Vector2(width-127,y+15),"0 → %d m"%max_distance,HORIZONTAL_ALIGNMENT_LEFT,-1,12,ink)
 	draw_string(font,Vector2(width-127,y+33),"최저 %d%%"%roundi(float(weapon.min_damage_scale)*100),HORIZONTAL_ALIGNMENT_LEFT,-1,12,ink)
 	draw_string(font,Vector2(0,y+53),"DPS: 근거리 몸통 전탄 명중 · 지속: 재장전 포함",HORIZONTAL_ALIGNMENT_LEFT,width,12,ink.darkened(.14))

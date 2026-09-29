@@ -20,11 +20,27 @@ func _process(dt):
 		render_accumulator=0.;viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	update_camera(dt)
 func update_camera(dt):
-	var target=Vector3(0,1.4,0)
-	var angle=elapsed*.035
-	var desired=target+Vector3(sin(angle)*13.,7.,cos(angle)*17.)
-	camera.position=desired if dt==0 else camera.position.lerp(desired,1.-exp(-dt*2.))
-	camera.look_at(target)
+	# 1.4: a chase camera behind one bot at a time (streets are framed by tall
+	# buildings, so an overhead orbit would sit inside them). It never clips a
+	# wall: the view is pulled in front of anything between it and the bot.
+	var bots=[]
+	if is_instance_valid(match_game) and "actors" in match_game:
+		for actor in match_game.actors.values():
+			if is_instance_valid(actor) and actor.is_inside_tree() and actor.visible:bots.append(actor)
+	if bots.is_empty():
+		var target=Vector3(0,1.4,0);var angle=elapsed*.035
+		camera.position=target+Vector3(sin(angle)*6.,2.5,cos(angle)*6.);camera.look_at(target);return
+	var actor:Node3D=bots[int(elapsed/11.)%bots.size()]
+	var forward=-actor.global_basis.z;forward.y=0.;forward=forward.normalized() if forward.length()>.01 else Vector3.FORWARD
+	var focus=actor.global_position+Vector3.UP*1.5
+	var side=forward.cross(Vector3.UP)
+	var desired=focus-forward*4.6+Vector3.UP*1.3+side*1.1
+	var space=viewport.world_3d.direct_space_state if viewport.world_3d else null
+	if space:
+		var hit=space.intersect_ray(PhysicsRayQueryParameters3D.create(focus,desired,1))
+		if not hit.is_empty():desired=hit.position+(focus-hit.position).normalized()*.4
+	camera.position=desired if dt==0. else camera.position.lerp(desired,1.-exp(-dt*3.))
+	camera.look_at(focus+forward*5.)
 func _exit_tree():
 	# Remove only this override. Registering the shared API here rewrites its
 	# RPC root to a disappearing viewport and breaks subsequent online matches.

@@ -23,8 +23,8 @@ func run():
 	await process_frame
 	var dialog=g.ui.navigation_confirm;var stay=dialog.get_cancel_button();var leave=dialog.get_ok_button()
 	expect(stay.get_index()<leave.get_index(),"stay left, leave right")
-	expect(stay.get_theme_stylebox("normal").bg_color==Color("285a43"),"stay green")
-	expect(leave.get_theme_stylebox("normal").bg_color==Color("593b4b"),"leave red")
+	expect(stay.get_theme_stylebox("normal").bg_color==UiSkin.GO,"stay green")
+	expect(leave.get_theme_stylebox("normal").bg_color==UiSkin.STOP,"leave red")
 	dialog.canceled.emit();await process_frame
 	var scroll=load("res://scripts/menu_touch_scroll.gd").new();root.add_child(scroll);scroll.position=Vector2(30,30);scroll.size=Vector2(200,150)
 	var content=Control.new();content.custom_minimum_size=Vector2(170,900);scroll.add_child(content)

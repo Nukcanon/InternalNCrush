@@ -58,6 +58,6 @@ static func choice(parent:Node,items:Array,selected:int,callback:Callable) -> Op
 	return option
 # Alternating list rows make adjacent rooms easy to tell apart.
 static func row_style(index:int) -> StyleBoxFlat:
-	var style=StyleBoxFlat.new();style.bg_color=Color("1a2a3b") if index%2==0 else Color("2a3f55");style.set_corner_radius_all(3)
+	var style=UiSkin.card(index)
 	style.content_margin_left=12;style.content_margin_right=12;style.content_margin_top=8;style.content_margin_bottom=8
 	return style

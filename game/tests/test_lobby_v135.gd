@@ -71,9 +71,9 @@ func run():
 	var widths=options.map(func(c):return roundi(c.size.x))
 	expect(options.size()==4 and widths.max()-widths.min()<=1,"mode, players, ping and sort share one row with equal widths %s"%str(widths))
 	var refresh:Button=filters.get_child(filters.get_child_count()-1)
-	expect(refresh.text=="새로고침" and refresh.get_theme_stylebox("normal").bg_color==Color("dc9c43"),"yellow refresh button sits after the sort filter")
+	expect(refresh.text=="새로고침" and refresh.get_theme_stylebox("normal").bg_color==UiSkin.PRIMARY,"yellow refresh button sits after the sort filter")
 	var server_row=ui.panel.find_child("ServerRow",true,false)
-	expect(server_row.get_child(0).text=="서버" and server_row.get_child(1) is LineEdit and server_row.get_child(2).text=="서버 연결" and server_row.get_child(2).get_theme_stylebox("normal").bg_color==Color("dc9c43"),"server label, address and yellow connect button share one row")
+	expect(server_row.get_child(0).text=="서버" and server_row.get_child(1) is LineEdit and server_row.get_child(2).text=="서버 연결" and server_row.get_child(2).get_theme_stylebox("normal").bg_color==UiSkin.PRIMARY,"server label, address and yellow connect button share one row")
 	expect(not texts.has("목록 새로고침"),"full-width refresh button removed")
 	var column=[server_row.get_child(2),ui.panel.find_child("RoomSearchButton",true,false),refresh]
 	expect(column.all(func(b):return absf(b.size.x-column[0].size.x)<1. and absf(b.get_global_rect().end.x-column[0].get_global_rect().end.x)<1.),"connect, search and refresh buttons share one width and right edge")

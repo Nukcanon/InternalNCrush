@@ -2,7 +2,7 @@ class_name RosterControls
 extends RefCounted
 static func row_panel(parent:Node,index:int) -> PanelContainer:
 	var panel=PanelContainer.new();panel.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	var style=StyleBoxFlat.new();style.bg_color=Color("2b2e32") if index%2==0 else Color("1b1e22");style.set_corner_radius_all(5);style.set_content_margin_all(6)
+	var style=UiSkin.card(index,6)
 	panel.add_theme_stylebox_override("panel",style);parent.add_child(panel);return panel
 static func small_button(parent:Node,text:String,callback:Callable) -> Button:
 	var b=Button.new();b.text=text;b.custom_minimum_size=Vector2(0,30);b.add_theme_font_size_override("font_size",14);b.pressed.connect(callback);parent.add_child(b);return b
@@ -25,7 +25,7 @@ static func populate(g:Node,parent:Node,results:bool):
 		var side=int(p.team) if int(g.options.mode)!=1 else (0 if teams[0].size()<16 else 1)
 		if side in [0,1]:teams[side].append(p)
 	for side in range(2):
-		var h=HBoxContainer.new();grid.add_child(h);var title=Label.new();title.text=("BLUE" if side==0 else "ORANGE")+" · %d명"%teams[side].size();title.add_theme_color_override("font_color",Color("63c5ff") if side==0 else Color("ffa45c"));title.add_theme_font_size_override("font_size",20);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;h.add_child(title)
+		var h=HBoxContainer.new();grid.add_child(h);var title=Label.new();title.text=("BLUE" if side==0 else "ORANGE")+" · %d명"%teams[side].size();title.add_theme_color_override("font_color",Color("2f7fd8") if side==0 else Color("e0741a"));title.add_theme_font_size_override("font_size",20);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;h.add_child(title)
 		if results:title.text+=" · %d%s"%[g.scores[side],"승" if int(g.options.mode)==4 else "점"]
 		if TeamBalance.host(g,g.local_id):
 			var team=side;var add=small_button(h,"+ 봇",func():g.command("bot_add",{"team":team}));add.disabled=g.players.size()>=int(g.options.max_players) or (int(g.options.mode)!=1 and g.team_count(side)>=int(g.options.max_players)/2)
@@ -41,7 +41,7 @@ static func populate(g:Node,parent:Node,results:bool):
 				small_button(actions,"제거",func():g.command("bot_remove",{"target":pid}))
 			if results:
 				var detail=small_button(cell,"기록",func():
-					var d=AcceptDialog.new();d.title=str(p.nick)+" · 상세 기록";d.dialog_text="처치 %d / 사망 %d\n도움점 %d · 치료점 %d\n설치점 %d · 목표점 %d"%[p.kills,p.deaths,Rules.score_parts(p).assists,Rules.score_parts(p).healing,Rules.score_parts(p).builds,Rules.score_parts(p).objectives];g.ui.root.add_child(d);d.confirmed.connect(d.queue_free);d.canceled.connect(d.queue_free);d.popup_centered(Vector2i(420,180)))
+					var d=AcceptDialog.new();d.title=str(p.nick)+" · 상세 기록";d.dialog_text="처치 %d / 사망 %d\n도움점 %d · 치료점 %d\n설치점 %d · 목표점 %d"%[p.kills,p.deaths,Rules.score_parts(p).assists,Rules.score_parts(p).healing,Rules.score_parts(p).builds,Rules.score_parts(p).objectives];d.theme=g.ui.theme;g.ui.root.add_child(d);d.confirmed.connect(d.queue_free);d.canceled.connect(d.queue_free);d.popup_centered(Vector2i(420,180)))
 				detail.size_flags_vertical=Control.SIZE_SHRINK_CENTER
 			if int(g.options.mode)!=1 and TeamBalance.allowed(g,g.local_id,pid):
 				var target=1-side;var full=g.team_count(target)>=int(g.options.max_players)/2
@@ -49,8 +49,9 @@ static func populate(g:Node,parent:Node,results:bool):
 					if full and TeamBalance.host(g,g.local_id):g.ui.team_swap_menu(pid)
 					else:g.command("team",{"player_id":pid,"team":target}))
 				move.tooltip_text="ORANGE로 이동" if target==1 else "BLUE로 이동";move.custom_minimum_size.x=112;move.size_flags_vertical=Control.SIZE_EXPAND_FILL;move.disabled=not TeamBalance.can_move(g,g.local_id,pid,target) and not (full and TeamBalance.host(g,g.local_id))
+				if not (full and TeamBalance.host(g,g.local_id)):UiSkin.paint(move,"orange" if target==1 else "blue")
 				# Narrow margins let "→ ORANGE" keep the same 14 px text as "← BLUE".
 				compact(g,move)
 static func compact(g:Node,b:Button):
 	for state in ["normal","hover","pressed","disabled"]:
-		var style=g.ui.theme.get_stylebox(state,"Button").duplicate();style.content_margin_left=6;style.content_margin_right=6;b.add_theme_stylebox_override(state,style)
+		var style=b.get_theme_stylebox(state).duplicate();style.content_margin_left=6;style.content_margin_right=6;b.add_theme_stylebox_override(state,style)

@@ -24,8 +24,7 @@ func build(indices:Array):
 	var reset=Button.new();reset.text="크기 초기화";reset.custom_minimum_size.y=42;controls.add_child(reset);reset.pressed.connect(func():view.reset_view())
 	var spacer=Control.new();spacer.size_flags_horizontal=Control.SIZE_EXPAND_FILL;header.add_child(spacer)
 	var close=Button.new();close.text="닫기";close.custom_minimum_size=Vector2(88,42);header.add_child(close);close.pressed.connect(dismiss)
-	for state in ["normal","hover","pressed"]:
-		var style=StyleBoxFlat.new();style.bg_color=Color("a63c49") if state=="normal" else Color("c44c58") if state=="hover" else Color("7d2935");style.set_corner_radius_all(5);close.add_theme_stylebox_override(state,style)
+	UiSkin.paint(close,"stop")
 	view=MapPlanView.new();view.interactive=true;view.size_flags_vertical=Control.SIZE_EXPAND_FILL;view.custom_minimum_size.y=120;column.add_child(view);select_map(indices[0])
 	select.item_selected.connect(func(i):active_index=i;select_map(choices[i]))
 	if indices.size()>1:

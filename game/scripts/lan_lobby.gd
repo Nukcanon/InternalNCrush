@@ -28,7 +28,7 @@ func show():
 	ui.stack.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	ui.stack.add_theme_constant_override("separation",8)
 	var hint=ui.label("같은 네트워크의 방에 참가하거나 새로운 방을 만드세요.",18)
-	hint.modulate=Color("a7bacb")
+	hint.modulate=UiSkin.MUTED
 	# One toolbar: direct IP, refresh, then the (widest) name search and its button.
 	var tools=HBoxContainer.new();tools.name="LanToolbar";tools.add_theme_constant_override("separation",10);ui.stack.add_child(tools)
 	ip_button=RoomFilters.tool_button(ui,tools,"IP로 접속",func():show_direct())
@@ -57,16 +57,12 @@ func show():
 
 func column(parent:Node,text:String,width:float,expand=false) -> Label:
 	var item=ui.label(text,17,parent);item.autowrap_mode=TextServer.AUTOWRAP_OFF
-	item.custom_minimum_size.x=width;item.modulate=Color("9ab0c4")
+	item.custom_minimum_size.x=width;item.modulate=UiSkin.MUTED
 	if expand:item.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	return item
 
 func accent(target:Button):
-	for state in ["normal","hover","pressed"]:
-		var style=ui.theme.get_stylebox(state,"Button").duplicate()
-		style.bg_color=Color("dc9c43") if state=="normal" else Color("f5bd64") if state=="hover" else Color("bd7d2d")
-		style.border_color=Color("ffcd7a");target.add_theme_stylebox_override(state,style)
-		target.add_theme_color_override("font_color" if state=="normal" else "font_"+state+"_color",Color("182330"))
+	UiSkin.paint(target,"primary")
 
 func update_rooms():
 	if ui.screen!="join" or not is_instance_valid(ui.room_list):return
@@ -75,7 +71,7 @@ func update_rooms():
 	if ui.game.rooms.is_empty():
 		var empty=VBoxContainer.new();empty.custom_minimum_size.y=225;empty.alignment=BoxContainer.ALIGNMENT_CENTER;ui.room_list.add_child(empty)
 		var title=ui.label("열린 방을 찾고 있습니다",24,empty);title.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-		var help=ui.label("방을 만들거나 IP로 직접 접속할 수 있습니다.",18,empty);help.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;help.modulate=Color("9ab0c4")
+		var help=ui.label("방을 만들거나 IP로 직접 접속할 수 있습니다.",18,empty);help.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;help.modulate=UiSkin.MUTED
 	var candidates=[]
 	for ip in ui.game.rooms:
 		var data:Dictionary=ui.game.rooms[ip].duplicate()
@@ -92,7 +88,7 @@ func update_rooms():
 		var title=ui.label(str(data.get("name","이름 없는 방")).left(40),20,names)
 		title.autowrap_mode=TextServer.AUTOWRAP_OFF;title.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 		var locked=bool(data.get("locked",false))
-		var mode=ui.label(str(data.get("mode",""))+("  ·  비밀번호 필요" if locked else "  ·  공개 방"),17,names);mode.modulate=Color("9ab0c4")
+		var mode=ui.label(str(data.get("mode",""))+("  ·  비밀번호 필요" if locked else "  ·  공개 방"),17,names);mode.modulate=UiSkin.MUTED
 		column(row,"%d / %d"%[int(data.get("count",0)),int(data.get("max",0))]+("\n봇 %d"%int(data.bots) if int(data.get("bots",0))>0 else ""),73)
 		column(row,(str(int(room.ping))+" ms" if int(room.ping)>=0 else "측정 중")+"\n"+str(ip),178)
 		var incompatible=str(data.get("version",""))!=Rules.VERSION
@@ -107,12 +103,12 @@ func update_rooms():
 func show_direct(ip="",room_name=""):
 	if ui.game.connection_busy:return
 	close_dialog()
-	dialog=Control.new();dialog.name="DirectConnect";dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);dialog.z_index=100;ui.root.add_child(dialog)
+	dialog=Control.new();dialog.theme=ui.theme;dialog.name="DirectConnect";dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);dialog.z_index=100;ui.root.add_child(dialog)
 	var dim=ColorRect.new();dim.color=Color(0.01,.02,.04,.8);dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);dialog.add_child(dim)
 	var box=PanelContainer.new();box.set_anchors_and_offsets_preset(Control.PRESET_CENTER);box.position=Vector2(-320,-220);box.custom_minimum_size=Vector2(640,0);dialog.add_child(box)
 	var content=VBoxContainer.new();content.add_theme_constant_override("separation",16);box.add_child(content)
 	ui.label("IP로 접속" if room_name.is_empty() else "비밀번호가 있는 방",30,content)
-	var hint=ui.label("접속할 서버의 IP와 방 비밀번호를 입력하세요." if room_name.is_empty() else room_name.left(40),18,content);hint.modulate=Color("a7bacb")
+	var hint=ui.label("접속할 서버의 IP와 방 비밀번호를 입력하세요." if room_name.is_empty() else room_name.left(40),18,content);hint.modulate=UiSkin.MUTED
 	address=field(content,"서버 IP",false);address.name="ServerIP";address.placeholder_text="예: 192.168.0.10";address.max_length=45
 	address.text=ip if not ip.is_empty() else last_address if not last_address.is_empty() else ui.game.last_server_ip if ui.game.last_server_ip.is_valid_ip_address() else ""
 	password=field(content,"방 비밀번호 · 선택",true);password.name="RoomPassword";password.placeholder_text="비밀번호가 없는 방은 비워 두세요";password.max_length=64

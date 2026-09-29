@@ -6,7 +6,7 @@ func run():
 	root.scaling_3d_scale=1.;root.size=Vector2i(1920,1080)
 	DirAccess.make_dir_recursive_absolute("res://assets/menu_slides")
 	var number=0
-	for map_index in [0,7,13]:
+	for map_index in [7,17,13]:
 		var game=load("res://scripts/game.gd").new();game.demo_mode=true;game.demo_map=map_index;root.add_child(game)
 		GraphicsOptions.detail=1;GraphicsOptions.lighting=0 if RenderStyle.web() else 1
 		GraphicsOptions.shadows=0 if RenderStyle.web() else 1;GraphicsOptions.antialias=0 if RenderStyle.web() else 1
@@ -54,5 +54,7 @@ func combat_camera(game:Node,actor:Node3D,opponent:Node3D,index:int) -> Vector3:
 	var offsets=[-facing*4.+side*2.+Vector3.UP*1.2,-facing*4.-side*2.+Vector3.UP*1.2,side*4.+Vector3.UP,-side*4.+Vector3.UP,-facing*3.+Vector3.UP*.4,facing*2.+side*3.+Vector3.UP*.6]
 	for j in range(offsets.size()):
 		var candidate=target+offsets[(j+index)%offsets.size()]
+		# Open sky above the camera: no shots from under covered rooms or decks.
+		if not game.ray(candidate,candidate+Vector3.UP*12.,[],1).is_empty():continue
 		if game.ray(target,candidate,[],1).is_empty() and game.ray(candidate,opponent.eye(),[],1).is_empty():return candidate
 	return Vector3.INF
