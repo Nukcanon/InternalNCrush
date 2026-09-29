@@ -14,9 +14,18 @@ def main():
         if test not in TESTS:TESTS.append(test)
     OUT.mkdir(parents=True, exist_ok=True)
     failed = []
-    selected = sys.argv[1:] or TESTS
+    args = sys.argv[1:]
+    selected = TESTS
+    # CI runs the groups split across parallel jobs: --shard <index>/<count>.
+    if args[:1] == ["--shard"]:
+        index, count = (int(value) for value in args[1].split("/"))
+        selected = [name for position, name in enumerate(TESTS) if position % count == index]
+        args = args[2:]
+    if args:
+        selected = args
     if any(name not in TESTS for name in selected):
         raise ValueError("Unknown test group")
+    print("FUNCTIONAL_GROUPS", len(selected), "of", len(TESTS), flush=True)
     for name in selected:
         command = [os.environ.get("GODOT", "godot"), "--headless", "--path", str(PROJECT), "--script", f"res://tests/test_{name}.gd", "--", "--no-save-profile", "--no-update-check"]
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))

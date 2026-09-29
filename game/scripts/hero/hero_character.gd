@@ -189,7 +189,12 @@ func place_weapon_frame(s:Dictionary):
 	var sprint=float(s.get("sprint_blend",0.))
 	if sprint>0.:
 		# Low ready while sprinting: muzzle down and across the chest.
-		basis=basis.slerp(facing_basis()*Basis(Vector3.RIGHT,-.75)*Basis(Vector3.UP,.55),sprint)
+		# Left-handed heroes are mirrored (negative scale), so their bases are
+		# not rotations: blend the underlying rotations, then restore the mirror.
+		var ready=facing_basis()*Basis(Vector3.RIGHT,-.75)*Basis(Vector3.UP,.55)
+		var mirrored=basis.determinant()<0.
+		basis=Basis(basis.get_rotation_quaternion().slerp(ready.get_rotation_quaternion(),sprint))
+		if mirrored:basis=basis.scaled(Vector3(-1,-1,-1))
 		origin=origin.lerp(chest+facing_basis()*Vector3(.05,-.12,-.18)*scale_factor,sprint)
 	weapon_frame.global_transform=Transform3D(basis,origin)
 	weapon_frame.scale=Vector3.ONE*scale_factor

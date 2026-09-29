@@ -1,4 +1,8 @@
 name: Build and publish Internal N Crush 1.4.0
+# Four parallel job families share .github/scripts/ci_prepare.sh: the
+# functional regressions split into shards, the review/audit checks, the
+# network runners and the Windows/Web exports. The draft release is created
+# only after every family has passed.
 on:
   push:
     paths:
@@ -8,6 +12,7 @@ on:
       - 'services/**'
       - 'nas/**'
       - '.github/workflows/windows.yml'
+      - '.github/scripts/ci_prepare.sh'
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,102 +20,85 @@ permissions:
 concurrency:
   group: internal-n-crush-validate-${{ github.ref }}
   cancel-in-progress: true
+env:
+  GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
 jobs:
-  windows:
+  functional:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare Godot and assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
-          unzip -q /tmp/godot.zip -d /tmp/godot
-          chmod +x /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
-          curl -fL --retry 3 -o /tmp/templates.tpz https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
-          mkdir -p ~/.local/share/godot/export_templates/4.4.1.stable
-          unzip -p /tmp/templates.tpz templates/windows_release_x86_64.exe > ~/.local/share/godot/export_templates/4.4.1.stable/windows_release_x86_64.exe
-          unzip -p /tmp/templates.tpz templates/windows_debug_x86_64.exe > ~/.local/share/godot/export_templates/4.4.1.stable/windows_debug_x86_64.exe
-          unzip -p /tmp/templates.tpz templates/web_nothreads_release.zip > ~/.local/share/godot/export_templates/4.4.1.stable/web_nothreads_release.zip
-          unzip -p /tmp/templates.tpz templates/web_nothreads_debug.zip > ~/.local/share/godot/export_templates/4.4.1.stable/web_nothreads_debug.zip
-          python3 game/tools/prepare_assets.py
-      - name: Preflight isolated Web asset import
-        run: |
-          set -euo pipefail
-          pip install Pillow
-          python3 web/prepare_lightweight.py
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
-      - name: Import and bake original models
-        run: |
-          set -euo pipefail
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --check-only --script res://tests/network_capacity.gd
-          timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_render_split.gd
-          timeout 90 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_motion_v115.gd -- --no-save-profile --no-update-check
-          timeout 90 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_ragdoll_v115.gd
-          timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_models.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_door_leaves.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/build_arenas.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
-      - name: Validate revised grips, turret timing and mobile layout
-        run: |
-          set -euo pipefail
-          timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_details_v116.gd
-          timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_details_gameplay_v116.gd -- --no-save-profile --no-update-check
-      - name: Validate melee, pellet impacts and touch controls
-        run: timeout 180 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_melee_v117.gd -- --no-save-profile --no-update-check
-      - name: Capture guide screens with the 1.4 cartoon graphics
-        run: timeout 300 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v117.gd
+      - name: Prepare Godot and bake models
+        run: bash .github/scripts/ci_prepare.sh
+      - name: Functional regressions (shard ${{ matrix.shard }} of 6)
+        run: python3 game/tests/run_functional.py --shard ${{ matrix.shard }}/6
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           overwrite: true
-          name: review-v117
-          path: validation/v117/*
+          name: functional-validation-${{ matrix.shard }}
+          path: validation/functional-v11/*.log
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Godot and bake models
+        run: bash .github/scripts/ci_prepare.sh
+      - name: Render split, motion and ragdoll
+        run: |
+          set -euo pipefail
+          $GODOT --headless --path game --check-only --script res://tests/network_capacity.gd
+          timeout 180 $GODOT --headless --path game --script res://tests/test_render_split.gd
+          timeout 90 $GODOT --headless --path game --script res://tests/test_motion_v115.gd -- --no-save-profile --no-update-check
+          timeout 90 $GODOT --headless --path game --script res://tests/test_ragdoll_v115.gd
+      - name: Validate revised grips, turret timing and mobile layout
+        run: |
+          set -euo pipefail
+          timeout 180 $GODOT --headless --path game --script res://tests/test_details_v116.gd
+          timeout 180 $GODOT --headless --path game --script res://tests/test_details_gameplay_v116.gd -- --no-save-profile --no-update-check
+      - name: Validate melee, pellet impacts and touch controls
+        run: timeout 180 $GODOT --headless --path game --script res://tests/test_melee_v117.gd -- --no-save-profile --no-update-check
       - name: Verify audible combat and deployment feedback
-        run: timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/test_audio_feedback.gd -- --no-save-profile --no-update-check
+        run: timeout 180 xvfb-run -a $GODOT --audio-driver Dummy --path game --script res://tests/test_audio_feedback.gd -- --no-save-profile --no-update-check
       - name: Verify approved vocal alternatives and bot control permissions
         run: |
-          timeout 180 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tests/test_vocal_audio.gd -- --no-save-profile --no-update-check
-          GODOT=/tmp/godot/Godot_v4.4.1-stable_linux.x86_64 python3 game/tests/run_network_bot_settings.py
+          set -euo pipefail
+          timeout 180 xvfb-run -a $GODOT --audio-driver Dummy --path game --script res://tests/test_vocal_audio.gd -- --no-save-profile --no-update-check
+          python3 game/tests/run_network_bot_settings.py
           python3 web/test_compact_audio.py
-      - uses: actions/upload-artifact@v4
-        with:
-          overwrite: true
-          name: graphics-native-v115
-          path: |
-            game/assets/menu_slides/*.jpg
-            game/validation/*.png
-      - name: Verify complete equipment thumbnails and target HUD
+      - name: Verify equipment thumbnails, target HUD and map previews
         run: |
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_kill_icons.gd
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/build_thumbnails.gd -- --v125
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --editor --import --quit
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_v125.gd -- --no-save-profile --no-update-check
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_maps_v125.gd
+          set -euo pipefail
+          xvfb-run -a $GODOT --audio-driver Dummy --path game --script res://tools/review_v125.gd -- --no-save-profile --no-update-check
+          xvfb-run -a $GODOT --audio-driver Dummy --path game --script res://tools/review_maps_v125.gd
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           overwrite: true
           name: review-v125
           path: validation/v125/*.png
       - name: Verify equipment footer and all objective routes
         run: |
-          timeout 120 xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path game --script res://tools/review_gear_v125.gd -- --no-save-profile --no-update-check
-          timeout 120 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tools/audit_layout_v125.gd
-      - name: 32-client capacity with paced startup
-        env:
-          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
-        run: python3 game/tests/run_network_capacity.py
-      - name: Functional regressions and network security
-        env:
-          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
+          set -euo pipefail
+          timeout 120 xvfb-run -a $GODOT --audio-driver Dummy --path game --script res://tools/review_gear_v125.gd -- --no-save-profile --no-update-check
+          timeout 120 $GODOT --headless --path game --script res://tools/audit_layout_v125.gd
+      - name: Map surface audits
         run: |
+          set -euo pipefail
           python3 game/tools/maps/test_tile_faces.py
           python3 game/tools/maps/audit_surfaces_v13.py
-          python3 game/tests/run_functional.py
+  network:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Godot and bake models
+        run: bash .github/scripts/ci_prepare.sh
+      - name: 32-client capacity with paced startup
+        run: python3 game/tests/run_network_capacity.py
       - name: Independent network clients, lifecycle and movable props
-        env:
-          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: |
           set -euo pipefail
           python3 game/tests/run_network_probe.py
@@ -119,58 +107,67 @@ jobs:
           python3 game/tests/run_network_rotation.py
       - name: Late-start lifecycle regression
         env:
-          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
           LIFECYCLE_STAGGER: '1.5'
         run: python3 game/tests/run_network_lifecycle.py
       - name: Touch input and WebRTC host/client integration
-        env:
-          GODOT: /tmp/godot/Godot_v4.4.1-stable_linux.x86_64
         run: |
           set -euo pipefail
           pip install -r services/directory/requirements.txt
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_touch.gd -- --touch-test --no-save-profile --no-update-check
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_mobile_v128.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --script res://tests/test_map_pinch_v128.gd
+          $GODOT --headless --path game --script res://tests/test_touch.gd -- --touch-test --no-save-profile --no-update-check
+          $GODOT --headless --path game --script res://tests/test_mobile_v128.gd
+          $GODOT --headless --path game --script res://tests/test_map_pinch_v128.gd
           python3 game/tests/run_network_rtc.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          overwrite: true
+          name: network-validation
+          if-no-files-found: ignore
+          path: validation/webrtc-v11/*.log
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Godot, export templates and bake models
+        env:
+          WITH_TEMPLATES: '1'
+        run: bash .github/scripts/ci_prepare.sh
+      - name: Capture guide screens with the 1.4 cartoon graphics
+        run: timeout 300 xvfb-run -a $GODOT --audio-driver Dummy --path game --script res://tools/review_v117.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          overwrite: true
+          name: review-v117
+          path: validation/v117/*
       - name: Export Windows and package
         run: |
           set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/out/InternalNCrush"
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path game --export-release "Windows Desktop" "$GITHUB_WORKSPACE/out/InternalNCrush/InternalNCrush.exe"
+          $GODOT --headless --path game --export-release "Windows Desktop" "$GITHUB_WORKSPACE/out/InternalNCrush/InternalNCrush.exe"
           python3 game/tools/package_release.py --build-dir out/InternalNCrush --output-dir out
       - name: Export single-thread Web build
         run: |
           set -euo pipefail
-          pip install Pillow
           python3 web/prepare_lightweight.py
           mkdir -p web/build
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
-          timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_models.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_door_leaves.gd
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/build_arenas.gd
+          $GODOT --headless --path web/staging/game --editor --import --quit
+          timeout 300 $GODOT --headless --path web/staging/game --script res://tools/build_models.gd
+          $GODOT --headless --path web/staging/game --script res://tools/build_door_leaves.gd
+          $GODOT --headless --path web/staging/game --script res://tools/build_arenas.gd
           python3 -c 'import json; assert json.load(open("game/assets/arenas/physics_signatures.json"))==json.load(open("web/staging/game/assets/arenas/physics_signatures.json")), "Native/Web collision mismatch"'
-          timeout 300 /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tools/lightweight_models.gd
-          xvfb-run -a /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --path web/staging/game --script res://tools/build_thumbnails.gd -- --v125
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --script res://tests/test_render_split.gd
-          python3 -c 'from pathlib import Path; from PIL import Image; p=sorted(Path("web/staging/game/assets/menu_slides").glob("*.jpg")); assert len(p)==12 and all(Image.open(f).size==(1920,1080) for f in p); print("VERIFIED_COMBAT_SLIDES 12 full-HD original combat photographs")'
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --editor --import --quit
+          timeout 300 $GODOT --headless --path web/staging/game --script res://tools/lightweight_models.gd
+          $GODOT --headless --path web/staging/game --script res://tests/test_render_split.gd
+          python3 -c 'from pathlib import Path; from PIL import Image; p=sorted(Path("web/staging/game/assets/menu_slides").glob("*.jpg")); assert len(p)==12 and all(Image.open(f).size==(1920,1080) for f in p); print("VERIFIED_COMBAT_SLIDES 12 full-HD combat photographs")'
+          $GODOT --headless --path web/staging/game --editor --import --quit
           web_name="game-${GITHUB_SHA:0:12}"
-          /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
+          $GODOT --headless --path web/staging/game --export-release Web "$GITHUB_WORKSPACE/web/build/$web_name.html"
           mv "web/build/$web_name.html" web/build/index.html
           python3 web/test_webgl_handles.py "web/build/$web_name.js"
           mkdir -p web/build/guide
           for screen in controls touch settings lan internet; do cp "validation/v117/$screen.jpg" "web/build/guide/$screen.jpg"; done
           python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.4.0.zip", include_config=False)'
           python3 web/package_web.py
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          overwrite: true
-          name: graphics-v115
-          path: |
-            game/assets/menu_slides/*.jpg
-            game/validation/*.png
-            web/staging/game/assets/menu_slides/*.jpg
       - uses: actions/upload-artifact@v4
         with:
           overwrite: true
@@ -192,16 +189,8 @@ jobs:
             out/InternalNCrush_NAS_Linux_v1.4.0.zip
             out/WEB_RELEASE_v1.4.0.json
             out/SHA256SUMS.txt
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          overwrite: true
-          name: functional-validation
-          path: |
-            validation/functional-v11/*.log
-            validation/webrtc-v11/*.log
   publish-release:
-    needs: windows
+    needs: [functional, checks, network, build]
     if: github.ref == 'refs/heads/main' && github.repository == 'Nukcanon/InternalNCrush'
     runs-on: ubuntu-latest
     permissions:
