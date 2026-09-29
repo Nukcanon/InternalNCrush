@@ -29,6 +29,9 @@ static func build(a:Node,index:int):
 	a.set_meta("district",true);a.set_meta("night",index in [4,15,23,28,30])
 	if not plan.get("water",[]).is_empty():
 		a.has_water=true;a.set_meta("district_water",ring(plan.water[0]))
+		var basins=[]
+		for points in plan.water:basins.append(ring(points))
+		a.set_meta("district_waters",basins)
 		a.set_meta("water_kind",plan.get("water_kind","river"));a.set_meta("water_height",float(plan.get("water_height",-.35)))
 	a.playable_polygon=ring(plan.border[0]);a.district_surfaces=[]
 	for source in plan.surfaces:

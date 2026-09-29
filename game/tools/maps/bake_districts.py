@@ -130,8 +130,8 @@ for plan in plans:
                 if (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])<0:b,c=c,b
                 emit([(x,height(x,z),z) for x,z in [a,b,c]],kind)
     def walls(poly,low,high,kind):
-        for p in polygons(poly):
-            for ring in rings(p):
+        for p in ([poly] if poly.geom_type=='LineString' else polygons(poly)):
+            for ring in ([list(p.coords)] if p.geom_type=='LineString' else rings(p)):
                 for a,b in zip(ring,ring[1:]):
                     if kind=='eave_edge' and buildings.distance(Point((a[0]+b[0])*.5,(a[1]+b[1])*.5))<.02:continue
                     if kind=='perimeter' and sea and (a[0]+b[0])*.5>w*.76:
@@ -195,7 +195,8 @@ for plan in plans:
             p=Polygon(t);face(p,[ax,bz,ys[0]-ax*(x0-ox)-bz*(z0-oz)],'upper' if height>0 else 'lower')
             if height<0 and (min(distances)<run+.01 or max(distances)>length-run-.01):cuts_ground.append(p)
         if height<0:walls(full,height,-.08,'tunnel')
-        mid=line.interpolate(length*.5);goals.append([mid.x-ox,height,mid.y-oz])
+        # Decks and trenches ride on the terrain bands (flush_faces adds the offset).
+        mid=line.interpolate(length*.5);goals.append([mid.x-ox,height+terrain_y(mid.x,mid.y),mid.y-oz])
         return unary_union(cuts_ground),full
     if plan['id']!=32:
         cut,lower=level(plan['lower_path'],plan.get('lower_height',-4.2),max(2.7,plan['corridor_m']*.65)) if plan['lower_path'] else (Polygon(),Polygon())
@@ -211,9 +212,21 @@ for plan in plans:
     face(floor,[0,0,0],'ground')
     indoor=plan['id']-1 in [2,3,8,11,14,15,16,22,27,29]
     wall_height=max(6.8,plan.get('upper_height',4.2)+2.6) if indoor else 3.1
+    # 1.4: outdoor streets are framed by two-storey buildings (3.1 m storeys);
+    # covered side rooms keep a one-storey ceiling (wall_height).
+    STOREY=3.1
+    street_height=wall_height if indoor else STOREY*2
+    # Nothing a player can stand on may reach a roof: a jump rises 0.82 m
+    # (6 m/s, 22 m/s^2), so tops stay 1.4 m above any nearby walkable deck.
+    REACH=1.4
+    upper_top=plan.get('upper_height',0.) if plan['upper_path'] else 0.
+    def storeys_over(height):return math.ceil((height+REACH)/STOREY-1e-6)*STOREY
+    def clear_top(region,top):
+        if upper_top>0 and not upper.is_empty and upper.distance(region)<7.:top=max(top,storeys_over(upper_top))
+        return top
     if indoor:
         face(architecture_floor,[0,0,wall_height],'ceiling',False)
-    room_ceilings=Polygon()
+    room_ceilings=Polygon();room_tops=[]
     if not indoor:
         # Authored side-building loops contain three linked rooms. Cover these
         # rooms, leaving the main streets, courtyards and elevated routes open.
@@ -233,19 +246,34 @@ for plan in plans:
             room_ceilings=unary_union(pockets).intersection(architecture_floor)
             room_ceilings=room_ceilings.difference(upper.buffer(1.)).difference(lower.buffer(1.))
             face(room_ceilings,[0,0,wall_height],'ceiling',False)
-            face(room_ceilings,[0,0,wall_height+.16],'roof',False)
-            walls(room_ceilings,wall_height,wall_height+.16,'eave_edge_room')
+            # A covered room is the ground floor of a building: its roof is at
+            # street height (never a low ledge beside a deck).
+            for room in polygons(room_ceilings):
+                top=clear_top(room,street_height);room_tops.append((room,top))
+                face(room,[0,0,top],'roof',False)
+                for ring in rings(room):
+                    for a,b in zip(ring,ring[1:]):
+                        if architecture_floor.boundary.distance(Point((a[0]+b[0])*.5,(a[1]+b[1])*.5))<.02:continue
+                        walls(LineString([a,b]),wall_height,top,'wall')
     water=Polygon()
     if plan['id']-1 in [0,1,5,21,23,28]:
         holes=[Polygon(r) for p in polygons(shape(plan['floor'])) for r in p.interiors if Polygon(r).area>45]
-        if holes:water=max(holes,key=lambda p:p.area)
+        if holes:
+            water=max(holes,key=lambda p:p.area)
+            if plan['id']-1<19:
+                # Half-turn symmetric maps get the partner basin as well.
+                from shapely.affinity import rotate
+                image=rotate(water,180,origin=(w/2,h/2))
+                partner=[q for q in holes if q.symmetric_difference(image).area<max(4.,water.area*.05)]
+                if partner and not partner[0].equals(water):water=unary_union([water,partner[0]])
     # Solid building islands and exterior boundary give rooms and corridors
     # real occlusion. Open courtyards remain roofless; selected side rooms get
     # ceilings at runtime, never across the stair entrances.
     for p in polygons(architecture_floor):
-        walls(Polygon(p.exterior),0,wall_height,'quay_edge' if sea else 'wall')
+        walls(Polygon(p.exterior),0,street_height,'quay_edge' if sea else 'wall')
         for hole in p.interiors:
-            island=Polygon(hole);walls(island,0,.45 if island.equals(water) else wall_height,'wall')
+            island=Polygon(hole);basin=not water.is_empty and island.symmetric_difference(island.intersection(water)).area<1.
+            walls(island,0,.45 if basin else street_height,'wall')
     coastal_margin=border.difference(unary_union([Polygon(p.exterior) for p in polygons(architecture_floor)])).intersection(box(w*.76,-h,w*2,h*2)) if sea else Polygon()
     buildings=border.difference(architecture_floor).difference(water).difference(coastal_margin)
     # Individually supported building lots. Disjoint roofs, no stacked coplanar
@@ -256,6 +284,10 @@ for plan in plans:
             lot=buildings.intersection(box(ix*12+ox,iz*12+oz,(ix+1)*12+ox,(iz+1)*12+oz))
             if lot.is_empty:continue
             extra=[0.,.65,1.3,2.1][abs(ix*17+iz*37+(plan['id']-1)*11)%4]
+            if not indoor:
+                # Whole storeys; half-turn partner lots (-1-ix,-1-iz) share a height.
+                cx,cz=min((ix,iz),(-1-ix,-1-iz))
+                extra=clear_top(lot,street_height+[0.,0.,STOREY][abs(cx*17+cz*37+(plan['id']-1)*11)%3])-wall_height
             # A clipping remainder is not a separate tall building. Keep very
             # narrow roof lots at their parent wall height instead of extruding
             # a freestanding blade above neighbouring roofs.
@@ -268,12 +300,18 @@ for plan in plans:
                     face(eave,[0,0,wall_height+extra-.16],'soffit',False)
                     walls(eave,wall_height+extra-.16,wall_height+extra,'eave_edge')
             face(lot.union(eave),[0,0,wall_height+extra],'roof',False)
+    waterfront=[]
     for (ix,iz),(lot,top) in lots.items():
         for poly in polygons(lot):
             for ring in rings(poly):
                 for a,b in zip(ring,ring[1:]):
                     mid=((a[0]+b[0])*.5,(a[1]+b[1])*.5)
-                    low=wall_height
+                    # Street faces already have a ground wall up to street
+                    # height; faces on water (or any other open edge) run down
+                    # to the bed so buildings never hover.
+                    low=street_height if architecture_floor.boundary.distance(Point(mid))<.05 else -1.2
+                    if low<0 and not water.is_empty and water.boundary.distance(Point(mid))<.05:
+                        waterfront.append((a,b,top,(ix*131+iz*7)%9973))
                     for neighbour in [(ix-1,iz),(ix+1,iz),(ix,iz-1),(ix,iz+1)]:
                         if neighbour in lots and lots[neighbour][0].distance(Point(mid))<.001:
                             low=max(low,lots[neighbour][1])
@@ -289,13 +327,13 @@ for plan in plans:
                         vy=offset[0]*(v[0]-ox)+offset[1]*(v[1]-oz)+offset[2]
                         emit([(u[0],low+uy,u[1]),(v[0],low+vy,v[1]),(u[0],top+uy,u[1])],'wall')
                         emit([(v[0],low+vy,v[1]),(v[0],top+vy,v[1]),(u[0],top+uy,u[1])],'wall')
-    water_y=min([terrain_y(x,z) for x,z in water.exterior.coords],default=0.)-.35 if not water.is_empty else -.35
+    water_y=min([terrain_y(x,z) for q in polygons(water) for x,z in q.exterior.coords],default=0.)-.35 if not water.is_empty else -.35
     if not water.is_empty:
         face(water,[0,0,water_y-(4.5 if sea else .55)],'waterbed',not sea)
         face(water,[0,0,water_y],'water',False)
     if sea:
         face(box(-w*2,-h*2,w*3,h*3).difference(border).union(coastal_margin),[0,0,water_y],'water',False)
-    walls(border,0,max(7.2,wall_height),'perimeter')
+    walls(border,0,max(7.2,street_height+STOREY),'perimeter')
     flush_faces()
     def centered(p):return [round(p[0]-ox,4),round(p[1]-oz,4)]
     routes=unary_union([LineString(path) for path in plan['paths']])
@@ -344,7 +382,7 @@ for plan in plans:
     prop_candidates.sort(key=lambda p:((int(p[0])*73856093)^(int(p[1])*19349663)^(plan['id']*83492791))%2147483647)
     vehicles=[];vehicle_clearance=[]
     road_rosters={0:['flatbed','tanker','delivery'],1:['crane','tow','flatbed'],2:['tanker','dump','flatbed'],4:['utility','box','pickup'],5:['compact','estate','delivery'],6:['taxi','minibus','van'],7:['hatch','sedan','taxi'],8:['tow','pickup','van'],9:['compact','hatch'],13:['reefer','box','delivery'],15:['refuse','flatbed'],17:['van','reefer','pickup'],18:['dump','crane'],19:['utility','flatbed'],21:['pickup','van'],23:['tow','crane'],25:['dump','tanker'],28:['utility','ambulance','fire']}
-    if plan['id']-1 in road_rosters:
+    if False and plan['id']-1 in road_rosters:  # 1.4: no parked vehicles
         names=road_rosters[plan['id']-1]
         roster=[next(a for a in transport if a['name']=='vehicle_'+name) for name in names]
         for ordinal in range(3 if plan['capacity']>=16 else 2):
@@ -357,19 +395,34 @@ for plan in plans:
                 if any(math.hypot(x-q[0],z-q[1])<radius+q[2]+1. for q in vehicle_clearance):continue
                 if abs(terrain_y(x-radius,z-radius)-terrain_y(x+radius,z+radius))>.05:continue
                 vehicles.append([*centered((x,z)),terrain_y(x,z),0.,asset['name']]);vehicle_clearance.append((x,z,radius));break
+    # 1.4 regular maps are half-turn symmetric: cover props, trees and loose
+    # objects are placed in partner pairs so neither team gets extra cover.
+    symmetric=plan['id']-1<19
+    candidate_set=set(prop_candidates)
+    def partner(q):return (w-q[0],h-q[1])
+    def canonical(q):return (q[1],q[0])<(partner(q)[1],partner(q)[0])
     for p in prop_candidates:
-        if any(math.dist(p,q[:2])<q[2]+2. for q in vehicle_clearance):continue
-        if any(math.dist(p,q)<6 for q in props):continue
-        props.append(p)
+        if symmetric and (not canonical(p) or partner(p) not in candidate_set):continue
+        pair_points=[p,partner(p)] if symmetric else [p]
+        if any(any(math.dist(r,q[:2])<q[2]+2. for q in vehicle_clearance) for r in pair_points):continue
+        if any(any(math.dist(r,q)<6 for q in props) for r in pair_points):continue
+        if symmetric and math.dist(p,partner(p))<6:continue
+        props.extend(pair_points)
         if len(props)>=min(56,plan['capacity']*3):break
     trees=[]
     if not indoor:
+        def tree_ok(q):
+            if not room_ceilings.is_empty and room_ceilings.distance(Point(q))<3.2:return False
+            if not floor.contains(Point(q).buffer(3.2)):return False
+            if any(math.dist(q,r)<5.5 for r in props+trees):return False
+            return not any(math.dist(q,r[:2])<r[2]+4 for r in vehicle_clearance)
         for p in prop_candidates:
-            if not room_ceilings.is_empty and room_ceilings.distance(Point(p))<3.2:continue
-            if not floor.contains(Point(p).buffer(3.2)):continue
-            if any(math.dist(p,q)<5.5 for q in props+trees):continue
-            if any(math.dist(p,q[:2])<q[2]+4 for q in vehicle_clearance):continue
-            trees.append(p)
+            if symmetric:
+                if not canonical(p) or math.dist(p,partner(p))<5.5 or not tree_ok(p) or not tree_ok(partner(p)):continue
+                trees.extend([p,partner(p)])
+            else:
+                if not tree_ok(p):continue
+                trees.append(p)
             if len(trees)>=min(18,plan['capacity']):break
     # Small movable objects use a separate, less restrictive edge allowance.
     # They are kept out of the central route, spawns, objectives and ramps.
@@ -385,7 +438,12 @@ for plan in plans:
             if (not upper.is_empty and upper.distance(point)<2) or (not lower.is_empty and lower.distance(point)<2):continue
             if any(math.dist((x,z),p)<3.5 for p in props+trees+loose):continue
             if any(math.dist((x,z),q[:2])<q[2]+1. for q in vehicle_clearance):continue
-            loose.append((x,z))
+            if symmetric:
+                m=partner((x,z))
+                if not canonical((x,z)) or math.dist((x,z),m)<3.5 or any(math.dist(m,q)<3.5 for q in props+trees+loose):continue
+                if not floor.contains(Point(m).buffer(.9)) or near_door(m[0],m[1],1.5):continue
+                loose.extend([(x,z),m])
+            else:loose.append((x,z))
             if len(loose)>=12:break
         if len(loose)>=12:break
     facades=[]
@@ -403,6 +461,57 @@ for plan in plans:
                 if not floor.contains(Point(x+nx*.3,z+nz*.3)):nx,nz=-nx,-nz
                 # Front detail is clipped to the wall, never across an entrance.
                 facades.append([*centered((x,z)),math.atan2(nx,nz),min(6,length-1)])
+    # 1.4 facade fronts: every street-facing wall, split on the 12 m lot grid so
+    # each piece belongs to one building (height, colour and style per lot).
+    # [x0,z0,x1,z1,y0,y1,from,top,lot,flags]; flags 1 = inside a covered room.
+    fronts=[]
+    def lot_top(x,z):
+        key=(math.floor((x-ox)/12),math.floor((z-oz)/12))
+        return (lots[key][1] if key in lots else street_height),key
+    for poly in polygons(architecture_floor):
+        exterior=list(poly.exterior.coords)
+        for ring in rings(poly):
+            for a,b in zip(ring,ring[1:]):
+                length=math.dist(a,b)
+                if length<.8:continue
+                cuts={0.,1.}
+                for axis,o in [(0,ox),(1,oz)]:
+                    lo,hi=sorted([a[axis],b[axis]])
+                    for k in range(math.floor((lo-o)/12)+1,math.ceil((hi-o)/12)):
+                        t=(o+k*12-a[axis])/(b[axis]-a[axis]);cuts.add(min(1.,max(0.,t)))
+                cuts=sorted(cuts)
+                for t0,t1 in zip(cuts,cuts[1:]):
+                    u=(a[0]+(b[0]-a[0])*t0,a[1]+(b[1]-a[1])*t0);v=(a[0]+(b[0]-a[0])*t1,a[1]+(b[1]-a[1])*t1)
+                    piece=math.dist(u,v)
+                    if piece<.8:continue
+                    x,z=(u[0]+v[0])*.5,(u[1]+v[1])*.5
+                    if sea and ring==exterior and x>w*.76:continue
+                    if not water.is_empty and water.boundary.distance(Point(x,z))<.01:continue
+                    dx,dz=(v[0]-u[0])/piece,(v[1]-u[1])/piece;nx,nz=-dz,dx
+                    if not floor.contains(Point(x+nx*.3,z+nz*.3)):nx,nz=-nx,-nz
+                    # Orient every front so its normal (left of u->v) faces the street.
+                    if (v[0]-u[0])*nz-(v[1]-u[1])*nx<0:u,v=v,u
+                    top,key=lot_top(x-nx*.4,z-nz*.4)
+                    if indoor:top=wall_height
+                    inside=not room_ceilings.is_empty and room_ceilings.buffer(.05).contains(Point(x+nx*.3,z+nz*.3))
+                    near_deck=not upper.is_empty and upper.distance(Point(x,z))<3.5
+                    fronts.append([*centered(u),*centered(v),round(terrain_y(*u),4),round(terrain_y(*v),4),0.,round(top,4),(key[0]*131+key[1]*7)%9973,(1 if inside else 0)|(4 if near_deck else 0)])
+    # Houses rising straight out of a canal/harbour basin (flag 8).
+    for a,b,top,code in waterfront:
+        x,z=(a[0]+b[0])*.5,(a[1]+b[1])*.5;length=math.dist(a,b)
+        if length<.8:continue
+        dx,dz=(b[0]-a[0])/length,(b[1]-a[1])/length;nx,nz=-dz,dx
+        if not water.buffer(.2).contains(Point(x+nx*.3,z+nz*.3)):a,b=b,a
+        fronts.append([*centered(a),*centered(b),round(terrain_y(*a),4),round(terrain_y(*b),4),0.,round(top,4),code,8])
+    # Upper walls over covered rooms (above their street openings).
+    for room,top in room_tops:
+        for ring in rings(room):
+            for a,b in zip(ring,ring[1:]):
+                x,z=(a[0]+b[0])*.5,(a[1]+b[1])*.5
+                if math.dist(a,b)<.8 or architecture_floor.boundary.distance(Point(x,z))<.02:continue
+                dx,dz=(b[0]-a[0])/math.dist(a,b),(b[1]-a[1])/math.dist(a,b);nx,nz=-dz,dx
+                if room.contains(Point(x+nx*.3,z+nz*.3)):a,b=b,a
+                fronts.append([*centered(a),*centered(b),round(terrain_y(*a),4),round(terrain_y(*b),4),wall_height,round(top,4),int(abs(x*13+z*7))%9973,2|(4 if not upper.is_empty and upper.distance(Point(x,z))<3.5 else 0)])
     # A new descending entrance may cut through a former ground objective.
     # Move that objective onto nearby clear ground, never leave it in a hole.
     def safe_target(point):
@@ -480,10 +589,10 @@ for plan in plans:
           'spawns':[centered(p) for p in plan['spawns']], 'targets':[centered(p) for p in targets],
           'goals':goals,'corridor_m':plan['corridor_m'],'capacity':plan['capacity'],
           # Keep the whole window below a sloped wall's lowest top edge.
-          'props':[prop_anchor(p) for p in props], 'trees':[[*centered(p),terrain_y(*p)] for p in trees], 'ceiling_height':wall_height if indoor else 0., 'loose_props':[[*centered(p),terrain_y(*p)] for p in loose], 'facades':supported_facades,'supports':supports,
+          'props':[prop_anchor(p) for p in props], 'trees':[[*centered(p),terrain_y(*p)] for p in trees], 'ceiling_height':wall_height if indoor else 0., 'loose_props':[[*centered(p),terrain_y(*p)] for p in loose], 'facades':supported_facades,'fronts':fronts,'street_height':street_height,'storey':STOREY,'supports':supports,
           'terrain':terrain,'elevated_crossing':plan.get('elevated_crossing',False),
           'spawn_heights':[terrain_y(*p) for p in plan['spawns']], 'target_heights':[terrain_y(*p) for p in targets],
-          'water':[[centered(p) for p in ring] for ring in rings(water)] if not water.is_empty else [],
+          'water':[[centered(p) for p in q.exterior.coords] for q in polygons(water)] if not water.is_empty else [],
           'vehicles':vehicles,'boats':boats,'doors':doors,'water_kind':'sea' if sea else 'river','water_height':water_y,
           'water_boat':centered((water.representative_point().x,water.representative_point().y)) if not water.is_empty else []}
     (OUT/('map_%02d.json'%data['index'])).write_text(json.dumps(data,ensure_ascii=False,separators=(',',':')),encoding='utf-8')

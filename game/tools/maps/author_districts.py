@@ -4,6 +4,8 @@ from shapely.geometry import LineString,Point,box,Polygon
 from shapely.ops import unary_union
 from districts_v128 import LAYOUTS,TERRAIN,KEEP,BRIDGES,RECTANGLES
 from vertical_districts import select as vertical_routes,COMPOSITIONS,STAIR_MAPS
+import layouts_v14
+from shapely.ops import substring as _substring
 r=Path(__file__).resolve().parents[3];out=r/'game/assets/arenas';old=[{'players':c,'name':str(i+1)} for i,c in enumerate([32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16])]
 # Authored district paths: each chain is a room/courtyard sequence, not a repeated open-field template.
 chains=[
@@ -57,12 +59,16 @@ def polys(g):
  if hasattr(g,'geoms'):return sum((polys(x) for x in g.geoms),[])
  return []
 for i,m in enumerate(old):
- cap=m['players'];dim=(360,360) if cap==32 else (240,240) if cap==16 else (120,120) if cap==8 else (96,108)
- if 19<=i<31:dim=(128,160) if cap==8 else (228,276)
+ # 1.4: compact footprints (about -25%) so every street can carry detailed
+ # facades; objectives keep their normalized spacing.
+ cap=m['players'];dim=(264,264) if cap==32 else (184,184) if cap==16 else (104,104) if cap==8 else (90,100)
+ if 19<=i<31:dim=(112,140) if cap==8 else (184,220)
+ if i==31:dim=(240,240)
  if i==31:
   paths=[coords(v) for v in ['50,92 28,84 14,64 22,42 15,19 40,10','50,92 52,72 46,50 54,30 40,10','50,92 80,84 90,62 77,43 85,20 63,12 40,10','22,42 46,50 77,43','28,84 52,72 80,84']];ident=('야외 훈련 캠퍼스','거리 사격 / 이동 표적 / 장비 실습','0m, +4m, +8m, +12m의 4개 높이')
  elif i<19:
-  paths=[coords(x) for x in chains[i]];ident=identities[i]
+  # 1.4: point-symmetric chains (layouts_v14) replace the 1.2.8 chains.
+  paths=[coords(x) for x in layouts_v14.chains(i)];ident=identities[i]
  else:
   s=specs[str(i)];sx,sy=(32,40) if i<25 else (38,46)
   pts=[((p[0]/sx+1)*44+6,(p[1]/sy+1)*44+6) for p in s['points']]
@@ -75,7 +81,7 @@ for i,m in enumerate(old):
   if k%3==1:left=[spawn,(14,82),(13,57),(29,47),(14,28),pa];middle=[(29,47),(43,39),(56,57),(79,52)]
   if k%3==2:right=[spawn,(86,84),(88,60),(71,45),(87,22),pb];middle=[(19,55),(38,66),(54,47),(71,45)]
   paths.extend([left,right,middle,[pa,(33,13),defend,(68,10),pb]]);ident=defdesc[k]
- if i in LAYOUTS:
+ if i in LAYOUTS and i>=19:
   paths=[coords(x) for x in LAYOUTS[i]]
   if i>=19:
    pts=[paths[0][0],paths[0][-1],paths[0][max(1,len(paths[0])//2)],paths[1][max(1,len(paths[1])//2)]]
@@ -86,13 +92,26 @@ for i,m in enumerate(old):
  # Break long sightlines with offset vestibules; do not scale corridor widths with map area.
  authored_paths=paths
  bent=[]
+ def half_turn(q):return (round(dim[0]-q[0],4),round(dim[1]-q[1],4))
  for ci,chain in enumerate(paths):
   new=[chain[0]]
   for ei,(a,b) in enumerate(zip(chain,chain[1:])):
    dx,dy=b[0]-a[0],b[1]-a[1];length=math.hypot(dx,dy)
    if length>(32 if cap>=16 else 24):
-    shift=(5.5 if cap>=16 else 3.5)*(1 if (ei+ci+i)%2 else -1)
-    for t in [.36,.67]:new.append((a[0]+dx*t-dy/length*shift,a[1]+dy*t+dx/length*shift))
+    if i<19:
+     # A segment and its half-turn image bend identically (canonical orientation).
+     ka=(round(a[0],3),round(a[1],3),round(b[0],3),round(b[1],3));ma,mb=half_turn(a),half_turn(b)
+     candidates=[(a,b,False,False),(b,a,False,True),(ma,mb,True,False),(mb,ma,True,True)]
+     ca,cb,mirrored,reverse=min(candidates,key=lambda c:(round(c[0][0],3),round(c[0][1],3),round(c[1][0],3),round(c[1][1],3)))
+     cdx,cdy=cb[0]-ca[0],cb[1]-ca[1];sign=1 if int(abs(ca[0]*7.1+ca[1]*3.3+cb[0]*1.7+cb[1]*5.9))%2 else -1
+     shift=(5.5 if cap>=16 else 3.5)*sign
+     pts=[(ca[0]+cdx*t-cdy/length*shift,ca[1]+cdy*t+cdx/length*shift) for t in [.36,.67]]
+     if mirrored:pts=[half_turn(q) for q in pts]
+     if reverse:pts=pts[::-1]
+     new.extend(pts)
+    else:
+     shift=(5.5 if cap>=16 else 3.5)*(1 if (ei+ci+i)%2 else -1)
+     for t in [.36,.67]:new.append((a[0]+dx*t-dy/length*shift,a[1]+dy*t+dx/length*shift))
    new.append(b)
   bent.append(new)
  paths=bent
@@ -100,14 +119,18 @@ for i,m in enumerate(old):
  rooms=list(dict.fromkeys(p for ch in authored_paths for p in ch));floors=[];ceiling_rooms=[]
  for chain in paths:floors.append(LineString(chain).buffer(width/2,join_style=2,cap_style=2))
  for j,(x,y) in enumerate(rooms):
-  rw=(28 if cap==32 else 22 if cap==16 else 18 if cap==12 else 15 if cap==8 else 13)+(j%3)*2;rh=(24 if cap==32 else 20 if cap>=12 else 13 if cap==8 else 11)+(j%4)*1.5
+  k=j
+  if i<19:
+   # Size by a hash of the canonical point so half-turn partners match.
+   cx,cy=min((round(x,3),round(y,3)),(round(dim[0]-x,3),round(dim[1]-y,3)));k=int(abs(cx*13.7+cy*7.3))
+  rw=(28 if cap==32 else 22 if cap==16 else 18 if cap==12 else 15 if cap==8 else 13)+(k%3)*2;rh=(24 if cap==32 else 20 if cap>=12 else 13 if cap==8 else 11)+(k%4)*1.5
   floors.append(box(x-rw/2,y-rh/2,x+rw/2,y+rh/2))
-  if j>1 and j%3==1:ceiling_rooms.append([x-rw/2,y-rh/2,x+rw/2,y+rh/2])
+  if (j>1 if i>=19 else (x,y) not in (paths[0][0],paths[0][-1])) and k%3==1:ceiling_rooms.append([x-rw/2,y-rh/2,x+rw/2,y+rh/2])
  # Side buildings contain linked rooms and a second exit, rather than decorative solid boxes.
  districts=0
  base_rooms=list(dict.fromkeys(p for ch in authored_paths for p in ch))
  for j,(x,y) in enumerate(base_rooms):
-  if i in LAYOUTS or j<2 or j%2:continue
+  if i in LAYOUTS or i<19 or j<2 or j%2:continue
   vx,vy=dim[0]/2-x,dim[1]/2-y;length=max(1,math.hypot(vx,vy));vx/=length;vy/=length
   offset=20 if cap>=16 or cap==12 else 12;span=10 if cap>=16 or cap==12 else 6
   a=(x+vx*offset-vy*span,y+vy*offset+vx*span)
@@ -121,18 +144,24 @@ for i,m in enumerate(old):
  floor=unary_union(floors).buffer(0)
  # Irregular perimeter follows connected districts rather than clipping rectangle corners.
  border=box(0,0,*dim) if i in rects else floor.buffer(7 if cap>=16 else 4,join_style=2).simplify(2,preserve_topology=True)
- if i<31:
+ if i<19:
+  upper_chain,lower_chain,upper_height,lower_height=[],[],0.,0.
+  up,low=layouts_v14.routes(i)
+  if up:upper_chain=list(_substring(LineString(paths[up[0]]),up[1],up[2],normalized=True).coords);upper_height=up[3]
+  if low:lower_chain=list(_substring(LineString(paths[low[0]]),low[1],low[2],normalized=True).coords);lower_height=low[3]
+ elif i<31:
   (upper_chain,upper_height),(lower_chain,lower_height)=vertical_routes(i,paths)
  else:upper_chain,lower_chain,upper_height,lower_height=paths[1],paths[0],4.2,-4.2
- if i not in BRIDGES and i!=31:upper_chain=[];lower_chain=[];upper_height=lower_height=0.
+ if i not in BRIDGES and i!=31 and i>=19:upper_chain=[];lower_chain=[];upper_height=lower_height=0.
  upper=LineString(upper_chain).buffer(max(2.7,width*.70)/2,join_style=2) if upper_chain else Polygon()
  lower=LineString(lower_chain).buffer(max(2.7,width*.65)/2,join_style=2) if lower_chain else Polygon()
  spawn=paths[0][0] if i<19 or i==31 else world(pts[0]);enemy=paths[0][-1] if i<19 or i==31 else world(pts[1])
- targets=[paths[0][len(paths[0])//2],paths[1][len(paths[1])//2],paths[2][len(paths[2])//2]] if i<19 or i==31 else [world(pts[2]),world(pts[3])]
+ targets=[authored_paths[k][len(authored_paths[k])//2] for k in range(3)] if i<19 or i==31 else [world(pts[2]),world(pts[3])]
+ if i<19:targets[2]=half_turn(targets[0])  # side objectives are half-turn partners
  item={'paths':paths,'upper_path':upper_chain,'lower_path':lower_chain,'id':i+1,'name':m['name'],'capacity':cap,'dimensions':dim,'rectangle':i in rects,'identity':ident,'floor':polys(floor),'border':polys(border),'upper':polys(upper),'lower':polys(lower),'stairs':[list(p) for chain in [upper_chain,lower_chain] if chain for p in [chain[0],chain[-1]]],'spawns':[spawn,enemy],'targets':targets,'corridor_m':width,'side_corridor_m':2.7,'rooms':len(rooms)+districts,'connected':floor.geom_type=='Polygon','mode':'연습장' if i==31 else '설치/해체' if i>=19 else '일반전'}
  result.append(item)
  item['ceiling_rooms']=ceiling_rooms
- item['terrain']=TERRAIN.get(i,None);item['elevated_crossing']=i in BRIDGES;item['authored_revision']=128
+ item['terrain']=layouts_v14.terrain(i) if i<19 else TERRAIN.get(i,None);item['elevated_crossing']=i in BRIDGES or (i<19 and bool(upper_chain));item['authored_revision']=128
  item['upper_height']=upper_height;item['lower_height']=lower_height
  item['composition']='supported_crossing' if i in BRIDGES else 'grounded_terraces' if i in TERRAIN else 'rectangular_district' if i in RECTANGLES else 'practice_towers'
  item['stairs_enabled']=i in STAIR_MAPS

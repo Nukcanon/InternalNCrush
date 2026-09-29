@@ -269,7 +269,7 @@ func apply_surface_detail():
 	for mesh in list:
 		if mesh.name=="Geometry":mesh.material_override=material
 func wading(pos:Vector3) -> bool:
-	if has_meta("district_water"):return pos.y<float(get_meta("water_height",-.35))+.1 and Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),get_meta("district_water"))
+	if has_meta("district_water"):return pos.y<float(get_meta("water_height",-.35))+.1 and get_meta("district_waters",[get_meta("district_water")]).any(func(basin):return Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),basin))
 	if map_index==5:
 		for z in [-27,0,27]:
 			if absf(pos.z-z)<2.5:return false
