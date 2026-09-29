@@ -76,6 +76,7 @@ var shot_serial=0
 var fall_peak=0.
 var falling=false
 var rotation_target_extra=Vector3.ZERO # hip-only view-model tilt (one-handed pistol cant)
+var launcher_tilt=0. # 0..1: launcher tipped forward so the rear end can be loaded
 const STEP_HEIGHT=.28
 func _ready():
 	motion_seed=fposmod(float(pid)*2.39996,TAU)
@@ -111,7 +112,7 @@ func build_gun(wid:String):
 	if local:
 		ensure_view_body()
 		# Long guns are compact in the view; pistols keep their size next to the big cartoon hand.
-		view_weapon=GunModel.new();view_weapon.build(w,false);view_mount.add_child(view_weapon);view_weapon.scale=Vector3.ONE*(1. if GunLooks.hold_kind(w)=="pistol" else .82)
+		view_weapon=GunModel.new();view_weapon.build(w,false);view_mount.add_child(view_weapon);view_weapon.scale=Vector3.ONE*(1. if GunLooks.hold_kind(w)=="pistol" else .9)
 	world_weapon=GunModel.new();world_weapon.build(w,HeroStyle.outlines_enabled())
 	if is_instance_valid(character):character.hold(world_weapon)
 	else:render_root.add_child(world_weapon)
@@ -145,7 +146,7 @@ func ensure_view_body():
 	if is_instance_valid(view_body):return
 	if not is_instance_valid(view_mount):view_mount=Node3D.new();view_mount.name="ViewMount";gun.add_child(view_mount)
 	view_body=HeroCharacter.new();view_body.name="ViewBody";camera.add_child(view_body);view_body.build(maxi(0,shown_role),maxi(0,shown_team),false)
-	view_body.first_person_only();view_body.frame_override=view_mount
+	view_body.first_person_only();view_body.frame_override=view_mount;view_body.hand_size=VIEW_HAND/VIEW_BODY_SCALE
 	for mesh in view_body.meshes():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func ensure_hit_pose():
 	if is_instance_valid(character):return
@@ -358,14 +359,18 @@ func pose_state(p:Dictionary,now:float,progress:float,item_visible:bool) -> Dict
 	if hold=="pistol":s.two_hands=bool(w.get("dual",false))
 	return s
 # Legacy gadget meshes are carried through grip markers until the gear pass.
-func holder_for(item:Node3D,right:Vector3,left:Vector3,two_handed:bool) -> Node3D:
+func holder_for(item:Node3D,right:Vector3,left:Vector3,two_handed:bool,grip:Dictionary={}) -> Node3D:
 	var holder=Node3D.new();holder.name="HeldItem";holder.add_child(item)
 	for marker in [["RightGrip",right],["LeftGrip",left]]:
 		var m=Marker3D.new();m.name=marker[0];m.position=marker[1];holder.add_child(m)
 	holder.set_meta("two_handed",two_handed)
-	# Sockets are the points the palms wrap: cupped when one-handed, gripped at
-	# both sides when two-handed.
-	holder.set_meta("grip_styles",{"R":"pistol" if two_handed else "hold","L":"pistol"})
+	# Sockets are the points the palms wrap: cupped when one-handed, a fist on
+	# each side when two-handed. Gear may name its own grip styles and shapes.
+	var styles={"R":"pistol" if two_handed else "hold","L":"pistol"};var shapes={}
+	for side in grip:
+		styles[side]=str(grip[side].get("style",styles.get(side,"pistol")))
+		if grip[side].has("shape"):shapes[side]=grip[side].shape
+	holder.set_meta("grip_styles",styles);holder.set_meta("grip_shapes",shapes)
 	return holder
 func headless_pose(p:Dictionary):
 	# The same hero skeleton drives authoritative hit volumes (meshes hidden).
@@ -376,7 +381,7 @@ func headless_pose(p:Dictionary):
 	# Receiving headless peers only need capsules/cameras. Server-only anatomy
 	# avoids 32 clients redundantly animating 32 complete authoritative rigs each.
 	if not game.server:return
-	ensure_hit_pose();character.scale.x=float(p.get("hand",1))
+	ensure_hit_pose();character.scale.x=float(p.get("hand",1));character.pose_fingers=false
 	var w=game.current_weapon(p);var progress=clampf((game.clock-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0.,1.) if p.reload>game.clock else -1.
 	var held=character.held
 	if not held is GunModel or held.spec.get("name","")!=w.get("name",""):
@@ -398,10 +403,10 @@ func visual(dt:float,p:Dictionary,now:float):
 			for child in item_model.get_children():item_model.remove_child(child);child.queue_free()
 			var first=GadgetVisual.new();first.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
 			if is_instance_valid(view_item):view_item.queue_free()
-			view_item=holder_for(first,first.right_socket,first.left_socket,first.two_handed);view_item.position=Vector3(-.04,.04,.10);item_model.add_child(view_item)
+			view_item=holder_for(first,first.right_socket,first.left_socket,first.two_handed,first.grip);view_item.position=Vector3(-.04,.04,.10);item_model.add_child(view_item)
 			if is_instance_valid(held_holder):held_holder.queue_free()
 			gadget_world=GadgetVisual.new();gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
-			held_holder=holder_for(gadget_world,gadget_world.right_socket,gadget_world.left_socket,gadget_world.two_handed)
+			held_holder=holder_for(gadget_world,gadget_world.right_socket,gadget_world.left_socket,gadget_world.two_handed,gadget_world.grip)
 			held_holder.position=Vector3(0,-.05,-.28)
 	var wid=(p.primary if p.slot==0 else p.secondary) if p.slot<2 or shown_weapon.is_empty() else shown_weapon
 	if shown_weapon!=wid:shown_weapon=wid;build_gun(wid)
@@ -427,7 +432,15 @@ func visual(dt:float,p:Dictionary,now:float):
 	if is_instance_valid(world_weapon):
 		world_weapon.visible=state.hold in ["rifle","pistol"]
 		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.animate_reload(progress,recoil,age);world_weapon.set_rounds(int(p.mag.get(wid,0)),progress)
-		world_weapon.position=Vector3(0,0,recoil*.045);world_weapon.rotation=Vector3(recoil*.10,0,0)
+		# Launchers tip forward while a rocket goes into the rear end, and stay
+		# down between the rockets of a tube-by-tube reload.
+		var loading=world_weapon.launcher and progress>=0.
+		var more=loading and bool(w.get("single_load",false)) and int(p.mag.get(wid,0))+1<int(w.get("mag",1))
+		launcher_tilt=move_toward(launcher_tilt,1. if loading and (progress<.86 or more) else 0.,dt*4.5)
+		var tip=smoothstep(0.,1.,launcher_tilt)
+		# The launcher comes down in front of the chest, muzzle low and turned a
+		# little across the body, so the rear opening faces the support hand.
+		world_weapon.position=Vector3(0,0,recoil*.045)+Vector3(-.10,-.13,-.30)*tip;world_weapon.rotation=Vector3(recoil*.10-.6*tip,.35*tip,0)
 	if is_instance_valid(held_holder):held_holder.visible=state.hold=="item"
 	character.drive(dt,state)
 	update_melee(p,now)
@@ -452,17 +465,27 @@ func visual(dt:float,p:Dictionary,now:float):
 	var ads=input_state.ads and p.slot<2 and not reloading and not MeleeCombat.shown(p,now)
 	ads_blend=move_toward(ads_blend,1. if ads else 0.,dt/maxf(.08,float(w.get("ads_ms",250))*.001*(1.+float(p.armor_max)/250.)));crouch_blend=lerpf(crouch_blend,1. if input_state.crouch else 0.,1.-exp(-dt*14))
 	var scoped=ads and SniperScope.overlay(w) and ads_blend>.9
+	# ATLAS (semi_scope): a magnified look without optics; the gun leaves the view.
+	var semi_scoped=ads and bool(w.get("semi_scope",false)) and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
 	camera.fov=lerpf(88. if sprint else 82.,SniperScope.fov(game.profile,w),ads_blend)
 	# View-model anchor: the right handle sits at this point in camera space at
 	# the hip. Aiming brings the rear sight (GunModel.aim_point) to the camera
 	# axis instead, so the anchor moves to the eye.
 	var kind=GunLooks.hold_kind(w);var dual=bool(w.get("dual",false))
+	var rocket=bool(w.get("rocket",false));var shoulder=bool(GunLooks.look(w).get("shoulder",false))
 	var hip_base=Vector3(.21,-.245,-.37)
 	if dual:hip_base=Vector3(0,-.235,-.46)
 	elif kind=="pistol":hip_base=Vector3(.20,-.23,-.40)
-	var ads_base=Vector3(.25,-.21,-.50) if w.get("rocket",false) else hip_base+Vector3(0,.07,-.03) if dual else Vector3.ZERO
+	# Hand-held launchers (QUAD) sit lower and further right: the tube cluster
+	# is wide and would cover the middle of the screen.
+	elif rocket and not shoulder:hip_base=Vector3(.34,-.36,-.42)
+	var ads_base=(Vector3(.25,-.21,-.50) if shoulder else Vector3(.29,-.27,-.50)) if rocket else hip_base+Vector3(0,.07,-.03) if dual else Vector3.ZERO
 	var base=hip_base.lerp(ads_base,ads_blend)
+	# Rear loading: the gun node moves to where the launcher's rear opening is
+	# shown (low, just right of centre); the launcher itself tips forward below.
+	var load_tip=smoothstep(0.,1.,launcher_tilt) if rocket else 0.
+	base=base.lerp(Vector3(.10,-.20,-.50),load_tip)
 	if kind=="pistol" and not dual:rotation_target_extra=Vector3(0,-.03,.10)
 	else:rotation_target_extra=Vector3.ZERO
 	base+=Vector3(-.025,.095,-.025)*crouch_blend*(1.-ads_blend)
@@ -471,7 +494,8 @@ func visual(dt:float,p:Dictionary,now:float):
 	base+=Vector3(cos(bob)*.022,cos(bob*2)*.017,0)*motion
 	var rotation_target=Vector3(recoil*lerpf(.34,.12,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
 	if sprint:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
-	if reloading:
+	if rocket:pass # launchers take their loading pose below (view weapon transform)
+	elif reloading:
 		base+=Vector3(.035,.015,.085)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
 	if p.get("cooking",0)>0:base+=Vector3(-.08,.07,.05);rotation_target+=Vector3(.25,.15,-.22)
 	if float(p.get("throw_until",-100.))>now:
@@ -491,7 +515,7 @@ func visual(dt:float,p:Dictionary,now:float):
 			if payload:payload.visible=not throwing
 	item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
 	if is_instance_valid(view_weapon):
-		view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now)
+		view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not semi_scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now)
 		view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.animate_reload(progress,recoil,age);view_weapon.set_rounds(int(p.mag.get(wid,0)),progress)
 		# Hip: the right handle sits at the anchor (a pair is centred on it).
 		# Aim: the rear sight sits a little below the camera axis, close enough
@@ -500,12 +524,24 @@ func visual(dt:float,p:Dictionary,now:float):
 		var s=view_weapon.base.scale*view_weapon.scale.x
 		var grip:Vector3=view_weapon.right_grip.position*s
 		var sight:Vector3=view_weapon.aim_point.position*s
-		var hip=-grip+(Vector3(.1*view_weapon.scale.x,0,0) if dual else Vector3.ZERO)
+		# DUET: the pair is held wide at the hip and drawn a little together when aiming.
+		var pair=lerpf(.40,.32,ads_blend)
+		if dual:view_weapon.set_pair_spacing(pair/view_weapon.base.scale.x)
+		var hip=-grip+(Vector3(pair*.5*view_weapon.scale.x,0,0) if dual else Vector3.ZERO)
 		var aimed=hip if dual else Vector3(0,-.04 if kind=="rifle" else -.045,-(.27 if kind=="rifle" else .34))-sight
-		if GunLooks.look(w).get("shoulder",false):
+		if shoulder:
 			# Shoulder launchers: the tube rests over the right shoulder, rear end just ahead of the eye.
 			hip=Vector3(.06,-.02,.30);aimed=hip
 		view_weapon.position=hip.lerp(aimed,ads_blend)
+		view_weapon.basis=Basis.from_scale(view_weapon.scale)
+		if load_tip>0.:
+			# Rear loading pose: the tube points forward, down and to the right, its
+			# open rear end at the gun node's origin facing the eye.
+			var axis=Vector3(.46,-.36,-.81).normalized()
+			var turn=Basis.looking_at(axis,Vector3.UP)
+			var rear_local=Vector3(0,view_weapon.muzzle.position.y,float(view_weapon.base.get_meta("rear",0.)))*view_weapon.base.scale
+			var loading=Transform3D(turn*Basis.from_scale(view_weapon.scale),-(turn*(rear_local*view_weapon.scale)))
+			view_weapon.transform=view_weapon.transform.interpolate_with(loading,load_tip)
 		var gauge=view_weapon.find_child("HeatGauge",true,false)
 		if gauge:gauge.update_heat(float(p.get("laser_heat",0)),float(p.get("laser_lock",0))>now)
 	update_view_body(dt,p,now,progress)
@@ -516,6 +552,12 @@ func visual(dt:float,p:Dictionary,now:float):
 # First-person arms: the hero (head hidden) stands where the camera is and
 # reaches both hands onto the view weapon.
 var view_head_offset=Vector3(0,1.62,0)
+# First-person arms: a larger view body gives long arms whose shoulders stay
+# below the bottom of the screen (the arm mesh's cut end never shows); the
+# hands are scaled back at the wrists to their usual first-person size.
+const VIEW_BODY_SCALE=1.55
+const VIEW_HAND=1.15
+const VIEW_BODY_OFFSET=Vector3(0,-.16,-.30)
 func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if not is_instance_valid(view_body):return
 	var item_up=is_instance_valid(view_item) and item_model.visible
@@ -537,10 +579,10 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	var yaw=Basis(Vector3.UP,aim_yaw)
 	# View-model convention: a slightly larger body and a compact gun keep both
 	# hands on long rifles with the short cartoon arms.
-	view_body.global_basis=yaw*Basis.from_scale(Vector3(float(handedness)*1.2,1.2,1.2))
+	view_body.global_basis=yaw*Basis.from_scale(Vector3(float(handedness),1.,1.)*VIEW_BODY_SCALE)
 	# Only forearms and hands are drawn, so the (invisible) shoulders may sit ahead
 	# of the eye: short cartoon arms then reach both grips of long rifles.
-	view_body.global_position=camera.global_position-yaw*view_head_offset+yaw*Vector3(0,-.26,-.44)
+	view_body.global_position=camera.global_position-yaw*view_head_offset+yaw*VIEW_BODY_OFFSET
 	var state=pose_state(p,now,progress,false);state.velocity=Vector3.ZERO;state.hold=GunLooks.hold_kind(game.current_weapon(p))
 	if state.hold=="shoulder":state.hold="rifle"
 	if item_up:state.hold="item";state.two_hands=bool(view_item.get_meta("two_handed",false))

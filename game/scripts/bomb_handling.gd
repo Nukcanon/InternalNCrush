@@ -18,8 +18,11 @@ static func view(actor:Node,p:Dictionary,now:float):
 	if not is_instance_valid(actor.bomb_view):
 		var model=Node3D.new();model.name="BombHandling";actor.camera.add_child(model);actor.bomb_view=model
 		var payload=Node3D.new();payload.name="Payload";model.add_child(payload);BombLogic.model(payload);payload.scale=Vector3.ONE*.52
-		# Wrist targets; the first-person hero arms reach them (actor.update_view_body).
-		var left=Marker3D.new();left.name="LeftGrip";left.position=Vector3(.19,.09,-.03);model.add_child(left)
+		# The left hand lies on top of the case's side band, fingers over its far
+		# edge (a grip shape); the right hand is a wrist target whose index finger
+		# taps the keys (actor.update_view_body).
+		var left=Marker3D.new();left.name="LeftGrip";left.position=Vector3(.125,.083,0);left.basis=Basis(Vector3.UP,PI);model.add_child(left)
+		model.set_meta("grip_styles",{"L":"top"});model.set_meta("grip_shapes",{"L":{"half":Vector3(.035,.073,.1),"round":.015}})
 		var right=Marker3D.new();right.name="RightGrip";model.add_child(right)
 		# Fingers point down onto the keys.
 		right.basis=Basis(Vector3.UP,PI)*Basis(Vector3.RIGHT,-.95)

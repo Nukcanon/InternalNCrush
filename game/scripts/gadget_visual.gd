@@ -5,6 +5,7 @@ extends Node3D
 var right_socket=Vector3.ZERO
 var left_socket=Vector3.ZERO
 var two_handed=false
+var grip={} # side -> {style, shape} (GearModels.held)
 static var templates={}
 func build(role:int,variant:int,_first_person:bool,turret:bool=false):
 	var key=str([role,variant,turret])
@@ -12,12 +13,12 @@ func build(role:int,variant:int,_first_person:bool,turret:bool=false):
 		var source=Node3D.new();var info=GearModels.held(source,role,variant,turret)
 		MeshFactory.own_recursive(source,source)
 		var packed=PackedScene.new();packed.pack(source)
-		templates[key]={"scene":packed,"right":info.right,"left":info.left,"two_handed":info.two_handed}
+		templates[key]={"scene":packed,"right":info.right,"left":info.left,"two_handed":info.two_handed,"grip":info.get("grip",{})}
 		source.free()
 	var entry=templates[key];var copy:Node=entry.scene.instantiate()
 	for child in copy.get_children():
 		copy.remove_child(child);MeshFactory.own_recursive(child,null);child.owner=null;add_child(child)
 	copy.free()
-	right_socket=entry.right;left_socket=entry.left;two_handed=entry.two_handed
+	right_socket=entry.right;left_socket=entry.left;two_handed=entry.two_handed;grip=entry.grip
 static func prepare(role:int,variant:int,first_person:bool,turret:bool=false):
 	var probe=GadgetVisual.new();probe.build(role,variant,first_person,turret);probe.free()

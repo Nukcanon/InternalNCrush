@@ -17,8 +17,13 @@ func run():
 	expect(comet.muzzle.position.z<comet.right_grip.position.z and quad.muzzle.position.z<quad.right_grip.position.z,"launcher muzzles ahead of the grips")
 	quad.set_rounds(2);expect(quad.rounds[0].visible and quad.rounds[1].visible and not quad.rounds[2].visible and not quad.rounds[3].visible,"QUAD shows exactly the loaded rockets")
 	quad.set_rounds(2,.5);var seat:Vector3=quad.rounds[2].get_meta("seat")
-	expect(quad.rounds[2].visible and quad.rounds[2].position.z<seat.z and not quad.rounds[3].visible,"the rocket being loaded travels in from ahead of its tube")
+	expect(quad.rounds[2].visible and quad.rounds[2].position.z>seat.z and not quad.rounds[3].visible,"the rocket being loaded comes in from behind its tube (rear loading)")
 	quad.set_rounds(2,.95);expect(quad.rounds[2].position.is_equal_approx(seat),"loaded rocket seats at the end of the reload")
+	# Rockets sit inside their tubes, nose toward the muzzle.
+	for launcher in [comet,quad]:
+		var r:Node3D=launcher.rounds[0]
+		expect(float(r.get_meta("seat").z)-float(r.get_meta("front"))>=launcher.muzzle.position.z-.001,"seated rocket stays inside the tube: "+launcher.spec.name)
+		expect(float(r.get_meta("front"))>float(r.get_meta("back")),"rocket nose (longer front) points to the muzzle: "+launcher.spec.name)
 	comet.set_rounds(0);expect(not comet.rounds[0].visible,"an empty COMET shows no rocket")
 	expect(GunLooks.hold_kind(Catalog.get_weapon("h4"))=="shoulder" and GunLooks.hold_kind(Catalog.get_weapon("h5"))=="rifle","launcher hold kinds")
 	# Reload hand work exists for every reload style and returns to the grip.
@@ -36,6 +41,48 @@ func run():
 	var pump=GunModel.new();root.add_child(pump);pump.build(Catalog.get_weapon("e1"),false)
 	var stroke=ReloadMotion.support(pump,{"reload":-1.,"shot":.25});expect(not stroke.is_empty() and stroke.position.z>pump.left_grip.position.z*pump.base.scale.z,"pump shotgun works the slide after a shot")
 	pump.free();comet.free();quad.free()
+	# Hands: every gun carries grip shapes; on a posed hero the palm lies on the
+	# grip, the fingers wrap without sinking into it, the index finger reaches
+	# the trigger and the wrist bend stays human.
+	var hero=HeroCharacter.new();root.add_child(hero);hero.build(0,0,false)
+	for wid in ["a1","c1","e1","e3","r1","r2","pistol","heavy_pistol","dual_pistols","h4","h5","h6","m1"]:
+		var w=Catalog.get_weapon(wid)
+		var gun=GunModel.new();gun.build(w,false);hero.hold(gun)
+		var shapes:Dictionary=gun.get_meta("grip_shapes",{})
+		expect(shapes.has("R") and shapes.R.has("half"),"grip shape on the shooting hand: "+w.name)
+		var kind=GunLooks.hold_kind(w);if kind=="shoulder":kind="rifle"
+		var s={"hold":kind,"hands":1.,"two_hands":kind!="pistol" or bool(w.get("dual",false))}
+		for i in range(4):hero.drive(1./30.,s)
+		var handle=gun.right_grip.global_transform;var to_handle=Transform3D(handle.basis.orthonormalized(),handle.origin).affine_inverse()
+		var ws=HeroIK.world_shape(handle,"pistol",shapes.get("R",{}))
+		var deepest=INF
+		for b in HeroIK.finger_chains(hero,"R").get("Middle",[]).slice(1)+HeroIK.finger_chains(hero,"R").get("Ring",[]).slice(1):
+			deepest=minf(deepest,HeroIK.box_distance(to_handle*hero.bone_world(b).origin,ws.half,ws.round))
+		expect(deepest>-.004,"fingers wrap the grip without sinking in: %s (%.3f)"%[w.name,deepest])
+		var wrist=hero.bone_world(hero.bone["Wrist.R"]);var fore=hero.bone_world(hero.bone["LowerArm.R"])
+		var bend=(fore.basis.get_rotation_quaternion().inverse()*wrist.basis.get_rotation_quaternion())
+		var twist=Quaternion(0.,bend.y,0.,bend.w).normalized();var swing=(twist.inverse()*bend).normalized()
+		if swing.w<0.:swing=-swing
+		expect(swing.get_angle()<=HeroIK.WRIST_LIMIT+.02,"wrist bend within human range: %s (%.2f rad)"%[w.name,swing.get_angle()])
+		if ws.has("trigger"):
+			var chain:Array=HeroIK.finger_chains(hero,"R").Index
+			var tip=hero.bone_world(chain[chain.size()-1])*Vector3(0,.02,0)
+			expect((to_handle*tip).distance_to(ws.trigger)<.045,"index finger at the trigger: %s (%.3f m)"%[w.name,(to_handle*tip).distance_to(ws.trigger)])
+		gun.queue_free();await process_frame
+	hero.queue_free()
+	# ATLAS: semi-sniper without optics; only snipers, DMRs and the laser rifle have scopes.
+	var atlas=Catalog.get_weapon("a3")
+	expect(bool(atlas.get("semi_scope",false)) and float(atlas.zoom)<58. and not SniperScope.overlay(atlas),"ATLAS zooms further than other rifles, without a scope overlay")
+	expect(not "scope" in GunLooks.look(atlas).get("attach",[]),"ATLAS carries no scope")
+	for wid in Catalog.weapons:
+		var w=Catalog.weapons[wid]
+		if w.get("kind","")!="gun":continue
+		var scoped=SniperScope.overlay(w)
+		expect(scoped==(w.get("category","") in ["저격소총","지정사수소총"] or w.get("laser",false)),"scope overlay only on snipers, DMRs and the laser: "+str(w.name))
+	# DUET is held wide in third person too.
+	var duet=GunModel.new();root.add_child(duet);duet.build(Catalog.get_weapon("dual_pistols"),false)
+	expect(absf(duet.dual_guns[1].position.x)>=.25,"DUET pistols held apart")
+	duet.free()
 	# Glyphs: the symbol font covers what the menus use.
 	var symbols:Font=load("res://assets/fonts/Symbols.ttf")
 	for ch in "·−…◆●∞→✓⚠★×≥":expect(symbols.has_char(ch.unicode_at(0)),"symbol font has "+ch)

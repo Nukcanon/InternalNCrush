@@ -2,8 +2,13 @@ extends RefCounted
 class_name ScopeVisual
 ## Original low-poly optical assembly. Both lenses sit behind protective rims.
 static var glass:ShaderMaterial
-static func lens(parent:Node3D,z:float,radius:float,label:String):
-	var mesh=MeshFactory.cylinder(parent,Vector3(0,0,z),radius,.002,Color("24586f"),Vector3(PI/2,0,0),-1.,24)
+# Blue coated glass facing `normal`, for both ends of a scope tube.
+static func lens_disc(parent:Node3D,centre:Vector3,normal:Vector3,radius:float,label:String) -> MeshInstance3D:
+	var mesh=lens(parent,0.,radius,label)
+	mesh.position=centre;mesh.basis=Basis(Quaternion(Vector3.UP,normal.normalized()))
+	return mesh
+static func lens(parent:Node3D,z:float,radius:float,label:String) -> MeshInstance3D:
+	var mesh=MeshFactory.cylinder(parent,Vector3(0,0,z),radius,.002,Color("2f7fd0"),Vector3(PI/2,0,0),-1.,24)
 	mesh.name=label;mesh.set_meta("scope_lens",true)
 	if glass==null:
 		glass=ShaderMaterial.new();var shader=Shader.new()
@@ -15,13 +20,14 @@ void fragment(){
  float facing=abs(dot(normalize(NORMAL),normalize(VIEW)));
  float coating=pow(1.-facing,2.);
  float glint=exp(-pow((lens_pos.x+lens_pos.y-.012)*160.,2.));
- vec3 blue=mix(vec3(.018,.065,.11),vec3(.08,.32,.46),.25+coating*.7);
- ALBEDO=blue+vec3(.12,.23,.26)*glint;
- EMISSION=blue*.18;ROUGHNESS=.16;METALLIC=.35;SPECULAR=.7;
+ vec3 blue=mix(vec3(.05,.22,.52),vec3(.30,.66,.98),.2+coating*.75);
+ ALBEDO=blue+vec3(.35,.4,.4)*glint;
+ EMISSION=blue*.35;ROUGHNESS=.16;METALLIC=.2;SPECULAR=.7;
 }
 """
 		glass.shader=shader
 	mesh.material_override=glass;mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mesh
 static func build(parent:Node3D,compact:bool):
 	var scope=Node3D.new();scope.name="Scope";scope.position=Vector3(0,.16,-.22);parent.add_child(scope)
 	var scale_z=.78 if compact else 1.

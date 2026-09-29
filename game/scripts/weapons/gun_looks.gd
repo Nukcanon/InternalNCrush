@@ -14,7 +14,8 @@ static func palette(main:Color,dark:Color,light:Color,wood:Color=WOOD) -> Dictio
 static var LOOKS={
 	"VECTOR-24":{"base":"AK","scale":.9,"palette":palette(Color("64707e"),DARK,Color("9fb0bf"),Color("3a4552")),"attach":["dot"]},
 	"RAPID-9":{"base":"SMG","scale":1.12,"palette":palette(Color("56606c"),DARK,Color("f2b233"),DARK),"attach":["dot"]},
-	"ATLAS":{"base":"AK","scale":.98,"palette":palette(Color("7c6f5c"),DARK,Color("c9b08a")),"attach":["scope"]},
+	# ATLAS aims as a semi-sniper without optics (weapons.json "semi_scope").
+	"ATLAS":{"base":"AK","scale":.98,"palette":palette(Color("7c6f5c"),DARK,Color("c9b08a"))},
 	"TRIAD":{"base":"AK","scale":.86,"palette":palette(Color("3f4c5f"),DARK,Color("e36b4f"),DARK),"attach":["dot"]},
 	"SCOUT":{"base":"Sniper_2","scale":.95,"palette":palette(Color("6b7d5a"),DARK,LIGHT,Color("8a6a44"))},
 	"MONOLITH":{"base":"Sniper","scale":1.,"palette":palette(Color("3e4652"),DARK,Color("8fa0b2"))},
@@ -70,6 +71,8 @@ static func attach(gun:GunModel,l:Dictionary):
 				MeshFactory.cylinder(part,Vector3(0,top+.075,grip_z-.09),.026,.22,dark,Vector3(PI/2,0,0),-1.,12)
 				MeshFactory.cylinder(part,Vector3(0,top+.075,grip_z-.205),.032,.03,accent,Vector3(PI/2,0,0),-1.,12)
 				MeshFactory.box(part,Vector3(0,top+.035,grip_z-.09),Vector3(.02,.04,.08),dark,Vector3.ZERO,.4)
+				ScopeVisual.lens_disc(part,Vector3(0,top+.075,grip_z+.0205),Vector3(0,0,1),.022,"OcularGlass")
+				ScopeVisual.lens_disc(part,Vector3(0,top+.075,grip_z-.2205),Vector3(0,0,-1),.028,"ObjectiveGlass")
 			"box":
 				MeshFactory.box(part,Vector3(0,top-.13,left_z+.12),Vector3(.075,.11,.1),accent.darkened(.25),Vector3.ZERO,.35)
 			"drum":
@@ -82,7 +85,7 @@ static func attach(gun:GunModel,l:Dictionary):
 					ring.set_meta("glow",true)
 		MeshFactory.merge_children(part)
 		for mesh in part.get_children():
-			if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if mesh is MeshInstance3D and not mesh.has_meta("scope_lens"):mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 # Support tools have no Toon Shooter source: small rounded cartoon builds with
 # the same markers as the baked guns (origin at the grip, muzzle -Z).
 static func build_tool(kind:String) -> Node3D:
@@ -97,6 +100,7 @@ static func build_tool(kind:String) -> Node3D:
 			m.cylinder(body,Vector3(0,.04,-.2),.045,.05,MEDIC_GREEN,Vector3(PI/2,0,0),-1.,14)
 			m.box(body,Vector3(0,.09,-.08),Vector3(.018,.018,.06),MEDIC_GREEN,Vector3.ZERO,.3)
 			m.box(body,Vector3(0,.09,-.08),Vector3(.06,.018,.018),MEDIC_GREEN,Vector3.ZERO,.3)
+			m.box(body,Vector3(0,-.012,-.045),Vector3(.01,.026,.009),DARK,Vector3(.3,0,0),.3)
 			muzzle=Vector3(0,.04,-.23)
 		"fix":
 			m.box(body,Vector3(0,.04,-.07),Vector3(.075,.085,.18),Color("f0a000"),Vector3.ZERO,.55)
@@ -104,6 +108,7 @@ static func build_tool(kind:String) -> Node3D:
 			m.cylinder(body,Vector3(0,.04,-.19),.022,.08,STEEL,Vector3(PI/2,0,0),-1.,10)
 			m.box(body,Vector3(0,.1,-.04),Vector3(.05,.04,.09),Color("3a4552"),Vector3.ZERO,.5)
 			m.box(body,Vector3(0,.125,-.04),Vector3(.03,.012,.05),Color("7fe0ff"),Vector3.ZERO,.3)
+			m.box(body,Vector3(0,-.012,-.045),Vector3(.01,.026,.009),DARK,Vector3(.3,0,0),.3)
 			muzzle=Vector3(0,.04,-.23)
 		_:
 			# Two-handed remote: rounded pad, screen and antenna.
@@ -115,4 +120,12 @@ static func build_tool(kind:String) -> Node3D:
 	MeshFactory.merge_children(body)
 	for marker in [["Muzzle",muzzle],["RightGrip",right],["LeftGrip",left]]:
 		var node=Marker3D.new();node.name=marker[0];node.position=marker[1];root.add_child(node)
+	if kind in ["link","fix"]:
+		# Pistol grip (leaning .25) with the trigger just ahead of its top.
+		var grip:Marker3D=root.get_node("RightGrip");grip.position=Vector3(0,-.04,0);grip.rotation.x=-.25
+		root.set_meta("grip_shapes",{"R":{"half":Vector3(.0225,.055,.025),"round":.012,"trigger":Vector3(0,-.01,-.045)}})
+	else:
+		# Remote: each hand makes a fist around one end of the pad.
+		root.get_node("RightGrip").rotation.z=-.5;root.get_node("LeftGrip").rotation.z=.5
+		root.set_meta("grip_shapes",{"R":{"half":Vector3(.02,.03,.045),"round":.015},"L":{"half":Vector3(.02,.03,.045),"round":.015}})
 	return root

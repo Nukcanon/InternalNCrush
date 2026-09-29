@@ -7,14 +7,18 @@ static func draw_on(canvas:Control,center:Vector2,radius:float,weapon:Dictionary
 	if weapon.get("laser",false):
 		canvas.draw_arc(center,radius*.04,0,TAU,48,Color("985bd1"),1.5,true)
 		canvas.draw_circle(center,2.,Color("bc81f5"),true,-1.,true)
-		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP]:canvas.draw_line(center+direction*radius*.07,center+direction*radius*.28,Color("27353c"),1.5,true)
+		# Short bold posts near the centre, fine lines out to the scope rim.
+		for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP]:
+			canvas.draw_line(center+direction*radius*.07,center+direction*radius*.28,Color("27353c"),1.5,true)
+			canvas.draw_line(center+direction*radius*.28,center+direction*radius*1.01,Color("27353c"),1.,true)
 		return
 	var design=style(weapon);var ink=Color(.025,.045,.055,.92);var red=Color(.8,.13,.09,.86)
 	var unit=radius/10.;var thin=clampf(radius/330.,1.,1.6)
 	for d in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:
 		var inner=unit*.65 if design==3 else unit*.28
-		canvas.draw_line(center+d*inner,center+d*radius*.92,ink,thin,true)
-		if design in [0,2,4]:canvas.draw_line(center+d*radius*.58,center+d*radius*.92,ink,thin*3.,true)
+		# Every line runs out to the rim of the visible circle (drawn under the rim ring).
+		canvas.draw_line(center+d*inner,center+d*radius*1.01,ink,thin,true)
+		if design in [0,2,4]:canvas.draw_line(center+d*radius*.58,center+d*radius*1.01,ink,thin*3.,true)
 	match design:
 		0: # Fine duplex, lower holdover graduations.
 			for i in range(1,6):canvas.draw_line(center+Vector2(-unit*.17,unit*i),center+Vector2(unit*.17,unit*i),ink,thin,true)

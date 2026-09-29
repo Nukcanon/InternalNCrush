@@ -304,8 +304,10 @@ func sync_rockets(rockets:Array):
 	for i in range(rockets.size()):
 		if i>=rocket_nodes.size() or not is_instance_valid(rocket_nodes[i]):
 			var n=Node3D.new();add_child(n)
-			M.cylinder(n,Vector3.ZERO,.065,.45,Color("d5cdb6"),Vector3(PI/2,0,0),.025,8)
-			var flame=M.sphere(n,Vector3(0,0,.25),Vector3(.13,.13,.24),Color("ffb143"));flame.material_override=glow(Color("ffb143"))
+			# Nose first: look_at points -Z along the flight, so the cone narrows
+			# toward -Z and the exhaust flame trails at +Z.
+			LauncherModels.parts(n,.05,.30,.13)
+			var flame=M.sphere(n,Vector3(0,0,.27),Vector3(.12,.12,.26),Color("ffb143"));flame.material_override=glow(Color("ffb143"))
 			if i>=rocket_nodes.size():rocket_nodes.append(n)
 			else:rocket_nodes[i]=n
 		var n=rocket_nodes[i];n.position=rockets[i].pos;n.look_at(n.position+rockets[i].velocity)

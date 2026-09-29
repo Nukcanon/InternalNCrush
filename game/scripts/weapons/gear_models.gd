@@ -63,52 +63,59 @@ static func turret(parent:Node3D,team:int):
 ## the node's space. Items sit in front of the chest; grips are wrist targets.
 static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> Dictionary:
 	var node=Node3D.new();node.name="Payload";parent.add_child(node)
-	var right=Vector3(.03,-.02,.03);var left=Vector3(-.05,-.04,.04);var two=false
+	var right=Vector3(.03,-.02,.03);var left=Vector3(-.05,-.04,.04);var two=false;var grip={}
 	var accent:Color=HeroStyle.ROLE_ACCENT[clampi(role,0,5)]
 	if turret_carry:
 		var mini=Node3D.new();node.add_child(mini);turret(mini,0);mini.scale=Vector3.ONE*.24;mini.position=Vector3(0,-.25,-.12)
-		return {"node":node,"right":Vector3(.2,-.08,.02),"left":Vector3(-.2,-.08,.02),"two_handed":true}
+		# Carried by its mast (radius .034 at this scale), one fist above the other.
+		return {"node":node,"right":Vector3(0,.0,-.12),"left":Vector3(0,-.13,-.12),"two_handed":true,"grip":sides("pistol",Vector3(.034,.05,.034))}
 	if variant==8 or (role==0 and variant==1):
-		grenade(node,"frag");return {"node":node,"right":Vector3(.02,-.03,.02),"left":left,"two_handed":false}
+		grenade(node,"frag");return {"node":node,"right":Vector3(0,.035,-.02),"left":left,"two_handed":false,"grip":ball()}
 	if variant==9:
 		M.box(node,Vector3(0,0,-.05),Vector3(.3,.16,.2),Color("6f7d4a"),Vector3.ZERO,.5)
 		M.box(node,Vector3(0,.09,-.05),Vector3(.2,.03,.12),Color("f2c03e"),Vector3.ZERO,.4)
-		finish(node);return {"node":node,"right":Vector3(.16,0,-.04),"left":Vector3(-.16,0,-.04),"two_handed":true}
+		finish(node);return {"node":node,"right":Vector3(.15,0,-.05),"left":Vector3(-.15,0,-.05),"two_handed":true,"grip":sides("pistol",Vector3(.015,.07,.09))}
 	match role:
 		0:
 			# Armour plate: rounded curved slab with a chevron.
 			M.box(node,Vector3(0,.04,-.06),Vector3(.28,.34,.06),Color("6e8aa8"),Vector3(.1,0,0),.7)
 			M.box(node,Vector3(0,.07,-.1),Vector3(.12,.03,.02),accent,Vector3(0,0,.5),.4)
 			M.box(node,Vector3(0,.04,-.1),Vector3(.12,.03,.02),accent,Vector3(0,0,-.5),.4)
-			right=Vector3(.15,-.06,-.04);left=Vector3(-.15,-.06,-.04);two=true
+			right=Vector3(.14,.02,-.06);left=Vector3(-.14,.02,-.06);two=true;grip=sides("pistol",Vector3(.012,.1,.03))
 		1:
 			# Marker: rugged tablet with antenna and glowing screen.
 			M.box(node,Vector3(0,.02,-.08),Vector3(.2,.13,.04),INK,Vector3(.5,0,0),.6)
 			M.box(node,Vector3(0,.025,-.1),Vector3(.15,.09,.01),Color("7fe0ff"),Vector3(.5,0,0),.3)
 			M.cylinder(node,Vector3(.08,.1,-.07),.007,.12,INK,Vector3.ZERO,-1.,8)
 			M.sphere(node,Vector3(.08,.16,-.07),Vector3(.025,.025,.025),accent)
-			right=Vector3(.1,-.02,-.05);left=Vector3(-.1,-.02,-.05);two=true
+			right=Vector3(.1,.02,-.08);left=Vector3(-.1,.02,-.08);two=true;grip=sides("pistol",Vector3(.01,.06,.02))
 		2:
 			# Folding bipod: clamp block and two splayed legs.
 			M.box(node,Vector3(0,.02,-.1),Vector3(.1,.05,.08),INK,Vector3.ZERO,.5)
 			for side in [-1,1]:
 				M.box(node,Vector3(side*.05,-.08,-.1),Vector3(.025,.2,.025),STEEL,Vector3(0,0,side*.3),.4)
 				M.sphere(node,Vector3(side*.09,-.18,-.1),Vector3(.04,.03,.04),INK)
-			right=Vector3(.03,-.02,-.02)
+			right=Vector3(0,.02,-.1);grip={"R":{"style":"hold","shape":{"half":Vector3(.05,.025,.04),"round":.02}}}
 		3:
 			var mini=Node3D.new();node.add_child(mini);cover(mini,0,clampi(variant,0,2));mini.scale=Vector3.ONE*.18;mini.position=Vector3(0,-.12,-.18)
-			return {"node":node,"right":Vector3(.28,-.04,-.14),"left":Vector3(-.28,-.04,-.14),"two_handed":true}
+			return {"node":node,"right":Vector3(.28,-.04,-.14),"left":Vector3(-.28,-.04,-.14),"two_handed":true,"grip":sides("pistol",Vector3(.015,.05,.04))}
 		4:
-			grenade(node,"flash" if variant==1 else "smoke");return {"node":node,"right":Vector3(.02,-.03,.02),"left":left,"two_handed":false}
+			grenade(node,"flash" if variant==1 else "smoke");return {"node":node,"right":Vector3(0,.035,-.02),"left":left,"two_handed":false,"grip":ball()}
 		5:
 			# Medkit: white rounded case with a green cross and handle.
 			M.box(node,Vector3(0,0,-.08),Vector3(.26,.18,.1),Color("eef2f5"),Vector3.ZERO,.6)
 			M.box(node,Vector3(0,0,-.135),Vector3(.1,.03,.01),Color("3fcf8e"),Vector3.ZERO,.3)
 			M.box(node,Vector3(0,0,-.135),Vector3(.03,.1,.01),Color("3fcf8e"),Vector3.ZERO,.3)
 			M.box(node,Vector3(0,.12,-.08),Vector3(.12,.03,.03),INK,Vector3.ZERO,.5)
-			right=Vector3(.03,.1,-.06)
+			right=Vector3(0,.12,-.08);grip={"R":{"style":"top","shape":{"half":Vector3(.06,.015,.015),"round":.012}}}
 	finish(node)
-	return {"node":node,"right":right,"left":left,"two_handed":two}
+	return {"node":node,"right":right,"left":left,"two_handed":two,"grip":grip}
+# Grip styles and shapes (handle frame) for held gear: a fist on each side
+# edge, or a small ball cupped in the palm.
+static func sides(style:String,half:Vector3) -> Dictionary:
+	var shape={"half":half,"round":minf(half.x,minf(half.y,half.z))}
+	return {"R":{"style":style,"shape":shape},"L":{"style":style,"shape":shape}}
+static func ball() -> Dictionary:return {"R":{"style":"hold","shape":{"half":Vector3.ONE*.03,"round":.03}}}
 # Throwables reuse the Toon Shooter (CC0) grenade shapes, repainted.
 static func grenade(parent:Node3D,kind:String):
 	# Copy the meshes only: a nested scene instance would not survive template packing.
