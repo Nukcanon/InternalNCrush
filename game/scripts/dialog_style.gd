@@ -15,9 +15,17 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	dialog.about_to_popup.connect(func():
 		(func():
 			if not is_instance_valid(dialog):return
+			# Equal buttons, as wide as the longest caption.
+			var row_buttons=dialog.get_ok_button().get_parent().get_children().filter(func(c):return c is Button and c.visible)
+			var widest=120.
+			for b in row_buttons:
+				var base=int(b.get_meta("auto_text_base",b.get_theme_font_size("font_size")))
+				b.set_meta("no_text_fit",true);b.clip_text=false;b.remove_theme_font_size_override("font_size")
+				widest=maxf(widest,b.get_theme_font("font").get_string_size(b.text,HORIZONTAL_ALIGNMENT_LEFT,-1,base).x+b.get_theme_stylebox("normal").get_minimum_size().x+18.)
+			dialog.add_theme_constant_override("buttons_min_width",roundi(widest))
+			for b in row_buttons:b.custom_minimum_size.x=widest
 			var content=Vector2(dialog.get_contents_minimum_size())
-			var count=dialog.get_ok_button().get_parent().get_children().filter(func(c):return c is Button and c.visible).size()
-			var fitted=Vector2(maxf(maxf(content.x+24.,420.),250.*count+40.),content.y+12.)
+			var fitted=Vector2(maxf(content.x+24.,300.),content.y+12.)
 			dialog.size=Vector2i(fitted*factor)
 			dialog.position=(dialog.get_tree().root.size-dialog.size)/2).call_deferred())
 	# One keyboard handler owns cancellation. AcceptDialog's native Escape
@@ -43,11 +51,16 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	row.layout_direction=Control.LAYOUT_DIRECTION_LTR
 	row.move_child(positive,row.get_child_count()-1)
 	row.alignment=BoxContainer.ALIGNMENT_END
-	var available=maxf(240.,dialog.get_tree().root.size.x-64.)
-	var width=minf(240.,(available-16.*buttons.size())/maxi(1,buttons.size()))
+	# Buttons are as wide as their caption (at least 120 px); the window fits them.
+	# Equal buttons, as wide as the longest caption (also refreshed on popup).
+	var caption=120.
 	for button in buttons:
-		button.custom_minimum_size=Vector2(width,48)
-		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button.clip_text=true
+		caption=maxf(caption,button.get_theme_font("font").get_string_size(button.text,HORIZONTAL_ALIGNMENT_LEFT,-1,button.get_theme_font_size("font_size")).x+button.get_theme_stylebox("normal").get_minimum_size().x+18.)
+	# AcceptDialog applies these constants to every button on theme changes.
+	dialog.add_theme_constant_override("buttons_min_width",roundi(caption));dialog.add_theme_constant_override("buttons_min_height",48)
+	for button in buttons:
+		button.custom_minimum_size=Vector2(caption,48)
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button.clip_text=false
 		var affirmative=(button!=positive) if navigation else (button==positive)
 		# 1.4 cartoon skin: green = go ahead / stay, coral = cancel / leave.
 		UiSkin.paint(button,"go" if affirmative else "stop")

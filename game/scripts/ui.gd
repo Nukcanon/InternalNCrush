@@ -175,7 +175,7 @@ func clear_panel(keep_background=false):
 	screen="";game.stop_room_search();team_signature=""
 	if is_instance_valid(background) and not keep_background:background.queue_free();background=null
 	if panel:panel.queue_free();panel=null
-func make_panel(title:String,width=780,compact=false):
+func make_panel(title:String,width=640,compact=false):
 	if is_instance_valid(scoreboard):scoreboard.pinned=false;scoreboard.hide()
 	if TouchControls.supported():width=maxi(width,560 if compact else 1000)
 	clear_panel(game.phase=="menu");Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
@@ -332,7 +332,7 @@ func update_version_badge():
 			else:OS.shell_open(VersionCheck.PAGE)
 		,version_box)
 func training_menu():
-	make_panel("연습",900)
+	make_panel("연습",640)
 	label("FIELD ACADEMY",30)
 	label("4개 높이의 야외 사격장 · 고정/이동 표적 · 회복과 방호 연습\n표적은 공격하지 않으며 처치하면 4초 뒤 돌아옵니다. 입구 보급 구역에서 장비를 재충전하세요.",18)
 	button("자유 연습장",confirm_practice)
@@ -364,7 +364,7 @@ func section_tabs(names:Array) -> Array:
 		tabs.add_child(margin);var content=VBoxContainer.new();content.add_theme_constant_override("separation",12);margin.add_child(content);out.append(content)
 	return out
 func host_settings():
-	make_panel("방 만들기",980);screen="host"
+	make_panel("방 만들기",820);screen="host"
 	var outer=stack;var groups=section_tabs(["경기","팀 · 참가","병과 · 전투","봇"]);stack=groups[0]
 	edit("방 이름",game.options.room,func(t):game.options.room=t.left(40))
 	edit("비밀번호 (선택)",str(game.options.get("password","")),func(t):game.options.password=t,true)
@@ -438,7 +438,7 @@ func refresh_teams():
 	RosterControls.populate(game,team_columns,false)
 func team_swap_menu(first:int):
 	if not TeamBalance.host(game,game.local_id) or not game.players.has(first):return
-	make_panel("참가자 팀 교환",780)
+	make_panel("참가자 팀 교환",640)
 	label(game.players[first].nick+"와 팀을 바꿀 상대를 선택하세요. 양 팀의 인원수는 유지됩니다.",18)
 	var ids=[];var names=[]
 	for p in game.players.values():
@@ -453,7 +453,7 @@ func team_swap_menu(first:int):
 		else:teams_menu())
 func settings():
 	settings_baseline=SettingsGuard.snapshot(game.profile)
-	make_panel("환경 설정",980);screen="settings"
+	make_panel("환경 설정",860);screen="settings"
 	var outer=stack;var tabs=section_tabs(["화면 · 조준","그래픽","HUD","소리","조작법"]);stack=tabs[0]
 	var displays=[]
 	for i in range(DisplayServer.get_screen_count()):
@@ -1098,7 +1098,7 @@ func internet_password(room_id:String):
 	dialog.confirmed.connect(func():game.options.password=password.text;dialog.queue_free();wait_internet_room(room_id))
 	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);dialog.popup_centered(Vector2i(420,150));password.grab_focus()
 func internet_create():
-	make_panel("공개 방 만들기",880);screen="internet_create"
+	make_panel("공개 방 만들기",760);screen="internet_create"
 	WeaponRules.build(self)
 	var title=edit("방 이름",str(game.profile.nick)+"의 경기",func(_v):pass)
 	edit("방 비밀번호 · 선택",str(game.options.get("password","")),func(value):game.options.password=value,true)

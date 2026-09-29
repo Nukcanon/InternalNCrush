@@ -14,12 +14,12 @@ const OUTFITS={"men_swat":"men/Swat","women_soldier":"women/Soldier","men_spaces
 # 1.4 heroes are our own mixes of the modular parts (same 62-bone rig): faces
 # stay visible (no full helmets, no heavy beard) and every hero has its own
 # skin, hair and cloth palette baked into its materials.
-const PARTS={"men_swat":{"Head":"men/Suit"},"women_soldier":{"Head":"women/Casual"},"men_spacesuit":{"Head":"men/Beach"},
+const PARTS={"men_swat":{"Head":"men/Suit"},"women_soldier":{"Head":"women/Casual"},"men_spacesuit":{"Head":"men/Beach","Body":"men/Casual_Hoodie","Legs":"men/Adventurer","Feet":"men/Worker"},
 	"men_worker":{"Legs":"men/Casual_2"},"men_adventurer":{"Head":"men/Casual_2"},"women_scifi":{}}
 const PALETTES={
 	"men_swat":{"Skin":"d9a57a","Hair":"1f1a17","Eyebrows":"1f1a17","Swat_Black":"2b2a33"},
 	"women_soldier":{"Skin":"f0c4a0","Hair_Brown":"8a3b22","Hair_Blond":"a8532e","Brown":"4a2a1c","Black":"2e2b33"},
-	"men_spacesuit":{"Skin":"b9855e","Hair":"d8b45a","Eyebrows":"a8843a","Earrings":"c9c9d0","SciFi_Light":"d9d4cc","SciFi_MainDark":"2f3a44"},
+	"men_spacesuit":{"Skin":"b9855e","Hair":"2e241c","Eyebrows":"2e241c","Earrings":"2e241c"},
 	"men_worker":{"Skin":"c8905f","Moustache":"3a2a1e","Eyebrows":"3a2a1e","LightBlue":"3c4c63","LightBrown":"8f8a7c"},
 	"men_adventurer":{"Skin":"8d5a3b","Skin_Darker":"8d5a3b","Hair":"231a15","Eyebrows":"231a15","Brown":"5e4c36"},
 	"women_scifi":{"Skin":"e8b996","Hair_Black":"3b2a4a","Metal":"9aa3ad","Black":"2b2a33"}}

@@ -23,7 +23,7 @@ func _register(button):
 	button.draw.connect(refresh)
 	fit(button)
 static func fit(button):
-	if not is_instance_valid(button) or button.size.x<=1. or button.text.is_empty():return
+	if not is_instance_valid(button) or button.size.x<=1. or button.text.is_empty() or button.get_meta("no_text_fit",false):return
 	var style=button.get_theme_stylebox("normal")
 	var available=maxf(1.,button.size.x-style.get_minimum_size().x-8.)
 	var separation=button.get_theme_constant("h_separation")

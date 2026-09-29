@@ -16,7 +16,7 @@ const IDENTITIES=["MASON","SERA","BRIGGS","REED","VALE","MINA"]
 const TEAM_SLOTS={
 	"men_swat":{"Swat":"main","Swat_Black":"deep"},
 	"women_soldier":{"Swat":"main","Brown":"deep"},
-	"men_spacesuit":{"SciFi_Main":"main","SciFi_MainDark":"deep","SciFi_Light_Accent":"light"},
+	"men_spacesuit":{},
 	"men_worker":{"Worker_Vest":"main","Worker_Yellow":"light"},
 	"men_adventurer":{"Green":"main","LightGreen":"light"},
 	"women_scifi":{"Blue":"main","LightBlue":"light"}}
@@ -93,12 +93,27 @@ func paint(body:MeshInstance3D,outfit:String,ink:bool):
 	for surface in range(body.mesh.get_surface_count()):
 		var source:Material=body.mesh.surface_get_material(surface)
 		var color=source.albedo_color if source is BaseMaterial3D else Color.WHITE
-		match str(slots.get(source.resource_name if source else "","")):
+		var material_name=str(source.resource_name) if source else ""
+		match str(slots.get(material_name,"")):
 			"main":color=HeroStyle.TEAM_MAIN[team]
 			"light":color=HeroStyle.TEAM_LIGHT[team]
 			"deep":color=HeroStyle.TEAM_DEEP[team]
+			_:
+				# Every other piece of clothing takes the team hue (keeping its
+				# own brightness): trousers, jeans, gloves and boots included.
+				if is_cloth(str(body.name),material_name):color=team_tint(color)
 		body.set_surface_override_material(surface,HeroStyle.tinted(color,ink,0.))
 	body.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+const NON_CLOTH=["Skin","Skin_Darker","Hair","Hair_Brown","Hair_Blond","Hair_Black","Eyebrows","Eye","Moustache","Earrings","Visor","Metal"]
+const HEAD_CLOTH=["Worker_Yellow","Blue"]
+static func is_cloth(mesh_name:String,material_name:String) -> bool:
+	if material_name in NON_CLOTH:return false
+	if mesh_name.ends_with("_Head"):return material_name in HEAD_CLOTH
+	return true
+func team_tint(source:Color) -> Color:
+	var hue:Color=HeroStyle.TEAM_MAIN[clampi(team,0,1)]
+	var value=clampf(.34+source.v*.8,.36,.95)
+	return Color.from_hsv(hue.h,lerpf(hue.s,hue.s*.7,value),value)
 func meshes() -> Array:
 	return skeleton.get_children().filter(func(n):return n is MeshInstance3D and n.name!="FPArms")
 # First person: only the arm/hand mesh is drawn.
