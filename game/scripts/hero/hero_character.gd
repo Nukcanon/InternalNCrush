@@ -51,7 +51,12 @@ static func scene(role_index:int) -> PackedScene:
 # Clips come from each outfit's own file: rest orientations differ between packs.
 static func clips(role_index:int) -> AnimationLibrary:
 	var outfit=OUTFITS[clampi(role_index,0,5)]
-	if not libraries.has(outfit):libraries[outfit]=load("res://assets/heroes/"+outfit+"_clips.res")
+	if not libraries.has(outfit):
+		var library:AnimationLibrary=load("res://assets/heroes/"+outfit+"_clips.res");libraries[outfit]=library
+		# The pack's directional run clips ship without looping: legs froze after
+		# one cycle while strafing.
+		for name in ["Run","Run_Back","Run_Left","Run_Right","Walk","Idle"]:
+			if library.has_animation(name):library.get_animation(name).loop_mode=Animation.LOOP_LINEAR
 	return libraries[outfit]
 func build(role_index:int,team_index:int,ink:bool=false):
 	role=clampi(role_index,0,5);team=team_index;outlined=ink

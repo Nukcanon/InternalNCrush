@@ -11,11 +11,15 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 		var border=theme.get_stylebox("embedded_border","Window")
 		if border is StyleBoxFlat:
 			border=border.duplicate();border.expand_margin_top=36*factor;dialog.add_theme_stylebox_override("embedded_border",border);dialog.add_theme_stylebox_override("embedded_unfocused_border",border)
-		dialog.about_to_popup.connect(func():
-			(func():
-				if not is_instance_valid(dialog):return
-				dialog.size=Vector2i(Vector2(dialog.size)*factor)
-				dialog.position=(dialog.get_tree().root.size-dialog.size)/2).call_deferred())
+	# Fit the window to its message and buttons (callers pass generous sizes).
+	dialog.about_to_popup.connect(func():
+		(func():
+			if not is_instance_valid(dialog):return
+			var content=Vector2(dialog.get_contents_minimum_size())
+			var count=dialog.get_ok_button().get_parent().get_children().filter(func(c):return c is Button and c.visible).size()
+			var fitted=Vector2(maxf(maxf(content.x+24.,420.),250.*count+40.),content.y+12.)
+			dialog.size=Vector2i(fitted*factor)
+			dialog.position=(dialog.get_tree().root.size-dialog.size)/2).call_deferred())
 	# One keyboard handler owns cancellation. AcceptDialog's native Escape
 	# handler runs before window_input, so enabling both closes the dialog twice.
 	dialog.dialog_close_on_escape=false

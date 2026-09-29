@@ -7,6 +7,12 @@ extends RefCounted
 ## The tree is advanced manually by HeroCharacter.drive(), so the server and
 ## clients evaluate identical poses for the same inputs.
 static var upper_filters={}
+# Measured ground speed of each clip at normal playback (tests/probe_clips.gd):
+# the feet stay planted when playback scales with actual speed / this.
+const WALK_NATURAL=1.07
+const RUN_NATURAL=2.72
+const SPRINT_NATURAL=4.25
+const CROUCH_NATURAL=.64
 static func upper_bones(skeleton:Skeleton3D) -> Array:
 	var roots=[];for name in HeroCharacter.UPPER_ROOTS:roots.append(skeleton.find_bone(name))
 	var out=[]
@@ -30,7 +36,7 @@ static func build_tree(hero:HeroCharacter,player:AnimationPlayer) -> AnimationTr
 	var upper=upper_bones(hero.skeleton)
 	var bt=AnimationNodeBlendTree.new()
 	var loco=AnimationNodeBlendSpace2D.new();loco.min_space=Vector2(-1,-1);loco.max_space=Vector2(1,1)
-	for p in [["Idle_Loop",Vector2.ZERO],["Walk_Loop",Vector2(0,.45)],["Run",Vector2(0,1)],["Run_Back",Vector2(0,-1)],["Run_Left",Vector2(-1,0)],["Run_Right",Vector2(1,0)]]:
+	for p in [["Idle_Loop",Vector2.ZERO],["Walk_Loop",Vector2(0,WALK_NATURAL/RUN_NATURAL)],["Run",Vector2(0,1)],["Run_Back",Vector2(0,-1)],["Run_Left",Vector2(-1,0)],["Run_Right",Vector2(1,0)]]:
 		loco.add_blend_point(clip(p[0]),p[1])
 	bt.add_node("loco",loco,Vector2(0,0))
 	bt.add_node("loco_speed",AnimationNodeTimeScale.new(),Vector2(200,0));bt.connect_node("loco_speed",0,"loco")
@@ -39,7 +45,8 @@ static func build_tree(hero:HeroCharacter,player:AnimationPlayer) -> AnimationTr
 	bt.add_node("crouch_speed",AnimationNodeTimeScale.new(),Vector2(200,150));bt.connect_node("crouch_speed",0,"crouch")
 	bt.add_node("crouch_mix",AnimationNodeBlend2.new(),Vector2(400,0));bt.connect_node("crouch_mix",0,"loco_speed");bt.connect_node("crouch_mix",1,"crouch_speed")
 	bt.add_node("sprint_clip",clip("Sprint_Loop"),Vector2(400,150))
-	bt.add_node("sprint_mix",AnimationNodeBlend2.new(),Vector2(600,0));bt.connect_node("sprint_mix",0,"crouch_mix");bt.connect_node("sprint_mix",1,"sprint_clip")
+	bt.add_node("sprint_speed",AnimationNodeTimeScale.new(),Vector2(500,150));bt.connect_node("sprint_speed",0,"sprint_clip")
+	bt.add_node("sprint_mix",AnimationNodeBlend2.new(),Vector2(600,0));bt.connect_node("sprint_mix",0,"crouch_mix");bt.connect_node("sprint_mix",1,"sprint_speed")
 	bt.add_node("air_clip",clip("Jump_Loop"),Vector2(600,150))
 	bt.add_node("air_mix",AnimationNodeBlend2.new(),Vector2(800,0));bt.connect_node("air_mix",0,"sprint_mix");bt.connect_node("air_mix",1,"air_clip")
 	var aim=AnimationNodeBlendSpace1D.new();aim.min_space=-1.;aim.max_space=1.
@@ -60,7 +67,7 @@ static func build_tree(hero:HeroCharacter,player:AnimationPlayer) -> AnimationTr
 	bt.connect_node("output",0,last)
 	tree.tree_root=bt
 	tree.active=true
-	for name in ["loco_speed","crouch_speed","shoot_speed","reload_speed","throw_speed","hit_speed","melee_speed"]:tree.set("parameters/%s/scale"%name,1.)
+	for name in ["loco_speed","crouch_speed","sprint_speed","shoot_speed","reload_speed","throw_speed","hit_speed","melee_speed"]:tree.set("parameters/%s/scale"%name,1.)
 	return tree
 static func request(tree:AnimationTree,name:String):
 	tree.set("parameters/%s/request"%name,AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
@@ -74,12 +81,15 @@ static func update(hero:HeroCharacter,dt:float,s:Dictionary):
 	var crouch=move_toward(float(mem.get("crouch",0.)),1. if s.get("crouch",false) else 0.,dt*6. if dt>0. else 1.)
 	var sprint=lerpf(float(mem.get("sprint",0.)),1. if s.get("sprint",false) and speed>2. else 0.,k)
 	var air=lerpf(float(mem.get("air",0.)),0. if s.get("grounded",true) else 1.,1.-exp(-dt*8.) if dt>0. else 1.)
-	var dir=(planar/HeroCharacter.RUN_SPEED).limit_length(1.) if speed>.05 else Vector2.ZERO
+	var dir=(planar/RUN_NATURAL).limit_length(1.) if speed>.05 else Vector2.ZERO
 	var blend:Vector2=Vector2(mem.get("dir",Vector2.ZERO)).lerp(dir,k)
 	tree.set("parameters/loco/blend_position",blend)
-	tree.set("parameters/loco_speed/scale",clampf(speed/maxf(.5,blend.length()*HeroCharacter.RUN_SPEED),.6,1.5) if speed>.3 else 1.)
+	# Below the run clip's own speed the blend already matches; above it the
+	# cycle speeds up so the planted foot never slides.
+	tree.set("parameters/loco_speed/scale",clampf(speed/RUN_NATURAL,1.,1.9) if speed>.3 else 1.)
+	tree.set("parameters/sprint_speed/scale",clampf(speed/SPRINT_NATURAL,.8,1.6))
 	tree.set("parameters/crouch/blend_position",clampf(speed/2.,0.,1.))
-	tree.set("parameters/crouch_speed/scale",clampf(speed/1.6,.7,1.4) if speed>.3 else 1.)
+	tree.set("parameters/crouch_speed/scale",clampf(speed/CROUCH_NATURAL,.7,2.6) if speed>.3 else 1.)
 	tree.set("parameters/crouch_mix/blend_amount",crouch)
 	tree.set("parameters/sprint_mix/blend_amount",sprint*(1.-crouch))
 	tree.set("parameters/air_mix/blend_amount",air)

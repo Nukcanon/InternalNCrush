@@ -231,7 +231,7 @@ func button(text:String,callback:Callable,parent:Node=null) -> Button:
 	return b
 func confirm_navigation(callback:Callable,destination:String):
 	if is_instance_valid(navigation_confirm):return
-	navigation_confirm=ConfirmationDialog.new();navigation_confirm.title="화면 이동 확인";navigation_confirm.dialog_text="메인메뉴로 이동할까요?" if destination=="메인메뉴" else "이전 화면으로 돌아갈까요?"
+	navigation_confirm=ConfirmationDialog.new();navigation_confirm.title="이동 확인";navigation_confirm.dialog_text="메인메뉴로 이동할까요?" if destination=="메인메뉴" else "이전 화면으로 돌아갈까요?"
 	navigation_confirm.ok_button_text="이동하기";navigation_confirm.cancel_button_text="계속 머물기";root.add_child(navigation_confirm)
 	navigation_confirm.confirmed.connect(func():
 		var dialog=navigation_confirm;navigation_confirm=null;dialog.queue_free();callback.call())

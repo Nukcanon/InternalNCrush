@@ -34,4 +34,11 @@ func run():
 	g.add_player(1,"Player9870","review_host",0);g.add_player(2,"친구","review_guest",1);g.add_player(3,"옆반","review_guest2",0);TeamBalance.reconcile(g)
 	ui.lobby();await shot("07-waiting-room")
 	ui.confirm_room_leave();await shot("08-confirm")
+	ui.navigation_confirm.queue_free();ui.navigation_confirm=null
+	ui.menu();ui.confirm_practice();await shot("11-confirm-practice")
+	ui.navigation_confirm.queue_free();ui.navigation_confirm=null
+	ui.practice_menu();ui.confirm_navigation(func():pass,"메인메뉴");await shot("12-confirm-move")
+	ui.navigation_confirm.queue_free();ui.navigation_confirm=null
+	ui.settings();g.profile.graphics_quality=(int(g.profile.get("graphics_quality",1))+1)%3
+	SettingsGuard.confirm_exit(ui,func():return {},func():pass);await shot("13-confirm-settings")
 	quit(0)
