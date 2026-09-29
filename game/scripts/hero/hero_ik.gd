@@ -30,7 +30,34 @@ static func calibrate(hero:HeroCharacter) -> Dictionary:
 		out[side]=Quaternion(Vector3.UP,PI)*q
 	hero.tree.active=saved
 	calibration[key]=out;return out
-static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:float):
+# --- Hand frames -------------------------------------------------------------
+# Wrist-local axes of this rig: +Y wrist -> knuckles, -Z palm, thumb -X (right
+# hand) / +X (left hand). A "handle" is the item point the palm wraps, in a
+# frame with -Z along the item and +Y up. FRAMES give the wrist axes (columns
+# x, y, z) inside that handle frame for each grip style and side.
+const FRAMES={
+	# Fist around a vertical grip: palm toward the gun, thumb up, knuckles forward.
+	"pistol":{"R":Basis(Vector3(0,-1,0),Vector3(0,0,-1),Vector3(1,0,0)),"L":Basis(Vector3(0,1,0),Vector3(0,0,-1),Vector3(-1,0,0))},
+	# Support hand under a handguard: palm up, thumb forward, knuckles wrapping over the far side.
+	"support":{"R":Basis(Vector3(0,0,1),Vector3(-1,0,0),Vector3(0,-1,0)),"L":Basis(Vector3(0,0,-1),Vector3(1,0,0),Vector3(0,-1,0))},
+	# Hammer grip on a tool whose blade points along -Z: knuckles down, palm inward.
+	"knife":{"R":Basis(Vector3(0,0,1),Vector3(0,-1,0),Vector3(1,0,0)),"L":Basis(Vector3(0,0,-1),Vector3(0,-1,0),Vector3(-1,0,0))},
+	# Small object cupped in the palm (grenades): the pistol fist with the item deeper in the hand.
+	"hold":{"R":Basis(Vector3(0,-1,0),Vector3(0,0,-1),Vector3(1,0,0)),"L":Basis(Vector3(0,1,0),Vector3(0,0,-1),Vector3(-1,0,0))},
+	# Hanging at the side: fingers down, palm toward the body, thumb forward.
+	"rest":{"R":Basis(Vector3(0,0,1),Vector3(0,-1,0),Vector3(1,0,0)),"L":Basis(Vector3(0,0,-1),Vector3(0,-1,0),Vector3(-1,0,0))}}
+# Handle position inside the wrist frame (metres at hand scale 1).
+const PALM={"pistol":Vector3(0,.085,-.025),"support":Vector3(0,.09,-.03),"knife":Vector3(0,.08,-.025),"hold":Vector3(0,.095,-.04),"rest":Vector3(0,.09,-.03)}
+# Finger curl per style: index (trigger finger), the other three fingers (proximal, middle, distal) and the thumb.
+const CURLS={"pistol":{"index":.5,"fingers":[1.15,1.05,.65],"thumb":.5},"support":{"index":1.0,"fingers":[1.05,.95,.6],"thumb":.55},
+	"knife":{"index":1.25,"fingers":[1.3,1.15,.75],"thumb":.6},"hold":{"index":.9,"fingers":[.95,.85,.5],"thumb":.55},"rest":{"index":.35,"fingers":[.4,.35,.2],"thumb":.2}}
+# World wrist transform that puts the palm on `handle` (world; may be mirrored
+# for left-handed heroes, the frame then mirrors with it).
+static func wrist_target(handle:Transform3D,side:String,style:String,hand_scale:float) -> Transform3D:
+	var frame:Basis=FRAMES.get(style,FRAMES.pistol)[side]
+	var basis:Basis=handle.basis.orthonormalized()*frame
+	return Transform3D(basis,handle.origin-basis*(PALM.get(style,PALM.pistol)*hand_scale))
+static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:float,wrist_basis:bool=false):
 	var sk=hero.skeleton
 	var upper=hero.bone["UpperArm."+side];var lower=hero.bone["LowerArm."+side];var wrist=hero.bone["Wrist."+side]
 	var shoulder=hero.bone["Shoulder."+side]
@@ -51,10 +78,14 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var c1=elbow+q1*(c-b)
 	var q2=Quaternion((c1-elbow).normalized(),(a+dir*d-elbow).normalized())
 	var lower_world=(q2*q1*wl.basis.get_rotation_quaternion()).normalized()
-	var cal:Dictionary=calibrate(hero)
-	var facing=hero.facing_basis().get_rotation_quaternion()
-	var grip=target.basis.get_rotation_quaternion()*facing.inverse()
-	var wrist_world=(grip*facing*cal[side]).normalized()
+	var wrist_world:Quaternion
+	if wrist_basis:wrist_world=target.basis.get_rotation_quaternion()
+	else:
+		# Legacy markers: identity basis means the aim clip's own wrist orientation.
+		var cal:Dictionary=calibrate(hero)
+		var facing=hero.facing_basis().get_rotation_quaternion()
+		var grip=target.basis.get_rotation_quaternion()*facing.inverse()
+		wrist_world=(grip*facing*cal[side]).normalized()
 	var parent_world=hero.bone_world(shoulder).basis.get_rotation_quaternion()
 	set_world(sk,upper,parent_world,upper_world,weight)
 	set_world(sk,lower,upper_world,lower_world,weight)
@@ -62,30 +93,33 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 static func set_world(sk:Skeleton3D,index:int,parent_world:Quaternion,world:Quaternion,weight:float):
 	var local=(parent_world.inverse()*world).normalized()
 	sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(local,weight))
-# Curled grip fingers from the outfit's own clips: the right hand from the native
-# pistol hold, the left from a fist. Retargeted clips leave fingers splayed.
-static var fingers={}
-const FINGER_SOURCE={"R":["Idle_Gun_Pointing",.3],"L":["Punch_Left",.15]}
-static func grip_fingers(hero:HeroCharacter) -> Dictionary:
-	if fingers.has(hero.role):return fingers[hero.role]
-	var out={"R":{},"L":{}}
-	for side in out:
-		var anim:Animation=hero.player.get_animation(FINGER_SOURCE[side][0])
-		for t in range(anim.get_track_count()):
-			if anim.track_get_type(t)!=Animation.TYPE_ROTATION_3D:continue
-			var bone_name=str(anim.track_get_path(t)).get_slice(":",1)
-			if not bone_name.ends_with("."+side):continue
-			if not (bone_name.begins_with("Index") or bone_name.begins_with("Middle") or bone_name.begins_with("Ring") or bone_name.begins_with("Pinky") or bone_name.begins_with("Thumb")):continue
-			var b=hero.skeleton.find_bone(bone_name)
-			if b>=0:out[side][b]=anim.rotation_track_interpolate(t,float(FINGER_SOURCE[side][1]))
-	fingers[hero.role]=out;return out
+# Procedural finger curl. Each finger is a chain FingerN1 (metacarpal) .. N4
+# (tip) with +Y along the bone; flexion is a rotation about the bone's -X from
+# its rest pose (measured on the Quaternius rig, tools/probe_curl.gd).
+static var finger_bones={}
+static func fingers_of(hero:HeroCharacter,side:String) -> Array:
+	var key=str([hero.role,side])
+	if finger_bones.has(key):return finger_bones[key]
+	var out=[]
+	for i in range(hero.skeleton.get_bone_count()):
+		var n=hero.skeleton.get_bone_name(i)
+		if not n.ends_with("."+side):continue
+		for finger in ["Index","Middle","Ring","Pinky","Thumb"]:
+			if n.begins_with(finger):out.append([i,finger,int(n.substr(finger.length(),1))]);break
+	finger_bones[key]=out;return out
 # `pointing` keeps the index finger straight (bind pose) for pressing buttons.
-static func curl(hero:HeroCharacter,side:String,weight:float,pointing:bool=false):
-	var poses:Dictionary=grip_fingers(hero)[side]
-	for b in poses:
-		var target:Quaternion=poses[b]
-		if pointing and hero.skeleton.get_bone_name(b).begins_with("Index"):target=straight(hero,b)
-		hero.skeleton.set_bone_pose_rotation(b,hero.skeleton.get_bone_pose_rotation(b).slerp(target,weight))
+static func curl(hero:HeroCharacter,side:String,weight:float,style:String="pistol",pointing:bool=false):
+	var c:Dictionary=CURLS.get(style,CURLS.pistol)
+	var sk=hero.skeleton
+	for entry in fingers_of(hero,side):
+		var b:int=entry[0];var finger:String=entry[1];var joint:int=entry[2]
+		var amount:float
+		if finger=="Thumb":amount=[0.,.35,.6,.7][mini(joint,3)]*float(c.thumb)
+		elif joint<=1:amount=.06
+		else:amount=float(c.fingers[joint-2])*(float(c.index) if finger=="Index" else 1.)
+		var target:Quaternion=sk.get_bone_rest(b).basis.get_rotation_quaternion()*Quaternion(Vector3.RIGHT,-amount)
+		if pointing and finger=="Index":target=straight(hero,b)
+		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).slerp(target,weight))
 # Local rotation of a bone in the skin bind (T) pose: a straight finger.
 static var straight_cache={}
 static func straight(hero:HeroCharacter,bone:int) -> Quaternion:

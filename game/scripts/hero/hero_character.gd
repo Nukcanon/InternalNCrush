@@ -182,7 +182,10 @@ func place_weapon_frame(s:Dictionary):
 	var basis=facing_basis()*Basis(Vector3.RIGHT,clampf(pitch,-1.2,1.2))
 	var scale_factor=HEIGHTS[role]/1.8
 	var origin:Vector3
-	if hold in ["pistol","item"]:
+	if hold=="pistol" and not bool(s.get("two_hands",true)):
+		# One-handed pistol: extended from the shooting shoulder.
+		origin=shoulder+basis*Vector3(-.03,-.05,-.30)*scale_factor
+	elif hold in ["pistol","item"]:
 		origin=chest.lerp(shoulder,.5)+basis*Vector3(0,.02,-.34)*scale_factor
 	else:
 		origin=shoulder+basis*Vector3(-.035,-.035,.04)*scale_factor
@@ -204,10 +207,27 @@ func solve_hands(s:Dictionary):
 	if weight<=.001:return
 	var right:Node3D=held.grip("R") if held.has_method("grip") else held.get_node_or_null("RightGrip")
 	var left:Node3D=held.grip("L") if held.has_method("grip") else held.get_node_or_null("LeftGrip")
-	if right:HeroIK.solve_arm(self,"R",right.global_transform,weight);HeroIK.curl(self,"R",weight,bool(s.get("point",false)))
-	if left and bool(s.get("two_hands",true)):
+	# Items with grip styles carry handle markers (the point the palm wraps);
+	# legacy items carry wrist targets in the aim clip's own orientation.
+	var styles:Dictionary=held.get_meta("grip_styles",{})
+	var hand_scale=absf(skeleton.global_transform.basis.get_scale().y)
+	var point=bool(s.get("point",false))
+	if right:
+		if styles.has("R"):
+			var style=str(styles.R)
+			HeroIK.solve_arm(self,"R",HeroIK.wrist_target(right.global_transform,"R",style,hand_scale),weight,true);HeroIK.curl(self,"R",weight,style,point)
+		else:HeroIK.solve_arm(self,"R",right.global_transform,weight);HeroIK.curl(self,"R",weight,"pistol",point)
+	if bool(s.get("two_hands",true)):
+		if left==null:return
 		var lw=weight*float(s.get("left_hand",1.))
-		HeroIK.solve_arm(self,"L",left.global_transform,lw);HeroIK.curl(self,"L",lw)
+		if styles.has("L"):
+			var style=str(styles.L)
+			HeroIK.solve_arm(self,"L",HeroIK.wrist_target(left.global_transform,"L",style,hand_scale),lw,true);HeroIK.curl(self,"L",lw,style)
+		else:HeroIK.solve_arm(self,"L",left.global_transform,lw);HeroIK.curl(self,"L",lw)
+	elif styles.has("R"):
+		# One-handed: the free arm hangs at the side (off screen in first person).
+		var side_rest=Transform3D(facing_basis()*HeroIK.FRAMES.rest.L,global_position+facing_basis()*Vector3(-.27,.88,-.10)*(HEIGHTS[role]/1.8)*absf(global_basis.get_scale().y))
+		HeroIK.solve_arm(self,"L",side_rest,weight,true);HeroIK.curl(self,"L",weight,"rest")
 # `mount`: false keeps the item where it is (e.g. a camera-space view model);
 # the hands still follow its grip markers.
 func hold(item:Node3D,mount:bool=true):

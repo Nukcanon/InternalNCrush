@@ -942,7 +942,11 @@ func refresh():
 	if p.get("invulnerable",0)>game.clock:interaction_hint.text="무적 보호 · %.1f초"%(p.invulnerable-game.clock);interaction_hint.visible=true
 	kill_feed.refresh(game.kill_events,game.local_id,Time.get_ticks_msec())
 	stats.text="%d FPS  ·  %s"%[Engine.get_frames_per_second(),"HOST" if game.server else str(game.ping_ms)+" ms"]
-	var secs=maxi(0,int(game.remaining));status.text="∞" if game.remaining>=1e10 else "%02d:%02d"%[secs/60,secs%60]
+	# Defusal: once the charge is planted the round runs until it detonates (or
+	# is defused), so the clock switches from the round timer to the fuse.
+	var fuse=int(game.options.mode)==4 and game.phase=="combat" and bool(game.bomb.get("planted",false))
+	var secs=maxi(0,int(ceilf(float(game.bomb.get("time",0.))))) if fuse else maxi(0,int(game.remaining))
+	status.text="∞" if game.remaining>=1e10 and not fuse else ("%02d:%02d"%[secs/60,secs%60])+(" 폭발" if fuse else "")
 	hud_blue.text=("BLUE %d승" if int(game.options.mode)==4 else "BLUE %d")%game.scores[0];hud_orange.text=("%d승 ORANGE" if int(game.options.mode)==4 else "%d ORANGE")%game.scores[1]
 	hud_blue.visible=not game.options.get("practice",false);hud_orange.visible=hud_blue.visible
 	if game.options.get("practice",false):status.text="FIELD ACADEMY  ·  자유 연습"

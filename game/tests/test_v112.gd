@@ -70,6 +70,11 @@ func run():
 	game.bomb.planted=true;game.bomb.position=game.arena.sites[0];game.players[1].team=1-MatchFlow.attackers(game)
 	expect(BombLogic.action(game,1)=="defuse","defender near planted bomb sees defuse prompt")
 	game.actors[1].position+=Vector3.RIGHT*6;expect(BombLogic.action(game,1).is_empty(),"defuse prompt disappears outside actual range")
+	# A planted charge keeps the round alive past the round timer until it detonates.
+	var round_before=game.round_no;game.remaining=-5.;game.bomb.time=20.;game.result={"team":-1,"player":0}
+	game.check_objectives(.5)
+	expect(game.phase=="combat" and game.round_no==round_before and is_equal_approx(game.bomb.time,19.5),"planted bomb extends the round past the timer until detonation")
+	game.remaining=30.;game.bomb.time=45.
 	game.players[1].skill_ready=game.clock+40.;game.players[1].gadget_ready=game.clock+10.
 	game.spawn(1)
 	expect(game.players[1].skill_ready==game.clock+40. and game.players[1].gadget_ready<=game.clock,"respawn retains skill cooldown")

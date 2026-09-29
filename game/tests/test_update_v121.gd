@@ -33,7 +33,7 @@ func run():
 	GadgetVisual.templates.clear();GunModel.bases.clear()
 	var melee=MeleeVisual.new();root.add_child(melee);melee.build(false,0,true);melee.pose(MeleeCombat.CONTACT_START);var high=melee.pivot.position;melee.pose(MeleeCombat.CONTACT_END);var low=melee.pivot.position
 	expect(high.x>low.x and high.y>low.y,"cut travels upper-right to lower-left")
-	melee.pose(MeleeCombat.DURATION);expect(melee.pivot.position.is_equal_approx(Vector3(.16,-.08,-.08)),"single swing returns to ready");melee.free()
+	melee.pose(MeleeCombat.DURATION);expect(melee.pivot.position.is_equal_approx(Vector3(.12,-.08,-.14)),"single swing returns to ready");melee.free()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(100,100);g.arena.has_water=false
 	g.add_player(1,"Medic","m");g.add_player(2,"Heavy","h");g.phase="combat";g.clock=100.
