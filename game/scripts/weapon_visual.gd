@@ -49,6 +49,8 @@ func build_pose(w:Dictionary):
 	elif w.kind=="repair":magazine.position=Vector3(0,-.13,-.15)
 	elif w.kind!="heal":magazine.position=Vector3(0,-.087,.05 if w.name in ["RAPID-9","KESTREL","FLUX"] else -.17)
 	if w.get("laser",false):length=.69;magazine.position=Vector3(0,-.085,-.18)
+	# Mirrors build(): per-shell guns use the long tube-magazine receiver.
+	elif w.get("single_load",false) and w.kind=="gun" and not pistol:length=.87;magazine.position=Vector3(0,-.09,-.18)
 	mag_origin=magazine.position;action_origin=action_part.position
 	left_hand=piece("LeftHand",Vector3(-.057,-.125,.055) if pistol else Vector3(-.065,-.073,-length*.59));hand_origin=left_hand.position
 	right_hand=piece("RightHand",Vector3(.044,-.120,-.15 if w.name in ["RAPID-9","KESTREL","FLUX"] else .035))
