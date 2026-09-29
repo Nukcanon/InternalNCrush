@@ -12,6 +12,7 @@ func lineup(stage:Node3D,team:int,hero:bool,z:float=0.) -> Array:
 		var holder=Node3D.new();stage.add_child(holder);holder.position=Vector3(-3.75+role*1.5,0,z+4.);holder.rotation.y=PI+.25*(role-2.5)*.4
 		var weapon_kind=["rifle","sniper","launcher","shotgun","rifle","pistol"][role]
 		if hero:
+			HeroStage.blob(holder)
 			var rig=HeroModel.build(role,team,true);holder.add_child(rig);CharacterVisual.add_clips(rig)
 			var player:AnimationPlayer=rig.get_node("AnimationPlayer");player.play("idle");player.seek(.4,true)
 			var gun=HeroWeapon.build(weapon_kind,HeroStyle.ROLE_ACCENT[role]);rig.get_node("Hips/Chest/WeaponSocket").add_child(gun);gun.scale=Vector3.ONE*.85
@@ -40,8 +41,8 @@ func run():
 	# Weapons on a display row.
 	var kinds=["pistol","rifle","shotgun","sniper","launcher"]
 	for i in range(kinds.size()):
-		var g=HeroWeapon.build(kinds[i],HeroStyle.ROLE_ACCENT[i]);group.add_child(g);g.position=Vector3(.15 if kinds[i]=="pistol" else 0,2.35-i*.34,4);g.rotation=Vector3(0,PI/2,0);g.scale=Vector3.ONE*1.1
-	cam.position=Vector3(0,1.65,5.9);cam.look_at(Vector3(0,1.65,4))
+		var g=HeroWeapon.build(kinds[i],HeroStyle.ROLE_ACCENT[i]);group.add_child(g);g.position=Vector3(.2 if kinds[i]=="pistol" else 0,2.5-i*.36,4);g.rotation=Vector3(0,PI/2+.55,.12);g.scale=Vector3.ONE*1.1
+	cam.position=Vector3(0,1.78,5.95);cam.look_at(Vector3(0,1.78,4))
 	await shot("3-weapons")
 	for n in group.get_children():n.free()
 	# Map district sample from player height.
@@ -51,8 +52,8 @@ func run():
 	# Close-up portrait for face/readability.
 	for n in group.get_children():n.free()
 	for role in [1,2,5]:
-		var h=Node3D.new();group.add_child(h);h.position=Vector3(-1.1+[1,2,5].find(role)*1.1,0,0);h.rotation.y=PI
+		var h=Node3D.new();group.add_child(h);h.position=Vector3(-1.1+[1,2,5].find(role)*1.1,0,5);h.rotation.y=PI
 		var rig=HeroModel.build(role,[0,1,0][[1,2,5].find(role)],true);h.add_child(rig);CharacterVisual.add_clips(rig);rig.get_node("AnimationPlayer").play("idle")
-	cam.position=Vector3(0,1.62,2.6);cam.look_at(Vector3(0,1.45,0))
+	cam.position=Vector3(0,1.62,7.6);cam.look_at(Vector3(0,1.4,5))
 	await shot("5-portraits")
 	quit(0)
