@@ -1,0 +1,62 @@
+extends SceneTree
+## Bakes Quaternius Ultimate Modular Men/Women (CC0) characters with their native
+## skeleton and proportions. Each outfit becomes a small binary scene (skeleton +
+## skinned meshes) plus one clip library: the outfit's own 24 CC0 clips and clips
+## retargeted from Universal Animation Library 1/2 (CC0, tools/clip_retarget.gd).
+## Source files stay outside the project (.tools/).
+const Retarget=preload("res://tools/clip_retarget.gd")
+const SOURCE="res://../../.tools/quaternius-modular/"
+const UAL1="res://../../.tools/quaternius-ual/ual1/Animation Library[Standard]/Godot/AnimationLibrary_Godot_Standard.glb"
+const UAL2="res://../../.tools/quaternius-ual/ual2/Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb"
+const OUTFITS={"men_swat":"men/Swat","women_soldier":"women/Soldier","men_spacesuit":"men/Spacesuit","men_worker":"men/Worker","men_adventurer":"men/Adventurer","women_scifi":"women/SciFi"}
+const UAL1_CLIPS=["Idle_Loop","Walk_Loop","Jog_Fwd_Loop","Sprint_Loop","Crouch_Idle_Loop","Crouch_Fwd_Loop","Jump_Start","Jump_Loop","Jump_Land",
+	"Pistol_Idle_Loop","Pistol_Aim_Neutral","Pistol_Aim_Up","Pistol_Aim_Down","Pistol_Shoot","Pistol_Reload","Hit_Chest","Hit_Head","Death01","Fixing_Kneeling","PickUp_Table"]
+const UAL2_CLIPS=["Slide_Start","Slide_Loop","Slide_Exit","OverhandThrow","Hit_Knockback"]
+func _initialize():call_deferred("run")
+func skin_of(skel:Skeleton3D) -> Skin:
+	for body in skel.get_children():
+		if body is MeshInstance3D and body.skin!=null:return body.skin
+	return null
+func run():
+	DirAccess.make_dir_recursive_absolute("res://assets/heroes")
+	var ual1=Retarget.load_pack(ProjectSettings.globalize_path(UAL1),root)
+	var ual2=Retarget.load_pack(ProjectSettings.globalize_path(UAL2),root)
+	if ual1.is_empty() or ual2.is_empty():push_error("animation packs missing");quit(1);return
+	for outfit in OUTFITS:
+		var doc=GLTFDocument.new();var state=GLTFState.new()
+		var path=ProjectSettings.globalize_path(SOURCE+OUTFITS[outfit]+".gltf")
+		if doc.append_from_file(path,state)!=OK:push_error("load failed "+path);quit(1);return
+		var scene:Node3D=doc.generate_scene(state);root.add_child(scene)
+		var skeleton:Skeleton3D=scene.find_children("*","Skeleton3D",true,false)[0]
+		var player:AnimationPlayer=scene.find_children("*","AnimationPlayer",true,false)[0]
+		# Output: Hero(Node3D) > Skeleton3D > Body#(MeshInstance3D), glTF +Z forward kept.
+		var hero=Node3D.new();hero.name="Hero";root.add_child(hero)
+		var skel=Skeleton3D.new();skel.name="Skeleton3D";hero.add_child(skel);skel.owner=hero
+		for i in range(skeleton.get_bone_count()):skel.add_bone(skeleton.get_bone_name(i))
+		for i in range(skeleton.get_bone_count()):
+			skel.set_bone_parent(i,skeleton.get_bone_parent(i));skel.set_bone_rest(i,skeleton.get_bone_rest(i))
+			skel.set_bone_pose(i,skeleton.get_bone_rest(i))
+		skel.transform=skeleton.global_transform
+		var index=0
+		for mesh in scene.find_children("*","MeshInstance3D",true,false):
+			# Outfits ship a prop pistol; weapons are separate game models.
+			if mesh.name.to_lower().contains("pistol") or mesh.skin==null:continue
+			var body=MeshInstance3D.new();body.name="Body%d"%index;index+=1;skel.add_child(body);body.owner=hero
+			body.mesh=mesh.mesh;body.skin=mesh.skin;body.transform=skeleton.global_transform.affine_inverse()*mesh.global_transform
+			body.skeleton=NodePath("..")
+		# Native clips: tracks target "Skeleton3D:<bone>" relative to the Hero root.
+		var library:AnimationLibrary=player.get_animation_library(player.get_animation_library_list()[0]).duplicate(true)
+		for clip in library.get_animation_list():
+			var anim=library.get_animation(clip)
+			for t in range(anim.get_track_count()):anim.track_set_path(t,NodePath(str(anim.track_get_path(t)).replace("CharacterArmature/Skeleton3D","Skeleton3D")))
+		var added=0
+		for pack in [[ual1,false,UAL1_CLIPS],[ual2,true,UAL2_CLIPS]]:
+			var clips=Retarget.retarget(pack[0],pack[1],skel,skin_of(skel),pack[2],"Skeleton3D")
+			for clip in clips:library.add_animation(clip,clips[clip]);added+=1
+		ResourceSaver.save(library,"res://assets/heroes/"+outfit+"_clips.res",ResourceSaver.FLAG_COMPRESS)
+		root.remove_child(hero)
+		var packed=PackedScene.new();packed.pack(hero)
+		ResourceSaver.save(packed,"res://assets/heroes/"+outfit+".scn",ResourceSaver.FLAG_COMPRESS)
+		print(outfit,": bones ",skel.get_bone_count()," meshes ",index," clips ",library.get_animation_list().size()," (retargeted ",added,")")
+		hero.free();scene.queue_free();await process_frame
+	print("HERO_BAKE_OK");quit()

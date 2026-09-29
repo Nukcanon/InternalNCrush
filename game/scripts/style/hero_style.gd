@@ -22,6 +22,9 @@ static var sphere_mesh:SphereMesh
 static var toon:Shader
 static var outline:Shader
 static var materials={}
+# Ink outlines double the vertex work, so only the high native preset gets them.
+static func outlines_enabled() -> bool:
+	return not RenderStyle.web() and GraphicsOptions.detail>=2
 static func toon_material(outlined:bool=false,gloss:float=0.) -> ShaderMaterial:
 	var key=str([outlined,gloss])
 	if materials.has(key):return materials[key]
