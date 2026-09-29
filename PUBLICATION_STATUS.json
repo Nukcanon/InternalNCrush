@@ -1,39 +1,25 @@
 {
-  "published_version": "1.3.3",
-  "release_tag": "internal-n-crush-v1.3.3",
-  "source_commit": "d01b920d3e459ac7e3ec3d15648bfe7ef5e1d10f",
-  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.3",
-  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=2620a7173a72",
-  "web_source_commit": "39bc10eb6dba2f96e137284fd5da3822d419dc41",
-  "site_commit": "0a0e1ec5d3a49fb15c4f91c6e154a016df78e306",
-  "published_at": "2026-09-28T15:04:21.622753+00:00",
-  "status": "published_windows_only_escape_crash_hotfix_work_ended",
+  "published_version": "1.3.5",
+  "release_tag": "internal-n-crush-v1.3.5",
+  "source_commit": "998d8501dabddba829585fd205636ded1318f218",
+  "release_url": "https://github.com/Nukcanon/InternalNCrush/releases/tag/internal-n-crush-v1.3.5",
+  "web_url": "https://nukcanon.github.io/nukcanon/play/?build=f895ecf28717",
+  "web_source_commit": "998d8501dabddba829585fd205636ded1318f218",
+  "published_at": "2026-09-29T05:46:36Z",
+  "status": "published",
+  "ci": {
+    "build_and_tests": "36524550082 success (all functional groups, 32-client capacity, network probe/lifecycle/props/rotation, touch, WebRTC, Windows/Web export)",
+    "lobby_deploy": "deploy-lobby.yml success; /health min_version 1.3.5"
+  },
   "assets": [
-    {
-      "name": "InternalNCrush_Windows_v1.3.3.zip",
-      "bytes": 199584643,
-      "sha256": "ea6afb5c077ca3e7aa51934085c40bc4dac8404080e91d5a986514e82adda6e7",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.3/InternalNCrush_Windows_v1.3.3.zip"
-    },
-    {
-      "name": "InternalNCrush_Web_v1.3.3.zip",
-      "bytes": 106363144,
-      "sha256": "2620a7173a72a653fc8b8e355e45572d64e27986db3935917f9759004b40ef3a",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.3/InternalNCrush_Web_v1.3.3.zip"
-    },
-    {
-      "name": "InternalNCrush_NAS_Linux_v1.3.3.zip",
-      "bytes": 15597,
-      "sha256": "1160d509f7312620e07388fc28eb387459aa8b4f23a6c79804d6320b03abe2a0",
-      "url": "https://github.com/Nukcanon/InternalNCrush/releases/download/internal-n-crush-v1.3.3/InternalNCrush_NAS_Linux_v1.3.3.zip"
-    }
+    {"name": "InternalNCrush_Windows_v1.3.5.zip", "bytes": 199816414, "sha256": "5b4ac99750da97a0d9087f2c27a75090645b5588f835f28c49d23c0cbdb27f46"},
+    {"name": "InternalNCrush_Web_v1.3.5.zip", "bytes": 107371518, "sha256": "f895ecf28717bc02341d894abdd23ffd2cea7af981d82fc891ded4e56f902015"},
+    {"name": "InternalNCrush_NAS_Linux_v1.3.5.zip", "bytes": 15552, "sha256": "f9b9e611895e8a0adfbecc69aca3d383069d0cd7c306b3ca8c00bd29eed229a3"}
   ],
   "validation": {
-    "native_export": "completed",
-    "targeted_dialog_lifetime": "20 checks / 0 failures; native windows, deferred callbacks, one Escape owner, duplicate suppression",
-    "physical_key_reproduction": "computer interaction stopped by user Escape; Windows Application Error records confirmed original 0xc0000005",
-    "additional_tests": "not run for hotfix; user requested all other checks and work stop",
-    "web": "unchanged by hotfix",
-    "public_directory": "not deployed; no default endpoint; work stopped at user request"
+    "packaged_windows": "verify_build.py: practice, training, headless-host and window-host ENet clients OK; verify_webrtc.py packaged WebRTC OK",
+    "live": "lobby rejects 1.3.4 with update notice, accepts 1.3.5; site version manifest 1.3.5; web online lobby auto-connects; native host <-> native client through the public lobby joined and replaced the balance bot",
+    "hitch_measurement": "8-player rendered probe on RTX 4080 SUPER: max frame 318 -> 113 ms, script sections over 4 ms 10 -> 0",
+    "known_limits": "Web <-> Windows WebRTC on the same network did not connect (browser mDNS .local host candidates are not resolved by the native WebRTC library; srflx needs NAT hairpinning). Pre-existing. Intel iGPU and physical phones not measured."
   }
 }
