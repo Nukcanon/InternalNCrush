@@ -38,6 +38,12 @@ static func build(ui:Node,parent:Node,filter:Dictionary,changed:Callable,search:
 	choice(second,["핑 제한 없음","50 ms 이하","100 ms 이하","150 ms 이하","250 ms 이하"],maxi(0,[0,50,100,150,250].find(int(filter.ping))),func(value):filter.ping=[0,50,100,150,250][value];changed.call()).name="PingFilter"
 	choice(second,["방 이름순","낮은 핑순","많은 인원순","적은 인원순"],int(filter.sort),func(value):filter.sort=value;changed.call()).name="SortFilter"
 	return {"toolbar":first,"filters":second,"search":name}
+# Buttons stacked in one right-hand column share the widest text width so their
+# edges line up (online lobby: connect / search / refresh).
+static func match_widths(buttons:Array):
+	var widest=0.
+	for b in buttons:widest=maxf(widest,b.get_combined_minimum_size().x)
+	for b in buttons:b.custom_minimum_size.x=widest
 # Toolbar buttons are as wide as their text; primary actions use the yellow accent.
 static func tool_button(ui:Node,parent:Node,text:String,callback:Callable,accent:bool=false) -> Button:
 	var b=ui.button(text,callback,parent);b.clip_text=false;b.custom_minimum_size.x=0;b.size_flags_horizontal=Control.SIZE_SHRINK_BEGIN

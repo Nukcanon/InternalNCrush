@@ -995,7 +995,8 @@ func internet_menu(auto_connect=true):
 		label("기본 공용 로비에 자동으로 연결합니다. 별도 서버 프로그램은 필요하지 않습니다.\n연결 실패 시 서버 연결로 다시 시도하거나 운영 중인 다른 로비 주소를 입력하세요.",17)
 	else:
 		var rows=RoomFilters.build(self,stack,internet_filter,render_internet_rooms,refresh_internet_rooms)
-		RoomFilters.tool_button(self,rows.filters,"새로고침",refresh_internet_rooms,true).name="RefreshRooms"
+		var refresh=RoomFilters.tool_button(self,rows.filters,"새로고침",refresh_internet_rooms,true);refresh.name="RefreshRooms"
+		RoomFilters.match_widths([lobby_connect_button,rows.toolbar.get_node("RoomSearchButton"),refresh])
 		button("빠른 참가",quick_join_dialog,footer).name="QuickJoin"
 		label("예상 핑은 로비까지의 왕복 시간과 방장 응답 시간을 합친 값입니다. 게임에서는 직접 연결 핑을 표시합니다.",16)
 		room_list=VBoxContainer.new();room_list.add_theme_constant_override("separation",6);stack.add_child(room_list)

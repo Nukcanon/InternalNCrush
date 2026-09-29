@@ -75,6 +75,8 @@ func run():
 	var server_row=ui.panel.find_child("ServerRow",true,false)
 	expect(server_row.get_child(0).text=="서버" and server_row.get_child(1) is LineEdit and server_row.get_child(2).text=="서버 연결" and server_row.get_child(2).get_theme_stylebox("normal").bg_color==Color("dc9c43"),"server label, address and yellow connect button share one row")
 	expect(not texts.has("목록 새로고침"),"full-width refresh button removed")
+	var column=[server_row.get_child(2),ui.panel.find_child("RoomSearchButton",true,false),refresh]
+	expect(column.all(func(b):return absf(b.size.x-column[0].size.x)<1. and absf(b.get_global_rect().end.x-column[0].get_global_rect().end.x)<1.),"connect, search and refresh buttons share one width and right edge")
 	expect(ui.panel.find_children("*","OptionButton",true,false).size()==4,"quick-join mode selector removed from the lobby")
 	ui.internet_rooms=[]
 	for i in range(4):ui.internet_rooms.append({"id":"r%d"%i,"name":"방 %d"%i,"mode":0,"map":13,"players":1,"capacity":8,"phase":"lobby","ping":30})
