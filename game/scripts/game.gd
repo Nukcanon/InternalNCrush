@@ -162,6 +162,8 @@ func _ready():
 	if TouchControls.supported():
 		touch=TouchControls.new();touch.game=self;ui.root.add_child(touch)
 	if DisplayServer.get_name()!="headless":kill_replay=KillReplay.new();kill_replay.game=self;add_child(kill_replay)
+	if render_actors:
+		var warmup=VisualWarmup.new();warmup.game=self;add_child(warmup)
 	version_check.changed.connect(func():ui.update_version_badge())
 	if DisplayServer.get_name()!="headless" and not "--no-update-check" in OS.get_cmdline_user_args():version_check.call_deferred("check")
 	multiplayer.peer_disconnected.connect(disconnected)
@@ -311,7 +313,7 @@ func setup_input():
 	for pair in [["left",KEY_LEFT],["right",KEY_RIGHT],["forward",KEY_UP],["back",KEY_DOWN]]:
 		var ev=InputEventKey.new();ev.physical_keycode=pair[1];InputMap.action_add_event(pair[0],ev)
 func build_world():
-	if render_actors and not dedicated:CombatFX.prepare_devices()
+	if render_actors and not dedicated:CombatFX.prepare_devices();Construction.prepare(self)
 	if is_instance_valid(kill_replay):kill_replay.reset()
 	if arena:remove_child(arena);arena.queue_free()
 	arena=W.new();arena.props_authoritative=server or demo_mode;add_child(arena);arena.build(int(options.map))
@@ -422,10 +424,11 @@ func register(nick:String,token:String,password:String,version:String,ticket:Str
 		if old_id==1 or Time.get_ticks_msec()-int(peer_activity.get(old_id,0))<5000:
 			reject.rpc_id(id,"같은 플레이어의 이전 연결이 아직 남아 있습니다. 5초 뒤 다시 접속하세요.");return
 		multiplayer.multiplayer_peer.disconnect_peer(old_id);disconnected(old_id)
-	if not TeamBalance.replacement_ids(self).is_empty():TeamBalance.remove_auto(self,TeamBalance.replacement_ids(self)[0])
-	if players.size()>=int(options.max_players) and not TeamBalance.auto_ids(self).is_empty():TeamBalance.remove_auto(self,TeamBalance.auto_ids(self)[0])
-	if players.size()>=int(options.max_players):reject.rpc_id(id,"방이 가득 찼습니다.");return
-	add_player(id,nick.left(20),token);peer_activity[id]=Time.get_ticks_msec();pending_peers.erase(id)
+	# A person always takes a bot's seat: balance/replacement bots first, then
+	# any bot when the room is full. Only a room of people rejects the join.
+	var seat_team=TeamBalance.admit(self)
+	if seat_team<0:reject.rpc_id(id,"방이 가득 찼습니다.");return
+	add_player(id,nick.left(20),token,seat_team);peer_activity[id]=Time.get_ticks_msec();pending_peers.erase(id)
 	if not claims.is_empty():public_room.accepted(id,claims);options.room_owner=public_room.owner_peer
 	TeamBalance.reconcile(self)
 	configure.rpc_id(id,public_options());broadcast_state(true,id)
@@ -440,18 +443,20 @@ func public_options() -> Dictionary:
 func configure(opts:Dictionary):
 	var saved_password=str(options.get("password",""));options=R.default_options();options.merge(opts,true);options.password=saved_password;connection_busy=false;received_sequence=-1;snapshot_buffers.clear();last_snapshot_ms=Time.get_ticks_msec();build_world();phase="lobby";ui.lobby()
 	last_snapshot_ms=Time.get_ticks_msec()
-func add_player(id:int,nick:String,token:String):
+func add_player(id:int,nick:String,token:String,team:int=-1):
 	prune_reconnects()
 	var t=0;var counts=[0,0]
 	for p in players.values():
 		if not p.get("auto_balance",false):counts[p.team]+=1
 	t=randi()%2 if counts[0]==counts[1] else 0 if counts[0]<counts[1] else 1
+	if team in [0,1]:t=team
 	var role=0 if id>0 or not options.classes else absi(id)%6
 	if role==5 and medic_count(t)>=R.medic_cap(counts[t]+1):role=0
 	var p={"id":id,"nick":nick,"token":token,"team":t,"role":role,"primary":C.first(role),"secondary":R.SECONDARIES[role],"slot":0,"hp":R.CLASS_HP[role],"armor":0.,"armor_max":0,"alive":false,"kills":0,"match_kills":0,"deaths":0,"assists":0,"objective":0,"healed":0.,"builds":0,"played":0.,"cash":800,"lives":int(options.lives),"respawn":0.,"mag":{},"reserve":{},"reload":0.,"reload_weapon":"","fire_ready":0.,"heal_ready":0.,"heal_mag":3,"heal_reserve":3,"energy":180.,"repair_energy":100.,"skill_ready":clock+30. if role==5 else 0.,"initial_skill_until":clock+30.,"gadget_count":1,"gadget":0,"protect":0.,"shield":0.,"slow":0.,"dash":0.,"mark":0.,"flash":0.,"last_hit":-20.,"contributors":{},"input_time":clock,"gadget_ready":0.,"last_pos":Vector3.ZERO,"spectator":false,"round_bonus":0,"can_respawn":true,"smoke":2,"flash_count":1}
 	if int(options.mode)==4:DefusalEconomy.reset(p,int(options.starting_cash))
 	if reconnects.has(token):
 		p=reconnects[token].duplicate(true);p.id=id;p.nick=nick;p.alive=false;p.respawn=clock+3;reconnects.erase(token)
+		if team in [0,1]:p.team=team
 	elif phase!="lobby":
 		p.spectator=int(options.join)==1
 		p.alive=false;p.respawn=clock+3 if int(options.join)==2 and int(options.mode)!=4 else 1e12
@@ -606,7 +611,7 @@ func network_discovery():
 		while discovery.get_available_packet_count()>0:
 			var msg=discovery.get_packet().get_string_from_utf8();var ip=discovery.get_packet_ip();var port=discovery.get_packet_port()
 			if msg=="RELAYSTRIKE_DISCOVER":
-				discovery.set_dest_address(ip,port);discovery.put_packet(JSON.stringify({"game":"RelayStrike","name":options.room,"count":players.size(),"max":options.max_players,"mode":R.MODES[int(options.mode)],"version":R.VERSION,"locked":not str(options.get("password","")).is_empty()}).to_utf8_buffer())
+				discovery.set_dest_address(ip,port);discovery.put_packet(JSON.stringify({"game":"RelayStrike","name":options.room,"count":TeamBalance.humans(self),"bots":players.size()-TeamBalance.humans(self),"max":options.max_players,"mode":R.MODES[int(options.mode)],"version":R.VERSION,"locked":not str(options.get("password","")).is_empty()}).to_utf8_buffer())
 	if browser:
 		while browser.get_available_packet_count()>0:
 			var raw=browser.get_packet();var ip=browser.get_packet_ip()
@@ -728,14 +733,17 @@ func _physics_process(dt:float):
 		room_search_timer-=dt
 		if room_search_timer<=0:search_rooms()
 	if phase=="menu":return
+	var _t=Time.get_ticks_usec()
 	input_timer-=dt
 	if input_timer<=0:collect_input();input_timer=1./30
 	if server:
 		server_tick(dt)
+		prof_add("server_tick",_t);_t=Time.get_ticks_usec()
 		snapshot_timer-=dt
 		full_sync_timer-=dt
 		if snapshot_timer<=0 and not demo_mode:broadcast_state(full_sync_timer<=0);snapshot_timer=1./15
 		if full_sync_timer<=0:full_sync_timer=3.
+		prof_add("broadcast",_t);_t=Time.get_ticks_usec()
 	else:
 		if actors.has(local_id) and players[local_id].alive:
 			AimModel.recover(players[local_id],current_weapon(players[local_id]),dt,clock)
@@ -743,16 +751,34 @@ func _physics_process(dt:float):
 			MatchFlow.preparation(self,local_id)
 		ping_timer-=dt
 		if ping_timer<=0:ping_request.rpc_id(1,Time.get_ticks_msec());ping_timer=1.
-	for id in actors:
-		if players.has(id):
-			if not render_actors:actors[id].headless_pose(players[id])
-			else:actors[id].visual(dt,players[id],clock)
+		prof_add("client_sim",_t);_t=Time.get_ticks_usec()
+	if not render_actors:
+		for id in actors:
+			if players.has(id):actors[id].headless_pose(players[id])
+		if not demo_mode:update_spectator()
+	elif not is_physics_processing():render_update(dt)
 	update_world_visuals(dt)
+	prof_add("world_visual",_t)
+func _process(dt:float):
+	# Rendering work runs once per drawn frame. Catch-up physics steps after a
+	# slow frame then only simulate, instead of re-posing every character and
+	# rebuilding the HUD several times before the next image is shown.
+	if phase=="menu" or not render_actors or not is_physics_processing():return
+	render_update(dt)
+func render_update(dt:float):
+	var _t=Time.get_ticks_usec()
+	for id in actors:
+		if players.has(id):actors[id].visual(dt,players[id],clock)
+	prof_add("actor_visual",_t);_t=Time.get_ticks_usec()
 	if not demo_mode:
 		update_spectator()
-		if render_actors:
-			web_hud_timer-=dt
-			if not OS.has_feature("web") or web_hud_timer<=0:ui.refresh();web_hud_timer=1./20.
+		web_hud_timer-=dt
+		if not OS.has_feature("web") or web_hud_timer<=0:ui.refresh();web_hud_timer=1./20.
+	prof_add("ui",_t)
+var prof={}
+var prof_enabled=OS.has_environment("INC_PROFILE")
+func prof_add(key:String,start:int):
+	if prof_enabled:prof[key]=int(prof.get(key,0))+Time.get_ticks_usec()-start
 @rpc("any_peer","call_remote","unreliable",2)
 func ping_request(sent:int):
 	if server and players.has(multiplayer.get_remote_sender_id()) and rate_limit(multiplayer.get_remote_sender_id(),"ping",.5):
@@ -1525,7 +1551,9 @@ func broadcast_state(force:bool,target_peer:int=0):
 			if link is ENetPacketPeer and link.get_state()!=ENetPacketPeer.STATE_CONNECTED:continue
 			if link is WebSocketPeer and (link.get_ready_state()!=WebSocketPeer.STATE_OPEN or link.get_current_outbound_buffered_amount()>24000):continue
 			if link is Dictionary and (not link.get("connected",false) or link.get("channels",[]).any(func(channel):return channel.get_ready_state()!=WebRTCDataChannel.STATE_OPEN)):continue
-			if force:full_state.rpc_id(peer,state)
+			# Reliable syncs carry the same deflated bytes as snapshots. A raw
+			# dictionary was ~11x larger and stalled every peer's reliable channel.
+			if force:full_state_packed.rpc_id(peer,packed)
 			else:
 				for i in range(parts):snapshot_chunk.rpc_id(peer,snapshot_sequence,i,parts,packed.slice(i*1000,mini(packed.size(),(i+1)*1000)))
 @rpc("authority","call_remote","unreliable",3)
@@ -1546,11 +1574,16 @@ func snapshot_chunk(seq:int,index:int,count:int,bytes:PackedByteArray):
 	for key in keys:
 		if key<=received_sequence or snapshot_buffers.size()>4 or Time.get_ticks_msec()-int(snapshot_buffers[key].at)>1000:snapshot_buffers.erase(key)
 @rpc("authority","call_remote","reliable",0)
-func full_state(s:Dictionary):receive_state(s)
+func full_state_packed(bytes:PackedByteArray):
+	if bytes.size()>256000:return
+	var state=bytes_to_var(bytes.decompress_dynamic(1048576,FileAccess.COMPRESSION_DEFLATE))
+	if state is Dictionary:receive_state(state)
 @rpc("authority","call_remote","unreliable_ordered",1)
 func snapshot(s:Dictionary):receive_state(s)
 func receive_state(s:Dictionary):
 	if server or arena==null:return
+	var _t=Time.get_ticks_usec();receive_state_body(s);prof_add("receive",_t)
+func receive_state_body(s:Dictionary):
 	var sequence=int(s.get("sequence",received_sequence+1))
 	if sequence<=received_sequence:return
 	received_sequence=sequence;last_snapshot_ms=Time.get_ticks_msec();connection_notice=false

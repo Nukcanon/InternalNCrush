@@ -82,7 +82,9 @@ func run():
 	expect(nav.request_route(1.+1./60.),"pending bots can request a path on the next simulation tick")
 	fixture.free()
 	CombatFX.prepare_devices()
-	expect(CombatFX.device_templates.size()==4,"all deployment assemblies load from baked assets")
+	expect(CombatFX.device_templates.size()>=4,"all deployment assemblies load from baked assets")
+	# 1.3.2 detailed covers are assembled in memory; 1.3.5 derives their outlines at map load.
+	var outline_host=Node3D.new();root.add_child(outline_host);Construction.prepare(outline_host);outline_host.free()
 	var edge_builds=Construction.edge_builds
 	for kind in ["turret","cover"]:
 		for team in range(2):
@@ -93,8 +95,8 @@ func run():
 			expect(not meshes.is_empty() and meshes.size()==copies.size(),"deployment retains its baked parts")
 			for i in range(meshes.size()):
 				expect(meshes[i].mesh==copies[i].mesh,"deployment instances share immutable GPU geometry")
-				expect(meshes[i].get_meta("construction_wire",null) is ArrayMesh,"construction edge extraction is baked offline")
 				Construction.add_edges(meshes[i],team)
+				expect(meshes[i].get_meta("construction_wire") is ArrayMesh,"construction outline is prepared before placement")
 			if kind=="turret":
 				a.get_node("TurretHead").rotation.y=1.
 				expect(b.get_node("TurretHead").rotation.y==0.,"shared turret geometry preserves independent aiming")

@@ -18,7 +18,9 @@ func run():
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(80,80);g.arena.has_water=false;g.arena.box(Vector3(0,-.5,0),Vector3(160,1,160),Color.GRAY);g.arena.sites=[Vector3(10,0,10),Vector3(-10,0,-10)]
 	g.add_player(1,"One","one");g.add_player(2,"Two","two");g.players[1].team=0;g.players[2].team=1
 	TeamBalance.reconcile(g);expect(g.players.size()==2,"even players need no automatic bot")
-	expect(not g.change_team(1,2,0),"host cannot move other human")
+	# 1.3.2: the host manages teams for everyone; restore the pairing afterwards.
+	expect(g.change_team(1,2,0) and g.players[2].team==0,"host can move another person")
+	g.players[2].team=1;g.actors[2].set_team(1);g.options.manual_roster=false
 	expect(not g.change_team(2,2,0),"self cannot unbalance teams")
 	g.add_player(3,"Three","three");TeamBalance.reconcile(g);expect(g.players.size()==4 and TeamBalance.auto_ids(g).size()==1,"odd players get one hard bot")
 	var auto_id=TeamBalance.auto_ids(g)[0];expect(g.bot_agents[auto_id].difficulty==2,"automatic bot hard difficulty")

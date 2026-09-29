@@ -3,7 +3,25 @@ extends Node3D
 var right_socket=Vector3.ZERO
 var left_socket=Vector3.ZERO
 var two_handed=false
+# Procedural grips cost 70-170 ms per build. Held items are rebuilt whenever a
+# player selects a gadget, so every peer caches finished assemblies instead.
+static var templates={}
 func build(role:int,variant:int,first_person:bool,turret:bool=false):
+	var key=str([role,variant,first_person,turret,RenderStyle.web()])
+	if not templates.has(key):
+		var source=GadgetVisual.new();source.build_fresh(role,variant,first_person,turret)
+		MeshFactory.own_recursive(source,source)
+		var packed=PackedScene.new();packed.pack(source)
+		templates[key]={"scene":packed,"right":source.right_socket,"left":source.left_socket,"two_handed":source.two_handed}
+		source.free()
+	var entry=templates[key];var copy:Node=entry.scene.instantiate()
+	for child in copy.get_children():
+		copy.remove_child(child);MeshFactory.own_recursive(child,null);child.owner=null;add_child(child)
+	copy.free()
+	right_socket=entry.right;left_socket=entry.left;two_handed=entry.two_handed
+static func prepare(role:int,variant:int,first_person:bool,turret:bool=false):
+	var probe=GadgetVisual.new();probe.build(role,variant,first_person,turret);probe.free()
+func build_fresh(role:int,variant:int,first_person:bool,turret:bool=false):
 	var object=Node3D.new();object.name="Payload";add_child(object)
 	two_handed=turret or (role==3 and variant in [0,1,2])
 	if turret:CombatFX.device(object,"turret",0)

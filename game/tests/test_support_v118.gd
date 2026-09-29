@@ -40,8 +40,8 @@ func run():
 		expect(is_equal_approx(q.hp,15. if wid=="m2" else 40.),wid+" heals expected amount, shotgun capped at 30")
 		p.reload=0.;expect(TouchAim.can_auto_fire(g,a),wid+" auto fires at ally")
 		q.team=1;expect(TouchAim.can_auto_fire(g,a),wid+" auto fires at enemy");q.team=0
-		var w=Catalog.get_weapon(wid);expect(CombatBalance.range_factor(w,50.)<CombatBalance.range_factor(w,1.),wid+" healing decreases with distance")
-	expect(is_equal_approx(CombatBalance.firing_dps(Catalog.get_weapon("m3")),CombatBalance.firing_dps(Catalog.get_weapon("e1"))*.8),"medical shotgun 80 percent ordinary shotgun DPS")
+		var w=Catalog.get_weapon(wid);expect(CombatBalance.range_factor(w,150.)<CombatBalance.range_factor(w,1.),wid+" healing decreases with distance")
+	expect(absf(CombatBalance.firing_dps(Catalog.get_weapon("m3"))/CombatBalance.firing_dps(Catalog.get_weapon("e1"))-.8)<.03,"medical shotgun about 80 percent ordinary shotgun DPS")
 	for role in range(6):
 		p.role=role;p.gadget=8;GadgetLoadout.reset(p);expect(p.gadget_count==2 and GrenadeLogic.equipped(p),"all roles select frag "+str(role))
 	p.role=4

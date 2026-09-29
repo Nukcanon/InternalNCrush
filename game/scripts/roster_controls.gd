@@ -48,4 +48,9 @@ static func populate(g:Node,parent:Node,results:bool):
 				var move=small_button(cell,"교환" if full and TeamBalance.host(g,g.local_id) else "→ ORANGE" if target==1 else "← BLUE",func():
 					if full and TeamBalance.host(g,g.local_id):g.ui.team_swap_menu(pid)
 					else:g.command("team",{"player_id":pid,"team":target}))
-				move.tooltip_text="ORANGE로 이동" if target==1 else "BLUE로 이동";move.custom_minimum_size.x=88;move.size_flags_vertical=Control.SIZE_EXPAND_FILL;move.disabled=not TeamBalance.can_move(g,g.local_id,pid,target) and not (full and TeamBalance.host(g,g.local_id))
+				move.tooltip_text="ORANGE로 이동" if target==1 else "BLUE로 이동";move.custom_minimum_size.x=112;move.size_flags_vertical=Control.SIZE_EXPAND_FILL;move.disabled=not TeamBalance.can_move(g,g.local_id,pid,target) and not (full and TeamBalance.host(g,g.local_id))
+				# Narrow margins let "→ ORANGE" keep the same 14 px text as "← BLUE".
+				compact(g,move)
+static func compact(g:Node,b:Button):
+	for state in ["normal","hover","pressed","disabled"]:
+		var style=g.ui.theme.get_stylebox(state,"Button").duplicate();style.content_margin_left=6;style.content_margin_right=6;b.add_theme_stylebox_override(state,style)

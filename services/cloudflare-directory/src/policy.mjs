@@ -6,6 +6,15 @@ export function text(value,max){if(typeof value!=='string'||!value.trim()||value
 export function integer(value,min,max){if(!Number.isInteger(value)||value<min||value>max)fail(422,'숫자 범위를 확인하세요.');return value;}
 export function scope(value='internet'){if(!['internet','lan'].includes(value))fail(422,'로비 종류를 확인하세요.');return value;}
 export function exact(value,keys){object(value);if(Object.keys(value).some(k=>!keys.includes(k)))fail(422,'지원하지 않는 설정입니다.');}
+// Game releases no longer require a Worker redeploy: any release at or above the
+// configured minimum is accepted, and rooms are only shared within one version.
+export function version(value,minimum){
+  const parse=v=>typeof v==='string'&&/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(v)?v.split('.').map(Number):null;
+  const got=parse(value),min=parse(minimum)||[0,0,0];
+  if(!got)fail(422,'게임 버전 형식을 확인하세요.');
+  for(let i=0;i<3;i++){if(got[i]!==min[i]){if(got[i]<min[i])fail(409,'새 버전('+minimum+' 이상)으로 업데이트하세요. 게임 페이지에서 최신 버전을 받을 수 있습니다.');break;}}
+  return value;
+}
 export function options(value){
   const base={name:'공개 경기',mode:0,map:13,capacity:8,map_random:true,map_rotation:false,weapon_rule:0,minutes:10,target:60,team_respawns:60,capture_hold:60,capture_seconds:5,rounds:4,starting_cash:800,prep_seconds:30,round_minutes:5,bomb_seconds:45,buy_seconds:60,lives:0,next_teams:2,scope:'internet',locked:false};
   exact(value,Object.keys(base));const o={...base,...value};

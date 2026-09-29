@@ -14,6 +14,7 @@ func run():
 		check(ok.position.x>cancel.position.x,"affirmative is on right")
 		check(absf(ok.size.x-cancel.size.x)<1. and ok.size.y==cancel.size.y,"matching button dimensions")
 		check(ok.get_theme_stylebox("normal").bg_color==Color("593b4b" if navigation else "285a43"),"correct affirmative color")
-		check(cancel.get_theme_stylebox("normal").bg_color==Color("593b4b"),"negative is red")
+		# 1.3.3: in navigation prompts "stay" is the safe, green choice; leaving is red.
+		check(cancel.get_theme_stylebox("normal").bg_color==Color("285a43" if navigation else "593b4b"),"negative is red, navigation stay is green")
 		dialog.free()
 	print("DIALOG_STYLE 8 checks / ",failed," failures");quit(1 if failed else 0)

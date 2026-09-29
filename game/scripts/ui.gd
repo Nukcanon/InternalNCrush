@@ -92,7 +92,8 @@ var hud_orange:Label
 var operator_name:Label
 var internet_filter=RoomFilters.defaults()
 var internet_rooms=[]
-var internet_nearby=false
+var quick_join:Control
+var quick_join_mode=-1
 var lobby_connect_button:Button
 const MENU_SCALE=.88
 var ACTION_HEIGHT=84 if TouchControls.supported() else 40
@@ -106,6 +107,13 @@ func menu_key(event:InputEvent) -> bool:
 		if event.keycode==KEY_ESCAPE:lan_lobby.back_from_direct()
 		elif is_instance_valid(lan_lobby.connect_button) and not lan_lobby.connect_button.disabled:lan_lobby.submit_direct()
 		return true
+	if is_instance_valid(quick_join):
+		if event.keycode==KEY_ESCAPE:game.play_sound("ui",Vector3.ZERO,false);close_quick_join()
+		else:submit_quick_join()
+		return true
+	# Enter in a text field belongs to that field (e.g. room search), not to
+	# the first matching action button of the menu.
+	if event.keycode!=KEY_ESCAPE and get_viewport().gui_get_focus_owner() is LineEdit:return false
 	if is_instance_valid(map_viewer):return false
 	if not is_instance_valid(panel):
 		if event.keycode==KEY_ESCAPE and is_instance_valid(scoreboard) and scoreboard.pinned:scoreboard.close();return true
@@ -155,6 +163,7 @@ func clear_panel(keep_background=false):
 	if is_instance_valid(hud):hud.visible=not (is_instance_valid(game.kill_replay) and game.kill_replay.active)
 	if is_instance_valid(navigation_confirm):navigation_confirm.queue_free();navigation_confirm=null
 	if lan_lobby:lan_lobby.close_dialog()
+	close_quick_join()
 	if is_instance_valid(vote_panel):vote_panel.visible=false
 	screen="";game.stop_room_search();team_signature=""
 	if is_instance_valid(background) and not keep_background:background.queue_free();background=null
@@ -285,7 +294,6 @@ func build_main_actions():
 	stack.add_child(HSeparator.new());label("플레이",23)
 	if OS.has_feature("web"):
 		button("온라인 로비",internet_menu)
-		button("같은 네트워크의 방",join_menu)
 	else:
 		button("내부망 로비",join_menu)
 		button("인터넷 로비",internet_menu)
@@ -376,7 +384,7 @@ func host_settings():
 	label("봇도 참가 인원에 포함됩니다.\n선택 인원이 방 정원을 넘으면 정원까지 추가합니다.",16)
 	stack=outer;var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);button("방 만들기",func():game.host_game(),actions);button("돌아가기",join_menu,actions);pin_actions(actions);notice_label=label("",14)
 func join_menu():
-	if OS.has_feature("web"):internet_menu("lan")
+	if OS.has_feature("web"):internet_menu()
 	else:lan_lobby.show()
 func update_rooms():
 	lan_lobby.update_rooms()
@@ -392,11 +400,14 @@ func lobby():
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
 	if int(game.options.mode)!=4:button("병과 · 무기 · 가젯",gear,actions)
 	button("팀 편성",teams_menu,actions);button("참가자 관리",members_menu,actions)
+	# Team rows follow the tool buttons directly so more of the roster fits.
+	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns)
 	actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);pin_actions(actions)
 	if TeamBalance.host(game,game.local_id):button("경기 시작",func():game.command("start",{}),actions)
-	else:label("방장이 경기를 시작하면 참여합니다.",15)
-	button("방 나가기",confirm_room_leave,actions);notice_label=label("",14)
-	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns);refresh_teams()
+	else:
+		var waiting=label("방장이 경기를 시작하면 참여합니다.",15,actions);waiting.size_flags_horizontal=Control.SIZE_EXPAND_FILL;waiting.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	button("방 나가기",confirm_room_leave,actions)
+	notice_label=label("",14);refresh_teams()
 func teams_menu():
 	make_panel("팀 편성",940,true);screen="teams"
 	label("방장은 팀 이동·자리 교환과 봇 추가·제거가 가능합니다. 일반 참가자는 경기 규칙에 따라 자신의 팀을 변경합니다.",15)
@@ -968,62 +979,53 @@ func refresh():
 func map_selector():
 	map_refresh=MapSelection.build(self)
 
-func internet_menu(scope:String="internet",auto_connect=true):
-	# Nearby is a list filter, never an admission restriction. School networks
-	# can use several external addresses for devices in the same building.
-	internet_nearby=scope=="lan";game.internet.scope="internet"
-	make_panel("같은 네트워크의 방" if internet_nearby else "온라인 로비",980);screen="internet"
+func internet_menu(auto_connect=true):
+	# One public room list for web and Windows. Same-network grouping by
+	# external IP was unreliable (school/DMZ/VPN), so every room is listed.
+	game.internet.scope="internet"
+	make_panel("온라인 로비",980);screen="internet"
 	var service=game.internet
-	if internet_nearby:label("외부 IP가 같은 방을 참고용으로 표시합니다. 학교·DMZ·VPN에서는 같은 내부망도 누락될 수 있으니 모든 방 보기를 이용하세요.",17)
 	var footer=HBoxContainer.new();footer.add_theme_constant_override("separation",12);stack.add_child(footer);pin_actions(footer)
 	var address=edit("로비 서버",str(game.profile.get("lobby_url","")),func(_v):pass)
 	address.placeholder_text="https://play.example.com"
-	lobby_connect_button=button("서버 연결",func():connect_online_lobby(address.text,scope,panel),footer)
+	lobby_connect_button=button("서버 연결",func():connect_online_lobby(address.text,panel),footer)
 	if service.token.is_empty():
 		label("기본 공용 로비에 자동으로 연결합니다. 별도 서버 프로그램은 필요하지 않습니다.\n연결 실패 시 서버 연결로 다시 시도하거나 운영 중인 다른 로비 주소를 입력하세요.",17)
 	else:
-		button("모든 방 보기" if internet_nearby else "같은 네트워크의 방 보기",func():internet_menu("internet" if internet_nearby else "lan"))
-		RoomFilters.build(self,stack,internet_filter,render_internet_rooms)
-		var selected_mode=[-1]
-		option("빠른 참가 모드",["모든 모드"]+Rules.MODES,0,func(i):selected_mode[0]=i-1)
-		var actions=footer
-		button("빠른 참가",func():
-			notice("참가 가능한 경기를 찾는 중…")
-			var result=await service.matchmake(selected_mode[0])
-			if result.has("error"):notice(result.error)
-			elif result.get("pending",false):wait_internet_room(result.room.id),actions)
+		RoomFilters.build(self,stack,internet_filter,render_internet_rooms,refresh_internet_rooms)
+		button("빠른 참가",quick_join_dialog,footer).name="QuickJoin"
 		button("목록 새로고침",refresh_internet_rooms)
 		label("예상 핑은 로비까지의 왕복 시간과 방장 응답 시간을 합친 값입니다. 게임에서는 직접 연결 핑을 표시합니다.",16)
-		room_list=VBoxContainer.new();stack.add_child(room_list)
+		room_list=VBoxContainer.new();room_list.add_theme_constant_override("separation",6);stack.add_child(room_list)
 		refresh_internet_rooms()
 	notice_label=label("",17)
 	# Connected rooms need start/create/back; reconnect lives above the list.
 	if not service.token.is_empty():
 		var connect=footer.get_child(0);connect.reparent(stack);stack.move_child(connect,3)
-	var create=button("방 만들기" if scope=="lan" else "공개 방 만들기",internet_create,footer)
+	var create=button("공개 방 만들기",internet_create,footer)
 	create.name="CreateRoom";create.disabled=service.token.is_empty();create.tooltip_text="로비 서버에 연결하면 방을 만들 수 있습니다." if create.disabled else "새 방을 만들고 방장으로 참가합니다."
 	button("메인메뉴",menu,footer)
-	if auto_connect and service.token.is_empty() and not address.text.is_empty():connect_online_lobby.call_deferred(address.text,scope,panel)
-func connect_online_lobby(url:String,scope:String,origin_panel):
+	if auto_connect and service.token.is_empty() and not address.text.is_empty():connect_online_lobby.call_deferred(address.text,panel)
+func connect_online_lobby(url:String,origin_panel):
 	if not is_instance_valid(origin_panel) or panel!=origin_panel:return
 	lobby_connect_button.disabled=true;notice("로비 서버에 연결 중…")
 	while game.internet.busy:
 		await get_tree().create_timer(.1).timeout
 		if not is_instance_valid(origin_panel) or panel!=origin_panel:return
 	if not game.internet.token.is_empty() and game.internet.endpoint==url.strip_edges().trim_suffix("/"):
-		internet_menu(scope,false);return
+		internet_menu(false);return
 	var result=await game.internet.connect_service(url)
 	if not is_instance_valid(origin_panel) or panel!=origin_panel or screen!="internet":return
 	if result.has("error"):
 		lobby_connect_button.disabled=false;notice(result.error)
-	else:internet_menu(scope,false)
+	else:internet_menu(false)
 func refresh_internet_rooms():
 	if screen!="internet" or game.internet.token.is_empty():return
 	var target_list=room_list
 	while game.internet.busy:
 		await get_tree().create_timer(.1).timeout
 		if screen!="internet" or not is_instance_valid(target_list) or room_list!=target_list:return
-	var result=await game.internet.request("/v1/rooms?scope=internet"+("&network=nearby" if internet_nearby else ""))
+	var result=await game.internet.request("/v1/rooms?scope=internet")
 	if screen!="internet" or not is_instance_valid(target_list) or room_list!=target_list:return
 	if result.has("error"):notice(result.error);return
 	internet_rooms=result.get("rooms",[])
@@ -1033,15 +1035,54 @@ func render_internet_rooms():
 	if screen!="internet" or not is_instance_valid(room_list):return
 	for child in room_list.get_children():room_list.remove_child(child);child.queue_free()
 	var selected=RoomFilters.select(internet_rooms,internet_filter)
-	for room in selected:
-		var row=HBoxContainer.new();room_list.add_child(row)
+	for index in range(selected.size()):
+		var room=selected[index]
+		var card=PanelContainer.new();card.add_theme_stylebox_override("panel",RoomFilters.row_style(index));room_list.add_child(card)
+		var row=HBoxContainer.new();row.add_theme_constant_override("separation",12);card.add_child(row)
 		var description=label("%s · %s · %d/%d\n%s · %s"%[room.name,Rules.MODES[int(room.mode)],room.players,room.capacity,Rules.MAPS[int(room.map)],"예상 %d ms"%int(room.ping) if int(room.ping)>=0 else "핑 측정 중"],17,row);description.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		description.custom_minimum_size.x=1
 		var room_id=str(room.id)
 		var join=button("준비 중" if room.phase=="starting" else "참가",func():
 			game.options.password=""
 			if room.get("locked",false):internet_password(room_id)
 			else:wait_internet_room(room_id),row);join.disabled=room.phase=="starting" or int(room.players)>=int(room.capacity)
+		# Touch buttons clip their text; a fixed width keeps the whole label visible.
+		join.custom_minimum_size.x=150 if TouchControls.supported() else 120;join.size_flags_horizontal=Control.SIZE_SHRINK_END;join.size_flags_vertical=Control.SIZE_SHRINK_CENTER
 	if selected.is_empty():label("검색 조건에 맞는 방이 없습니다. 방을 만들거나 검색 조건을 바꿔 보세요.",17,room_list)
+func quick_join_dialog():
+	close_quick_join()
+	quick_join=Control.new();quick_join.name="QuickJoinDialog";quick_join.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quick_join.z_index=110;root.add_child(quick_join)
+	var dim=ColorRect.new();dim.color=Color(.01,.02,.04,.8);dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quick_join.add_child(dim)
+	var mobile=TouchControls.supported();var width=900. if mobile else 700.
+	var box=PanelContainer.new();box.set_anchors_and_offsets_preset(Control.PRESET_CENTER);box.position=Vector2(-width*.5,-250 if mobile else -200);box.custom_minimum_size=Vector2(width,0);quick_join.add_child(box)
+	var content=VBoxContainer.new();content.add_theme_constant_override("separation",14);box.add_child(content)
+	var title=label("빠른 참가",30,content);title.autowrap_mode=TextServer.AUTOWRAP_OFF
+	var hint=label("참가할 게임 모드를 선택하세요. 조건에 맞는 방에 자동으로 참가합니다.",18,content);hint.modulate=Color("a7bacb");hint.custom_minimum_size.x=width-40
+	var grid=GridContainer.new();grid.columns=2 if mobile else 3;grid.add_theme_constant_override("h_separation",10);grid.add_theme_constant_override("v_separation",10);content.add_child(grid)
+	var group=ButtonGroup.new()
+	var modes=[["모든 모드",-1]]
+	for i in range(Rules.MODES.size()):modes.append([Rules.MODES[i],i])
+	for item in modes:
+		var choice=Button.new();choice.text=item[0];choice.toggle_mode=true;choice.button_group=group;choice.custom_minimum_size=Vector2(0,ACTION_HEIGHT);choice.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		choice.name="Mode%d"%(int(item[1])+1);choice.button_pressed=int(item[1])==quick_join_mode;grid.add_child(choice)
+		var mode=int(item[1]);choice.toggled.connect(func(on):quick_join_mode=mode if on else quick_join_mode)
+	var buttons=HBoxContainer.new();buttons.add_theme_constant_override("separation",12);content.add_child(buttons)
+	var join=Button.new();join.name="QuickJoinSubmit";join.text="참가하기";join.custom_minimum_size=Vector2(0,ACTION_HEIGHT);join.size_flags_horizontal=Control.SIZE_EXPAND_FILL;buttons.add_child(join);lan_lobby.accent(join)
+	join.pressed.connect(submit_quick_join)
+	var back=Button.new();back.name="QuickJoinBack";back.text="돌아가기";back.custom_minimum_size=Vector2(0,ACTION_HEIGHT);back.size_flags_horizontal=Control.SIZE_EXPAND_FILL;buttons.add_child(back)
+	back.pressed.connect(func():game.play_sound("ui",Vector3.ZERO,false);close_quick_join())
+	join.grab_focus()
+func close_quick_join():
+	if is_instance_valid(quick_join):quick_join.hide();quick_join.queue_free()
+	quick_join=null
+func submit_quick_join():
+	if not is_instance_valid(quick_join):return
+	game.play_sound("ui",Vector3.ZERO,false)
+	var mode=quick_join_mode;close_quick_join()
+	notice("참가 가능한 경기를 찾는 중…")
+	var result=await game.internet.matchmake(mode)
+	if result.has("error"):notice(result.error)
+	elif result.get("pending",false):wait_internet_room(result.room.id)
 func internet_password(room_id:String):
 	var dialog=ConfirmationDialog.new();dialog.title="방 비밀번호";dialog.ok_button_text="접속";dialog.cancel_button_text="돌아가기";root.add_child(dialog)
 	var password=LineEdit.new();password.secret=true;password.placeholder_text="방 비밀번호";password.custom_minimum_size=Vector2(350,45);dialog.add_child(password)
@@ -1065,7 +1106,7 @@ func internet_create():
 		if result.has("error"):notice(result.error)
 		else:wait_internet_room(result.id),actions)
 	notice_label=label("방장이 대기실에서 경기를 시작합니다.",17)
-	button("돌아가기",func():internet_menu("lan" if internet_nearby else "internet"),actions)
+	button("돌아가기",func():internet_menu(),actions)
 func wait_internet_room(room_id:String):
 	for i in range(30):
 		if screen not in ["internet","internet_create"] or game.phase!="menu":return
@@ -1082,7 +1123,7 @@ func build_touch_main_actions():
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",14);panel.add_child(stack)
 	label("INTERNAL N CRUSH",38)
 	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=64;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
-	var network_actions=[["온라인 로비",internet_menu],["같은 네트워크의 방",join_menu]] if OS.has_feature("web") else [["내부망 로비",join_menu],["인터넷 로비",internet_menu]]
+	var network_actions=[["온라인 로비",internet_menu]] if OS.has_feature("web") else [["내부망 로비",join_menu],["인터넷 로비",internet_menu]]
 	for items in [network_actions,[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)
 		for item in items:button(item[0],item[1],row).size_flags_horizontal=Control.SIZE_EXPAND_FILL

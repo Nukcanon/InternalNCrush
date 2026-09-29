@@ -48,7 +48,7 @@ func run():
 	b.choose_action();align(g.actors[-2].eye());b.support_action();g.heal_burst(-1);var health=q.hp;g.heal_burst(-1)
 	expect(health==70 and q.hp==health and is_equal_approx(p.heal_ready,g.clock+10),"combat medic healing respects ten-second cooldown")
 	p=reset_bot(0,"a1");p.hp=60;g.options.skills=true;b.goal=a.position+Vector3(0,0,-30);b.utilities()
-	expect(p.armor==25 and p.dash>g.clock,"assault bot uses protection and movement skill")
+	expect(float(p.get("plate",0))>0. and p.dash>g.clock,"assault bot uses protection and movement skill")
 	p=reset_bot(1,"r1");b.visible_target=true;align(g.actors[-2].eye()-Vector3.UP*.25);await physics_frame;b.utilities()
 	a.input_state.ads=true;a.aim_progress=1.
 	for i in range(20):MarkerTracker.tick(g,-1,.1)

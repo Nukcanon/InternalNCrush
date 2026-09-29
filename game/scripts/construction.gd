@@ -71,11 +71,24 @@ static func labels(g:Node,node:Node3D,d:Dictionary):
 	timer.text="%.1f"%maxf(0.,float(d.get("building_until",0))-g.clock);timer.modulate=Color.WHITE
 
 static func add_edges(mesh:MeshInstance3D,team:int):
-	var lines=mesh.get_meta("construction_wire",null)
-	if lines==null:lines=edge_geometry(mesh.mesh);mesh.set_meta("construction_wire",lines)
+	var lines=mesh.get_meta("construction_wire") if mesh.has_meta("construction_wire") else null
+	if lines==null:
+		# Device instances share template meshes; derive each outline only once.
+		if not edge_cache.has(mesh.mesh):edge_cache[mesh.mesh]=edge_geometry(mesh.mesh)
+		lines=edge_cache[mesh.mesh];mesh.set_meta("construction_wire",lines)
 	var wire=MeshInstance3D.new();wire.name="ConstructionEdges";wire.mesh=lines;wire.set_meta("construction_edge",true);mesh.add_child(wire)
 	var ink=StandardMaterial3D.new();ink.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;ink.albedo_color=Color("48baff") if team==0 else Color("ff983e");wire.material_override=ink;wire.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 static var edge_builds=0
+static var edge_cache={}
+static func prepare(parent:Node3D):
+	# Map loading builds every cover/turret outline before the first placement.
+	for kind in ["turret","cover"]:
+		for team in range(2):
+			for variant in ([0,1,2] if kind=="cover" else [1]):
+				var probe=Node3D.new();parent.add_child(probe);CombatFX.device(probe,kind,team,variant)
+				for mesh in probe.find_children("*","MeshInstance3D",true,false):
+					if mesh.mesh and not edge_cache.has(mesh.mesh):edge_cache[mesh.mesh]=edge_geometry(mesh.mesh)
+				probe.free()
 static func edge_geometry(source:Mesh) -> ArrayMesh:
 	# Release device scenes store this result. Triangle adjacency belongs in the baker.
 	edge_builds+=1

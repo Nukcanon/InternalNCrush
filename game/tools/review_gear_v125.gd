@@ -22,7 +22,11 @@ func run():
 					root.get_texture().get_image().save_png("res://../validation/v125/gear-%s-%d.png"%["web" if web else "native",viewport_size.x])
 	game.ui.bot_setup=false;game.server=true;game.local_id=1;game.add_player(1,"MENU REVIEW","v125-review")
 	for mode in range(5):
-		game.options.mode=mode;game.phase="buy" if mode==4 else "combat";game.remaining=30.;game.players[1].alive=true;game.ui.gear()
+		game.options.mode=mode;game.phase="buy" if mode==4 else "combat";game.remaining=30.;game.players[1].alive=true
+		if mode==4:
+			# Defusal purchases are only allowed inside the team's start area.
+			game.options.map=19;var start=MatchFlow.spawn_rect(game,int(game.players[1].team)).get_center();game.actors[1].position=Vector3(start.x,0,start.y)
+		game.ui.gear()
 		for i in range(8):await process_frame
 		var value=game.ui.gear_price;var actions=value.get_parent().get_parent().get_parent()
 		var good=actions.size.y<115 and (value.text!="무료" if mode==4 else value.text=="무료")

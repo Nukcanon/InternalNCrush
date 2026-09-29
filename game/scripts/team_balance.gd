@@ -41,6 +41,35 @@ static func reconcile(g:Node):
 		if fresh:g.players[id].bot_difficulty=2;g.bot_agents[id].difficulty=2
 		g.actors[id].set_team(target)
 		if fresh and (g.phase in ["lobby","buy"] or (g.phase=="combat" and int(g.options.mode) in [0,1,3])):g.spawn(id)
+static func humans(g:Node) -> int:
+	return g.players.keys().filter(func(id):return int(id)>0).size()
+static func temporary(p:Dictionary) -> bool:
+	return p.get("auto_balance",false) or p.get("departure_replacement",false)
+# Chooses the arriving player's team and frees a bot seat for them. Balance and
+# replacement bots always yield; ordinary bots yield only when the room is full.
+# Returns the team, or -1 when every seat is held by a person.
+static func admit(g:Node) -> int:
+	var people=[0,0];var total=[0,0]
+	for p in g.players.values():
+		if int(p.team) not in [0,1]:continue
+		total[int(p.team)]+=1
+		if int(p.id)>0:people[int(p.team)]+=1
+	var order=[0,1] if people[0]<people[1] or (people[0]==people[1] and total[0]<=total[1]) else [1,0]
+	if int(g.options.mode)==1:order=[0,1] if total[0]<=total[1] else [1,0]
+	var full=g.players.size()>=int(g.options.max_players)
+	var seat=bot_seat(g,order[0],true)
+	if seat==0 and not full:return order[0]
+	if seat==0:seat=bot_seat(g,order[1],true)
+	for team in order:
+		if seat==0:seat=bot_seat(g,team,false)
+	if seat==0:return -1
+	var team=int(g.players[seat].team);remove_auto(g,seat);return team
+static func bot_seat(g:Node,team:int,temporary_only:bool) -> int:
+	var ids=g.players.keys();ids.sort()
+	for id in ids:
+		var p=g.players[id]
+		if int(id)<0 and int(p.team)==team and (temporary(p) or not temporary_only):return int(id)
+	return 0
 static func can_move(g:Node,requester:int,target:int,team:int) -> bool:
 	if not g.players.has(target) or team not in [0,1] or int(g.options.mode)==1 or not allowed(g,requester,target):return false
 	if int(g.players[target].team)==team:return true

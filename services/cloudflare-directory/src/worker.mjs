@@ -1,4 +1,4 @@
-import {CAPACITIES,PHASES,fail,object,text,integer,scope,exact,options,relay} from './policy.mjs';
+import {CAPACITIES,PHASES,fail,object,text,integer,scope,exact,options,relay,version} from './policy.mjs';
 const encoder=new TextEncoder();
 const random=()=>crypto.randomUUID().replaceAll('-','');
 const now=()=>Date.now()/1000;
@@ -54,7 +54,8 @@ export class Directory {
     if(tokens<1)fail(429,'요청이 너무 많습니다.');
   }
   origins(){return (this.env.ALLOWED_ORIGINS||'https://nukcanon.github.io').split(',');}
-  public(r){return {id:r.id,...r.options,players:r.players,phase:r.phase,host_rtt:r.host_rtt,transport:'webrtc',version:this.env.GAME_VERSION};}
+  minimum(){return this.env.MIN_GAME_VERSION||this.env.GAME_VERSION||'0.0.0';}
+  public(r){return {id:r.id,...r.options,players:r.players,phase:r.phase,host_rtt:r.host_rtt,transport:'webrtc',version:r.version};}
   async persist(r){await this.ctx.storage.put('room:'+r.id,r);}
   async sweep(){
     this.hydrate();
@@ -67,7 +68,7 @@ export class Directory {
   async create(user,value,automatic=false){
     if(this.rooms.size>=Math.min(128,Number(this.env.MAX_ROOMS)||32))fail(503,'로비의 방 정원이 가득 찼습니다.');
     if([...this.rooms.values()].some(r=>r.owner===user.uid))fail(409,'이미 만든 방을 먼저 나가세요.');
-    const r={id:random(),owner:user.uid,network:user.network,options:options(value),phase:'starting',updated:now(),players:1,host_rtt:null,next_peer:2,reservations:{},automatic};
+    const r={id:random(),owner:user.uid,network:user.network,version:user.version,options:options(value),phase:'starting',updated:now(),players:1,host_rtt:null,next_peer:2,reservations:{},automatic};
     this.rooms.set(r.id,r);await this.persist(r);await this.armAlarm();return r;
   }
   async ice(uid){
@@ -81,6 +82,7 @@ export class Directory {
     return result;
   }
   async admission(r,user){
+    if(r.version!==user.version)fail(409,'다른 게임 버전('+r.version+')의 방입니다.');
     if(r.options.scope==='lan'&&r.network!==user.network)fail(403,'같은 네트워크의 내부망 로비에서만 참가할 수 있습니다.');
     const peers=this.peers(r.id),owner=r.owner===user.uid;
     if(!owner&&!this.host(r.id))fail(409,'방장이 준비 중입니다.');
@@ -113,27 +115,29 @@ export class Directory {
         pair[1].serializeAttachment({opened:now(),tokens:150,stamp:now()});await this.armAlarm();
         return new Response(null,{status:101,webSocket:pair[0]});
       }
-      if(path==='/health')return new Response(JSON.stringify({status:'ok',version:this.env.GAME_VERSION,role:'directory-only',rooms:this.rooms.size}),{headers});
+      if(path==='/health')return new Response(JSON.stringify({status:'ok',min_version:this.minimum(),role:'directory-only',rooms:this.rooms.size}),{headers});
       const data=request.method==='POST'?await this.body(request):null;
       let result;
       if(path==='/v1/sessions'&&data){
-        exact(data,['nick','version']);text(data.nick,20);if(data.version!==this.env.GAME_VERSION)fail(409,'같은 게임 버전이 필요합니다: '+this.env.GAME_VERSION);
-        const uid=random(),token=await this.sign({kind:'session',uid,nick:data.nick,network:await this.network(request),exp:now()+21600});
+        exact(data,['nick','version']);text(data.nick,20);version(data.version,this.minimum());
+        const uid=random(),token=await this.sign({kind:'session',uid,nick:data.nick,version:data.version,network:await this.network(request),exp:now()+21600});
         result={token,uid,transport:'webrtc',ice_servers:await this.ice(uid)};
       }else{
         const auth=request.headers.get('Authorization')||'';if(!auth.startsWith('Bearer '))fail(401,'로비에 연결하세요.');
         const user=await this.verify(auth.slice(7),'session');
+        // Sessions signed before version grouping, or below the minimum, must reconnect.
+        version(user.version,this.minimum());
         if(path==='/v1/rooms'&&request.method==='GET'){
           const kind=scope(url.searchParams.get('scope')||'internet');
           const nearby=url.searchParams.get('network')==='nearby';
-          result={rooms:[...this.rooms.values()].filter(r=>r.options.scope===kind&&(!(kind==='lan'||nearby)||r.network===user.network)).map(r=>this.public(r))};
+          result={rooms:[...this.rooms.values()].filter(r=>r.version===user.version&&r.options.scope===kind&&(!(kind==='lan'||nearby)||r.network===user.network)).map(r=>this.public(r))};
         }else if(path==='/v1/rooms'&&data){result=this.public(await this.create(user,data));}
         else if(/^\/v1\/rooms\/[a-f0-9]+\/join$/.test(path)&&data){
           const r=this.rooms.get(path.split('/')[3]);if(!r)fail(404,'종료된 방입니다.');result=await this.admission(r,user);
         }else if(path==='/v1/match'&&data){
           exact(data,['mode','scope']);scope(data.scope);if(data.mode!=null)integer(data.mode,0,4);
           for(const r of this.rooms.values()){
-            if(r.options.locked||r.options.scope!==(data.scope||'internet')||r.phase==='starting'||(data.mode!=null&&r.options.mode!==data.mode))continue;
+            if(r.version!==user.version||r.options.locked||r.options.scope!==(data.scope||'internet')||r.phase==='starting'||(data.mode!=null&&r.options.mode!==data.mode))continue;
             try{result=await this.admission(r,user);break;}catch(error){if(![403,409].includes(error.status))throw error;}
           }
           if(!result){const mode=data.mode??0;result=await this.admission(await this.create(user,{name:user.nick+'의 빠른 매치',mode,map:mode===4?19:13,scope:data.scope||'internet'},true),user);}

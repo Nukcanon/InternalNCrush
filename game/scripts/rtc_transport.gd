@@ -101,7 +101,7 @@ func _process(dt:float):
 		timer-=dt
 		if signaled and timer<=0.:
 			timer=8.;send({"op":"keepalive"})
-			if game.server:send({"op":"status","phase":game.phase,"map":int(game.options.map),"players":game.players.size()})
+			if game.server:send({"op":"status","phase":game.phase,"map":int(game.options.map),"players":maxi(1,TeamBalance.humans(game))})
 		if signaled and game.server and admission.get("automatic",false) and game.phase=="lobby" and game.players.size()>=2:game.start_match()
 	elif state==WebSocketPeer.STATE_CLOSED:
 		if game.phase=="menu":game.leave_game("로비 연결이 종료되었습니다. 서버 주소와 네트워크를 확인하세요.")

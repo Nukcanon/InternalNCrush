@@ -52,7 +52,7 @@ func run():
 	var touch=TouchControls.new();touch.game=g;g.add_child(touch);touch.movement=Vector2(0,-1);touch.track_swipe();touch.movement=Vector2.ZERO;touch.track_swipe();touch.movement=Vector2(.1,-1);touch.track_swipe()
 	expect(p.slide_direction.z<-.9,"neutral then matching swipe starts forward slide")
 	expect(touch.buttons.has("slide"),"mobile has an explicit slide button alongside the swipe gesture")
-	expect(RocketCombat.RADIUS==9. and RocketCombat.GRAVITY<1. and Catalog.get_weapon("h4").damage==60,"launcher balance")
+	expect(RocketCombat.RADIUS==9. and RocketCombat.GRAVITY<1. and Catalog.get_weapon("h4").damage==80,"launcher balance")
 	var expired={"launcher":true,"owner":1,"device":0,"pos":Vector3(0,360,0),"origin":Vector3.ZERO,"velocity":Vector3.UP*RocketCombat.SPEED,"until":g.clock}
 	g.rockets.append(expired);g.add_device("cover",Vector3(40,0,40),1,100.)
 	TurretLogic.tick_rockets(g,.016);expect(g.rockets.is_empty() and expired.until==0.,"ten-second aerial rocket explodes and is removed even with devices present")

@@ -4,7 +4,22 @@ extends Node3D
 # curls toward the object, while the wrist continues behind the palm (+Z).
 var wrist=Vector3(.055,-.025,.105)
 var finger_paths:Array=[]
+# About 45 procedural segments are merged per grip; reuse the finished mesh.
+static var templates={}
 func build(role:int,radius:float=.025):
+	var key=str([role,snappedf(radius,.0001),RenderStyle.web()])
+	if not templates.has(key):
+		var source=HeldGrip.new();source.build_fresh(role,radius)
+		MeshFactory.own_recursive(source,source)
+		var packed=PackedScene.new();packed.pack(source)
+		templates[key]={"scene":packed,"wrist":source.wrist,"fingers":source.finger_paths.duplicate(true)}
+		source.free()
+	var entry=templates[key];var copy:Node=entry.scene.instantiate()
+	for child in copy.get_children():
+		copy.remove_child(child);MeshFactory.own_recursive(child,null);child.owner=null;add_child(child)
+	copy.free()
+	wrist=entry.wrist;finger_paths=entry.fingers.duplicate(true)
+func build_fresh(role:int,radius:float=.025):
 	var skin=HumanModel.SKIN_COLORS[role];var glove=Color("45554e")
 	var r=radius+.012
 	HumanModel.oval(self,Vector3(radius+.024,-.003,.014),Vector3(.043,.100,.079),skin)

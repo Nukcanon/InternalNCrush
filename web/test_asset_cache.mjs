@@ -26,7 +26,7 @@ await request('game-b.pck');assert.equal(downloads,2);
 assert.equal(await request('build.json'),undefined);
 assert.equal(await request('index.html'),undefined);
 assert.equal(await request('game-b.pck',{range:'bytes=0-10'}),undefined);
-await request('game-c.wasm');await request('game-d.pck');assert.equal(stores.size,3);
+await request('game-c.wasm');await request('game-d.pck');assert.equal(stores.size,1);assert.ok(stores.has('inc-immutable-v1-game-d'),'only the current build stays cached');
 cacheAPI.open=async()=>({match:async()=>undefined,put:async()=>{throw Error('quota');}});
 assert.equal(await (await request('game-e.pck')).text(),'game-data');
 cacheAPI.open=async()=>{throw Error('storage unavailable');};

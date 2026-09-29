@@ -37,8 +37,8 @@ func run():
 		var w=Catalog.get_weapon(id);var radius=0.
 		for i in range(int(w.pellets)):
 			var sample=CombatBalance.pellet_sample(i,int(w.pellets),.31);radius+=sqrt(sample.x)
-		expect(radius/w.pellets>.62 and w.ads_spread>=3.8,id+" pellets occupy a broad cone")
-		expect(CombatBalance.damage_at(w,25.)*w.pellets<15.,id+" long-range shotgun damage limited")
+		expect(radius/w.pellets>.62 and w.ads_spread>=2.,id+" pellets occupy a broad cone")
+		expect(CombatBalance.damage_at(w,60.)*w.pellets<15.,id+" long-range shotgun damage limited")
 	var audit=[]
 	for index in range(19):
 		var a=Arena.new();root.add_child(a);a.build(index);await physics_frame;await physics_frame

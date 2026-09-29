@@ -13,6 +13,9 @@ async def check(url, version):
         req=urllib.request.Request(url+path,data=None if data is None else json.dumps(data).encode(),headers=headers)
         with urllib.request.urlopen(req,timeout=10) as r:return json.load(r)
     assert request('/health')['role']=='directory-only'
+    try:
+        request('/v1/sessions',{'nick':'Old client','version':'1.0.0'});raise AssertionError('Outdated 1.0.0 client was admitted')
+    except urllib.error.HTTPError as error:assert error.code==409
     owner=request('/v1/sessions',{'nick':'Contract Host','version':version})['token']
     guest=request('/v1/sessions',{'nick':'Contract Guest','version':version})['token']
     room=request('/v1/rooms',{'name':'Contract validation','capacity':2,'map_random':False},owner)['id']
@@ -48,5 +51,5 @@ async def check(url, version):
     print('DIRECTORY_LIVE_OK HTTP/auth/admission/SDP/ICE/replay/round_end/host departure')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('url');p.add_argument('--version',default='1.3.4');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('url');p.add_argument('--version',default='1.3.5');a=p.parse_args()
     asyncio.run(asyncio.wait_for(check(a.url.rstrip('/'),a.version),35))

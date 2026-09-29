@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {options,relay,scope} from './src/policy.mjs';
+import {options,relay,scope,version} from './src/policy.mjs';
+test('releases at or above the minimum are accepted without redeploying',()=>{
+  for(const v of ['1.3.5','1.3.6','1.4.0','2.0.0'])assert.equal(version(v,'1.3.5'),v);
+  for(const v of ['1.3.4','1.2.9','0.9.9'])assert.throws(()=>version(v,'1.3.5'),/업데이트/);
+  for(const v of [undefined,'','1.3','1.3.5.1','v1.3.5',135])assert.throws(()=>version(v,'1.3.5'));
+});
 test('strict room rules prevent over-capacity or incompatible maps',()=>{
   assert.equal(options({}).capacity,8);
   for(const v of [{capacity:32,map:13},{capacity:7},{mode:4,map:13},{mode:0,map:19},{mode:4,map:25,capacity:16},{locked:1},{unknown:true}])assert.throws(()=>options(v));

@@ -19,9 +19,10 @@ self.addEventListener('fetch', event => {
     const response = await fetch(event.request);
     if (cache && response.ok && response.status === 200 && response.type !== 'opaque') {
       // Quota/private browsing failures must never prevent launching the game.
+      // Keep only the build being played; each release is ~146 MB of storage.
       event.waitUntil(cache.put(event.request, response.clone()).then(async () => {
         const old = (await caches.keys()).filter(key => key.startsWith(PREFIX) && key !== PREFIX + match[1]);
-        await Promise.all(old.slice(0, Math.max(0, old.length - 2)).map(key => caches.delete(key)));
+        await Promise.all(old.map(key => caches.delete(key)));
       }).catch(() => {}));
     }
     return response;

@@ -34,7 +34,10 @@ func _remove_decorative_labels(node:Node):
 		else:_remove_decorative_labels(child)
 func place_markers():
 	# Newly added collision bodies must reach the physics server before ray tests.
+	# The arena can be replaced before this deferred call runs.
+	if not is_inside_tree():return
 	await get_tree().physics_frame
+	if not is_inside_tree():return
 	await get_tree().process_frame
 	if not is_inside_tree() or is_queued_for_deletion() or not is_instance_valid(game.arena):return
 	var space=get_world_3d().direct_space_state

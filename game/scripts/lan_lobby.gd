@@ -32,13 +32,13 @@ func show():
 	var tools=HBoxContainer.new();tools.add_theme_constant_override("separation",10);ui.stack.add_child(tools)
 	ip_button=ui.button("IP로 접속",func():show_direct(),tools)
 	refresh_button=ui.button("목록 새로고침",func():ui.game.search_rooms();ui.notice("방 목록을 새로 검색합니다."),tools)
-	ui.button("웹 호환 로비",func():ui.internet_menu("lan"),tools)
+	ui.button("웹 호환 로비",func():ui.internet_menu(),tools)
 	RoomFilters.build(ui,ui.stack,filter,update_rooms)
 	var heading=HBoxContainer.new();ui.stack.add_child(heading)
 	column(heading,"방 이름 / 게임 모드",0,true)
 	column(heading,"인원",85)
 	column(heading,"핑 / 접속 주소",190)
-	column(heading,"참가",112)
+	column(heading,"참가",150 if TouchControls.supported() else 112)
 	room_scroll=ScrollContainer.new();room_scroll.name="RoomsScroll"
 	room_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	room_scroll.custom_minimum_size.y=220;room_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
@@ -82,25 +82,25 @@ func update_rooms():
 		candidates.append({"name":str(data.get("name","")),"players":int(data.get("count",0)),"mode":Rules.MODES.find(str(data.get("mode",""))),"ping":int(data.get("ping",-1)),"ip":ip,"data":data})
 	var filtered=RoomFilters.select(candidates,filter)
 	if filtered.is_empty() and not candidates.is_empty():ui.label("검색 조건에 맞는 방이 없습니다.",20,ui.room_list)
-	for room in filtered:
+	for index in range(filtered.size()):
+		var room=filtered[index]
 		var ip=str(room.ip);var data:Dictionary=room.data
 		var card=PanelContainer.new();ui.room_list.add_child(card)
-		var style=StyleBoxFlat.new();style.bg_color=Color("172535");style.set_corner_radius_all(3)
-		style.content_margin_left=12;style.content_margin_right=12;style.content_margin_top=8;style.content_margin_bottom=8;card.add_theme_stylebox_override("panel",style)
+		card.add_theme_stylebox_override("panel",RoomFilters.row_style(index))
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",12);card.add_child(row)
 		var names=VBoxContainer.new();names.size_flags_horizontal=Control.SIZE_EXPAND_FILL;row.add_child(names)
 		var title=ui.label(str(data.get("name","이름 없는 방")).left(40),20,names)
 		title.autowrap_mode=TextServer.AUTOWRAP_OFF;title.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 		var locked=bool(data.get("locked",false))
 		var mode=ui.label(str(data.get("mode",""))+("  ·  비밀번호 필요" if locked else "  ·  공개 방"),17,names);mode.modulate=Color("9ab0c4")
-		column(row,"%d / %d"%[int(data.get("count",0)),int(data.get("max",0))],73)
+		column(row,"%d / %d"%[int(data.get("count",0)),int(data.get("max",0))]+("\n봇 %d"%int(data.bots) if int(data.get("bots",0))>0 else ""),73)
 		column(row,(str(int(room.ping))+" ms" if int(room.ping)>=0 else "측정 중")+"\n"+str(ip),178)
 		var incompatible=str(data.get("version",""))!=Rules.VERSION
 		var full=int(data.get("count",0))>=int(data.get("max",0))
 		var join=ui.button("버전 다름" if incompatible else "정원 초과" if full else "참가",func():
 			if locked:show_direct(ip,str(data.get("name","")))
 			else:ui.game.options.password="";ui.game.join_game(ip);refresh_connection(),row)
-		join.custom_minimum_size.x=112;join.disabled=incompatible or full or ui.game.connection_busy
+		join.custom_minimum_size.x=150 if TouchControls.supported() else 112;join.size_flags_horizontal=Control.SIZE_SHRINK_END;join.disabled=incompatible or full or ui.game.connection_busy
 		if incompatible:join.tooltip_text="방 버전: "+str(data.get("version",""))+" / 내 버전: "+Rules.VERSION
 	room_scroll.set_deferred("scroll_vertical",scroll_position)
 

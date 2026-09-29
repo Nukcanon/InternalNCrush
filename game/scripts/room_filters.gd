@@ -19,21 +19,31 @@ static func select(rooms:Array,filter:Dictionary) -> Array:
 		if primary==0:return str(a.name).naturalnocasecmp_to(str(b.name))<0
 		return primary<0)
 	return selected
-static func build(ui:Node,parent:Node,filter:Dictionary,changed:Callable):
+# Row 1: name search with an explicit search button. Row 2: four equal-width
+# filters. The name filter applies on the button or Enter, not on every key.
+static func build(ui:Node,parent:Node,filter:Dictionary,changed:Callable,search:Callable=Callable()):
 	var first=HBoxContainer.new();first.add_theme_constant_override("separation",10);parent.add_child(first)
-	var name=LineEdit.new();name.placeholder_text="방 이름 검색";name.text=str(filter.name);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;first.add_child(name)
-	name.text_changed.connect(func(value):filter.name=value;changed.call())
-	var mode=OptionButton.new();first.add_child(mode);mode.add_item("모든 게임 모드")
-	for item in Rules.MODES:mode.add_item(item)
-	mode.select(int(filter.mode)+1);mode.item_selected.connect(func(value):filter.mode=value-1;changed.call())
-	var players=OptionButton.new();first.add_child(players)
-	for item in ["인원 전체","빈 방","1–4명","5–8명","9–16명","17–32명"]:players.add_item(item)
-	players.select(int(filter.players));players.item_selected.connect(func(value):filter.players=value;changed.call())
-	var second=HBoxContainer.new();second.add_theme_constant_override("separation",10);parent.add_child(second)
-	var ping=OptionButton.new();second.add_child(ping)
-	for item in ["핑 제한 없음","50 ms 이하","100 ms 이하","150 ms 이하","250 ms 이하"]:ping.add_item(item)
-	ping.select(maxi(0,[0,50,100,150,250].find(int(filter.ping))));ping.item_selected.connect(func(value):filter.ping=[0,50,100,150,250][value];changed.call())
-	var sort=OptionButton.new();second.add_child(sort)
-	for item in ["방 이름순","낮은 핑순","많은 인원순","적은 인원순"]:sort.add_item(item)
-	sort.select(int(filter.sort));sort.item_selected.connect(func(value):filter.sort=value;changed.call())
-	var note=ui.label("핑 미측정 방은 핑 제한 검색에서 제외됩니다.",16,second);note.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	var name=LineEdit.new();name.name="RoomSearch";name.placeholder_text="방 이름 검색";name.text=str(filter.name);name.size_flags_horizontal=Control.SIZE_EXPAND_FILL;name.custom_minimum_size.y=ui.ACTION_HEIGHT;first.add_child(name)
+	var submit=func():
+		filter.name=name.text.strip_edges()
+		if search.is_valid():search.call()
+		else:changed.call()
+	var button=ui.button("검색하기",submit,first);button.name="RoomSearchButton";button.custom_minimum_size.x=150 if TouchControls.supported() else 130
+	name.text_submitted.connect(func(_value):submit.call())
+	var second=HBoxContainer.new();second.name="RoomFilterRow";second.add_theme_constant_override("separation",10);parent.add_child(second)
+	var mode=choice(second,["모든 게임 모드"]+Rules.MODES,int(filter.mode)+1,func(value):filter.mode=value-1;changed.call())
+	mode.name="ModeFilter"
+	choice(second,["인원 전체","빈 방","1–4명","5–8명","9–16명","17–32명"],int(filter.players),func(value):filter.players=value;changed.call()).name="PlayerFilter"
+	choice(second,["핑 제한 없음","50 ms 이하","100 ms 이하","150 ms 이하","250 ms 이하"],maxi(0,[0,50,100,150,250].find(int(filter.ping))),func(value):filter.ping=[0,50,100,150,250][value];changed.call()).name="PingFilter"
+	choice(second,["방 이름순","낮은 핑순","많은 인원순","적은 인원순"],int(filter.sort),func(value):filter.sort=value;changed.call()).name="SortFilter"
+static func choice(parent:Node,items:Array,selected:int,callback:Callable) -> OptionButton:
+	var option=OptionButton.new();option.fit_to_longest_item=false;option.clip_text=true
+	option.size_flags_horizontal=Control.SIZE_EXPAND_FILL;option.size_flags_stretch_ratio=1.;option.custom_minimum_size=Vector2(1,48 if not TouchControls.supported() else 64)
+	for item in items:option.add_item(str(item))
+	option.select(clampi(selected,0,items.size()-1));option.item_selected.connect(callback);parent.add_child(option)
+	return option
+# Alternating list rows make adjacent rooms easy to tell apart.
+static func row_style(index:int) -> StyleBoxFlat:
+	var style=StyleBoxFlat.new();style.bg_color=Color("1a2a3b") if index%2==0 else Color("2a3f55");style.set_corner_radius_all(3)
+	style.content_margin_left=12;style.content_margin_right=12;style.content_margin_top=8;style.content_margin_bottom=8
+	return style

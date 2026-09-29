@@ -10,8 +10,10 @@ func run():
 	if g.internet.token.is_empty():printerr("AUTO_CONNECT_FAILED ",g.ui.notice_label.text);quit(1);return
 	var create=g.ui.panel.find_child("CreateRoom",true,false)
 	if create==null or create.disabled:printerr("CREATE_NOT_ENABLED");quit(1);return
-	g.ui.internet_menu("lan")
-	await create_timer(2.).timeout
-	if g.internet.scope!="internet" or not g.ui.internet_nearby:printerr("NEARBY_CHANGED_ADMISSION_SCOPE");quit(1);return
-	print("PUBLIC_LOBBY_PASS default automatic connection / create enabled / nearby is only a filter")
+	for button in g.ui.panel.find_children("*","Button",true,false):
+		if "같은 네트워크" in button.text:printerr("NEARBY_BUTTON_REMAINS");quit(1);return
+	g.ui.panel.find_child("QuickJoin",true,false).pressed.emit()
+	if not is_instance_valid(g.ui.quick_join):printerr("QUICK_JOIN_DIALOG_MISSING");quit(1);return
+	g.ui.close_quick_join()
+	print("PUBLIC_LOBBY_PASS default automatic connection / create enabled / one public list / quick-join dialog")
 	g.free();quit()

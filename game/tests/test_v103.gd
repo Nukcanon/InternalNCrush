@@ -12,7 +12,7 @@ func run():
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)
 		if w.kind!="gun":continue
-		if int(w.mag)==1 and float(w.reload)<=float(w.interval):
+		if (int(w.mag)==1 or w.get("single_load",false)) and float(w.reload)<=float(w.interval):
 			expect(is_equal_approx(CombatBalance.firing_dps(w),CombatBalance.sustained_dps(w)),id+" single-shot reload fits the firing interval")
 		else:
 			expect(CombatBalance.firing_dps(w)>CombatBalance.sustained_dps(w) and CombatBalance.sustained_dps(w)>0.,id+" reload reduces sustained DPS")

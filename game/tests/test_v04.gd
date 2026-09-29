@@ -69,9 +69,12 @@ func run():
 	var drop=g.drop_nodes.values().back()
 	expect(drop is WeaponVisual and drop.find_children("*","MeshInstance3D",true,false).size()>4,"pickup renders the actual multi-part weapon")
 	var board=MatchScoreboard.new();board.game=g;g.ui.root.add_child(board);board.refresh_scores()
-	expect(board.columns.get_child(0).get_child(0).text.begins_with("◆ BLUE") and board.columns.get_child(1).get_child(0).text.begins_with("● ORANGE"),"scoreboard groups teams into separate labeled panels")
-	g.options.mode=1;board.timer=0;board.refresh_scores()
-	expect(board.columns.get_child(0).get_child(0).text.contains("개인전"),"FFA scoreboard uses individual rankings")
+	# 1.3.2 shares the paired roster grid: one labelled header per team.
+	var grid=board.columns.get_child(0)
+	expect(grid.get_child(0).get_child(0).text.begins_with("BLUE") and grid.get_child(1).get_child(0).text.begins_with("ORANGE"),"scoreboard groups teams into separate labeled panels")
+	g.options.mode=1;board.timer=0;board.last_signature="";board.refresh_scores();await process_frame
+	var ffa_names=board.columns.find_children("*","",true,false).filter(func(n):return "display_text" in n and str(n.display_text).contains("점"))
+	expect(ffa_names.size()==g.players.size(),"FFA scoreboard lists every player's score")
 	board.queue_free()
 	g.server=false;g.options.password="kept_local_password";g.configure({"mode":0,"room":"Public room"})
 	expect(g.options.password=="kept_local_password" and g.options.has("max_players"),"public configuration preserves local password and fills defaults")

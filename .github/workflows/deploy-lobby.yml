@@ -1,0 +1,47 @@
+name: Deploy Cloudflare lobby
+# Deploys the public lobby Worker whenever its code or configuration changes on
+# main. Game releases do not need this: rooms are grouped by the client's game
+# version, and only MIN_GAME_VERSION in wrangler.jsonc blocks older releases.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/cloudflare-directory/**'
+      - '.github/workflows/deploy-lobby.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deploy-cloudflare-lobby
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: services/cloudflare-directory
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install and test policy
+        run: |
+          npm install -g pnpm@10.17.1
+          pnpm install --frozen-lockfile
+          pnpm test
+      - name: Deploy Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler deploy
+      - name: Verify deployed minimum version
+        run: |
+          expected=$(node -e "const t=require('fs').readFileSync('wrangler.jsonc','utf8');console.log(/\"MIN_GAME_VERSION\":\s*\"([^\"]+)\"/.exec(t)[1])")
+          for attempt in $(seq 1 20); do
+            actual=$(curl -fsS https://internal-n-crush-lobby.internal-n-crush-directory.workers.dev/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).min_version||''))")
+            if [ "$actual" = "$expected" ]; then echo "Lobby minimum version $actual"; exit 0; fi
+            sleep 3
+          done
+          echo "Deployed lobby reports '$actual', expected '$expected'"; exit 1
