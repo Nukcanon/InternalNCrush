@@ -98,12 +98,12 @@ var quick_join:Control
 var quick_join_mode=-1
 var lobby_connect_button:Button
 const MENU_SCALE=.88
-# Evaluated on use: touch detection can change after the UI node is created.
-# Touch targets stay at least ~9 mm tall on phones (layout px x screen scale).
+# Evaluated on use: touch detection can finish after the UI node is created
+# (phones used to get the 40 px desktop buttons).
 var ACTION_HEIGHT:int:
-	get:return 96 if TouchControls.supported() else 40
+	get:return 84 if TouchControls.supported() else 40
 var MENU_SCALE_NOW:float:
-	get:return 1. if TouchControls.supported() else MENU_SCALE
+	get:return MENU_SCALE
 func menu_key(event:InputEvent) -> bool:
 	if not event is InputEventKey or not event.pressed or event.echo:return false
 	if event.alt_pressed or event.ctrl_pressed or event.meta_pressed:return false
@@ -198,7 +198,7 @@ func make_panel(title:String,width=640,compact=false):
 			panel.position=(root.size-panel.size*panel.scale)*.5
 	)
 	panel_body=VBoxContainer.new();panel_body.add_theme_constant_override("separation",14);panel.add_child(panel_body)
-	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,500 if TouchControls.supported() else 560);panel_body.add_child(scroll)
+	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_scroll=scroll;scroll.custom_minimum_size=Vector2(width-40,560);panel_body.add_child(scroll)
 	var inset=MarginContainer.new();inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;inset.add_theme_constant_override("margin_right",0);scroll.add_child(inset)
 	var bar=scroll.get_v_scroll_bar()
 	bar.visibility_changed.connect(func():inset.add_theme_constant_override("margin_right",18 if bar.visible else 0))
@@ -208,7 +208,7 @@ func make_panel(title:String,width=640,compact=false):
 func pin_actions(node:Control):
 	node.set_meta("pinned_actions",true)
 	node.get_parent().remove_child(node);panel_body.add_child(node)
-	panel_scroll.custom_minimum_size.y=470 if TouchControls.supported() else 535
+	panel_scroll.custom_minimum_size.y=535
 	if node is BoxContainer:
 		node.alignment=BoxContainer.ALIGNMENT_END
 		for child in node.get_children():
@@ -266,7 +266,7 @@ func install_check_icons():
 		var texture=ImageTexture.create_from_image(image)
 		for key in (["checked","checked_disabled"] if selected else ["unchecked","unchecked_disabled"]):theme.set_icon(key,"CheckBox",texture)
 func check(title:String,value:bool,callback:Callable) -> CheckBox:
-	var b=CheckBox.new();b.text=title;b.button_pressed=value;b.toggled.connect(callback);b.custom_minimum_size.y=64 if TouchControls.supported() else 40
+	var b=CheckBox.new();b.text=title;b.button_pressed=value;b.toggled.connect(callback);b.custom_minimum_size.y=56 if TouchControls.supported() else 40
 	# Keep icon/text in the exact same layout for normal, hover and toggled states.
 	var style=StyleBoxEmpty.new();style.content_margin_left=8;style.content_margin_right=8;style.content_margin_top=6;style.content_margin_bottom=6
 	for state in ["normal","hover","pressed","hover_pressed","disabled","focus"]:b.add_theme_stylebox_override(state,style)
@@ -648,6 +648,12 @@ func gear():
 	var tabs=GridContainer.new();gear_tabs=tabs;tabs.columns=5 if get_viewport().get_visible_rect().size.x>=1100 else 3;tabs.size_flags_horizontal=Control.SIZE_EXPAND_FILL;form.add_child(tabs)
 	for i in range(5):
 		var category=i;var tab=button(["주무기","보조","가젯","방어구","스킬"][i],func():gear_category=category;preview_secondary=category==1;preview_kind=[1,1,2,3,4][category];refresh_gear_detail();refresh_gear_cards(),tabs);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.toggle_mode=true;tab.button_pressed=i==gear_category
+		# Touch only: compact category tabs (desktop/web keep the normal buttons).
+		if TouchControls.supported():
+			tab.custom_minimum_size.y=56
+			for state in ["normal","hover","pressed","hover_pressed","disabled"]:
+				var face:StyleBoxFlat=tab.get_theme_stylebox(state).duplicate();face.content_margin_top=3;face.content_margin_bottom=2;tab.add_theme_stylebox_override(state,face)
+			tab.set_meta("auto_text_base",24);tab.add_theme_font_size_override("font_size",24)
 		if WeaponRules.mode(game.options)>0:tab.disabled=i in [0,4] or (i==1 and WeaponRules.mode(game.options)==1)
 	var scroll=preload("res://scripts/menu_touch_scroll.gd").new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;scroll.custom_minimum_size=Vector2(625,260);form.add_child(scroll)
 	var cards_inset=MarginContainer.new();cards_inset.add_theme_constant_override("margin_right",18);scroll.add_child(cards_inset)
@@ -1148,7 +1154,7 @@ func build_touch_main_actions():
 		if child is Label or child==version_box or child.has_meta("menu_brand"):child.hide()
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",14);panel.add_child(stack)
 	label("INTERNAL N CRUSH",38)
-	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=84;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
+	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=64;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
 	var network_actions=[["온라인 로비",internet_menu]] if OS.has_feature("web") else [["내부망 로비",join_menu],["인터넷 로비",internet_menu]]
 	for items in [network_actions,[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)

@@ -33,9 +33,9 @@ func check_buttons(label:String,parent:Node,view:Rect2):
 		var width=b.get_theme_font("font").get_string_size(b.text,HORIZONTAL_ALIGNMENT_LEFT,-1,size).x
 		expect(width<=b.size.x+1.,"%s '%s' caption fits (%.0f > %.0f)"%[label,b.text,width,b.size.x])
 		if touch:
-			# ~9 mm finger target: at least 8% of the screen height.
+			# ~7 mm finger target: at least 6.5% of the (16:9-equivalent) screen height.
 			var height=screen_rect(b).size.y
-			expect(height>=minf(view.size.y,view.size.x*9./16.)*.08,"%s '%s' tall enough to tap (%.0f px of %.0f)"%[label,b.text,height,view.size.y])
+			expect(height>=minf(view.size.y,view.size.x*9./16.)*.065,"%s '%s' tall enough to tap (%.0f px of %.0f)"%[label,b.text,height,view.size.y])
 func check_dialog(label:String,view:Rect2):
 	await process_frame;await process_frame
 	var dialog:AcceptDialog=null
@@ -53,7 +53,7 @@ func check_dialog(label:String,view:Rect2):
 			expect(size>=16,"%s dialog '%s' readable (%d)"%[label,b.text,size])
 			if TouchControls.supported():
 				var height=b.size.y*dialog.content_scale_factor
-				expect(height>=minf(view.size.y,view.size.x*9./16.)*.08,"%s dialog '%s' tall enough to tap (%.0f)"%[label,b.text,height])
+				expect(height>=minf(view.size.y,view.size.x*9./16.)*.065,"%s dialog '%s' tall enough to tap (%.0f)"%[label,b.text,height])
 	dialog.hide();dialog.canceled.emit()
 	await process_frame
 func screens(tag:String,resolution:Vector2i):

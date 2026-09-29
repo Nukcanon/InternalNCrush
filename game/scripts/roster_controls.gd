@@ -5,7 +5,7 @@ static func row_panel(parent:Node,index:int) -> PanelContainer:
 	var style=UiSkin.card(index,6)
 	panel.add_theme_stylebox_override("panel",style);parent.add_child(panel);return panel
 static func small_button(parent:Node,text:String,callback:Callable) -> Button:
-	var b=Button.new();b.text=text;b.custom_minimum_size=Vector2(0,64 if TouchControls.supported() else 30);b.add_theme_font_size_override("font_size",22 if TouchControls.supported() else 14);b.pressed.connect(callback);parent.add_child(b);return b
+	var b=Button.new();b.text=text;b.custom_minimum_size=Vector2(0,56 if TouchControls.supported() else 30);b.add_theme_font_size_override("font_size",20 if TouchControls.supported() else 14);b.pressed.connect(callback);parent.add_child(b);return b
 static func add_bot(g:Node,requester:int,team:int):
 	if not g.server or not TeamBalance.host(g,requester) or team not in [0,1]:return
 	if g.players.size()>=int(g.options.max_players) or (int(g.options.mode)!=1 and g.team_count(team)>=int(g.options.max_players)/2):g.feedback(requester,"","참가 정원이 가득 찼습니다.",true);return

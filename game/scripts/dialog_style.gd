@@ -33,9 +33,9 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	for button in buttons:
 		caption=maxf(caption,button.get_theme_font("font").get_string_size(button.text,HORIZONTAL_ALIGNMENT_LEFT,-1,button.get_theme_font_size("font_size")).x+button.get_theme_stylebox("normal").get_minimum_size().x+18.)
 	# AcceptDialog applies these constants to every button on theme changes.
-	dialog.add_theme_constant_override("buttons_min_width",roundi(caption));dialog.add_theme_constant_override("buttons_min_height",72 if TouchControls.supported() else 48)
+	dialog.add_theme_constant_override("buttons_min_width",roundi(caption));dialog.add_theme_constant_override("buttons_min_height",64 if TouchControls.supported() else 48)
 	for button in buttons:
-		button.custom_minimum_size=Vector2(caption,72 if TouchControls.supported() else 48)
+		button.custom_minimum_size=Vector2(caption,64 if TouchControls.supported() else 48)
 		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button.clip_text=false
 		var affirmative=(button!=positive) if navigation else (button==positive)
 		# 1.4 cartoon skin: green = go ahead / stay, coral = cancel / leave.
