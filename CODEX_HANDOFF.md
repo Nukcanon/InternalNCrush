@@ -1,4 +1,17 @@
-# Latest: 1.3.3 Windows Escape crash hotfix — work ended
+# Latest: 1.3.5 — hitch fixes, public lobby cleanup, bot seat handover
+
+Read `RELEASE_NOTES_V135.md` and `PUBLICATION_STATUS.json`. Sessions now use git from GitHub Desktop (`%LOCALAPPDATA%/GitHubDesktop/app-*/resources/app/git/cmd/git.exe`) and `.tools/gh` (logged in as Nukcanon).
+
+- Hitches: held gadget/grip assemblies were rebuilt procedurally on every gadget selection (70–170 ms on every peer). `GadgetVisual`/`HeldGrip` now cache packed templates; `VisualWarmup` prepares current players' items outside combat; `Construction.prepare` builds outline meshes at map load. Render-only work (`render_update`) runs in `_process` once per frame when the engine drives physics (tests that disable physics processing still get it inline). Periodic reliable full sync sends the deflated bytes (`full_state_packed`). Measure with `game/tests/run_render_hitch.py` (+ `INC_PROFILE=1` for section costs) and `run_network_hitch.py`. Intel iGPU still unmeasured.
+- Lobby: no same-network rooms; `RoomFilters.build` = search row (button/Enter) + four equal filters; `ui.quick_join_dialog` (Enter/Esc via `menu_key`); `RoomFilters.row_style` alternates rows. `menu_key` leaves Enter to a focused LineEdit.
+- Bots: `TeamBalance.admit` frees a bot seat for each arriving person (balance/replacement bots first; any bot when full). LAN discovery `count` and WebRTC status `players` report people only (`bots` separately).
+- Lobby worker: rooms grouped by the session's game version; `MIN_GAME_VERSION` in `services/cloudflare-directory/wrangler.jsonc` blocks older clients. `.github/workflows/deploy-lobby.yml` deploys on main pushes touching that folder (repo secrets CLOUDFLARE_API_TOKEN/ACCOUNT_ID). New game versions need no worker change.
+- Site: `.github/internal-n-crush-release.json` (version/sha256/source_commit) drives `update-internal-n-crush.yml`; it installs play/, page links (template `.github/internal-n-crush-page.html`) and `internal-n-crush-version.json` (in-game update prompt). The installer is no longer pinned to 1.3.0.
+- Functional suite: all groups pass. Outdated expectations from the 1.3.2–1.3.3 approved balance/UI were updated; real fixes: ANCHOR box magazine chamber, objective marker placement guard, PULSE pose sockets.
+
+---
+
+# Historical: 1.3.3 Windows Escape crash hotfix — work ended
 
 Windows source `d01b920d3e459ac7e3ec3d15648bfe7ef5e1d10f` replaces the Windows ZIP in release `internal-n-crush-v1.3.3`. Native confirmation dialogs now have one Escape handler and defer window closing until input dispatch completes. Targeted native dialog lifetime checks: 20/20. Web remains at source `39bc10e`, build `2620a7173a72`; no web rebuild or deployment for this hotfix.
 
