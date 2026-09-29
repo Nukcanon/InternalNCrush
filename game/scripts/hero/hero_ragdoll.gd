@@ -45,7 +45,8 @@ func build(source:HeroCharacter,pos:Vector3,push:Vector3,role:int,team:int,facin
 	hero.global_transform=Transform3D(Basis(x_axis,y_axis,z_axis).scaled(hero.scale),pos+Vector3.UP*.16)
 	HeroHitbox.load_volumes()
 	var shapes={}
-	for v in HeroHitbox.volumes.get(HeroCharacter.OUTFITS[hero.role],[]):shapes[v.bone]=v
+	for v in HeroHitbox.volumes.get(HeroCharacter.OUTFITS[hero.role],[]):
+		if not v.has("part"):shapes[v.bone]=v
 	var by_bone={}
 	var model_scale=hero.model.scale.x*hero.scale.x
 	for part in PARTS:
