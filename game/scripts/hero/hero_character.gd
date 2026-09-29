@@ -115,10 +115,37 @@ func drive(dt:float,s:Dictionary):
 	state=s
 	HeroAnimation.update(self,dt,s)
 	tree.advance(dt)
+	apply_hip_yaw(float(s.get("hip_yaw",0.)))
 	pitch=float(s.get("pitch",0.))
 	place_weapon_frame(s)
 	solve_hands(s)
 
+# Strafing: the legs run their forward cycle turned toward the travel direction
+# while chest and aim stay square. In this rig the thighs hang off Body, the
+# spine off Hips, and feet / knee targets (Foot.*, PT.*) directly off Root.
+func apply_hip_yaw(yaw:float):
+	if absf(yaw)<.001:return
+	var root_bone=bone.Root;var body=bone.Body;var hips=bone.Hips
+	if root_bone<0 or body<0 or hips<0:return
+	var root_pose:Transform3D=skeleton.get_bone_pose(root_bone)
+	var body_pose:Transform3D=skeleton.get_bone_pose(body)
+	var up=(skeleton.transform.basis.inverse()*Vector3.UP).normalized()
+	var turn=Basis(up,yaw)
+	# Body (legs) turns about its own pivot; Hips gets the inverse turn.
+	var body_local=Basis(skeleton.get_bone_pose_rotation(body))
+	var body_turned=root_pose.basis.inverse()*turn*root_pose.basis*body_local
+	skeleton.set_bone_pose_rotation(body,body_turned.get_rotation_quaternion())
+	var hips_local=Basis(skeleton.get_bone_pose_rotation(hips))
+	skeleton.set_bone_pose_rotation(hips,(body_turned.inverse()*body_local*hips_local).get_rotation_quaternion())
+	# Foot/pole targets swing around the pelvis with the legs.
+	var pivot=(root_pose*body_pose).origin
+	for name in ["Foot.L","Foot.R","PT.L","PT.R"]:
+		var i=skeleton.find_bone(name)
+		if i<0 or skeleton.get_bone_parent(i)!=root_bone:continue
+		var world:Transform3D=root_pose*skeleton.get_bone_pose(i)
+		world.origin=pivot+turn*(world.origin-pivot);world.basis=turn*world.basis
+		var local:Transform3D=root_pose.affine_inverse()*world
+		skeleton.set_bone_pose_position(i,local.origin);skeleton.set_bone_pose_rotation(i,local.basis.get_rotation_quaternion())
 # World transform of a bone composed from current local poses (never stale).
 func bone_world(index:int) -> Transform3D:
 	var chain=[]

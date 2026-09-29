@@ -21,4 +21,17 @@ func run():
 	for f in range(4):await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://../validation/heroes-v14-faces.png")
+	# Strafe check: one hero moving sideways at walking speed, four snapshots.
+	for h in heroes:h.hide()
+	var runner:HeroCharacter=heroes[0];runner.show();runner.position=Vector3.ZERO
+	cam.position=Vector3(0,1.2,-4.);cam.look_at(Vector3(0,.9,0));cam.fov=45
+	var frames=[]
+	for velocity in [Vector3(3.2,0,0),Vector3(-3.2,0,0),Vector3(2.3,0,-2.3),Vector3(0,0,3.2)]:
+		for i in range(40):runner.drive(1./60.,{"velocity":velocity,"grounded":true,"hold":"rifle"})
+		await process_frame;await RenderingServer.frame_post_draw
+		frames.append(root.get_texture().get_image())
+	var strip=Image.create(1600,900,false,frames[0].get_format())
+	for k in range(4):
+		var f:Image=frames[k];f.resize(800,450);strip.blit_rect(f,Rect2i(0,0,800,450),Vector2i((k%2)*800,(k/2)*450))
+	strip.save_png("res://../validation/heroes-v14-strafe.png")
 	quit()

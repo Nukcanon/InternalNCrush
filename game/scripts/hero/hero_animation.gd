@@ -1,7 +1,7 @@
 class_name HeroAnimation
 extends RefCounted
 ## Code-built AnimationTree for heroes. Layers (bottom to top):
-##  locomotion 2D blend (idle/walk/run in 4 directions) -> crouch -> sprint ->
+##  locomotion 1D blend (backpedal/idle/walk/run; strafing yaws the hips) -> crouch -> sprint ->
 ##  airborne -> upper-body aim (pitch blend) -> shoot / reload / throw / hit
 ##  one-shots (upper body) -> slide / plant (full body).
 ## The tree is advanced manually by HeroCharacter.drive(), so the server and
@@ -35,9 +35,11 @@ static func build_tree(hero:HeroCharacter,player:AnimationPlayer) -> AnimationTr
 	tree.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	var upper=upper_bones(hero.skeleton)
 	var bt=AnimationNodeBlendTree.new()
-	var loco=AnimationNodeBlendSpace2D.new();loco.min_space=Vector2(-1,-1);loco.max_space=Vector2(1,1)
-	for p in [["Idle_Loop",Vector2.ZERO],["Walk_Loop",Vector2(0,WALK_NATURAL/RUN_NATURAL)],["Run",Vector2(0,1)],["Run_Back",Vector2(0,-1)],["Run_Left",Vector2(-1,0)],["Run_Right",Vector2(1,0)]]:
-		loco.add_blend_point(clip(p[0]),p[1])
+	var loco=AnimationNodeBlendSpace1D.new();loco.min_space=-1.;loco.max_space=1.
+	# The pack's side clips turn the whole body; strafing instead yaws the hips
+	# over the forward/backward cycle (HeroCharacter.apply_hip_yaw).
+	for p in [["Idle_Loop",Vector2.ZERO],["Walk_Loop",Vector2(0,WALK_NATURAL/RUN_NATURAL)],["Run",Vector2(0,1)],["Walk_Loop",Vector2(0,-WALK_NATURAL/RUN_NATURAL)],["Run_Back",Vector2(0,-1)]]:
+		loco.add_blend_point(clip(p[0]),p[1].y)
 	bt.add_node("loco",loco,Vector2(0,0))
 	bt.add_node("loco_speed",AnimationNodeTimeScale.new(),Vector2(200,0));bt.connect_node("loco_speed",0,"loco")
 	var crouch=AnimationNodeBlendSpace1D.new();crouch.add_blend_point(clip("Crouch_Idle_Loop"),0.);crouch.add_blend_point(clip("Crouch_Fwd_Loop"),1.)
@@ -81,8 +83,15 @@ static func update(hero:HeroCharacter,dt:float,s:Dictionary):
 	var crouch=move_toward(float(mem.get("crouch",0.)),1. if s.get("crouch",false) else 0.,dt*6. if dt>0. else 1.)
 	var sprint=lerpf(float(mem.get("sprint",0.)),1. if s.get("sprint",false) and speed>2. else 0.,k)
 	var air=lerpf(float(mem.get("air",0.)),0. if s.get("grounded",true) else 1.,1.-exp(-dt*8.) if dt>0. else 1.)
-	var dir=(planar/RUN_NATURAL).limit_length(1.) if speed>.05 else Vector2.ZERO
-	var blend:Vector2=Vector2(mem.get("dir",Vector2.ZERO)).lerp(dir,k)
+	# Travel angle from straight ahead: within 105 degrees the legs run forward,
+	# beyond it they backpedal; the hips turn by the remainder (max 75 degrees).
+	var angle=atan2(planar.x,planar.y) if speed>.3 else 0.
+	var backward=absf(angle)>deg_to_rad(105.)
+	var leg_angle=wrapf(angle-PI,-PI,PI) if backward else angle
+	var hip_target=clampf(leg_angle,-deg_to_rad(75.),deg_to_rad(75.)) if speed>.3 else 0.
+	s["hip_yaw"]=lerp_angle(float(mem.get("hip_yaw",0.)),hip_target,1.-exp(-dt*9.) if dt>0. else 1.)
+	var dir=Vector2(0,(-1. if backward else 1.)*minf(speed/RUN_NATURAL,1.)) if speed>.05 else Vector2.ZERO
+	var blend:float=lerpf(float(mem.get("dir",0.)) if mem.get("dir",0.) is float else 0.,dir.y,k)
 	tree.set("parameters/loco/blend_position",blend)
 	# Below the run clip's own speed the blend already matches; above it the
 	# cycle speeds up so the planted foot never slides.
@@ -119,5 +128,5 @@ static func update(hero:HeroCharacter,dt:float,s:Dictionary):
 	tree.set("parameters/plant/blend_amount",move_toward(float(tree.get("parameters/plant/blend_amount")),1. if s.get("plant",false) else 0.,dt*5. if dt>0. else 1.))
 	s["sprint_blend"]=sprint
 	s["hands"]=float(s.get("hands",1.))*(1.-float(tree.get("parameters/plant/blend_amount")))
-	mem.crouch=crouch;mem.sprint=sprint;mem.air=air;mem.dir=blend;mem.shot=shot;mem.reload=reload;mem.throw=throw;mem.hit=hit
+	mem.hip_yaw=s.hip_yaw;mem.crouch=crouch;mem.sprint=sprint;mem.air=air;mem.dir=blend;mem.shot=shot;mem.reload=reload;mem.throw=throw;mem.hit=hit
 	hero.set_meta("anim_memory",mem)
