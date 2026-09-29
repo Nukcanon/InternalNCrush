@@ -22,18 +22,12 @@ func run():
 	expect(not ReloadAudio.cues(Catalog.get_weapon("e3"),2).any(func(e):return e[1]=="bolt"),"break-action has no fictitious charging handle")
 	for id in ["a1","r2","pistol"]:expect(ReloadAudio.cues(Catalog.get_weapon(id),10)[1][1]=="magazine","magazine insertion cue")
 	var holder=Node3D.new();root.add_child(holder)
-	var native=ArmorVisual.build(holder,2,false);var web=ArmorVisual.build(holder,2,true)
-	var ncount=0;var wcount=0
-	for mesh in native.find_children("*","MeshInstance3D",true,false):ncount+=mesh.mesh.surface_get_array_len(0)
-	for mesh in web.find_children("*","MeshInstance3D",true,false):wcount+=mesh.mesh.surface_get_array_len(0)
-	expect(ncount>wcount,"native vest has more geometry detail")
 	var detailed=BulletMark.make(false);var simple=BulletMark.make(true);holder.add_child(detailed);holder.add_child(simple)
 	expect(detailed.get_child_count()==0 and simple.get_child_count()==0,"bullet marks are flat decals without protruding gray rims")
 	var scratch=MeleeMark.make(false,false);holder.add_child(scratch);expect(scratch.get_child_count()==0,"knife scratches have no raised gray geometry")
 	holder.free()
-	var medic=CharacterVisual.new();root.add_child(medic);medic.build(5,0)
-	medic.set_armor(0);var shirt_patch=medic.medical_patch.position.z
-	medic.set_armor(2);expect(medic.medical_patch.position.z<shirt_patch-.07,"medic patch follows armor depth instead of hovering over shirt")
+	var medic=HeroCharacter.new();root.add_child(medic);medic.build(5,0)
+	medic.set_armor(2);expect(medic.armor_level==2,"hero keeps the armour tier for its vest")
 	medic.free()
 
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby"

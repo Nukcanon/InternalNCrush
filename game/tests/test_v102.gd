@@ -87,7 +87,7 @@ func run():
 	expect(not g.begin_slide(1),"slide cooldown blocks repeat")
 	actor.position.y+=5.;actor.velocity=Vector3.UP;actor.move_and_slide();p.slide_ready=0.
 	expect(not g.begin_slide(1),"airborne slide rejected")
-	var fx=CombatFX.new();g.add_child(fx);var body=PhysicsRagdoll.new();fx.add_child(body);body.build(null,Vector3(0,6.,g.arena.bounds.y-7),Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
+	var fx=CombatFX.new();g.add_child(fx);var body=HeroRagdoll.new();fx.add_child(body);body.build(null,Vector3(0,6.,g.arena.bounds.y-7),Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
 	var initial=body.bodies[0].position.y
 	for i in range(150):await physics_frame
 	expect(body.bodies[0].position.y<initial-3. and body.bodies[0].position.y>-.8,"airborne ragdoll falls onto ground")

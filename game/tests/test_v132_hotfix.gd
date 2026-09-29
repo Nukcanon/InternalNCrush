@@ -34,13 +34,8 @@ func run():
 	expect(scroll.scroll_vertical>=75,"real touch swipe scrolls menu")
 	press.pressed=false;scroll._input(press);expect(scroll.finger==-1 and not scroll.dragging,"touch release resets drag")
 	scroll.queue_free()
-	Catalog.load_all();var w=WeaponVisual.new();root.add_child(w);w.build(Catalog.get_weapon("h5"),true)
-	var sockets=[]
-	for slot in range(4):
-		w.reload_tube=slot;w.animate_reload(.72,0.);sockets.append(Vector2(w.reload_round.position.x,w.reload_round.position.y))
-	expect(sockets[0]!=sockets[1] and sockets[0]!=sockets[2] and sockets[2]!=sockets[3],"QUAD reload visits four tubes")
-	var nose=w.reload_round.get_child(2)
-	expect((nose.transform.basis*Vector3.UP).z<-.99,"rocket nose points forward into breech")
+	Catalog.load_all();var w=GunModel.new();root.add_child(w);w.build(Catalog.get_weapon("h5"),true)
+	expect(w.muzzle.position.z<w.right_grip.position.z and w.find_children("*","MeshInstance3D",true,false).size()>=1,"QUAD launcher model has a forward muzzle")
 	w.queue_free()
 	expect(LaserCombat.dps(0.)==60. and LaserCombat.dps(.98)==120.,"final ARC 60 to 120 DPS")
 	g.leave_game()

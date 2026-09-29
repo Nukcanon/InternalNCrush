@@ -1651,7 +1651,7 @@ func update_world_visuals(dt:float):
 	for d in drops:
 		var key=str(d.until)+str(d.pos)+d.weapon;live_drops[key]=true
 		if not drop_nodes.has(key):
-			var n=WeaponVisual.new();add_child(n);n.build(Catalog.get_weapon(d.weapon),false);n.position=d.pos;n.rotation=Vector3(0,float(d.get("yaw",0)),PI/2);drop_nodes[key]=n
+			var n=GunModel.new();add_child(n);n.build(Catalog.get_weapon(d.weapon),false);n.position=d.pos+Vector3.UP*.04;n.rotation=Vector3(0,float(d.get("yaw",0)),PI/2);drop_nodes[key]=n
 			for mesh in n.find_children("*","GeometryInstance3D",true,false):mesh.visibility_range_end=55. if RenderStyle.web() else 80.;mesh.visibility_range_end_margin=5.
 			var tag=arena.text3d(Catalog.get_weapon(d.weapon).name,Vector3(0,.4,0),Color("d7e8ef"),24,n);tag.top_level=true;tag.global_position=d.pos+Vector3.UP*.5;tag.visibility_range_end=12;tag.visibility_range_end_margin=1.5;tag.pixel_size=.004
 	for key in drop_nodes.keys():
@@ -1761,7 +1761,7 @@ func damage_notice(target:int,origin:Vector3,amount:float,armored:bool):
 	var direction=origin-actors[target].position
 	if is_instance_valid(ui.damage_indicator):ui.damage_indicator.register_hit(direction,amount,Time.get_ticks_msec()/1000.)
 	var now=Time.get_ticks_msec()/1000.
-	var female=int(players[target].role) in HumanModel.FEMALE_ROLES
+	var female=int(players[target].role) in HeroCharacter.FEMALE_ROLES
 	play_sound("armor_hurt_female" if armored and female else "hurt_female" if female else "armor_hurt" if armored else "hurt",Vector3.ZERO,false);last_hurt_sound=now
 
 @rpc("authority","call_local","unreliable",2)
@@ -1769,7 +1769,7 @@ func flesh_hit(point:Vector3,push:Vector3,amount:float,victim:int,shooter:int=0)
 	if dedicated or not is_instance_valid(arena):return
 	combat_fx.blood_hit(point,push,amount)
 	if shooter==local_id and victim!=local_id:play_sound("body_impact",point,false)
-	if actors.has(victim) and is_instance_valid(actors[victim].character) and is_instance_valid(actors[victim].character.dynamics):actors[victim].character.dynamics.impulse(push,point)
+	if actors.has(victim):actors[victim].hit_time=clock
 
 func cycle_spectator():
 	if not players.has(local_id) or players[local_id].alive:return

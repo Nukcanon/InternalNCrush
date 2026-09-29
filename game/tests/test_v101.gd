@@ -30,11 +30,8 @@ func run():
 		expect(native in choices and choices.all(func(v):return v.x<=native.x and v.y<=native.y),"resolution presets fit "+str(native))
 	var female=0
 	for role in range(6):
-		var model=HumanModel.build(role,0)
-		if model.get_meta("gender")=="female":female+=1
-		var chest=model.get_node("Hips/Chest");var hip=model.get_node("Hips")
-		expect(chest.get_node("RightArm").position.x<.23 and hip.get_node("RightLeg").position.x<.105,"role %d has narrowed shoulders and hip joints"%role)
-		model.free()
+		if role in HeroCharacter.FEMALE_ROLES:female+=1
+		expect(HeroCharacter.OUTFITS[role].begins_with("women")==(role in HeroCharacter.FEMALE_ROLES),"role %d outfit matches the roster gender"%role)
 	expect(female==2,"six-role roster contains two female operators")
 	for size in [6,8,16,32]:
 		var rectangular=Rules.maps_for_size(size).filter(func(index):return index in MapIdentity.RECTANGLES)

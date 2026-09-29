@@ -29,9 +29,8 @@ func run():
 	expect(AbilityBalance.turret_dps(4)<=38.01 and AbilityBalance.turret_hp(4)==300.,"upgraded turret bounded at 38 bullet DPS / 300 HP")
 	var image=Image.load_from_file("res://assets/textures/smoke_particle_v103.png")
 	expect(image.detect_alpha()!=Image.ALPHA_NONE and image.get_pixel(0,0).a<.05,"explosion texture has a transparent edge")
-	var skin=CharacterVisual.new();root.add_child(skin);skin.enable_physics=false;skin.build(0,0)
-	expect(skin.deform.get_bone_count()==15 and skin.rig.get_node("ContinuousBody").skin.get_bind_count()==15,"rendered character has weighted GPU skin")
-	expect(skin.rig.get_node("ContinuousBody").mesh.get_surface_count()==1,"continuous shoulder and torso surface is baked into the skin")
+	var skin=HeroCharacter.new();root.add_child(skin);skin.build(0,0)
+	expect(skin.skeleton.get_bone_count()>=60 and skin.meshes().all(func(m):return m.skin!=null and m.skin.get_bind_count()>=60),"rendered character has weighted GPU skin")
 	skin.free()
 	for index in range(19):
 		var arena=Arena.new();root.add_child(arena);arena.build(index)

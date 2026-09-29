@@ -9,15 +9,13 @@ func run():
 	Catalog.load_all()
 	var world=Node3D.new();root.add_child(world)
 	for id in Catalog.weapons:
-		var gun=WeaponVisual.new();world.add_child(gun);gun.build(Catalog.get_weapon(id),true,false)
-		expect(gun.dual_guns[1].scale.x==-1. and gun.dual_guns[0].scale.x==1. if not gun.dual_guns.is_empty() else gun.support_rig.handed_mesh.scale.x==-1. and gun.firing_rig.handed_mesh.scale.x==1.,"distinct anatomical left/right hands: "+id)
-		expect(is_equal_approx(gun.support_rig.basis.get_scale().length()/gun.firing_rig.basis.get_scale().length(),(1. if not gun.dual_guns.is_empty() else WeaponHand.SUPPORT_SCALE)),"appropriate grip hand proportions: "+id)
+		var gun=GunModel.new();world.add_child(gun);gun.build(Catalog.get_weapon(id),false)
+		expect(gun.dual_guns.size()==(2 if Catalog.get_weapon(id).get("dual",false) else 1),"DUET carries two pistols, other weapons one: "+id)
 		for hand in [-1.,1.]:
 			gun.scale.x=hand
 			for phase in [-1.,.10,.30,.45,.60,.78,.90,1.]:
 				gun.animate_reload(phase,0.)
-				expect(gun.left_hand.position.is_finite() and gun.right_hand.position.is_finite() and absf(gun.support_rig.basis.determinant())>.01,"finite wrists through handed reload: "+id)
-				expect(gun.support_rig.contact_state.size()==2 and gun.support_rig.contact_state[1].size()==3,"receiver/grip/magazine contact constraints present: "+id)
+				expect(gun.left_grip.global_position.is_finite() and gun.right_grip.global_position.is_finite(),"finite grips through handed reload: "+id)
 		gun.free()
 	var turret={"yaw":0.,"head_yaw":-TurretLogic.HALF_ARC,"patrol_side":1.}
 	for i in range(120):TurretLogic.patrol(turret,1./60.)

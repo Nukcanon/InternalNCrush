@@ -28,9 +28,9 @@ func run():
 			peak=maxi(peak,Time.get_ticks_usec()-start)
 		game.combat_fx.clear()
 		for i in range(4):await process_frame
-		var s={"cycle":cycle,"nodes":int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),"resources":int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),"objects":int(Performance.get_monitor(Performance.OBJECT_COUNT)),"static_bytes":int(Performance.get_monitor(Performance.MEMORY_STATIC)),"mesh_cache":MeshFactory.meshes.size(),"armor_templates":ArmorVisual.templates.size(),"max_frame_ms":peak/1000.}
+		var s={"cycle":cycle,"nodes":int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),"resources":int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),"objects":int(Performance.get_monitor(Performance.OBJECT_COUNT)),"static_bytes":int(Performance.get_monitor(Performance.MEMORY_STATIC)),"mesh_cache":MeshFactory.meshes.size(),"gun_bases":GunModel.bases.size(),"max_frame_ms":peak/1000.}
 		samples.append(s);print("COMBAT_SAMPLE ",JSON.stringify(s))
-		expect(ArmorVisual.templates.size()<=6,"armor cache limited by quality and level")
+		expect(GunModel.bases.size()<=16,"weapon base cache limited to the baked bases")
 		expect(MeshFactory.meshes.size()<=MeshFactory.MESH_CACHE_LIMIT,"mesh cache bounded")
 	# Later cycles may load a new operator; compare identical warmed final cycles.
 	expect(samples[-1].nodes<samples[2].nodes+400,"no retained per-cycle effects")

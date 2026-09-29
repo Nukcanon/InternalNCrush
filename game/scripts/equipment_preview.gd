@@ -32,15 +32,14 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 	if (kind==1 and weapon.is_empty()) or (kind==2 and gadget in [-1,99]):
 		custom_minimum_size.y=130.;return
 	if kind==0:
-		var c=CharacterVisual.new();c.enable_physics=false;model.add_child(c);c.build(role,team);c.set_armor(armor_level);c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.)
-		var gun=WeaponVisual.new();c.socket.add_child(gun);gun.build(Catalog.get_weapon("pistol" if weapon.is_empty() else weapon),false);gun.scale=Vector3.ONE*.8
-		c.update_pose(.016,Vector3.ZERO,false,false,true,0.,-1.,0.,0.);c.grip_weapon(1.);c.sync_deform()
-		model.rotation.y=-.35;camera.position=Vector3(0,1.4,-4);camera.look_at(Vector3(0,1.3,0));camera.size=1.15
+		var c=HeroCharacter.new();model.add_child(c);c.build(role,team,true);c.set_armor(armor_level)
+		var w=Catalog.get_weapon("pistol" if weapon.is_empty() else weapon)
+		var held=GunModel.new();held.build(w,true);c.hold(held)
+		var hold=GunLooks.hold_kind(w).replace("shoulder","rifle")
+		for i in range(4):c.drive(.05,{"pitch":-.08,"hold":hold})
+		model.rotation.y=-.35;camera.position=Vector3(0,1.25,-4);camera.look_at(Vector3(0,1.15,0));camera.size=2.05
 	elif kind==1:
-		var gun=WeaponVisual.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),false);gun.rotation.y=PI/2;camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0));camera.size=.63
-		# The side-on camera collapsed the normal left/right hand spacing into
-		# depth. Present both pistols diagonally apart in this inspection view.
-		for i in range(gun.dual_guns.size()):gun.dual_guns[i].position=Vector3(0,.14*(1 if i==0 else -1),.21*(1 if i==0 else -1))
+		var gun=GunModel.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),true);gun.rotation.y=PI/2;camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0))
 		var meshes=gun.find_children("*","MeshInstance3D",true,false);var bounds=AABB();var first=true
 		for mesh in meshes:
 			var box=mesh.global_transform*mesh.get_aabb()
@@ -99,7 +98,7 @@ static func build_gadget_model(parent:Node3D,role:int,variant:int):
 	if variant==9:
 		MeshFactory.box(parent,Vector3.ZERO,Vector3(.45,.22,.32),Color("d2b869"))
 		MeshFactory.box(parent,Vector3(0,.13,0),Vector3(.18,.04,.12),Color("425869"));return
-	var m=MeshFactory;var dark=Color("304955");var light=Color("c2d4d8");var accent=CharacterVisual.ROLE_ACCENTS[role]
+	var m=MeshFactory;var dark=Color("304955");var light=Color("c2d4d8");var accent=HeroStyle.ROLE_ACCENT[role]
 	match role:
 		0:
 			if variant==1:

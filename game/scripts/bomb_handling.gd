@@ -3,8 +3,6 @@ extends RefCounted
 static func active(actor:Node) -> bool:
 	var g=actor.game
 	return int(g.options.mode)==4 and g.phase=="combat" and (int(g.bomb.get("actor",0))==int(actor.pid) or (actor.local and BombLogic.busy(g,actor.pid)))
-static func pose(actor:Node,now:float):
-	if active(actor):actor.character.bomb_pose(now)
 static func view(actor:Node,p:Dictionary,now:float):
 	var working=active(actor)
 	if not working:

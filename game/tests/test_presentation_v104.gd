@@ -7,27 +7,9 @@ func expect(ok:bool,label:String):
 	if not ok:failures+=1;printerr("FAIL ",label)
 func run():
 	Catalog.load_all()
-	var model=CharacterVisual.new();root.add_child(model);model.build(0,0)
-	var body=model.rig.get_node("ContinuousBody")
-	expect(body.skin!=null and (not RenderStyle.web() or body.mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX].size()<18000),"GPU skinning is preserved; the Web triangle budget applies only to Web models")
+	var model=HeroCharacter.new();root.add_child(model);model.build(0,0)
+	expect(model.meshes().all(func(m):return m.skin!=null),"GPU skinning is preserved on every hero part")
 	model.free()
-	for gender in ["male","female"]:
-		var data=JSON.parse_string(FileAccess.get_file_as_string("res://assets/human/"+gender+".json"));var invalid=false;var longest=0.
-		for weights in data.weights:
-			var total=0.
-			for pair in weights:total+=pair[1];invalid=invalid or pair[0]<0 or pair[0]>=15 or pair[1]<0
-			invalid=invalid or absf(total-1.)>.00001
-		expect(not invalid,gender+" every anatomy vertex has normalized valid skin weights")
-		var cloth_on_jaw=false
-		for index in range(data.vertices.size()):
-			var p=data.vertices[index]
-			if p[1]>1.49 and p[2]<-.04 and absf(p[0])<.065:cloth_on_jaw=cloth_on_jaw or int(data.kinds[index])!=0
-		expect(not cloth_on_jaw,gender+" jaw and upper neck retain skin instead of cloth")
-		for face in data.faces:
-			for i in range(3):
-				var a=data.vertices[face[i]];var b=data.vertices[face[(i+1)%3]]
-				longest=maxf(longest,Vector3(a[0],a[1],a[2]).distance_to(Vector3(b[0],b[1],b[2])))
-		expect(longest<.10,gender+" retargeting has no stretched fingers or stray triangles")
 	for length in [.1,.8,1.5,4.,30.,120.]:
 		var start=Vector3(0,1.5,0);var end=start+Vector3.FORWARD*length
 		var previous=-100.
@@ -43,7 +25,7 @@ func run():
 	await physics_frame;await physics_frame
 	var trajectories=[]
 	for hit in [Vector3(0,1.63,0),Vector3(0,1.24,0),Vector3(.10,.5,0)]:
-		var rag=PhysicsRagdoll.new();world.add_child(rag);rag.build(null,Vector3.ZERO,Vector3(1,.08,0),0,0,0.,false,Vector3.ZERO,hit)
+		var rag=HeroRagdoll.new();world.add_child(rag);rag.build(null,Vector3.ZERO,Vector3(1,.08,0),0,0,0.,false,Vector3.ZERO,hit)
 		var origin=rag.bodies[0].global_position;var largest=0.
 		for frame in range(150):
 			await physics_frame

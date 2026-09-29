@@ -1,8 +1,6 @@
 extends CharacterBody3D
 class_name Actor
-const Character=preload("res://scripts/character_visual.gd")
 const Aim=preload("res://scripts/aim_model.gd")
-const Weapon=preload("res://scripts/weapon_visual.gd")
 var pid=0
 var game:Node
 var camera:Camera3D
@@ -16,10 +14,15 @@ var gun:Node3D
 var item_model:Node3D
 var gadget_world:GadgetVisual
 var bomb_view:Node3D
-var view_weapon:WeaponVisual
-var world_weapon:WeaponVisual
+var view_weapon:GunModel
+var world_weapon:GunModel
 var render_root:Node3D
-var character:CharacterVisual
+var character:HeroCharacter
+# First person: the same hero (head hidden) under the camera, hands on view_weapon.
+var view_body:HeroCharacter
+var view_mount:Node3D
+var hit_time=-100.
+var held_holder:Node3D
 var protected_visual:MeshInstance3D
 var melee_view:MeleeVisual
 var melee_world:MeleeVisual
@@ -97,14 +100,18 @@ func build_gun(wid:String):
 		view_weapon=weapon_models[wid][0];world_weapon=weapon_models[wid][1]
 		if is_instance_valid(world_weapon):
 			world_weapon.show()
+			if is_instance_valid(character):character.hold(world_weapon)
 			if is_instance_valid(view_weapon):view_weapon.show()
 			return
 		weapon_models.erase(wid)
 	view_weapon=null;world_weapon=null
 	var w=Catalog.get_weapon(wid)
 	if local:
-		view_weapon=Weapon.new();gun.add_child(view_weapon);view_weapon.build(w);view_weapon.scale=Vector3.ONE*.85
-	world_weapon=Weapon.new();(character.socket if is_instance_valid(character) else render_root).add_child(world_weapon);world_weapon.build(w,false);world_weapon.scale=Vector3.ONE*.85
+		ensure_view_body()
+		view_weapon=GunModel.new();view_weapon.build(w,false);view_mount.add_child(view_weapon);view_weapon.scale=Vector3.ONE*.85
+	world_weapon=GunModel.new();world_weapon.build(w,HeroStyle.outlines_enabled())
+	if is_instance_valid(character):character.hold(world_weapon)
+	else:render_root.add_child(world_weapon)
 	weapon_models[wid]=[view_weapon,world_weapon]
 func set_local(on:bool):
 	local=on;camera.current=on;render_root.visible=not on;tag.visible=not on;gun.visible=on
@@ -117,22 +124,32 @@ func set_team(t:int):
 			if is_instance_valid(node):node.queue_free()
 	weapon_models.clear();view_weapon=null;world_weapon=null
 	shown_role=role;shown_team=t
-	body_height=HumanModel.HEIGHTS[role];tag.position.y=body_height+.18
+	body_height=HeroCharacter.HEIGHTS[role];tag.position.y=body_height+.18
 	shape.shape.height=body_height;shape.position.y=body_height*.5
 	protected_visual.scale.y=body_height/1.8
 	if is_instance_valid(character):character.queue_free()
 	character=null
+	if is_instance_valid(view_body):view_body.queue_free()
+	view_body=null
 	if game.render_actors:ensure_character()
 	shown_weapon=""
 func ensure_character():
 	if is_instance_valid(character):
 		if not character.get_meta("pose_only",false):return
 		character.queue_free();character=null;shown_weapon=""
-	character=Character.new();render_root.add_child(character);character.build(shown_role,shown_team);character.motion_seed=motion_seed
+	character=HeroCharacter.new();render_root.add_child(character);character.build(shown_role,shown_team,HeroStyle.outlines_enabled())
+func ensure_view_body():
+	if is_instance_valid(view_body):return
+	view_mount=Node3D.new();view_mount.name="ViewMount";gun.add_child(view_mount)
+	view_body=HeroCharacter.new();view_body.name="ViewBody";camera.add_child(view_body);view_body.build(maxi(0,shown_role),maxi(0,shown_team),false)
+	view_body.first_person_only();view_body.frame_override=view_mount
+	for mesh in view_body.meshes():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func ensure_hit_pose():
 	if is_instance_valid(character):return
-	character=Character.new();render_root.add_child(character);character.build_pose_only(maxi(0,shown_role),maxi(0,shown_team));character.set_meta("pose_only",true);character.motion_seed=motion_seed
-	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,-1.,0.,gait)
+	# Server-authoritative anatomy: the same hero skeleton and clips, no outlines.
+	character=HeroCharacter.new();render_root.add_child(character);character.build(maxi(0,shown_role),maxi(0,shown_team),false);character.set_meta("pose_only",true)
+	for mesh in character.meshes():mesh.hide()
+	character.drive(1./60.,pose_state(game.players.get(pid,{}),game.clock,-1.,false))
 
 func reset_view(yaw:float):
 	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,eye_height(false),0))
@@ -162,8 +179,7 @@ func visual_muzzle() -> Vector3:
 	if not local and is_instance_valid(world_weapon) and world_weapon.visible:return world_weapon.muzzle.global_position
 	return muzzle_world()
 func react_hit(push:Vector3):
-	hit_recoil=1.;hit_side=clampf(global_basis.x.dot(push),-1,1)
-	if is_instance_valid(character):character.react(hit_side)
+	hit_recoil=1.;hit_side=clampf(global_basis.x.dot(push),-1,1);hit_time=game.clock
 func simulate(dt:float,now:float,can_move:bool):
 	aim_yaw=float(input_state.yaw);aim_pitch=clampf(float(input_state.pitch),-1.45,1.45);rotation.y=aim_yaw
 	var sliding=game.players.get(pid,{}).get("slide_until",0)>now
@@ -308,18 +324,41 @@ func update_melee(p:Dictionary,now:float):
 		if is_instance_valid(melee_world):melee_world.queue_free()
 		if is_instance_valid(melee_view):melee_view.queue_free()
 		melee_role=int(p.role)
-		melee_world=MeleeVisual.new();character.socket.add_child(melee_world);melee_world.build(MeleeCombat.wrench(p),melee_role,false)
+		melee_world=MeleeVisual.new();character.hand_attachment("R").add_child(melee_world);melee_world.build(MeleeCombat.wrench(p),melee_role,false)
 		if local:
 			melee_view=MeleeVisual.new();gun.add_child(melee_view);melee_view.build(MeleeCombat.wrench(p),melee_role,true)
-	if is_instance_valid(melee_world):
-		melee_world.visible=shown;melee_world.pose(now-float(p.get("melee_started",-100.)))
-		if shown:
-			character.solve_arm(character.right_arm,character.right_elbow,character.chest.to_local(melee_world.palm.global_position),Vector3(.75,-.8,.25),1./60.,1.)
-			character.left_arm.rotation=Vector3(.15,.05,.12);character.left_elbow.rotation=Vector3(.35,0,0);character.sync_deform()
+	if is_instance_valid(melee_world):melee_world.visible=shown;melee_world.pose(-1.)
 	if is_instance_valid(melee_view):melee_view.visible=shown;melee_view.pose(now-float(p.get("melee_started",-100.)))
-
+# Animation state for HeroCharacter.drive(), shared by render and server poses.
+func pose_state(p:Dictionary,now:float,progress:float,item_visible:bool) -> Dictionary:
+	var networked=not local and not game.server
+	var w:Dictionary=game.current_weapon(p) if not p.is_empty() else {}
+	var s={"velocity":net_velocity if networked else velocity,"grounded":net_grounded if networked else is_on_floor(),"crouch":bool(input_state.crouch),
+		"sprint":net_sprint if networked else last_sprint,"pitch":aim_pitch,"reload":progress,"reload_time":float(w.get("reload",2.)),
+		"shot":now-float(p.get("shot_time",-100.)),"hit":clampf(1.-(now-hit_time)/.3,0.,1.),"melee":now-float(p.get("melee_started",-100.))}
+	if p.is_empty():return s
+	if p.get("slide_until",0)>now:s.slide=clampf((now-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.)
+	if p.get("cooking",0)>0 or float(p.get("throw_until",-100.))>now:
+		s.throw=clampf((now-float(p.get("grenade_started",now)))/maxf(.2,float(p.get("throw_until",now+.3))-float(p.get("grenade_started",now))),0.,1.)
+	var hold="none"
+	if BombHandling.active(self):s.plant=true
+	elif MeleeCombat.shown(p,now):hold="none"
+	elif item_visible:hold="item"
+	elif p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="":
+		hold=GunLooks.hold_kind(w)
+		if hold=="shoulder":hold="rifle"
+	s.hold=hold;s.hands=0. if hold=="none" else 1.
+	if hold=="item" and is_instance_valid(held_holder):s.two_hands=bool(held_holder.get_meta("two_handed",false))
+	return s
+# Legacy gadget meshes are carried through grip markers until the gear pass.
+func holder_for(item:Node3D,right:Vector3,left:Vector3,two_handed:bool) -> Node3D:
+	var holder=Node3D.new();holder.name="HeldItem";holder.add_child(item)
+	for marker in [["RightGrip",right],["LeftGrip",left]]:
+		var m=Marker3D.new();m.name=marker[0];m.position=marker[1];holder.add_child(m)
+	holder.set_meta("two_handed",two_handed)
+	return holder
 func headless_pose(p:Dictionary):
-	# The same small joint hierarchy drives authoritative hit volumes without meshes.
+	# The same hero skeleton drives authoritative hit volumes (meshes hidden).
 	set_team(int(p.team))
 	if not local and not game.server:global_position=target_pos;rotation.y=aim_yaw
 	shape.shape.height=(1.45/1.8*body_height) if input_state.crouch else body_height;shape.position.y=shape.shape.height*.5
@@ -329,38 +368,35 @@ func headless_pose(p:Dictionary):
 	if not game.server:return
 	ensure_hit_pose();character.scale.x=float(p.get("hand",1))
 	var w=game.current_weapon(p);var progress=clampf((game.clock-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0.,1.) if p.reload>game.clock else -1.
-	var weapon=character.socket.get_child(0) if character.socket.get_child_count()>0 else null
-	if not is_instance_valid(weapon) or weapon.spec.name!=w.name:
-		if is_instance_valid(weapon):character.socket.remove_child(weapon);weapon.free()
-		weapon=Weapon.new();character.socket.add_child(weapon);weapon.scale=Vector3.ONE*.85;weapon.build_pose(w)
-	weapon.reload_tactical=bool(p.get("reload_tactical",false));weapon.reload_round_count=int(p.get("reload_count",3));weapon.reload_tube=clampi(int(p.mag.get(p.primary if p.slot==0 else p.secondary,0)),0,3)
-	weapon.animate_reload(progress,0.,game.clock-float(p.get("shot_time",-100.)))
-	character.update_pose(1./60.,velocity,last_sprint,bool(input_state.crouch),is_on_floor(),aim_pitch,progress,0.,gait)
-	if p.get("slide_until",0)>game.clock:character.slide_pose(clampf((game.clock-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.))
-	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),game.clock)
-	BombHandling.pose(self,game.clock)
-	update_melee(p,game.clock)
+	var held=character.held
+	if not held is GunModel or held.spec.get("name","")!=w.get("name",""):
+		if is_instance_valid(held):held.queue_free()
+		var gun_model=GunModel.new();gun_model.build(w,false);character.hold(gun_model)
+		for mesh in gun_model.find_children("*","MeshInstance3D",true,false):mesh.hide()
+	character.drive(1./60.,pose_state(p,game.clock,progress,false))
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
 	if not p.alive:tag.hide();health_tag.hide();return
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);gun.scale.x=float(handedness)
 	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
 	protected_visual.material_override.albedo_color=Color(.20,.66,1,.24+sin(now*9)*.045) if p.team==0 else Color(1,.60,.17,.24+sin(now*9)*.045)
-	if GadgetLoadout.held_visible(p,now) and (p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!=""):
+	var item_shown=GadgetLoadout.held_visible(p,now) and (p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
+	if item_shown:
 		var signature=str([p.role,p.gadget,p.slot,p.get("placing","")])
 		if signature!=item_signature:
 			item_signature=signature
 			for child in item_model.get_children():item_model.remove_child(child);child.queue_free()
-			var held=GadgetVisual.new();item_model.add_child(held);held.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
-			if is_instance_valid(gadget_world):gadget_world.queue_free()
-			gadget_world=GadgetVisual.new();character.socket.add_child(gadget_world);gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
+			var first=GadgetVisual.new();item_model.add_child(first);first.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
+			if is_instance_valid(held_holder):held_holder.queue_free()
+			gadget_world=GadgetVisual.new();gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
+			held_holder=holder_for(gadget_world,gadget_world.right_socket,gadget_world.left_socket,gadget_world.two_handed)
+			held_holder.position=Vector3(0,-.05,-.28)
 	var wid=(p.primary if p.slot==0 else p.secondary) if p.slot<2 or shown_weapon.is_empty() else shown_weapon
 	if shown_weapon!=wid:shown_weapon=wid;build_gun(wid)
 	var w=Catalog.get_weapon(wid);var age=now-float(p.get("shot_time",-100.))
 	if float(p.get("shot_time",-100.))>seen_shot:show_shot(float(p.shot_time))
 	recoil=move_toward(recoil,0,dt*5.5);hit_recoil=move_toward(hit_recoil,0,dt*4);land_kick=lerpf(land_kick,0,1.-exp(-dt*12))
 	var speed=Vector2(velocity.x,velocity.z).length() if local or game.server else Vector2(net_velocity.x,net_velocity.z).length()
-	var moving_velocity=velocity if local or game.server else net_velocity
 	var grounded=is_on_floor() if local or game.server else net_grounded
 	var sprint=last_sprint if local or game.server else net_sprint
 	var progress=clampf((now-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0,1) if p.reload>now else -1.
@@ -373,21 +409,16 @@ func visual(dt:float,p:Dictionary,now:float):
 	bob=phase*TAU
 	var yaw_delta=wrapf(aim_yaw-previous_yaw,-PI,PI);previous_yaw=aim_yaw;turn_sway=lerpf(turn_sway,clampf(yaw_delta/maxf(dt,.001),-4,4),1.-exp(-dt*10))
 	character.set_armor(clampi(int(p.armor_max)/25,0,2))
-	character.update_pose(dt,moving_velocity,sprint,bool(input_state.crouch),grounded,aim_pitch,progress,recoil,phase,turn_sway)
-	if p.get("slide_until",0)>now:character.slide_pose(clampf((now-float(p.slide_started))/Rules.SLIDE_DURATION,0.,1.))
-	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
+	var state=pose_state(p,now,progress,item_shown)
+	if state.hold=="item" and is_instance_valid(held_holder):character.hold(held_holder)
+	elif is_instance_valid(world_weapon):character.hold(world_weapon)
 	if is_instance_valid(world_weapon):
-		world_weapon.reload_tactical=bool(p.get("reload_tactical",false));world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.reload_round_count=int(p.get("reload_count",3));world_weapon.reload_tube=clampi(int(p.mag.get(p.primary if p.slot==0 else p.secondary,0)),0,3);world_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and p.get("cooking",0)==0 and p.get("throw_until",0)<=now and p.get("placing","")=="";world_weapon.animate_reload(progress,recoil,age)
-		world_weapon.position=Vector3(0,0,recoil*.055);world_weapon.rotation=Vector3(recoil*.12,0,sin(shot_serial*2.3)*recoil*.025)
-	if is_instance_valid(gadget_world):
-		gadget_world.visible=GadgetLoadout.held_visible(p,now) and (p.slot in [2,3] or p.get("cooking",0)>0 or p.get("throw_until",0)>now or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
-		if gadget_world.visible:
-			character.solve_arm(character.right_arm,character.right_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.right_socket)),Vector3(.75,-.8,.25),dt,1.)
-			if gadget_world.two_handed:character.solve_arm(character.left_arm,character.left_elbow,character.chest.to_local(gadget_world.to_global(gadget_world.left_socket)),Vector3(-.75,-.8,.25),dt,1.)
-			character.sync_deform()
-	character.throw_pose(float(p.get("grenade_started",-100.)),p.get("cooking",0)>0,float(p.get("throw_until",-100.)),now)
+		world_weapon.visible=state.hold in ["rifle","pistol"]
+		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.animate_reload(progress,recoil,age)
+		world_weapon.position=Vector3(0,0,recoil*.045);world_weapon.rotation=Vector3(recoil*.10,0,0)
+	if is_instance_valid(held_holder):held_holder.visible=state.hold=="item"
+	character.drive(dt,state)
 	update_melee(p,now)
-	BombHandling.pose(self,now)
 	if BombHandling.active(self):
 		if is_instance_valid(world_weapon):world_weapon.hide()
 		if is_instance_valid(gadget_world):gadget_world.hide()
@@ -439,14 +470,48 @@ func visual(dt:float,p:Dictionary,now:float):
 	if is_instance_valid(gadget_world):
 		var payload=gadget_world.get_node_or_null("Payload")
 		if payload:payload.visible=not throwing
-	view_weapon.reload_tactical=bool(p.get("reload_tactical",false));view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.reload_round_count=int(p.get("reload_count",3));view_weapon.reload_tube=clampi(int(p.mag.get(p.primary if p.slot==0 else p.secondary,0)),0,3)
-	view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now);item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now);view_weapon.animate_reload(progress,recoil,age)
-	var gauge=view_weapon.get_node_or_null("HeatGauge")
-	if gauge:gauge.update_heat(float(p.get("laser_heat",0)),float(p.get("laser_lock",0))>now)
+	item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
+	if is_instance_valid(view_weapon):
+		view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now)
+		view_weapon.fire_side=int(p.mag.get(wid,0))%2;view_weapon.animate_reload(progress,recoil,age)
+		# Hip: the right grip sits at the classic view-model point. Aim: the
+		# sight line (bore + sight height) is centred on the camera axis.
+		var s=view_weapon.base.scale*view_weapon.scale.x
+		var grip:Vector3=view_weapon.right_grip.position*s
+		var sight_height=view_weapon.muzzle.position.y*s.y+(.07 if GunLooks.hold_kind(w)=="rifle" else .05)
+		var hip=-grip;var aimed=Vector3(0,.14-sight_height,-grip.z)
+		if GunLooks.look(w).get("shoulder",false):
+			# Shoulder launchers: the tube rests over the right shoulder, rear end just ahead of the eye.
+			hip=Vector3(.06,-.02,.30);aimed=hip
+		view_weapon.position=hip.lerp(aimed,ads_blend)
+		var gauge=view_weapon.find_child("HeatGauge",true,false)
+		if gauge:gauge.update_heat(float(p.get("laser_heat",0)),float(p.get("laser_lock",0))>now)
+	update_view_body(dt,p,now,progress)
 	BombHandling.view(self,p,now)
 	var envelope=Aim.reticle_angle(w,p,spread_angle,aim_progress,bool(input_state.crouch))
 	visual_spread=lerpf(visual_spread,envelope,1.-exp(-dt*(35. if envelope>visual_spread else 22.)))
 
+# First-person arms: the hero (head hidden) stands where the camera is and
+# reaches both hands onto the view weapon.
+var view_head_offset=Vector3(0,1.62,0)
+func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
+	if not is_instance_valid(view_body):return
+	var weapon_up=is_instance_valid(view_weapon) and view_weapon.visible
+	view_body.visible=weapon_up
+	if not weapon_up:return
+	if view_body.held!=view_weapon:view_body.hold(view_weapon)
+	var yaw=Basis(Vector3.UP,aim_yaw)
+	# View-model convention: a slightly larger body and a compact gun keep both
+	# hands on long rifles with the short cartoon arms.
+	view_body.global_basis=yaw*Basis.from_scale(Vector3(float(handedness)*1.2,1.2,1.2))
+	# Only forearms and hands are drawn, so the (invisible) shoulders may sit ahead
+	# of the eye: short cartoon arms then reach both grips of long rifles.
+	view_body.global_position=camera.global_position-yaw*view_head_offset+yaw*Vector3(0,-.30,-.30)
+	var state=pose_state(p,now,progress,false);state.velocity=Vector3.ZERO;state.hold=GunLooks.hold_kind(game.current_weapon(p))
+	if state.hold=="shoulder":state.hold="rifle"
+	state.hands=1.;state.sprint=false
+	view_body.drive(dt,state)
+	view_head_offset=yaw.inverse()*(view_body.head_position()-view_body.global_position)
 func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false
 	seen_shot=at;shot_serial+=1;recoil=minf(1.8,recoil*.35+float(game.current_weapon(game.players[pid]).get("recoil_kick",1.)))

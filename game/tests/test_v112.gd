@@ -13,14 +13,13 @@ func run():
 	arena.walk_surfaces=[{"rect":Rect2(-2,-2,4,4),"low":4.,"high":4.}]
 	expect(not ArenaLighting.fixture_clear(arena,Vector3(0,5.8,0),false),"pole cannot pass through upper floor")
 	arena.free()
-	for role in HumanModel.FEMALE_ROLES:
-		var rig=load("res://assets/models/operator_%d_0.scn"%role).instantiate();root.add_child(rig)
-		var pose=HumanModel.pose_rig(role);root.add_child(pose)
-		for side in ["LeftArm","RightArm"]:
-			var arm=rig.get_node("Hips/Chest/"+side)
-			expect(is_equal_approx(arm.position.y,.105),"shared male shoulder socket")
-			expect(arm.position==pose.get_node("Hips/Chest/"+side).position,"visible and hit pose shoulders match")
-		rig.free();pose.free()
+	for role in HeroCharacter.FEMALE_ROLES:
+		var visible_hero=HeroCharacter.new();root.add_child(visible_hero);visible_hero.build(role,0)
+		var pose_hero=HeroCharacter.new();root.add_child(pose_hero);pose_hero.build(role,0)
+		for side in ["UpperArm.L","UpperArm.R"]:
+			var b=visible_hero.skeleton.find_bone(side)
+			expect(visible_hero.bone_world(b).origin.is_equal_approx(pose_hero.bone_world(b).origin),"visible and hit pose shoulders match")
+		visible_hero.free();pose_hero.free()
 	for index in range(Rules.MAPS.size()):
 		var map=Arena.new();root.add_child(map);map.build(index)
 		for mesh in map.find_children("*","MeshInstance3D",true,false):
@@ -180,18 +179,11 @@ func run():
 	for id in Catalog.weapons:
 		var w=Catalog.get_weapon(id)
 		if w.kind!="gun":continue
-		var weapon=WeaponVisual.new();root.add_child(weapon);weapon.build(w,false)
+		var weapon=GunModel.new();root.add_child(weapon);weapon.build(w,false)
 		var duration=w.reload
-		weapon.animate_reload(.85,0.)
-		if weapon.reload_style=="dual":
-			weapon.animate_reload(.43,0.);expect(weapon.dual_guns[0].action_part.position.z>weapon.dual_guns[0].action_origin.z+.02,"first DUET pistol chambers")
-			weapon.animate_reload(.93,0.);expect(weapon.dual_guns[1].action_part.position.z>weapon.dual_guns[1].action_origin.z+.02,"second DUET pistol chambers")
-		elif weapon.reload_style=="shell":
-			expect(weapon.action_part.position.z>weapon.action_origin.z+.02,"shell-fed shotgun finishes with its pump action "+id)
-		elif weapon.reload_style in ["break","box","revolver","rocket","battery"]:
-			expect(weapon.action_part.position.is_equal_approx(weapon.action_origin),"no generic rifle action on alternate reload "+id)
-		else:expect(weapon.action_part.position.z>weapon.action_origin.z+.06,"chambering phase "+id)
+		weapon.animate_reload(.4,0.)
+		if is_instance_valid(weapon.magazine):expect(not weapon.magazine.transform.is_equal_approx(weapon.mag_rest),"magazine leaves the gun mid-reload "+id)
 		weapon.animate_reload(1.,0.)
-		expect(weapon.action_part.position.is_equal_approx(weapon.action_origin) and w.reload==duration,"reload ends at unchanged duration "+id)
+		expect((not is_instance_valid(weapon.magazine) or weapon.magazine.transform.is_equal_approx(weapon.mag_rest)) and w.reload==duration,"reload ends at unchanged duration "+id)
 		weapon.free()
 	print("V112_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

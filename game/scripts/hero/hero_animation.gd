@@ -48,7 +48,7 @@ static func build_tree(hero:HeroCharacter,player:AnimationPlayer) -> AnimationTr
 	var hold=AnimationNodeBlend2.new();filtered(hold,upper)
 	bt.add_node("hold",hold,Vector2(1000,0));bt.connect_node("hold",0,"air_mix");bt.connect_node("hold",1,"aim")
 	var last="hold";var x=1200
-	for shot in [["shoot","Pistol_Shoot",.04,.1],["reload","Pistol_Reload",.15,.2],["throw","OverhandThrow",.1,.2],["hit","Hit_Chest",.05,.15]]:
+	for shot in [["shoot","Pistol_Shoot",.04,.1],["reload","Pistol_Reload",.15,.2],["throw","OverhandThrow",.1,.2],["hit","Hit_Chest",.05,.15],["melee","Sword_Slash",.05,.12]]:
 		var one=AnimationNodeOneShot.new();one.fadein_time=shot[2];one.fadeout_time=shot[3];filtered(one,upper)
 		bt.add_node(shot[0],one,Vector2(x,0))
 		bt.add_node(shot[0]+"_clip",clip(shot[1]),Vector2(x-100,150))
@@ -60,7 +60,7 @@ static func build_tree(hero:HeroCharacter,player:AnimationPlayer) -> AnimationTr
 	bt.connect_node("output",0,last)
 	tree.tree_root=bt
 	tree.active=true
-	for name in ["loco_speed","crouch_speed","shoot_speed","reload_speed","throw_speed","hit_speed"]:tree.set("parameters/%s/scale"%name,1.)
+	for name in ["loco_speed","crouch_speed","shoot_speed","reload_speed","throw_speed","hit_speed","melee_speed"]:tree.set("parameters/%s/scale"%name,1.)
 	return tree
 static func request(tree:AnimationTree,name:String):
 	tree.set("parameters/%s/request"%name,AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
@@ -100,6 +100,10 @@ static func update(hero:HeroCharacter,dt:float,s:Dictionary):
 	if throw>=0. and float(mem.get("throw",-1.))<0.:request(tree,"throw")
 	var hit=float(s.get("hit",0.))
 	if hit>.9 and float(mem.get("hit",0.))<=.9:request(tree,"hit")
+	var melee=float(s.get("melee",99.))
+	if melee<.1 and float(mem.get("melee",99.))>=.1:
+		tree.set("parameters/melee_speed/scale",hero.player.get_animation("Sword_Slash").length/.45);request(tree,"melee")
+	mem.melee=melee
 	var slide=float(s.get("slide",-1.))
 	tree.set("parameters/slide/blend_amount",sin(clampf(slide*4.,0.,1.)*PI*.5)*sin(clampf((1.-slide)*4.,0.,1.)*PI*.5) if slide>=0. else 0.)
 	tree.set("parameters/plant/blend_amount",move_toward(float(tree.get("parameters/plant/blend_amount")),1. if s.get("plant",false) else 0.,dt*5. if dt>0. else 1.))

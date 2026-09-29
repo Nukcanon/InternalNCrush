@@ -31,10 +31,12 @@ func run():
 	expect(inside,"spread samples stay inside declared reticle cone")
 	expect(AimModel.pixel_radius(2,52,720)>AimModel.pixel_radius(2,82,720),"reticle projects the same cone through camera FOV")
 	for role in range(6):
-		var model=CharacterVisual.new();root.add_child(model);model.build(role,0)
-		var animator=model.animator;var clips=animator.get_animation_list();expect(clips.size()>=17 and clips.has("run") and clips.has("reload") and clips.has("hit"),"operator %d contains locomotion and five distinct fall clips"%role)
-		animator.play("walk");animator.seek(.2,true);var start=model.rig.get_node("Hips/LeftLeg").rotation.x;animator.seek(.6,true)
-		expect(absf(start-model.rig.get_node("Hips/LeftLeg").rotation.x)>.2,"operator %d walking moves actual leg joints"%role)
+		var model=HeroCharacter.new();root.add_child(model);model.build(role,0)
+		var clips=model.player.get_animation_list();expect(clips.size()>=40 and clips.has("Run") and clips.has("Pistol_Reload") and clips.has("Hit_Chest") and clips.has("Death01"),"hero %d contains locomotion, reload, hit and death clips"%role)
+		var leg=model.skeleton.find_bone("UpperLeg.L");var walk={"velocity":model.global_basis*Vector3(0,0,-4.)}
+		model.drive(.2,walk.duplicate());var start=model.skeleton.get_bone_pose_rotation(leg)
+		for k in range(6):model.drive(.05,walk.duplicate())
+		expect(start.angle_to(model.skeleton.get_bone_pose_rotation(leg))>.12,"hero %d walking moves actual leg joints"%role)
 		model.queue_free()
 	g=load("res://scripts/game.gd").new();root.add_child(g);g.dedicated=true;g.options.map_random=false;g.options.map=0;g.options.max_players=32;g.host_game();CombatFixture.install(g);g.set_physics_process(false);g.options.classes=true;g.options.skills=true;g.options.mode=0;g.phase="combat";g.clock=100;g.remaining=1000
 	expect(g.players.is_empty(),"dedicated server does not occupy a player slot")

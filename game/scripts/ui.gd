@@ -714,8 +714,8 @@ func refresh_gear_cards():
 	for child in role_cards.get_children():role_cards.remove_child(child);child.queue_free()
 	for role in range(6):
 		var selected_role=role
-		var card=image_card(role_cards,"role"+str(role),Rules.CLASSES[role]+" · "+HumanModel.IDENTITIES[role],gear_class.selected==role,func():gear_class.select(selected_role);preview_kind=0;refresh_weapons();refresh_gear_cards(),174,84)
-		card.disabled=not game.options.classes;card.tooltip_text="%d cm · %s"%[roundi(HumanModel.HEIGHTS[role]*100),Rules.GADGET_HELP[role]]
+		var card=image_card(role_cards,"role"+str(role),Rules.CLASSES[role]+" · "+HeroCharacter.IDENTITIES[role],gear_class.selected==role,func():gear_class.select(selected_role);preview_kind=0;refresh_weapons();refresh_gear_cards(),174,84)
+		card.disabled=not game.options.classes;card.tooltip_text="%d cm · %s"%[roundi(HeroCharacter.HEIGHTS[role]*100),Rules.GADGET_HELP[role]]
 	for child in gear_cards.get_children():gear_cards.remove_child(child);child.queue_free()
 	var role=gear_class.selected
 	match gear_category:
@@ -778,7 +778,7 @@ func refresh_gear_detail():
 	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n12m 이후 탄환 피해 감소 · 48m에서 10%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
 	if w.kind=="repair":gear_detail.text="FIX · 원격 수리 도구 · 10m · 초당 30 수리\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
 	if preview_kind==0:
-		preview_caption.text=HumanModel.IDENTITIES[role]+" · "+Rules.CLASSES[role]+" · %d cm"%roundi(HumanModel.HEIGHTS[role]*100)
+		preview_caption.text=HeroCharacter.IDENTITIES[role]+" · "+Rules.CLASSES[role]+" · %d cm"%roundi(HeroCharacter.HEIGHTS[role]*100)
 		gear_detail.text=["소총으로 전선을 유지하는 돌격수.","스코프 사격과 표식으로 시야를 확보하는 정찰수.","기관총과 방호로 거점을 지키는 중화기병.","샷건과 엄폐물, 자동 포탑을 운용하는 공병.","기관단총과 연막·섬광으로 경로를 통제하는 지원병.","회복 도구와 의료 카빈으로 팀을 지원하는 메딕."][role]+"\n"+Rules.SKILL_HELP[role]
 	elif preview_kind==2:
 		preview_caption.text=gear_gadget.get_item_text(gear_gadget.selected);gear_detail.text=Rules.GADGET_HELP[role]+"\n\n3 가젯 선택 · 클릭 사용 · G 즉시 사용"
@@ -917,7 +917,7 @@ func refresh():
 	hud_blue.visible=not game.options.get("practice",false);hud_orange.visible=hud_blue.visible
 	if game.options.get("practice",false):status.text="FIELD ACADEMY  ·  자유 연습"
 	health.text=("◆ BLUE  " if p.team==0 else "● ORANGE  ")+"%d HP"%p.hp if p.alive else "Dead · 관전" if game.options.mode==4 or p.spectator else "Dead · 부활 %.0f초"%maxf(0,p.respawn-game.clock)
-	operator_name.text=HumanModel.IDENTITIES[int(p.role)]+"  ·  "+Rules.CLASSES[int(p.role)]
+	operator_name.text=HeroCharacter.IDENTITIES[int(p.role)]+"  ·  "+Rules.CLASSES[int(p.role)]
 	health_bar.size.x=220*clampf(p.hp/Rules.max_hp(p),0,1);armor_bar.size.x=220*clampf(p.armor/75.,0,1)
 	plate_bar.position=armor_bar.position+Vector2(armor_bar.size.x,0);plate_bar.size.x=220*clampf(float(p.get("plate",0))/75.,0,1)
 	var fire_mode={"auto":"AUTO","semi":"SEMI","burst":"BURST"}.get(w.get("fire_mode","auto"),"")

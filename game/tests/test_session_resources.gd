@@ -24,6 +24,6 @@ func run():
 				if sample[key]>baseline[key]+8:failures+=1;printerr("FAIL session growth ",key," ",baseline[key]," -> ",sample[key])
 			if sample.texture_bytes>baseline.texture_bytes+1048576:failures+=1;printerr("FAIL texture growth")
 	g.free();await process_frame;await process_frame
-	CharacterVisual.templates.clear();OperatorSkin.templates.clear();WeaponVisual.web_templates.clear();SurfaceFinish.clear_cache();ToonMaterials.clear_cache()
+	HeroCharacter.scenes.clear();HeroCharacter.libraries.clear();GunModel.bases.clear();SurfaceFinish.clear_cache();ToonMaterials.clear_cache()
 	for i in range(6):await process_frame
 	print("SESSION_RESOURCES_RESULT failures=",failures);quit(1 if failures else 0)

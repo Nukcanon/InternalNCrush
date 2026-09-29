@@ -11,6 +11,7 @@ extends Node3D
 const OUTFITS=["men_swat","women_soldier","men_spacesuit","men_worker","men_adventurer","women_scifi"]
 const HEIGHTS=[1.74,1.64,1.88,1.72,1.83,1.62]
 const FEMALE_ROLES=[1,5]
+const IDENTITIES=["MASON","SERA","BRIGGS","REED","VALE","MINA"]
 # Source materials repainted per team (main / light / deep).
 const TEAM_SLOTS={
 	"men_swat":{"Swat":"main","Swat_Black":"deep"},
@@ -40,6 +41,9 @@ var bone={}
 var pitch=0.
 var state={}
 var outlined=false
+# First person: the weapon frame follows this node (camera-space view mount).
+var frame_override:Node3D
+var armor_level=0
 static func scene(role_index:int) -> PackedScene:
 	var outfit=OUTFITS[clampi(role_index,0,5)]
 	if not scenes.has(outfit):scenes[outfit]=load("res://assets/heroes/"+outfit+".scn")
@@ -91,7 +95,12 @@ func paint(body:MeshInstance3D,outfit:String,ink:bool):
 		body.set_surface_override_material(surface,HeroStyle.tinted(color,ink,0.))
 	body.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func meshes() -> Array:
-	return skeleton.get_children().filter(func(n):return n is MeshInstance3D)
+	return skeleton.get_children().filter(func(n):return n is MeshInstance3D and n.name!="FPArms")
+# First person: only the arm/hand mesh is drawn.
+func first_person_only():
+	for mesh in meshes():mesh.hide()
+	var arms=skeleton.get_node_or_null("FPArms")
+	if arms:arms.show();arms.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 ## Pose update. `s` keys (all optional):
 ##  velocity (world), grounded, crouch, sprint, pitch (rad, + up), reload (-1 or 0..1),
@@ -118,13 +127,15 @@ func facing_basis() -> Basis:return global_basis.orthonormalized()
 # Aim frame: right shoulder pocket, yaw of the body, pitch of the aim. Items
 # are authored with their stock/butt at the origin, forward -Z.
 func place_weapon_frame(s:Dictionary):
+	if is_instance_valid(frame_override):
+		weapon_frame.global_transform=frame_override.global_transform;return
 	var hold=str(s.get("hold","rifle"))
 	var shoulder:Vector3=bone_world(bone["UpperArm.R"]).origin
 	var chest:Vector3=bone_world(bone["Chest"]).origin
 	var basis=facing_basis()*Basis(Vector3.RIGHT,clampf(pitch,-1.2,1.2))
 	var scale_factor=HEIGHTS[role]/1.8
 	var origin:Vector3
-	if hold=="pistol":
+	if hold in ["pistol","item"]:
 		origin=chest.lerp(shoulder,.5)+basis*Vector3(0,.02,-.34)*scale_factor
 	else:
 		origin=shoulder+basis*Vector3(-.035,-.035,.04)*scale_factor
@@ -139,9 +150,12 @@ func solve_hands(s:Dictionary):
 	if not is_instance_valid(held) or not held.visible:return
 	var weight=clampf(float(s.get("hands",1.)),0.,1.)
 	if weight<=.001:return
-	var right:Node3D=held.get_node_or_null("RightGrip");var left:Node3D=held.get_node_or_null("LeftGrip")
-	if right:HeroIK.solve_arm(self,"R",right.global_transform,weight)
-	if left and bool(s.get("two_hands",true)):HeroIK.solve_arm(self,"L",left.global_transform,weight*float(s.get("left_hand",1.)))
+	var right:Node3D=held.grip("R") if held.has_method("grip") else held.get_node_or_null("RightGrip")
+	var left:Node3D=held.grip("L") if held.has_method("grip") else held.get_node_or_null("LeftGrip")
+	if right:HeroIK.solve_arm(self,"R",right.global_transform,weight);HeroIK.curl(self,"R",weight)
+	if left and bool(s.get("two_hands",true)):
+		var lw=weight*float(s.get("left_hand",1.))
+		HeroIK.solve_arm(self,"L",left.global_transform,lw);HeroIK.curl(self,"L",lw)
 func hold(item:Node3D):
 	if is_instance_valid(held) and held!=item and held.get_parent()==weapon_frame:held.hide()
 	held=item
@@ -150,5 +164,19 @@ func hold(item:Node3D):
 			if item.get_parent():item.get_parent().remove_child(item)
 			weapon_frame.add_child(item)
 		item.show()
+# Hides outfit parts by source mesh suffix ("_Head", "_Legs", "_Feet").
+func hide_parts(suffixes:Array):
+	for mesh in meshes():
+		for suffix in suffixes:
+			if str(mesh.name).ends_with(suffix):mesh.hide()
+# Armour tier (0..2) worn over the outfit; the vest model arrives with the gear pass.
+func set_armor(level:int):armor_level=clampi(level,0,2)
+# Bone-attached node on a hand (melee tools, thrown items).
+func hand_attachment(side:String) -> BoneAttachment3D:
+	var name="Hand"+side
+	var node=skeleton.get_node_or_null(name)
+	if node:return node
+	var attach=BoneAttachment3D.new();attach.name=name;attach.bone_name="Wrist."+side;skeleton.add_child(attach)
+	return attach
 # Head position for nameplates/reticles.
 func head_position() -> Vector3:return bone_world(bone.Head).origin

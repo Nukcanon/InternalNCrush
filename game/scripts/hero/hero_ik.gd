@@ -62,3 +62,23 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 static func set_world(sk:Skeleton3D,index:int,parent_world:Quaternion,world:Quaternion,weight:float):
 	var local=(parent_world.inverse()*world).normalized()
 	sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(local,weight))
+# Curled grip fingers from the outfit's own clips: the right hand from the native
+# pistol hold, the left from a fist. Retargeted clips leave fingers splayed.
+static var fingers={}
+const FINGER_SOURCE={"R":["Idle_Gun_Pointing",.3],"L":["Punch_Left",.15]}
+static func grip_fingers(hero:HeroCharacter) -> Dictionary:
+	if fingers.has(hero.role):return fingers[hero.role]
+	var out={"R":{},"L":{}}
+	for side in out:
+		var anim:Animation=hero.player.get_animation(FINGER_SOURCE[side][0])
+		for t in range(anim.get_track_count()):
+			if anim.track_get_type(t)!=Animation.TYPE_ROTATION_3D:continue
+			var bone_name=str(anim.track_get_path(t)).get_slice(":",1)
+			if not bone_name.ends_with("."+side):continue
+			if not (bone_name.begins_with("Index") or bone_name.begins_with("Middle") or bone_name.begins_with("Ring") or bone_name.begins_with("Pinky") or bone_name.begins_with("Thumb")):continue
+			var b=hero.skeleton.find_bone(bone_name)
+			if b>=0:out[side][b]=anim.rotation_track_interpolate(t,float(FINGER_SOURCE[side][1]))
+	fingers[hero.role]=out;return out
+static func curl(hero:HeroCharacter,side:String,weight:float):
+	var poses:Dictionary=grip_fingers(hero)[side]
+	for b in poses:hero.skeleton.set_bone_pose_rotation(b,hero.skeleton.get_bone_pose_rotation(b).slerp(poses[b],weight))

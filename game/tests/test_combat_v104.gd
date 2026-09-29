@@ -27,16 +27,15 @@ func run():
 		expect(BotAgent.combat_strafe(w,10.,2.,0,0,true)<BotAgent.combat_strafe(w,10.,2.,0,2,true),"difficulty changes combat movement: "+id)
 		if float(w.zoom)<=38:expect(BotAgent.combat_strafe(w,30.,2.,0,2,true)==0.,"scoped long shots favor a planted stance: "+id)
 		report[id]={"three_shot_reset_seconds":short_burst,"twelve_shot_reset_seconds":long_burst,"recovery_delay":w.recovery_delay,"pattern_recovery":w.pattern_recovery}
-	for id in ["a1","a2","r2","e1","pistol"]:
-		var weapon=WeaponVisual.new();root.add_child(weapon);weapon.build(Catalog.get_weapon(id),true)
+	for id in ["a1","a2","r2","e1","pistol","dual_pistols"]:
+		var weapon=GunModel.new();root.add_child(weapon);weapon.build(Catalog.get_weapon(id),false)
 		for hand in [-1,1]:
 			weapon.scale.x=hand
 			for phase in [-1.,0.,.25,.5,.75,1.]:
 				weapon.animate_reload(phase,1.,.04)
-				for rig in [weapon.support_rig,weapon.firing_rig]:
-					for finger in rig.fingers:
-						var curl:Vector3=finger.get_meta("joint_flexion")
-						expect(curl.x>=0 and curl.y>=0 and curl.z>=0 and curl.x<=1.35 and curl.y<=1.65 and curl.z<=1.2,"anatomical flexion for "+id)
+				expect(weapon.right_grip.global_position.is_finite() and weapon.left_grip.global_position.is_finite() and weapon.muzzle.global_position.is_finite(),"grips and muzzle stay finite through reload: "+id)
+			weapon.animate_reload(-1.,0.)
+			expect(not is_instance_valid(weapon.magazine) or weapon.magazine.transform.is_equal_approx(weapon.mag_rest),"reload returns the magazine: "+id)
 		weapon.free()
 	DirAccess.make_dir_recursive_absolute("res://../validation")
 	FileAccess.open("res://../validation/v104-recovery.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))

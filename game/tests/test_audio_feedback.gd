@@ -81,7 +81,7 @@ func run():
 	g.leave_game()
 	for i in range(4):await process_frame
 	g.queue_free();await process_frame
-	CharacterVisual.templates.clear();OperatorSkin.templates.clear();WeaponVisual.web_templates.clear()
+	HeroCharacter.scenes.clear();HeroCharacter.libraries.clear();GunModel.bases.clear()
 	SurfaceFinish.clear_cache();ToonMaterials.clear_cache()
 	# Allow deferred audio/render deletion to drain before shutting down the driver.
 	await create_timer(.5).timeout

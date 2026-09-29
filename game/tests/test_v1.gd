@@ -12,11 +12,11 @@ func run():
 	var actor=g.actors[1]
 	for role in range(6):
 		g.players[1].role=role;actor.set_team(0);actor.reset_view(0)
-		expect(is_equal_approx(actor.shape.shape.height,HumanModel.HEIGHTS[role]),"role %d collision follows stature"%role)
+		expect(is_equal_approx(actor.shape.shape.height,HeroCharacter.HEIGHTS[role]),"role %d collision follows stature"%role)
 		expect(is_equal_approx(actor.eye().y-actor.position.y,actor.camera.position.y),"role %d first-person eye follows stature"%role)
-		expect(is_equal_approx(actor.character.rig.scale.y,HumanModel.HEIGHTS[role]/1.8),"role %d model follows stature"%role)
+		expect(absf(actor.character.rest_height()*actor.character.model.scale.y-HeroCharacter.HEIGHTS[role])<.01,"role %d model follows stature"%role)
 		actor.input_state.crouch=true;actor.simulate(.016,0,false)
-		expect(is_equal_approx(actor.shape.shape.height,HumanModel.HEIGHTS[role]*1.45/1.8),"role %d crouch capsule follows stature"%role)
+		expect(is_equal_approx(actor.shape.shape.height,HeroCharacter.HEIGHTS[role]*1.45/1.8),"role %d crouch capsule follows stature"%role)
 	var loft=HumanModel.loft(g,Vector3.ZERO,[Vector4(-.2,.2,.1,0),Vector4(.2,.2,.1,0)],Color.WHITE)
 	var arrays=loft.mesh.surface_get_arrays(0)
 	expect(arrays[Mesh.ARRAY_NORMAL][0].x>0.5,"organic surface normals face outward")

@@ -57,7 +57,7 @@ func run():
 	DefusalMatch.begin(g);expect(g.round_no==5 and MatchFlow.attackers(g) in [0,1],"one random side overtime begins")
 	g.phase="combat";DefusalMatch.finish(g,0,"test");expect(g.phase=="result" and g.result.team==0,"overtime winner ends series")
 	g.phase="combat";g.round_no=4;g.scores=[3,0];DefusalMatch.finish(g,1,"last round");expect(g.result.team==0,"series champion differs from last round winner")
-	var pose=WeaponVisual.new();g.add_child(pose);pose.build_pose(Catalog.get_weapon("dual_pistols"));pose.animate_reload(.8,.2,.02);expect(is_instance_valid(pose.muzzle),"dedicated DUET pose has valid alternating muzzle");pose.free()
+	var pose=GunModel.new();g.add_child(pose);pose.build(Catalog.get_weapon("dual_pistols"));pose.animate_reload(.8,.2,.02);pose.fire_side=1;expect(is_instance_valid(pose.muzzle) and pose.muzzle==pose.muzzles[1],"dedicated DUET pose has valid alternating muzzle");pose.free()
 	g.phase="lobby";g.options.mode=0
 	g.players[1].team=0;g.players[2].team=0;TeamBalance.reconcile(g)
 	expect(g.team_count(0)==g.team_count(1),"multiple departures balanced without moving humans")
@@ -103,9 +103,9 @@ func run():
 	for mesh in shown:expect(mesh.material_overlay==null,"unrelated observer gets neither outline nor through-wall fill")
 	g.local_id=1;TargetReveal.apply(g.actors[2],q)
 	var reticle=load("res://scripts/reticle.gd").new();root.add_child(reticle);reticle.position=Vector2(80,40);reticle.scale=Vector2(.7,.7)
-	var camera=g.actors[1].camera;camera.position=Vector3(0,1.6,0);camera.look_at(g.actors[2].character.head.global_position)
+	var camera=g.actors[1].camera;camera.position=Vector3(0,1.6,0);camera.look_at(g.actors[2].character.head_position())
 	var marker=reticle.marker_position(g.actors[2],camera)
-	var projected=camera.unproject_position(g.actors[2].character.head.global_position+Vector3.UP*.26)
+	var projected=camera.unproject_position(g.actors[2].character.head_position()+Vector3.UP*.26)
 	expect((reticle.get_global_transform_with_canvas()*marker).distance_to(projected)<.01,"countdown remains above animated head under scaled/offset HUD")
 	reticle.free()
 	p.hp=100.;p.armor=0.;p.protect=0.;p.invulnerable=0.;p.shield=g.clock+6.;g.actors[1].aim_pitch=.8

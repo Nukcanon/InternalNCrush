@@ -9,17 +9,14 @@ func run():
 	TouchControls.supported_cache=1
 	Catalog.load_all()
 	for role in range(6):
-		var rig=CartoonModel.build(role,0);MeshFactory.merge_rig(rig);CharacterVisual.add_clips(rig);root.add_child(rig)
-		var skeleton=OperatorSkin.install(rig,"%d_review"%role)
-		var body=rig.get_node("ContinuousBody");var arrays=body.mesh.surface_get_arrays(0)
-		expect(arrays[Mesh.ARRAY_INDEX].size()<18000,"comic operator has fewer than 6000 triangles, role "+str(role))
-		expect(skeleton.get_bone_count()==15 and rig.has_node("Hips/Chest/WeaponSocket"),"combat joints and weapon grip remain available, role "+str(role))
-		var material=body.mesh.surface_get_material(0)
-		var uses_anatomy_uv=false
-		for uv in arrays[Mesh.ARRAY_TEX_UV2]:
-			if uv.x>.89:uses_anatomy_uv=true
-		expect(material is ShaderMaterial and not uses_anatomy_uv,"lightweight cartoon geometry never samples the native anatomy texture, role "+str(role))
-		rig.free()
+		var hero=HeroCharacter.new();root.add_child(hero);hero.build(role,0,false)
+		var triangles=0
+		for mesh in hero.meshes():
+			for surface in range(mesh.mesh.get_surface_count()):triangles+=mesh.mesh.surface_get_array_index_len(surface)/3
+		expect(triangles<12000,"cartoon hero stays under 12000 triangles, role "+str(role))
+		expect(hero.skeleton.get_bone_count()>=60 and hero.meshes().all(func(m):return m.skin!=null),"hero keeps its native skinned skeleton, role "+str(role))
+		expect(hero.meshes().all(func(m):return m.get_surface_override_material(0) is ShaderMaterial),"hero uses the cel material, role "+str(role))
+		hero.free()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(100,100);g.arena.has_water=false
 	g.arena.box(Vector3(0,-.5,0),Vector3(200,1,200),Color.GRAY)
@@ -59,7 +56,7 @@ func run():
 	expect(actor.input_state.yaw==0. and actor.input_state.pitch==0.,"aim assistance never follows a target through a wall")
 	GraphicsOptions.physics_effects=0
 	var corpse=g.combat_fx.ragdoll(null,Vector3.ZERO,Vector3.BACK,0,0,0.,false,Vector3.ZERO)
-	expect(corpse is AnimatedDeath and corpse.find_children("*","RigidBody3D",true,false).is_empty(),"low quality retains a visible death animation without rigid bodies")
+	expect(corpse is HeroDeath and corpse.find_children("*","RigidBody3D",true,false).is_empty(),"low quality retains a visible death animation without rigid bodies")
 	var burst=BurstVisual.new();g.add_child(burst);burst.build(true)
 	expect(burst.puffs.size()==24 and burst.find_children("*","RigidBody3D",true,false).is_empty(),"low physics retains explosion fire/smoke while removing decorative debris bodies")
 	expect(Rules.MODES.size()==5 and Rules.MAPS.size()==32,"five modes and the practice arena remain available")

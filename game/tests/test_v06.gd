@@ -43,8 +43,8 @@ func run():
 	a.position=g.arena.spawn_points[0][3];a.input_state.z=-1.;await physics_frame
 	for i in range(20):a.simulate(.016,g.clock,true);await physics_frame
 	expect(a.gait>old_gait,"actual ground travel advances locomotion phase")
-	var character=a.character;character.motion_seed=0.;character.update_pose(.1,Vector3.ZERO,false,false,true,0,-1,0);var chest_a=character.chest.rotation
-	character.motion_seed=2.;character.update_pose(.1,Vector3.ZERO,false,false,true,0,-1,0);expect(chest_a!=character.chest.rotation,"idle variation differs across character seeds")
+	var character=a.character;var chest=character.skeleton.find_bone("Chest");character.drive(.1,{"hold":"none"});var chest_a=character.skeleton.get_bone_pose_rotation(chest)
+	character.drive(.7,{"hold":"none"});expect(not chest_a.is_equal_approx(character.skeleton.get_bone_pose_rotation(chest)),"idle animation keeps the body moving over time")
 	g.ui.damage_indicator.clear_hits();g.damage_notice(2,Vector3.RIGHT,20,false);expect(g.ui.damage_indicator.hits.is_empty(),"damage feedback ignores other players")
 	g.damage_notice(1,a.position+Vector3.RIGHT*4,20,false);expect(g.ui.damage_indicator.hits.size()==1,"local damage receives direction feedback")
 	expect(g.audio_bank.catalog.has("hurt") and g.audio_bank.catalog.has("armor_hurt"),"separate incoming damage sounds exist")

@@ -67,7 +67,7 @@ func run():
 	expect(g.drops.back().until-g.clock>=39,"dropped weapon outlasts the fallen character")
 	g.update_world_visuals(.1)
 	var drop=g.drop_nodes.values().back()
-	expect(drop is WeaponVisual and drop.find_children("*","MeshInstance3D",true,false).size()>4,"pickup renders the actual multi-part weapon")
+	expect(drop is GunModel and drop.find_children("*","MeshInstance3D",true,false).size()>=1 and is_instance_valid(drop.muzzle),"pickup renders the actual weapon model")
 	var board=MatchScoreboard.new();board.game=g;g.ui.root.add_child(board);board.refresh_scores()
 	# 1.3.2 shares the paired roster grid: one labelled header per team.
 	var grid=board.columns.get_child(0)

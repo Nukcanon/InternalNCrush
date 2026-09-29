@@ -5,6 +5,8 @@ extends SceneTree
 ## retargeted from Universal Animation Library 1/2 (CC0, tools/clip_retarget.gd).
 ## Source files stay outside the project (.tools/).
 const Retarget=preload("res://tools/clip_retarget.gd")
+const HitboxBake=preload("res://tools/hitbox_bake.gd")
+var hitboxes={}
 const SOURCE="res://../../.tools/quaternius-modular/"
 const UAL1="res://../../.tools/quaternius-ual/ual1/Animation Library[Standard]/Godot/AnimationLibrary_Godot_Standard.glb"
 const UAL2="res://../../.tools/quaternius-ual/ual2/Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb"
@@ -17,6 +19,34 @@ func skin_of(skel:Skeleton3D) -> Skin:
 	for body in skel.get_children():
 		if body is MeshInstance3D and body.skin!=null:return body.skin
 	return null
+# First person shows only the arms: triangles whose three vertices are all
+# driven mainly by arm/hand bones, as an extra hidden mesh "FPArms".
+const ARM_BONES=["UpperArm","LowerArm","Wrist","Index","Middle","Ring","Pinky","Thumb"]
+func add_first_person_arms(skel:Skeleton3D):
+	var out=ArrayMesh.new();var skin:Skin
+	for body in skel.get_children():
+		if not body is MeshInstance3D or body.skin==null or not str(body.name).ends_with("_Body"):continue
+		skin=body.skin
+		for s in range(body.mesh.get_surface_count()):
+			var arrays=body.mesh.surface_get_arrays(s)
+			var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS];var idx:PackedInt32Array=arrays[Mesh.ARRAY_INDEX]
+			var count=(arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size();var per=bones.size()/count
+			var arm=PackedByteArray();arm.resize(count)
+			for i in range(count):
+				var best=0;var bw=-1.
+				for k in range(per):
+					if weights[i*per+k]>bw:bw=weights[i*per+k];best=bones[i*per+k]
+				var name=skin.get_bind_name(best) if skin.get_bind_name(best)!="" else skel.get_bone_name(skin.get_bind_bone(best))
+				arm[i]=1 if ARM_BONES.any(func(b):return name.begins_with(b)) else 0
+			var kept=PackedInt32Array()
+			for t in range(0,idx.size(),3):
+				if arm[idx[t]] and arm[idx[t+1]] and arm[idx[t+2]]:kept.append_array([idx[t],idx[t+1],idx[t+2]])
+			if kept.is_empty():continue
+			arrays[Mesh.ARRAY_INDEX]=kept
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+			out.surface_set_material(out.get_surface_count()-1,body.mesh.surface_get_material(s))
+	if out.get_surface_count()==0:return
+	var arms=MeshInstance3D.new();arms.name="FPArms";arms.mesh=out;arms.skin=skin;skel.add_child(arms);arms.owner=skel.owner;arms.skeleton=NodePath("..");arms.visible=false
 func run():
 	DirAccess.make_dir_recursive_absolute("res://assets/heroes")
 	var ual1=Retarget.load_pack(ProjectSettings.globalize_path(UAL1),root)
@@ -41,9 +71,10 @@ func run():
 		for mesh in scene.find_children("*","MeshInstance3D",true,false):
 			# Outfits ship a prop pistol; weapons are separate game models.
 			if mesh.name.to_lower().contains("pistol") or mesh.skin==null:continue
-			var body=MeshInstance3D.new();body.name="Body%d"%index;index+=1;skel.add_child(body);body.owner=hero
+			var body=MeshInstance3D.new();body.name=str(mesh.name);index+=1;skel.add_child(body);body.owner=hero
 			body.mesh=mesh.mesh;body.skin=mesh.skin;body.transform=skeleton.global_transform.affine_inverse()*mesh.global_transform
 			body.skeleton=NodePath("..")
+		add_first_person_arms(skel)
 		# Native clips: tracks target "Skeleton3D:<bone>" relative to the Hero root.
 		var library:AnimationLibrary=player.get_animation_library(player.get_animation_library_list()[0]).duplicate(true)
 		for clip in library.get_animation_list():
@@ -54,9 +85,11 @@ func run():
 			var clips=Retarget.retarget(pack[0],pack[1],skel,skin_of(skel),pack[2],"Skeleton3D")
 			for clip in clips:library.add_animation(clip,clips[clip]);added+=1
 		ResourceSaver.save(library,"res://assets/heroes/"+outfit+"_clips.res",ResourceSaver.FLAG_COMPRESS)
+		hitboxes[outfit]=HitboxBake.measure(skel)
 		root.remove_child(hero)
 		var packed=PackedScene.new();packed.pack(hero)
 		ResourceSaver.save(packed,"res://assets/heroes/"+outfit+".scn",ResourceSaver.FLAG_COMPRESS)
 		print(outfit,": bones ",skel.get_bone_count()," meshes ",index," clips ",library.get_animation_list().size()," (retargeted ",added,")")
 		hero.free();scene.queue_free();await process_frame
+	HitboxBake.save_all(hitboxes)
 	print("HERO_BAKE_OK");quit()

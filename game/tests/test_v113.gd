@@ -13,18 +13,6 @@ func run():
 	for zone in ["hands","feet"]:expect(CombatBalance.damage_at(w,30.,zone)<100.,"extremity not one-shot")
 	expect(CombatBalance.damage_at(w,180.)<150.,"long range falloff preserved")
 	expect(w.interval==2.35 and w.mag==4 and w.reload==3.8,"heavy sniper tradeoffs preserved")
-	var male=AuthoredHuman.source(0)
-	for role in HumanModel.FEMALE_ROLES:
-		var female=AuthoredHuman.source(role);var same=true
-		var original_count=int(male.get("source_vertex_count",male.vertices.size()))
-		for i in range(original_count):
-			if male.vertices[i][1]<=1.48 and female.vertices[i]!=male.vertices[i]:same=false
-		expect(same,"female torso and shoulders retain male source below the tailored neckline")
-		expect(female.weights.slice(0,original_count)==male.weights.slice(0,original_count),"female original skin vertices use common male joint weights; seam vertices interpolate them")
-		var rig=HumanModel.pose_rig(role);root.add_child(rig)
-		expect(is_equal_approx(rig.scale.x,.88) and is_equal_approx(rig.scale.z,1.),"female body width reduced while depth retained")
-		expect(is_equal_approx(rig.get_node("Hips/Chest/LeftArm").position.y,.105),"shared shoulder animation baseline")
-		rig.free()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.options.bots=0;g.host_game();g.start_match();g.set_physics_process(false)
 	var p=g.players[1];p.protect=0.;p.armor=50.;p.hp=100.;p.shield=0.;p.invulnerable=0.
 	g.damage(1,100.,1,false,"r2");expect(p.hp==50. and p.alive,"armor prevents unarmored one-shot rule")
@@ -46,10 +34,10 @@ func run():
 	for prop in props.values():expect(prop.collision_layer==8,"batched props retain original collision")
 	arena.free();await process_frame
 	for id in Catalog.weapons:
-		var original=WeaponVisual.new();root.add_child(original);original.build(Catalog.get_weapon(id),false)
-		var reused=WeaponVisual.new();root.add_child(reused);var restored=reused.restore_web_model(Catalog.get_weapon(id),false)
-		expect(restored and reused.muzzle.position.is_equal_approx(original.muzzle.position) and reused.mag_origin.is_equal_approx(original.mag_origin),"baked web weapon sockets "+id)
+		var original=GunModel.new();root.add_child(original);original.build(Catalog.get_weapon(id),false)
+		var reused=GunModel.new();root.add_child(reused);reused.build(Catalog.get_weapon(id),false)
+		expect(reused.muzzle.position.is_equal_approx(original.muzzle.position) and reused.base.scale.is_equal_approx(original.base.scale),"shared weapon bases keep sockets "+id)
 		reused.animate_reload(.84,0.,1.);reused.animate_reload(-1.,0.,1.)
-		expect(reused.magazine.position.is_equal_approx(reused.mag_origin),"baked reload resets "+id)
+		expect(not is_instance_valid(reused.magazine) or reused.magazine.transform.is_equal_approx(reused.mag_rest),"reload resets "+id)
 		original.free();reused.free()
 	print("V113_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

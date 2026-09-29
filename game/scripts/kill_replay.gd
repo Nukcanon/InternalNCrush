@@ -24,7 +24,7 @@ var signatures={}
 var first_person_guns={}
 var ghost_props={}
 var ghost_devices={}
-var gun:WeaponVisual
+var gun:Node3D # first-person replay mount; child 0 is the GunModel
 var title:Label
 var detail:Label
 var nickname:Label
@@ -102,16 +102,16 @@ func warm_one():
 			if not is_instance_valid(node) or node.get_meta("body_signature","")!=str([role,p.team]):
 				if is_instance_valid(node):node.queue_free()
 				node=Node3D.new();stage.add_child(node);models[id]=node
-				var name_tag=Label3D.new();name_tag.text=str(p.nick);name_tag.position.y=HumanModel.HEIGHTS[role]+.22;name_tag.font=game.ui.theme.default_font;name_tag.font_size=32;name_tag.pixel_size=.004;name_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;name_tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");node.add_child(name_tag)
-				var body=CharacterVisual.new();body.enable_physics=false;body.name="Body";node.add_child(body);body.build(role,int(p.team))
+				var name_tag=Label3D.new();name_tag.text=str(p.nick);name_tag.position.y=HeroCharacter.HEIGHTS[role]+.22;name_tag.font=game.ui.theme.default_font;name_tag.font_size=32;name_tag.pixel_size=.004;name_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;name_tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");node.add_child(name_tag)
+				var body=HeroCharacter.new();body.name="Body";node.add_child(body);body.build(role,int(p.team),HeroStyle.outlines_enabled())
 				node.set_meta("body_signature",str([role,p.team]))
 			var body=node.get_node("Body")
-			for old in body.socket.get_children():old.free()
-			var weapon=WeaponVisual.new();body.socket.add_child(weapon);weapon.build(Catalog.get_weapon(wid),false);weapon.scale=Vector3.ONE*.8
+			if is_instance_valid(body.held):body.held.free()
+			var weapon=GunModel.new();weapon.build(Catalog.get_weapon(wid),HeroStyle.outlines_enabled());body.hold(weapon);body.set_meta("hold",GunLooks.hold_kind(Catalog.get_weapon(wid)))
 			signatures[id]=signature
 			return
 		if not first_person_guns.has(wid):
-			var weapon=WeaponVisual.new();camera.add_child(weapon);weapon.build(Catalog.get_weapon(wid));weapon.hide();first_person_guns[wid]=weapon;return
+			var mount=Node3D.new();camera.add_child(mount);var weapon=GunModel.new();mount.add_child(weapon);weapon.build(Catalog.get_weapon(wid));weapon.position=-weapon.right_grip.position*weapon.base.scale;mount.hide();first_person_guns[wid]=mount;return
 	for id in game.arena.props:
 		if not ghost_props.has(id):
 			var prop=game.arena.props[id];var node=Node3D.new();stage.add_child(node);ghost_props[id]=node
@@ -178,9 +178,11 @@ func _process(dt):
 			if not fall_started:
 				var direction=(Vector3(event.hit_point)-Vector3(event.origin)).normalized()
 				fx.ragdoll(visual,node.global_position,direction,int(a.role),int(a.team),node.rotation.y,bool(a.crouch),a.velocity,event.hit_point)
-				fall_started=true;game.play_sound("hurt_female" if int(a.role) in HumanModel.FEMALE_ROLES else "hurt",Vector3.ZERO,false)
+				fall_started=true;game.play_sound("hurt_female" if int(a.role) in HeroCharacter.FEMALE_ROLES else "hurt",Vector3.ZERO,false)
 			node.hide()
-		else:visual.update_pose(dt,a.velocity if elapsed<RUNUP_SECONDS else Vector3.ZERO,a.sprint and elapsed<RUNUP_SECONDS,a.crouch,a.grounded,a.pitch,-1,0,a.gait,0)
+		else:
+			var hold=str(visual.get_meta("hold","rifle")).replace("shoulder","rifle")
+			visual.drive(dt,{"velocity":a.velocity if elapsed<RUNUP_SECONDS else Vector3.ZERO,"sprint":a.sprint and elapsed<RUNUP_SECONDS,"crouch":a.crouch,"grounded":a.grounded,"pitch":a.pitch,"hold":hold})
 	var killer=int(event.attacker);var state=left.actors.get(killer,{})
 	if state.is_empty() or not models.has(killer):finish();return
 	var attacker=models[killer]
@@ -190,11 +192,11 @@ func _process(dt):
 	kick=move_toward(kick,0,dt*5.5)
 	if elapsed<FIRST_PERSON_SECONDS+DEATH_SECONDS:
 		attacker.hide();camera.fov=82.;gun.visible=event.weapon not in ["turret","turret_missile","knife","wrench"]
-		camera.position=attacker.position+Vector3.UP*(1.30 if state.crouch else 1.62)*HumanModel.HEIGHTS[int(state.role)]/1.8
+		camera.position=attacker.position+Vector3.UP*(1.30 if state.crouch else 1.62)*HeroCharacter.HEIGHTS[int(state.role)]/1.8
 		camera.rotation=Vector3(lerpf(state.pitch,right.actors.get(killer,state).pitch,blend),attacker.rotation.y,0)
 		if event.weapon in ["turret","turret_missile"]:
 			camera.position=event.origin+(event.hit_point-event.origin).normalized()*.25+Vector3.UP*.10;camera.look_at(event.hit_point);gun.hide()
-		gun.scale.x=float(state.get("hand",1));gun.rotation=Vector3(kick*.24,0,0);gun.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46+kick*.11);gun.animate_reload(-1.,kick,0. if kick>.75 else 10.)
+		gun.scale.x=float(state.get("hand",1));gun.rotation=Vector3(kick*.24,0,0);gun.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46+kick*.11);gun.get_child(0).animate_reload(-1.,kick,0. if kick>.75 else 10.)
 		if elapsed>=RUNUP_SECONDS and event.weapon not in ["knife","wrench","h6"]:
 			camera.look_at(event.hit_point);camera.fov=70.
 			if elapsed<FIRST_PERSON_SECONDS:
@@ -212,7 +214,7 @@ func _process(dt):
 		if not punch_played:punch_played=true;title.text="킬 리플레이 · 처치한 플레이어";nickname.text=str(event.attacker_name);nickname.show();game.play_sound("kill_sting",Vector3.ZERO,false)
 		attacker.show();gun.hide()
 		var t=clampf((elapsed-FIRST_PERSON_SECONDS-DEATH_SECONDS)/PORTRAIT_SECONDS,0,1)
-		var focus=attacker.position+Vector3.UP*1.43*HumanModel.HEIGHTS[int(state.role)]/1.8
+		var focus=attacker.position+Vector3.UP*1.43*HeroCharacter.HEIGHTS[int(state.role)]/1.8
 		var desired=focus+Basis(Vector3.UP,attacker.rotation.y)*Vector3(.45,.16,-lerpf(3.2,1.35,1.-pow(1.-t,3)))
 		var hit=game.ray(focus,desired,[],1);camera.position=hit.position+hit.normal*.15 if not hit.is_empty() else desired
 		camera.look_at(focus);camera.rotation.z=sin(t*PI)*-.035;camera.fov=lerpf(68.,55.,1.-pow(1.-t,3))
@@ -227,14 +229,11 @@ func _process(dt):
 		gun.visible=not showing and elapsed<FIRST_PERSON_SECONDS
 		melee_view.pose(age);melee_view.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46);melee_view.scale.x=float(state.get("hand",1))
 		melee_world.pose(-1.)
-		var body=models[killer].get_node("Body")
-		body.solve_arm(body.right_arm,body.right_elbow,body.chest.to_local(melee_world.palm.global_position),Vector3(.75,-.8,.25),dt,1.)
-		body.left_arm.rotation=Vector3(.15,.05,.12);body.left_elbow.rotation=Vector3(.35,0,0);body.sync_deform()
 		if elapsed>=RUNUP_SECONDS and elapsed<FIRST_PERSON_SECONDS:
 			title.text="킬 리플레이 · 근접 공격"
 			if not fatal_sound_played:fatal_sound_played=true;game.play_sound("melee_swing",Vector3.ZERO,false)
-		for child in models[killer].get_node("Body").socket.get_children():
-			if child is WeaponVisual:child.hide()
+		var held=models[killer].get_node("Body").held
+		if is_instance_valid(held):held.hide()
 	progress.value=elapsed/TOTAL_SECONDS*100
 func begin(kill:Dictionary):
 	var started=Time.get_ticks_usec()
@@ -252,7 +251,7 @@ func begin(kill:Dictionary):
 	if kill.weapon in ["knife","wrench"]:
 		var role=int(fatal_frame.actors[killer].role)
 		melee_view=MeleeVisual.new();camera.add_child(melee_view);melee_view.build(kill.weapon=="wrench",role,true)
-		melee_world=MeleeVisual.new();models[killer].get_node("Body").socket.add_child(melee_world);melee_world.build(kill.weapon=="wrench",role,false)
+		melee_world=MeleeVisual.new();models[killer].get_node("Body").hand_attachment("R").add_child(melee_world);melee_world.build(kill.weapon=="wrench",role,false)
 	event.hit_point=event.get("hit_point",event.get("victim_pos",Vector3.ZERO)+Vector3.UP*1.2)
 	active=true;elapsed=0.;punch_played=false;fall_started=false;fatal_sound_played=false;kick=0.;shot_cursor=0
 	var beginning=maxf(float(frames[0].time),float(fatal_frame.time)-RUNUP_SECONDS)
@@ -281,8 +280,8 @@ func finish():
 	if is_instance_valid(overlay):overlay.hide()
 	for weapon in first_person_guns.values():weapon.hide()
 	for model in models.values():
-		for child in model.get_node("Body").socket.get_children():
-			if child is WeaponVisual:child.show()
+		var held=model.get_node("Body").held
+		if is_instance_valid(held):held.show()
 	if was_active:hide_live(false);game.update_spectator()
 func reset(keep_models:bool=false):
 	pending={};history.clear();shot_history.clear();finish()

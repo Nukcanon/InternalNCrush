@@ -21,9 +21,9 @@ func run():
 		obstacle.free();await physics_frame
 	a.input_state.z=0.;a.position=Vector3(10,0,10)
 	for direction in [Vector3.FORWARD,Vector3.BACK,Vector3.LEFT,Vector3.RIGHT]:
-		var corpse=AnimatedDeath.new();g.add_child(corpse);corpse.build(null,Vector3(0,.01,0),direction,0,0,0.,false,Vector3.ZERO)
+		var corpse=HeroDeath.new();g.add_child(corpse);corpse.build(null,Vector3(0,.01,0),direction,0,0,0.,false,Vector3.ZERO)
 		for i in range(90):await physics_frame
-		var chest_direction=(corpse.model.chest.global_position-corpse.model.hips.global_position).normalized()
+		var chest_direction=corpse.torso_axis()
 		expect(corpse.position.dot(direction)>.1,"lightweight corpse preserves the existing launch away from the shooter")
 		expect(chest_direction.dot(direction)>.8,"falling pose follows the existing away-from-shooter launch")
 		expect(corpse.position.y>-.03 and corpse.position.y<.08,"corpse rests on floor")
@@ -36,8 +36,8 @@ func run():
 		var wall=StaticBody3D.new();g.arena.add_child(wall);wall.position=Vector3(x,1.,-1.)
 		var collision=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(.2,2.,8.);collision.shape=box;wall.add_child(collision);walls.append(wall)
 	await physics_frame
-	var rag=PhysicsRagdoll.new();g.add_child(rag);rag.build(null,Vector3.ZERO,Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
-	var torso_axis=(rag.model.chest.global_position-rag.model.hips.global_position).normalized()
+	var rag=HeroRagdoll.new();g.add_child(rag);rag.build(null,Vector3.ZERO,Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
+	var torso_axis=rag.torso_axis()
 	expect(absf(torso_axis.y)<.15 and torso_axis.dot(Vector3.FORWARD)>.9,"native corpse launches lying along bullet travel")
 	for frame in range(240):await physics_frame
 	expect(rag.bodies.all(func(b):return b.global_position.is_finite() and b.global_position.y>-.3),"wedged ragdoll stays finite and above the floor")

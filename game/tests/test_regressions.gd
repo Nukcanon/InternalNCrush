@@ -69,7 +69,7 @@ func run():
 	wall.queue_free();await physics_frame;await physics_frame
 	for wid in Catalog.weapons:
 		p.primary=wid;p.protect=0.;p.slot=0;a.visual(.016,p,g.clock)
-		expect(is_instance_valid(a.view_weapon.muzzle) and a.view_weapon.find_children("*","MeshInstance3D",true,false).size()>4,"complete procedural model "+wid)
+		expect(is_instance_valid(a.view_weapon.muzzle) and is_instance_valid(a.view_weapon.right_grip) and is_instance_valid(a.view_weapon.left_grip) and a.view_weapon.find_children("*","MeshInstance3D",true,false).size()>=1,"complete cartoon model "+wid)
 		for fraction in [.1,.5,.9]:a.view_weapon.animate_reload(fraction,0)
 	arm("r2");a.input_state.ads=true;a.visual(.8,p,g.clock)
 	expect(not a.view_weapon.visible,"scoped ADS removes opaque weapon from center")

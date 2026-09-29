@@ -19,7 +19,7 @@ func draw_rangefinder(a:Node,center:Vector2,radius:float):
 	draw_string(font,box.position+Vector2(5,baseline),distance_text(range_m),HORIZONTAL_ALIGNMENT_CENTER,box.size.x-10,font_size,Color("c5f2dc"))
 
 func marker_position(actor:Node,camera:Camera3D) -> Vector2:
-	var point=actor.character.head.global_position+Vector3.UP*.26 if is_instance_valid(actor.character) and is_instance_valid(actor.character.head) else actor.eye()+Vector3.UP*.20
+	var point=actor.character.head_position()+Vector3.UP*.26 if is_instance_valid(actor.character) else actor.eye()+Vector3.UP*.20
 	if camera.is_position_behind(point):return Vector2.INF
 	# Camera projection is in viewport coordinates; the HUD can be independently
 	# scaled/offset. Convert to this Control's space before placing the label.

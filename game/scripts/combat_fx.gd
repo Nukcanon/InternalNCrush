@@ -369,13 +369,13 @@ func sync_status(game:Node,now:float):
 			if status!="shield":node.scale=Vector3.ONE*(1.+sin(now*5.)*.035)
 	for key in status_nodes.keys():
 		if not live.has(key):status_nodes[key].queue_free();status_nodes.erase(key)
-func ragdoll(source:CharacterVisual,pos:Vector3,push:Vector3,role:int,team:int,facing:float,crouched:bool,velocity:Vector3,point:Vector3=Vector3.INF):
+func ragdoll(source:HeroCharacter,pos:Vector3,push:Vector3,role:int,team:int,facing:float,crouched:bool,velocity:Vector3,point:Vector3=Vector3.INF):
 	var physical=GraphicsOptions.physics_effects>0 and GraphicsOptions.corpse_quality>0 and not OS.has_feature("web")
 	ragdolls=ragdolls.filter(func(item):return is_instance_valid(item) and not item.is_queued_for_deletion())
 	while ragdolls.size()>=((4 if GraphicsOptions.corpse_quality==2 else 2) if physical else 3 if OS.has_feature("web") else 4):
 		var old=ragdolls.pop_front()
 		if is_instance_valid(old):old.queue_free()
-	var node:Node3D=PhysicsRagdoll.new() if physical else AnimatedDeath.new()
+	var node:Node3D=HeroRagdoll.new() if physical else HeroDeath.new()
 	add_child(node);node.build(source,pos,push,role,team,facing,crouched,velocity,point);ragdolls.append(node)
 	return node
 
@@ -411,7 +411,7 @@ func sync_bomb(game:Node):
 	bomb_visual.scale=Vector3.ONE*(.52 if carrier else .72)
 	if carrier and game.actors.has(carrier):
 		var actor=game.actors[carrier]
-		var height=float(HumanModel.HEIGHTS[int(game.players[carrier].role)])/1.8
+		var height=float(HeroCharacter.HEIGHTS[int(game.players[carrier].role)])/1.8
 		bomb_visual.position=actor.position+Vector3.UP*(.95*height-(.42 if actor.input_state.crouch else 0.))+Basis(Vector3.UP,actor.aim_yaw)*Vector3(0,0,.24)
 		# Flat underside against the back; the former upward beacon now faces out.
 		bomb_visual.basis=(Basis(Vector3.UP,actor.aim_yaw)*Basis(Vector3.RIGHT,PI/2.)).scaled(Vector3.ONE*.52)

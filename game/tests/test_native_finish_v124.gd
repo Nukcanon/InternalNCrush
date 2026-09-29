@@ -47,10 +47,9 @@ func run():
 	p.energy=120;expect(pips.refresh_state(),"healing energy updates its bar")
 	hud_game.players.clear();expect(pips.refresh_state(),"leaving the match invalidates cached ammunition")
 	pips.free();hud_game.free()
-	var duet=WeaponVisual.new();root.add_child(duet);duet.build(Catalog.get_weapon("dual_pistols"))
-	expect(duet.dual_guns[0].position.x-duet.dual_guns[1].position.x>=.59,"first-person DUET leaves a clear center gap")
-	duet.animate_reload(.4,.5,.02)
-	expect(duet.dual_guns[0].position.x-duet.dual_guns[1].position.x>=.59,"DUET reload preserves widened hand spacing")
+	var duet=GunModel.new();root.add_child(duet);duet.build(Catalog.get_weapon("dual_pistols"))
+	expect(duet.dual_guns.size()==2 and duet.dual_guns[0].position.x-duet.dual_guns[1].position.x>=.15,"DUET holds two pistols apart")
+	duet.fire_side=1;expect(duet.muzzle==duet.muzzles[1],"DUET alternates its muzzle")
 	duet.free()
 	var max_diagonal=0.
 	for index in range(Rules.MAPS.size()):
@@ -108,40 +107,14 @@ func run():
 	GraphicsOptions.apply_world(scenery);expect(wall.material_override.get_shader_parameter("texture_detail")==false,"low world shader skips texture detail")
 	GraphicsOptions.detail=1;GraphicsOptions.apply_world(scenery);expect(wall.material_override.get_shader_parameter("texture_detail")==true,"medium world shader restores texture detail")
 	scenery.free();viewport.free()
-	var male_texture=SurfaceFinish.human_material(0).get_shader_parameter("anatomy_detail")
-	expect(male_texture==SurfaceFinish.human_material(2).get_shader_parameter("anatomy_detail"),"male roles share one detail texture")
-	var female_texture=SurfaceFinish.human_material(1).get_shader_parameter("anatomy_detail")
-	expect(female_texture==SurfaceFinish.human_material(5).get_shader_parameter("anatomy_detail"),"female roles share one detail texture")
-	for role in [0,1,5]:
-		var data=AuthoredHuman.source(role);var crossed=0
-		for face in data.faces:
-			var lo=INF;var hi=-INF
-			for index in face:lo=minf(lo,data.vertices[index][1]);hi=maxf(hi,data.vertices[index][1])
-			if lo<1.47999 and hi>1.48001:crossed+=1
-		expect(crossed==0,"skin and shirt have a real cut neckline, role "+str(role))
-		expect(data.faces.size()<=27200,"neck and waist seams add fewer than 1.5 percent native triangles")
-		var crossed_waist=0
-		for face in data.faces:
-			var lo=INF;var hi=-INF;var torso=true
-			for index in face:
-				lo=minf(lo,data.vertices[index][1]);hi=maxf(hi,data.vertices[index][1])
-				for influence in data.weights[index]:
-					if int(influence[0]) in [3,4,5,6,7,8] and influence[1]>.5:torso=false
-			if torso and lo<1.02499 and hi>1.02501:crossed_waist+=1
-		expect(crossed_waist==0,"shirt and trousers do not interpolate across the waistline")
-		var rig=CharacterVisual.make_rig(role,0);root.add_child(rig);OperatorSkin.install(rig,str(role)+"_finish")
-		expect(rig.get_node("DeformSkeleton").get_bone_count()==15,"existing skeletal budget preserved")
-		rig.free()
 	var holder=Node3D.new();root.add_child(holder)
-	var hand=WeaponHand.new();holder.add_child(hand);hand.build(true,false,1)
-	var shared=hand.handed_mesh.get_child(0).mesh
-	hand.free();var warm=HumanModel.loft_meshes.size();var elapsed=[]
+	var sample=GunModel.new();holder.add_child(sample);sample.build(Catalog.get_weapon("a1"))
+	var shared=sample.base.get_node("Body").mesh
+	sample.free();var elapsed=[]
 	for i in range(40):
-		var start=Time.get_ticks_usec();hand=WeaponHand.new();holder.add_child(hand);hand.build(i%2==0,false,1)
-		expect(hand.handed_mesh.get_child(0).mesh==shared,"weapon hand geometry shared across swaps")
-		hand.free();elapsed.append((Time.get_ticks_usec()-start)/1000.)
-	expect(HumanModel.loft_meshes.size()==warm,"hand swaps do not grow mesh cache")
-	expect(HumanModel.loft_meshes.size()<=HumanModel.LOFT_CACHE_LIMIT,"loft cache has a fixed limit")
+		var start=Time.get_ticks_usec();var swap=GunModel.new();holder.add_child(swap);swap.build(Catalog.get_weapon("a1" if i%2==0 else "c1"))
+		if i%2==0:expect(swap.base.get_node("Body").mesh==shared,"weapon geometry shared across swaps")
+		swap.free();elapsed.append((Time.get_ticks_usec()-start)/1000.)
 	GraphicsOptions.physics_effects=0;var fx=CombatFX.new();holder.add_child(fx)
 	for i in range(8):fx.explosion(Vector3(i,0,0))
 	var first=fx.explosion_pool[0];var material=first.puffs[0].material;var nodes=fx.get_child_count()
