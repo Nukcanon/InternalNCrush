@@ -24,7 +24,14 @@ def rings(p):return [list(p.exterior.coords)]+[list(h.coords) for h in p.interio
 def shape(data):return unary_union([Polygon(p[0],p[1:]) for p in data])
 def triangles(g):
     for p in polygons(g):
-        for t in constrained_delaunay_triangles(p).geoms:yield list(t.exterior.coords)[:3]
+        try:parts=constrained_delaunay_triangles(p).geoms
+        except Exception:
+            # Near-degenerate slivers (landing/overlap cells): clean and retry.
+            from shapely.ops import triangulate
+            clean=p.buffer(0).simplify(1e-4)
+            try:parts=[t for q in polygons(clean) for t in constrained_delaunay_triangles(q).geoms] if not clean.is_empty else []
+            except Exception:parts=[t for t in triangulate(clean) if clean.contains(t.representative_point())]
+        for t in parts:yield list(t.exterior.coords)[:3]
 
 for plan in plans:
     sea=plan['id']-1 in [0,1,23,28]
@@ -149,10 +156,25 @@ for plan in plans:
     def level(path,height,width):
         # Two graded entrances and a level middle, with a maximum 1:3 slope.
         line=LineString(path)
-        length=line.length;run=min(abs(height)*3.5,length*.33)
-        cuts=sorted(set([0.,run,length-run,length]+[line.project(__import__('shapely').geometry.Point(p)) for p in path]))
-        strips=[];cuts_ground=[]
-        def elevation(d):return height*min(1,d/run,(length-d)/run)
+        length=line.length
+        # Bends get a level landing (half the width plus 0.3 m each side): a
+        # ramp turning a corner is far steeper on its inner edge than on its
+        # centre line. The rise happens only on straight runs, never over 1:2.2.
+        vertices=[line.project(Point(q)) for q in path[1:-1]]
+        delta=width*.5+.3
+        flats=[(v-delta,v+delta) for v in vertices]
+        def sloped(a,b):
+            total=max(0.,b-a)
+            for f0,f1 in flats:total-=max(0.,min(b,f1)-max(a,f0))
+            return max(0.,total)
+        run=min(abs(height)*3.5,length*.33)
+        while sloped(0.,run)<abs(height)*3. and run<length*.45:run+=.25
+        up=max(sloped(0.,run),.01);down=max(sloped(length-run,length),.01)
+        def elevation(d):
+            if d<=length*.5:return height*min(1.,sloped(0.,min(d,run))/up)
+            return height*min(1.,sloped(max(d,length-run),length)/down)
+        cuts=sorted(set([0.,run,length-run,length]+vertices+[min(length,max(0.,x)) for f in flats for x in f]))
+        strips=[];planes=[];cuts_ground=[]
         for start,end in zip(cuts,cuts[1:]):
             if end-start<.01:continue
             a=line.interpolate(start);b=line.interpolate(end);dx=b.x-a.x;dz=b.y-a.y;distance=math.hypot(dx,dz)
@@ -162,7 +184,7 @@ for plan in plans:
             ya,yb=elevation(start),elevation(end);slope=(yb-ya)/distance
             plane=[slope*dx/distance,slope*dz/distance,0.]
             plane[2]=ya-plane[0]*(a.x-ox)-plane[1]*(a.y-oz)
-            face(p,plane,'upper' if height>0 else 'lower');strips.append(p)
+            strips.append(p);planes.append(plane)
             if plan.get('stairs_enabled',False) and abs(yb-ya)>.03:
                 # Visible stair treads over the smooth walking collision ramp.
                 # The small offset avoids coplanar flicker at step/ramp edges.
@@ -179,6 +201,33 @@ for plan in plans:
             # The complete descending entrance stays open, never a ground slab
             # cutting across the player's head halfway down the stairs.
             if height<0 and (start<run+.01 or end>length-run-.01):cuts_ground.append(p)
+        # At a bend neighbouring rectangles overlap on the inner side; on a ramp
+        # their planes disagree there (two floors 0.3 m apart). Each strip keeps
+        # only its own area; overlaps are sloped by true distance along the path.
+        kind='upper' if height>0 else 'lower'
+        overlaps=[]
+        for i,strip in enumerate(strips):
+            others=unary_union(strips[:i]+strips[i+1:]) if len(strips)>1 else Polygon()
+            own=strip.difference(others) if not others.is_empty else strip
+            if not own.is_empty:face(own,planes[i],kind)
+            if not others.is_empty:overlaps.append(strip.intersection(others))
+        overlap=unary_union(overlaps) if overlaps else Polygon()
+        # Half-metre cells keep the piecewise-linear fit within a few cm.
+        cells=[]
+        if not overlap.is_empty:
+            bx0,bz0,bx1,bz1=overlap.bounds
+            for gx in range(math.floor(bx0/.5),math.ceil(bx1/.5)):
+                for gz in range(math.floor(bz0/.5),math.ceil(bz1/.5)):
+                    piece=overlap.intersection(box(gx*.5,gz*.5,gx*.5+.5,gz*.5+.5))
+                    if not piece.is_empty and piece.area>1e-5:cells.append(piece)
+        for t in (tri for cell in cells for tri in triangles(cell)):
+            ys=[elevation(line.project(Point(q))) for q in t]
+            (x0,z0),(x1,z1),(x2,z2)=t
+            det=(x1-x0)*(z2-z0)-(x2-x0)*(z1-z0)
+            if abs(det)<1e-8:continue
+            ax=((ys[1]-ys[0])*(z2-z0)-(ys[2]-ys[0])*(z1-z0))/det
+            bz=((x1-x0)*(ys[2]-ys[0])-(x2-x0)*(ys[1]-ys[0]))/det
+            face(Polygon(t),[ax,bz,ys[0]-ax*(x0-ox)-bz*(z0-oz)],kind)
         # Fill only corner wedges, at their shared height. Avoid coplanar strips.
         full=line.buffer(width/2,join_style=2,cap_style=2).intersection(envelope)
         missing=full.difference(unary_union(strips))

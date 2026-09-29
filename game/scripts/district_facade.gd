@@ -124,6 +124,10 @@ const CEILINGS={"steelmill":["4a4c4f",PANELS],"lab":["eef2f3",TILES],"garage":["
 static var skin_materials={}
 static var storey_height=3.1 # current map storey (windows fit inside one storey)
 static func style_for(index:int) -> Dictionary:return STYLES[MAP_STYLE[clampi(index,0,MAP_STYLE.size()-1)]]
+static func style_name_of(style:Dictionary) -> String:
+	for key in STYLES:
+		if STYLES[key]==style:return key
+	return ""
 static func style_name(index:int) -> String:return MAP_STYLE[clampi(index,0,MAP_STYLE.size()-1)]
 static func skin_material(index:int) -> ShaderMaterial:
 	if skin_materials.has(index):return skin_materials[index]
@@ -279,7 +283,14 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 		# Interior of a covered room: wainscot and a picture rail.
 		sloped_band(kit,x0,x1,y0,y1,0.,1.0,.03,wall.darkened(.18))
 		sloped_band(kit,x0,x1,y0,y1,1.0,1.08,.05,trim)
-		if w>2.6 and hs%3==0:shelf(kit,(x0+x1)*.5,level,Color(style.frame),hs)
+		if w>2.6 and hs%3==0:
+			# Homes and shops get shelves; working buildings get lockers/cabinets.
+			if style_name_of(style) in ["oldtown","hillside","canal","plaza","market","station","monastery","aqueduct","orchard","library","highrise"]:
+				shelf(kit,(x0+x1)*.5,level,Color(style.frame),hs)
+			else:
+				for k in range(3):
+					kit.slab((x0+x1)*.5-.75+k*.5,(x0+x1)*.5-.27+k*.5,level,level+1.9,.12,Color(style.trim).darkened(.25))
+					kit.slab((x0+x1)*.5-.65+k*.5,(x0+x1)*.5-.37+k*.5,level+1.6,level+1.65,.13,Color("2a3036"))
 		return
 	var floors=maxi(1,floori((top-base)/storey+.01))
 	if indoor:floors=1

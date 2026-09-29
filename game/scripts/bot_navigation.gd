@@ -93,6 +93,12 @@ func add_authored_lanes():
 			for k in range(count+1):
 				var t=float(k)/count;var p=a.lerp(b,t);var d=travelled+length*t;var height=peak*minf(1.,minf(d/run,(total-d)/run)) if run>.001 else 0.
 				var pos=Vector3(p.x,height,p.y)
+				# The baked deck has landings at bends and rides on terrain: snap
+				# the estimate to the real surface nearest to it.
+				var snapped=INF
+				for y in arena.navigation_heights(pos):
+					if absf(y-height)<absf(snapped-height):snapped=y
+				if is_finite(snapped) and (absf(snapped-height)<1.2 or absf(peak)<.01 or absf(snapped-height)<absf(height)+.1):pos.y=snapped
 				if not arena.navigation_clear(pos):previous=-1;continue
 				var id=layers.get_available_point_id();layers.add_point(id,pos);var bucket=cell(pos)
 				if not layer_cells.has(bucket):layer_cells[bucket]=[]
