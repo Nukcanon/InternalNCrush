@@ -23,12 +23,14 @@ static func range_for(game:Node,level:int) -> float:
 	return base_range(game)*(1.+.1*float(clampi(level,1,4)-1))
 static func bullet_damage(level:int) -> float:return DAMAGE[clampi(level,1,4)-1]*BULLET_SHARE
 static func origin(d:Dictionary) -> Vector3:return d.pos+Vector3.UP*(1.7*SCALES[clampi(int(d.level)-1,0,3)])
-# TETHER (remote control): full bullet damage to 80 m, 40% at 150 m and beyond.
-const REMOTE_FULL=80.
-const REMOTE_FAR=150.
+# TETHER (remote control, 1.4.3): full bullet damage out to 90% of the
+# turret's maximum range at its current level (`reach`, range_for), falling to
+# 40% at 130% of that range and staying there.
+const REMOTE_START=.9
+const REMOTE_END=1.3
 const REMOTE_FLOOR=.4
-static func remote_damage(base:float,distance:float) -> float:
-	return base*lerpf(1.,REMOTE_FLOOR,clampf((distance-REMOTE_FULL)/(REMOTE_FAR-REMOTE_FULL),0.,1.))
+static func remote_damage(base:float,distance:float,reach:float) -> float:
+	return base*lerpf(1.,REMOTE_FLOOR,clampf((distance-reach*REMOTE_START)/maxf(.01,reach*(REMOTE_END-REMOTE_START)),0.,1.))
 static func in_arc(d:Dictionary,point:Vector3) -> bool:
 	var delta=point-d.pos;delta.y=0
 	return delta.length_squared()<.001 or (Basis(Vector3.UP,d.yaw)*Vector3.FORWARD).dot(delta.normalized())>=cos(HALF_ARC)
@@ -123,7 +125,7 @@ static func tick(game:Node,dt:float):
 			var flight=Ballistics.trace(game,muzzle,direction,300. if remote else muzzle.distance_to(aim)+2.,exclude)
 			var hit:Dictionary=flight.hit;var end:Vector3=flight.end
 			var amount=bullet_damage(d.level)
-			if remote:amount=remote_damage(amount,muzzle.distance_to(end))
+			if remote:amount=remote_damage(amount,muzzle.distance_to(end),range_for(game,d.level))
 			for passed_id in flight.get("passed",{}):game.damage_device(passed_id,amount,int(d.owner))
 			if not hit.is_empty():
 				if hit.collider is Actor:game.damage(hit.collider.pid,amount,int(d.owner),false,"turret",muzzle,hit.position)

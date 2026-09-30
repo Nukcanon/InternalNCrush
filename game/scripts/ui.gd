@@ -818,7 +818,7 @@ func refresh_gear_detail():
 	if float(w.get("heal_per_pellet",0.))>0:gear_detail.text=str(w.get("description",""))+"\n아군은 치료, 적군은 피해 · 모바일 자동 사격 지원"
 	if w.get("rocket",false):gear_detail.text=str(w.description)+"\n속도 36m/s · 완만한 낙하 · 직격 시 강한 밀림"
 	if w.get("laser",false):gear_detail.text=str(w.description)+"\n100m까지 동일 피해 · 150m에서 30% · 머리 ×1.5 / 다리 ×0.5"
-	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n80m까지 탄환 피해 100% · 150m에서 40%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
+	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n포탑 최대 사거리 90%까지 탄환 피해 100% · 130%에서 40%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
 	if w.kind=="repair":gear_detail.text="FIX · 원격 수리 도구 · 10m · 초당 30 수리\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
 	if preview_kind==0:
 		preview_caption.text=HeroCharacter.IDENTITIES[role]+" · "+Rules.CLASSES[role]+" · %d cm"%roundi(HeroCharacter.HEIGHTS[role]*100)

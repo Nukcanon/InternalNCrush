@@ -13,8 +13,8 @@ func run():
 	for name in ["bomb_planted","bomb_dropped","bomb_defused","bomb_defuse"]:expect(sounds.has(name) and ResourceLoader.exists(sounds[name].file),"bomb audio ships in build "+name)
 	var d={"pos":Vector3.ZERO,"yaw":0.,"level":1}
 	expect(TurretLogic.in_arc(d,Vector3(0,0,-20)) and not TurretLogic.in_arc(d,Vector3(30,0,-20)),"automatic turret has a 100 degree arc")
-	expect(is_equal_approx(TurretLogic.remote_damage(10.,80.),10.) and is_equal_approx(TurretLogic.remote_damage(10.,150.),4.) and is_equal_approx(TurretLogic.remote_damage(10.,300.),4.),"remote bullets keep full damage to 80 m and fall to 40% at 150 m")
-	expect(TurretLogic.remote_damage(10.,100.)>TurretLogic.remote_damage(10.,120.),"remote damage decreases continuously")
+	expect(is_equal_approx(TurretLogic.remote_damage(10.,72.,80.),10.) and is_equal_approx(TurretLogic.remote_damage(10.,104.,80.),4.) and is_equal_approx(TurretLogic.remote_damage(10.,300.,80.),4.),"remote bullets keep full damage to 90% of the turret range and fall to 40% at 130%")
+	expect(TurretLogic.remote_damage(10.,76.,80.)>TurretLogic.remote_damage(10.,95.,80.),"remote damage decreases continuously")
 	expect(TurretLogic.SCALES[0]==.5 and TurretLogic.SCALES[3]==1.,"turret grows from half size to full size")
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.options.map_random=false;g.options.mode=4;g.options.map=19;g.options.max_players=12;g.phase="lobby";g.build_world()
 	for id in range(1,13):g.add_player(id,"TEST "+str(id),"test"+str(id));g.players[id].team=0 if id<=6 else 1

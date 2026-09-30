@@ -15,7 +15,7 @@ func configure(kind:int,w:Dictionary,role:int,variant:int):
 		["조준 속도",800.-w.ads_ms,800.,"%d ms"%w.ads_ms],["휴대성",w.portability,100.,"%d · %.1f kg"%[w.portability,w.weight_kg]],
 		["탄창 / 장전",w.mag,100.,"%d / %.2f초"%[w.mag,w.reload]]]
 	elif kind==1 and w.kind=="remote":
-		rows=[["포탑 탄환 DPS",39.,60.,"25 → 39"],["탄환 감쇠 시작",80.,150.,"80 m"],["150m 탄환 피해",40.,100.,"40%"],["최대 단계 미사일",30.,100.,"30 / 2초"]]
+		rows=[["포탑 탄환 DPS",39.,60.,"25 → 39"],["탄환 감쇠 시작",90.,130.,"사거리 90%"],["사거리 130% 탄환 피해",40.,100.,"40%"],["최대 단계 미사일",30.,100.,"30 / 2초"]]
 	elif kind==1:
 		rows=[["회복 / 초" if w.kind=="heal" else "수리 / 초",float(w.get("heal_rate",30.)),100.,str(int(w.get("heal_rate",30.)))],["작동 거리",w.reach,20.,"%d m"%w.reach],["에너지",w.mag,180.,str(w.mag)]]
 	elif kind==2 and variant==9:

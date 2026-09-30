@@ -87,7 +87,7 @@ func run():
 		kill_times.append((hits-1)*TurretLogic.INTERVALS[level-1])
 	expect(absf(kill_times[0]-3.8)<.1 and absf(kill_times[1]-3.1)<.1 and absf(kill_times[2]-2.4)<.1 and absf(kill_times[3]-1.7)<.1,"turret kills 100 HP in about 3.8 / 3.1 / 2.4 / 1.7 s after the 80%% bullet share %s"%str(kill_times))
 	expect(is_equal_approx(TurretLogic.bullet_damage(1),TurretLogic.DAMAGE[0]*.8),"turret bullets deal 80%")
-	expect(is_equal_approx(TurretLogic.remote_damage(10.,80.),10.) and is_equal_approx(TurretLogic.remote_damage(10.,150.),4.),"TETHER: full to 80 m, 40% at 150 m")
+	expect(is_equal_approx(TurretLogic.remote_damage(10.,72.,80.),10.) and is_equal_approx(TurretLogic.remote_damage(10.,104.,80.),4.) and is_equal_approx(TurretLogic.remote_damage(10.,88.,80.),7.) and is_equal_approx(TurretLogic.remote_damage(10.,200.,80.),4.),"TETHER: full to 90% of the turret range, 40% at 130%")
 	expect(AbilityBalance.COOLDOWNS[3]==20.,"turret skill cooldown 20 s")
 	expect(RocketCombat.flight_lifetime(Vector2(200,200))==10. and TurretLogic.ROCKET_LIFETIME==10.,"every rocket bursts after 10 s")
 	var sprint_actor=load("res://scripts/actor.gd")
