@@ -231,7 +231,7 @@ func _process(dt):
 		melee_world.pose(-1.)
 		if elapsed>=RUNUP_SECONDS and elapsed<FIRST_PERSON_SECONDS:
 			title.text="킬 리플레이 · 근접 공격"
-			if not fatal_sound_played:fatal_sound_played=true;game.play_sound("melee_swing",Vector3.ZERO,false)
+			if not fatal_sound_played:fatal_sound_played=true;game.play_sound("wrench_swing" if event.weapon=="wrench" else "knife_swing",Vector3.ZERO,false)
 		var held=models[killer].get_node("Body").held
 		if is_instance_valid(held):held.hide()
 	progress.value=elapsed/TOTAL_SECONDS*100

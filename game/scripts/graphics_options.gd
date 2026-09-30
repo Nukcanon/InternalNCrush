@@ -143,7 +143,7 @@ static func apply_world(root:Node,automatic:bool=false):
 			if not world.has_meta("quality_fog"):world.set_meta("quality_fog",world.environment.fog_enabled)
 			world.environment.fog_enabled=fog and bool(world.get_meta("quality_fog"))
 			if RenderStyle.web():world.environment.tonemap_mode=Environment.TONE_MAPPER_LINEAR
-			world.environment.ambient_light_energy=maxf(world.environment.ambient_light_energy,.65 if RenderStyle.web() else .55)
+			world.environment.ambient_light_energy=maxf(world.environment.ambient_light_energy,.54 if RenderStyle.web() else .42)
 
 static func relief() -> bool:return detail>0 or not OS.has_feature("web")
 static func physical_pose_limit() -> int:return 1 if physics_effects==2 and not OS.has_feature("web") else 0

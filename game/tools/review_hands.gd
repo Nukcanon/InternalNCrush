@@ -17,6 +17,112 @@ func shot(label:String):
 	for i in range(4):await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(out+label+".png")
+# --- Grip audit: hand / finger bone points inside the gun's meshes -----------
+# Ray parity against each mesh of the item (world triangles); a point on the
+# bone line inside a closed part means that finger passes through the gun.
+func item_triangles(item:Node3D) -> Array:
+	var sets=[]
+	for m in item.find_children("*","MeshInstance3D",true,false):
+		if not m.is_visible_in_tree() or m.mesh==null:continue
+		var faces:PackedVector3Array=m.mesh.get_faces();var xf:Transform3D=m.global_transform
+		var tris=PackedVector3Array();tris.resize(faces.size())
+		for i in range(faces.size()):tris[i]=xf*faces[i]
+		sets.append(tris)
+	return sets
+func inside(sets:Array,p:Vector3) -> bool:
+	var d=Vector3(.5774,.6123,.5401).normalized()
+	for tris in sets:
+		var hits=0
+		for i in range(0,tris.size(),3):
+			var e1=tris[i+1]-tris[i];var e2=tris[i+2]-tris[i];var h=d.cross(e2);var det=e1.dot(h)
+			if absf(det)<1e-10:continue
+			var f=1./det;var s=p-tris[i];var u=f*s.dot(h)
+			if u<0. or u>1.:continue
+			var q=s.cross(e1);var v=f*d.dot(q)
+			if v<0. or u+v>1.:continue
+			if f*e2.dot(q)>1e-5:hits+=1
+		if hits%2==1:return true
+	return false
+static func closest_on_triangle(p:Vector3,a:Vector3,b:Vector3,c:Vector3) -> Vector3:
+	var ab=b-a;var ac=c-a;var ap=p-a
+	var d1=ab.dot(ap);var d2=ac.dot(ap)
+	if d1<=0. and d2<=0.:return a
+	var bp=p-b;var d3=ab.dot(bp);var d4=ac.dot(bp)
+	if d3>=0. and d4<=d3:return b
+	var vc=d1*d4-d3*d2
+	if vc<=0. and d1>=0. and d3<=0.:return a+ab*(d1/(d1-d3))
+	var cp=p-c;var d5=ab.dot(cp);var d6=ac.dot(cp)
+	if d6>=0. and d5<=d6:return c
+	var vb=d5*d2-d1*d6
+	if vb<=0. and d2>=0. and d6<=0.:return a+ac*(d2/(d2-d6))
+	var va=d3*d6-d5*d4
+	if va<=0. and d4-d3>=0. and d5-d6>=0.:return b+(c-b)*((d4-d3)/((d4-d3)+(d5-d6)))
+	var denom=1./(va+vb+vc);return a+ab*(vb*denom)+ac*(vc*denom)
+func depth(sets:Array,p:Vector3) -> float:
+	var best=INF
+	for tris in sets:
+		for i in range(0,tris.size(),3):
+			if absf(tris[i].x-p.x)>.05 and absf(tris[i+1].x-p.x)>.05 and absf(tris[i+2].x-p.x)>.05:continue
+			best=minf(best,p.distance_to(closest_on_triangle(p,tris[i],tris[i+1],tris[i+2])))
+	return best
+func hand_points(h:HeroCharacter,side:String) -> Array:
+	var pts=[]
+	var wrist=h.bone_world(h.bone["Wrist."+side])
+	var chains:Dictionary=HeroIK.finger_chains(h,side)
+	for finger in chains:
+		var bones:Array=chains[finger]
+		for i in range(bones.size()):
+			var o=h.bone_world(bones[i]).origin
+			var nxt=h.bone_world(bones[i+1]).origin if i+1<bones.size() else h.bone_world(bones[i])*Vector3(0,HeroIK.TIP.get(finger,.028),0)
+			if i==0:pts.append([finger+"0",wrist.origin.lerp(o,.5)])
+			for k in [0.,.5]:pts.append([finger+str(i+1),o.lerp(nxt,k)])
+		pts.append([finger+"tip",h.bone_world(bones[bones.size()-1])*Vector3(0,HeroIK.TIP.get(finger,.028)*.8,0)])
+	return pts
+func audit(h:HeroCharacter,item:Node3D,label:String):
+	var sets=item_triangles(item);var line="AUDIT "+label
+	if item is GunModel:
+		var g=item.right_grip.global_position
+		line+=" sanity(grip_in=%s far_out=%s)"%[str(inside(sets,g)),str(inside(sets,g+Vector3(0,3,0)))]
+	for side in ["R","L"]:
+		var bad=[];var worst=0.
+		# The baked field (winding number) confirms inside points; single-ray
+		# parity alone misreads open meshes.
+		var g=item.grip(side) if item is GunModel else null
+		var c=GripField.contact(item,g.global_transform) if g else {}
+		var to_g=Transform3D(g.global_transform.basis.orthonormalized(),g.global_transform.origin).affine_inverse() if g else Transform3D()
+		for pt in hand_points(h,side):
+			if inside(sets,pt[1]):
+				var fd=GripField.distance(c,to_g*pt[1]) if not c.is_empty() else -1.
+				if fd>0.:continue
+				var dd=depth(sets,pt[1]);worst=maxf(worst,dd)
+				if dd>.004:bad.append("%s:%.0fmm"%[pt[0],dd*1000.])
+		line+=" %s_deep=%d(max %.1fmm)%s"%[side,bad.size(),worst*1000.,str(bad) if not bad.is_empty() else ""]
+	if item is GunModel:
+		var shapes:Dictionary=item.get_meta("grip_shapes",{})
+		if shapes.has("R") and shapes.R.has("trigger"):
+			var handle=item.right_grip.global_transform;var ws=HeroIK.world_shape(handle,"pistol",shapes.R)
+			var chain:Array=HeroIK.finger_chains(h,"R").Index
+			var tip=h.bone_world(chain[chain.size()-1])*Vector3(0,.02,0)
+			line+=" trigger=%.3f"%(Transform3D(handle.basis.orthonormalized(),handle.origin).affine_inverse()*tip).distance_to(ws.trigger)
+		for side in ["R","L"]:
+			var g=item.grip(side)
+			if g:line+=" %s_wrist_to_grip=%.3f"%[side,h.bone_world(h.bone["Wrist."+side]).origin.distance_to(g.global_position)]
+	print(line)
+# The first-person view model seen from its right side and from below-front
+# (a temporary camera; the view body keeps its pose from the last frame).
+func side_shot(a,label:String):
+	var cam=Camera3D.new();root.add_child(cam);cam.fov=40.
+	var focus:Vector3=a.view_weapon.global_transform*(a.view_weapon.right_grip.position*a.view_weapon.base.scale+Vector3(0,0,-.12))
+	var basis:Basis=a.camera.global_basis
+	cam.global_position=focus+basis.x*.75+basis.y*.05+basis.z*.05;cam.look_at(focus,basis.y);cam.current=true
+	for i in range(2):await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(out+label+".png")
+	cam.global_position=focus-basis.x*.75+basis.y*.05+basis.z*.05;cam.look_at(focus,basis.y)
+	for i in range(2):await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(out+label+"-left.png")
+	a.camera.current=true;cam.queue_free()
 func settle(actors:Array,frames:int=24):
 	for i in range(frames):
 		for a in actors:a.visual(1./30.,g.players[a.pid],g.clock)
@@ -34,6 +140,7 @@ func reload_at(p:Dictionary,wid:String,phase:float):
 	p.reload=g.clock+float(w.reload)*(1.-phase);p.reload_started=g.clock-float(w.reload)*phase
 func run():
 	for arg in OS.get_cmdline_user_args():only.append(arg)
+	HeroIK.debug_contact="debugcontact" in only
 	DirAccess.make_dir_recursive_absolute(out)
 	root.size=Vector2i(1280,720);DisplayServer.window_set_size(Vector2i(1280,720))
 	g=load("res://scripts/game.gd").new();root.add_child(g)
@@ -52,19 +159,58 @@ func run():
 		["pistol-hip",0,1,"pistol",-1,""],["pistol-aim",0,1,"pistol",-1,"aim"],["dual-hip",4,1,"dual_pistols",-1,""],
 		["comet-hip",2,0,"h4",-1,""],["comet-reload45",2,0,"h4",-1,"reload:.45"],["comet-reload85",2,0,"h4",-1,"reload:.85"],
 		["quad-reload60",2,0,"h5",-1,"reload:.6"],["grenade-cook",0,2,"",1,"cook"],["medkit",5,2,"",0,""],["plate",0,2,"",0,""],
-		["tether",3,0,"remote",-1,""],["fix",3,1,"repair",-1,""],["link",5,0,"m1",-1,""]]
+		["tether",3,0,"remote",-1,""],["laser-hip",2,0,"h6",-1,""],["laser-fire",2,0,"h6",-1,"beam"],["laser-reload20",2,0,"h6",-1,"reload:.2"],["laser-reload45",2,0,"h6",-1,"reload:.45"],["laser-reload70",2,0,"h6",-1,"reload:.7"],["fix",3,1,"repair",-1,""],["link",5,0,"m1",-1,""],["link-aim",5,0,"m1",-1,"aim"],["link-heal",5,0,"m1",-1,"heal"],
+		["smg-reload45",0,0,"a2",-1,"reload:.45"],["sniper-reload30",1,0,"r1",-1,"reload:.3"],["sniper-reload60",1,0,"r1",-1,"reload:.6"],["lmg-reload45",2,0,"h1",-1,"reload:.45"],
+		["shotgun-reload20",3,0,"e1",-1,"reload:.2"],["shotgun-reload85",3,0,"e1",-1,"reload:.85"],["pistol-reload20",0,1,"pistol",-1,"reload:.2"],["pistol-reload70",0,1,"pistol",-1,"reload:.7"],
+		["fold-hip",3,0,"e3",-1,""],["tidal-hip",3,0,"e2",-1,""],["mender-hip",5,0,"m3",-1,""]]
+	# "allguns": every weapon and tool in first person at the hip (right-handed).
+	if "allguns" in only:
+		var chosen=only.filter(func(x):return Catalog.weapons.has(x))
+		for wid in Catalog.weapons:
+			if not chosen.is_empty() and not wid in chosen:continue
+			var w=Catalog.get_weapon(wid)
+			var slot=1 if int(w.get("slot",0))==1 else 0
+			var role=maxi(0,int(w.get("role",0)))
+			equip(a,p,role,slot,wid);aim.call(false);await settle([a])
+			if "audit" in only:audit(a.view_body,a.view_weapon,"fp "+str(wid))
+			else:await shot("fp-gun-"+str(wid))
+			var cut=[]
+			for sd in ["L","R"]:
+				if HeroIK.on_screen(a.camera,a.view_body.bone_world(a.view_body.bone["UpperArm."+sd]).origin):cut.append(sd)
+			print("ELBOWS fp-gun-",wid," on_screen=",cut)
+			if "fpside" in only:await side_shot(a,"fp-side-"+str(wid))
+		for c in [["knife",0,MeleeCombat.SLOT,""],["wrench",3,MeleeCombat.SLOT,""]]:
+			reset(p);p.role=c[1];p.slot=c[2];a.shown_weapon="";await settle([a]);await shot("fp-gun-"+c[0])
+		for c in [["grenade",0,1],["smoke",4,0],["medkit",5,0],["plate",0,0],["tablet",1,0],["cover",3,0],["defuse",0,9]]:
+			equip(a,p,c[1],2,"",c[2]);await settle([a]);await shot("fp-gear-"+c[0])
+		reset(p);p.role=3;p.placing="turret";await settle([a]);await shot("fp-gear-turret");reset(p)
+		print("HANDS_REVIEW_OK");quit();return
 	for hand in [1,-1]:
 		p.hand=hand;a.handedness=hand
 		for c in cases:
 			var label=("fp-" if hand>0 else "fp-left-")+c[0]
 			if not wanted(label):continue
-			if hand<0 and not c[0] in ["rifle-hip","comet-reload45","tether","grenade-cook","pistol-hip","medkit"]:continue
+			if hand<0 and not c[0] in ["rifle-hip","comet-reload45","tether","grenade-cook","pistol-hip","medkit","link","laser-hip","shotgun-hip"]:continue
 			equip(a,p,c[1],c[2],c[3],c[4]);aim.call(false);await settle([a])
 			var extra:String=c[5]
 			if extra=="aim":aim.call(true);await settle([a])
 			elif extra.begins_with("reload:"):reload_at(p,c[3],float(extra.split(":")[1]));await settle([a],6)
 			elif extra=="cook":p.cooking=1;p.grenade_started=g.clock-.4;await settle([a])
+			elif extra=="beam":
+				for k in range(4):g.effect("laser",a.muzzle_world(),a.eye()-a.camera.global_basis.z*25.,1);await settle([a],2)
+			elif extra=="heal":
+				# An ally a little ahead and to the right, linked for a moment.
+				if not g.players.has(60):g.add_player(60,"ALLY","hands_ally");g.spawn(60)
+				var q=g.players[60];q.team=0;q.alive=true;q.protect=0.
+				var b=g.actors[60];b.set_team(0);b.position=a.position+Vector3(2.4,0,-6.);b.aim_yaw=0.;b.rotation.y=0.;b.velocity=Vector3.ZERO
+				for k in range(12):g.effect("heal",a.muzzle_world(),b.eye(),1,-100.,{"target":60});await settle([a,b],2)
 			await shot(label)
+			# First-person arms end at the hidden shoulder: that end on screen shows as a cut arm.
+			if is_instance_valid(a.view_body) and a.view_body.visible:
+				var cut=[]
+				for sd in ["L","R"]:
+					if HeroIK.on_screen(a.camera,a.view_body.bone_world(a.view_body.bone["UpperArm."+sd]).origin):cut.append(sd)
+				print("ELBOWS ",label," on_screen=",cut)
 			if "debug" in only and is_instance_valid(a.view_body):
 				var vb=a.view_body;var line="JOINTS "+label
 				for n in ["UpperArm.L","LowerArm.L","Wrist.L","UpperArm.R","LowerArm.R","Wrist.R"]:
@@ -74,7 +220,7 @@ func run():
 	# Third person: a lineup holding the same things, seen from the front and side.
 	p.hand=1;a.handedness=1
 	var lineup=[[0,0,"a1",-1,"",1],[3,0,"e1",-1,"",1],[1,0,"r1",-1,"",1],[0,1,"pistol",-1,"",1],[4,1,"dual_pistols",-1,"",1],
-		[2,0,"h4",-1,"",1],[2,0,"h4",-1,"reload:.45",1],[3,0,"remote",-1,"",1],[5,2,"",0,"",1],[0,2,"",1,"cook",1],[0,0,"a1",-1,"",-1],[2,0,"h4",-1,"reload:.45",-1]]
+		[2,0,"h4",-1,"",1],[2,0,"h4",-1,"reload:.45",1],[3,0,"remote",-1,"",1],[5,2,"",0,"",1],[0,2,"",1,"cook",1],[0,0,"a1",-1,"",-1],[2,0,"h4",-1,"reload:.45",-1],[5,0,"m1",-1,"",1],[5,0,"m1",-1,"",-1]]
 	var group=[]
 	for i in range(lineup.size()):
 		var id=-(i+1);g.add_player(id,"BOT%d"%i,"hands_bot%d"%i);g.spawn(id)
@@ -88,6 +234,7 @@ func run():
 		if str(e[4]).begins_with("reload:"):reload_at(q,e[2],float(str(e[4]).split(":")[1]))
 		elif e[4]=="cook":q.cooking=1;q.grenade_started=g.clock-.4
 	a.set_local(false);a.visible=false
+	if g.actors.has(60):g.actors[60].position=Vector3(40,.1,-40)
 	var camera=Camera3D.new();root.add_child(camera);camera.current=true;camera.fov=38
 	# Stand them on the floor (grounded pose, not the falling one).
 	for k in range(6):
@@ -128,11 +275,26 @@ func run():
 				var rear=gw.to_global(Vector3(0,gw.muzzle.position.y,float(gw.base.get_meta("rear",0.)))*gw.base.scale)-c
 				print("   rear opening local=(%.2f,%.2f,%.2f)"%[rear.dot(f.x),rear.dot(f.y),rear.dot(f.z)])
 	# Close-ups of the held gear and the rocket reload (front-right, then left side).
-	for i in [6,7,8,9]:
+	for i in [6,7,8,9,12,13]:
 		if not wanted("tp-close-%d"%i):continue
 		var b=group[i];var f=b.character.facing_basis().orthonormalized();var focus=b.global_position+Vector3.UP*1.2
 		camera.position=focus-f.z*1.6+f.x*.7+Vector3.UP*.15;camera.look_at(focus);await shot("tp-close-%d"%i)
 		camera.position=focus-f.z*.5-f.x*1.5+Vector3.UP*.1;camera.look_at(focus);await shot("tp-close-%d-side"%i)
+	# LINK beam from the side: the medic (bot12) heals bot13 standing 6 m ahead.
+	if wanted("tp-heal"):
+		var healer=group[12];var ally=group[13]
+		ally.position=healer.position+Vector3(1.6,0,6.);ally.aim_yaw=0.;ally.rotation.y=0.
+		var to=ally.position-healer.position;healer.aim_yaw=atan2(-to.x,-to.z);healer.rotation.y=healer.aim_yaw;healer.input_state.yaw=healer.aim_yaw
+		await settle([healer,ally],12)
+		for k in range(14):g.effect("heal",healer.muzzle_world(),ally.eye(),healer.pid,-100.,{"target":ally.pid});await settle([healer,ally],2)
+		var mid=healer.position.lerp(ally.position,.5)+Vector3.UP*1.2
+		var relink=func():
+			for k in range(6):g.effect("heal",healer.muzzle_world(),ally.eye(),healer.pid,-100.,{"target":ally.pid});await settle([healer,ally],2)
+		camera.position=mid+Vector3(7.5,.8,-1.2);camera.look_at(mid);await shot("tp-heal-side")
+		await relink.call()
+		camera.position=healer.position+Vector3(-.9,1.75,-1.6);camera.look_at(ally.position+Vector3.UP*1.1);await shot("tp-heal-behind")
+		await relink.call()
+		camera.position=ally.position+Vector3(-1.2,1.5,1.8);camera.look_at(ally.position+Vector3.UP*1.1);await shot("tp-heal-target")
 	for half in [0,1]:
 		var centre=Vector3(0.,group[half*6].position.y+1.15,group[half*6].position.z)
 		if wanted("tp-front-%d"%half):

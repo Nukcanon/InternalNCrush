@@ -16,21 +16,26 @@ static var bases={}
 #  sight: rear-sight point the camera lines up with when aiming without optics.
 const HANDLES={
 	"AK":{"right":Vector3(0,-.125,-.231),"tilt":.05,"grip":Vector3(.0215,.058,.04),"round":.015,"trigger":Vector3(0,-.054,-.298),
-		"left":Vector3(0,.02,-.605),"fore":Vector3(.029,.045,.028),"fore_round":.02,"sight":Vector3(0,.12,-.36)},
+		# 1.4.2: support hand on the slim handguard ahead of the receiver face.
+		"left":Vector3(0,.02,-.67),"fore":Vector3(.029,.045,.028),"fore_round":.02,"sight":Vector3(0,.12,-.36)},
 	# No stock: held forward so the rear grip sits where a rifle's grip would.
 	"SMG":{"frame_offset":Vector3(0,0,-.2),"right":Vector3(0,-.108,-.056),"tilt":.18,"grip":Vector3(.016,.058,.036),"round":.013,"trigger":Vector3(0,-.078,-.135),
 		"left":Vector3(0,-.16,-.292),"left_style":"pistol","left_tilt":-.23,"fore":Vector3(.0195,.05,.05),"fore_round":.016,"sight":Vector3(0,.085,-.30)},
 	"Pistol":{"right":Vector3(0,-.047,.001),"tilt":.2,"grip":Vector3(.011,.036,.024),"round":.009,"trigger":Vector3(0,-.03,-.045),"sight":Vector3(0,.055,0)},
 	"Revolver":{"right":Vector3(0,-.055,.003),"tilt":.45,"grip":Vector3(.011,.032,.026),"round":.009,"trigger":Vector3(0,-.035,-.064),"sight":Vector3(0,.07,-.02)},
 	"Revolver_Small":{"right":Vector3(0,-.067,-.008),"tilt":.36,"grip":Vector3(.014,.035,.028),"round":.011,"trigger":Vector3(0,-.042,-.079),"sight":Vector3(0,.07,-.02)},
-	"Shotgun":{"right":Vector3(0,-.062,-.235),"tilt":.62,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
-		"left":Vector3(0,-.045,-.72),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60)},
-	"ShortCannon":{"right":Vector3(0,-.02,-.255),"tilt":.9,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
-		"left":Vector3(0,.0125,-.62),"fore":Vector3(.033,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45)},
+	# 1.4.2: the firing hand at the front of the stock wrist (the web against the
+	# receiver) and the support hand on the pump itself (measured on the model).
+	"Shotgun":{"right":Vector3(0,-.05,-.262),"tilt":.36,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
+		"left":Vector3(0,-.045,-.84),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60)},
+	"ShortCannon":{"right":Vector3(0,-.02,-.255),"tilt":.45,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
+		# 1.4.2: on the pump, not on the barrel tip (the fingers passed the muzzle).
+		"left":Vector3(0,0,-.52),"fore":Vector3(.033,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45)},
 	"Sniper":{"right":Vector3(0,-.115,-.258),"tilt":.47,"grip":Vector3(.014,.048,.039),"round":.012,"trigger":Vector3(0,-.07,-.346),
 		"left":Vector3(0,.004,-.70),"fore":Vector3(.0184,.0326,.05),"fore_round":.016,"sight":Vector3(0,.15,-.45)},
 	"Sniper_2":{"right":Vector3(0,-.11,-.264),"tilt":.40,"grip":Vector3(.0215,.048,.04),"round":.015,"trigger":Vector3(0,-.068,-.359),
-		"left":Vector3(0,-.01,-.625),"fore":Vector3(.0219,.072,.03),"fore_round":.015,"sight":Vector3(0,.15,-.42)}}
+		# 1.4.2: on the barrel ahead of the magazine (the palm used to reach back into it).
+		"left":Vector3(0,.02,-.70),"fore":Vector3(.0219,.072,.03),"fore_round":.015,"sight":Vector3(0,.15,-.42)}}
 # Scope glass of the baked sniper bases (base-local): [centre, facing, radius]
 # of the ocular and the objective, just proud of the recessed faces. Measured
 # with tools/probe_scopes.gd.
@@ -62,6 +67,7 @@ static func base_scene(name:String) -> PackedScene:
 	return bases[name]
 func build(w:Dictionary,ink:bool=false):
 	spec=w;outlined=ink;look=GunLooks.look(w)
+	set_meta("wid",GripField.id_of(w))
 	launcher=look.has("launcher")
 	base=GunLooks.build_tool(look.tool) if look.has("tool") else LauncherModels.build(look.launcher) if launcher else base_scene(look.base).instantiate()
 	add_child(base)
@@ -78,6 +84,7 @@ func build(w:Dictionary,ink:bool=false):
 	magazine=base.get_node_or_null("Magazine")
 	if magazine:mag_rest=magazine.transform
 	for mesh in base.find_children("*","MeshInstance3D",true,false):paint(mesh)
+	if w.get("laser",false) and is_instance_valid(magazine):batteries()
 	glaze(base,look)
 	GunLooks.attach(self,look)
 	# A dot or scope on top replaces the iron rear sight as the aiming point.
@@ -91,6 +98,14 @@ func build(w:Dictionary,ink:bool=false):
 	set_meta("grip_styles",{"R":"pistol","L":str(h.get("left_style","pistol" if launcher else "support"))})
 	# Code-built tools may name their own hand styles (the TETHER pad).
 	if base.has_meta("grip_styles"):set_meta("grip_styles",base.get_meta("grip_styles"))
+	# 1.4.2: pistols are held in both hands (as in most shooters): the support
+	# hand closes round the firing hand, over its fingers at the front and on
+	# the left of the grip, a little lower so its index sits under the guard.
+	if pistol and not w.get("dual",false) and shapes.has("R"):
+		var k=1./maxf(.01,base.scale.x);var r:Dictionary=shapes.R
+		left_grip.transform=right_grip.transform*Transform3D(Basis.IDENTITY,Vector3(0,-.014,.004)*k)
+		shapes.L={"half":Vector3(r.half)+Vector3(.02,.004,.017)*k,"round":float(r.get("round",.012))+.008*k,"cup":true}
+		set_meta("grip_styles",{"R":"pistol","L":"pistol"})
 	set_meta("grip_shapes",shapes)
 	# Third person: where the weapon sits in the shoulder frame (HeroCharacter).
 	if h.has("frame_offset"):set_meta("frame_offset",h.frame_offset*base.scale.x)
@@ -112,6 +127,41 @@ func build(w:Dictionary,ink:bool=false):
 		var gauge=LaserGauge.new();gauge.name="HeatGauge";mount.add_child(gauge)
 	name="Gun_"+str(w.get("name","?"))
 func grip(side:String) -> Node3D:return right_grip if side=="R" else left_grip
+## The laser rifle runs on two D-size cells (as in 1.3): the box magazine of
+## the base model is replaced by a pair of yellow cells with red terminals on a
+## latch plate. They are the magazine node, so the reload swaps them.
+# Transform of `node` in the space of its ancestor (works outside the tree).
+static func relative(node:Node3D,ancestor:Node3D) -> Transform3D:
+	var xf=Transform3D.IDENTITY;var n:Node=node
+	while n!=null and n!=ancestor:
+		if n is Node3D:xf=(n as Node3D).transform*xf
+		n=n.get_parent()
+	return xf
+const CELL_BODY=Color("efd447")
+const CELL_CAP=Color("e34d3b")
+const CELL_BAND=Color("312e26")
+func batteries():
+	var box=AABB();var first=true
+	for m in magazine.find_children("*","MeshInstance3D",true,false)+([magazine] if magazine is MeshInstance3D else []):
+		var b:AABB=GunModel.relative(m,magazine)*m.get_aabb()
+		box=b if first else box.merge(b);first=false
+		m.visible=false if m!=magazine else true
+	if magazine is MeshInstance3D:magazine.mesh=null
+	# Base units: cells sized in metres, divided by the base scale.
+	var k=1./maxf(.01,base.scale.x)
+	var radius=.021*k;var height=.085*k
+	var top=box.end.y if not first else 0.
+	var centre_z=box.get_center().z if not first else 0.
+	var pack=Node3D.new();pack.name="Cells";magazine.add_child(pack)
+	for side in [-1,1]:
+		var x=side*radius*1.08
+		MeshFactory.cylinder(pack,Vector3(x,top-height*.5,centre_z),radius,height,CELL_BODY,Vector3.ZERO,-1.,14)
+		MeshFactory.cylinder(pack,Vector3(x,top-height*.62,centre_z),radius*1.01,height*.16,CELL_BAND,Vector3.ZERO,-1.,14)
+		MeshFactory.cylinder(pack,Vector3(x,top-height-.004*k,centre_z),radius*.45,.008*k,CELL_CAP,Vector3.ZERO,-1.,10)
+	MeshFactory.box(pack,Vector3(0,top-height*.08,centre_z),Vector3(radius*4.3,.012*k,radius*2.2),Color("2e333d"),Vector3.ZERO,.4)
+	MeshFactory.merge_children(pack) # bakes each part's colour into vertex colours
+	for mesh in pack.find_children("*","MeshInstance3D",true,false):
+		mesh.material_override=HeroStyle.toon_material(outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 # DUET: distance between the two pistols (base-local x), centred on the gun
 # node's origin line of the right pistol.
 const PAIR_SPACING=.26

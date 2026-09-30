@@ -46,8 +46,15 @@ func run():
 	var device=StaticBody3D.new();g.add_child(device);device.set_meta("device",901)
 	g.devices[901]={"kind":"turret","team":0,"owner":3,"hp":51.,"max_hp":100.,"pos":Vector3.ZERO,"last_hit":0.}
 	p.role=3;p.melee_hits={};var hit={"collider":device,"position":Vector3.ZERO,"normal":Vector3.UP}
-	MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==71.,"wrench repairs someone else's allied turret by 20")
-	MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==71.,"one repair per swing")
+	MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==81. and MeleeCombat.WRENCH_REPAIR==30.,"1.4.2: wrench repairs someone else's allied turret by 30")
+	MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==81.,"one repair per swing")
+	# 1.4.2: the wrench swings exactly as fast as the knife.
+	var cadence=[]
+	for role in [0,3]:
+		p.role=role;p.melee_ready=0.;p.melee_started=-100.;g.clock+=5.
+		var began=MeleeCombat.begin(g,1);cadence.append([began,snappedf(float(p.melee_ready)-g.clock,.001),MeleeCombat.wrench(p)])
+	expect(cadence[0][0] and cadence[1][0] and cadence[0][1]==cadence[1][1] and not cadence[0][2] and cadence[1][2],"knife and wrench share one attack interval %s"%str(cadence))
+	p.role=3;p.melee_started=-100.
 	p.melee_hits={};g.devices[901].hp=95.;MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==100.,"repair clamps at maximum health")
 	p.melee_hits={};g.devices[901].team=1;MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==70.,"wrench deals 30 to enemy turret")
 	p.role=0;p.melee_hits={};MeleeCombat.contact(g,1,hit,a.eye(),Vector3.FORWARD);expect(g.devices[901].hp==30.,"knife deals 40 to enemy turret")

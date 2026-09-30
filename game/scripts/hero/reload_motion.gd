@@ -31,7 +31,10 @@ static func magazine(gun:GunModel,scale:Vector3,fallback:Vector3) -> Array:
 	if not is_instance_valid(gun.magazine):return [fallback,{"half":Vector3(.014,.045,.028),"round":.01}]
 	var box=AABB()
 	for m in gun.magazine.find_children("*","MeshInstance3D",true,false)+([gun.magazine] if gun.magazine is MeshInstance3D else []):
-		var local=m.get_aabb();box=local if box.size==Vector3.ZERO else box.merge(local)
+		# Skip replaced parts (the laser's cells stand in for its box magazine).
+		if not m.visible or m.mesh==null:continue
+		var local:AABB=GunModel.relative(m,gun.magazine)*m.get_aabb()
+		box=local if box.size==Vector3.ZERO else box.merge(local)
 	var centre:Vector3=gun.magazine.transform*box.get_center()
 	var half=(box.size*.5).clamp(Vector3(.008,.02,.012),Vector3(.03,.07,.05))*scale.x
 	return [centre*scale,{"half":half,"round":minf(half.x,.012)}]
@@ -92,13 +95,12 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			if t<push+.04:return hand(tail_at.call(t),"over",body)
 			return hand(tail_at.call(push).lerp(fore,smoothstep(push+.04,1.,t)),fore_style,fore_shape,fore_basis)
 		"battery":
-			var pack=Vector3(0,top+.02,grip.z-.04)
-			var cell={"half":Vector3(.025,.02,.04),"round":.012}
-			if t<.2:return hand(fore.lerp(pack,smoothstep(0.,.2,t)),"top",cell)
-			if t<.8:
-				var lift=sin(clampf((t-.2)/.6,0.,1.)*PI)
-				return hand(pack+Vector3(0,.12*lift,.04*lift),"top",cell)
-			return hand(pack.lerp(fore,smoothstep(.8,1.,t)),fore_style,fore_shape,fore_basis)
+			# Laser rifle: two D-size cells under the receiver. A fist closes on
+			# the pair, pulls it down and away with the magazine animation, seats
+			# a fresh pair and returns; there is no bolt to work.
+			if t<.08:return hand(fore.lerp(mag,smoothstep(0.,.08,t)),"pistol",mag_shape)
+			if t<.8:return hand(mag+mag_offset(t),"pistol",mag_shape)
+			return hand(mag.lerp(fore,smoothstep(.8,1.,t)),fore_style,fore_shape,fore_basis)
 		_:
 			# Box magazines under the receiver (rifles, SMGs, machine guns, tools).
 			if t<.08:return hand(fore.lerp(mag,smoothstep(0.,.08,t)),"pistol",mag_shape)

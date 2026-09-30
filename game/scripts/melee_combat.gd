@@ -9,6 +9,7 @@ const CONTACT_START=.045
 const CONTACT_END=.15
 const DURATION=.46
 const STEPS=64
+const WRENCH_REPAIR=30. # turret hit points restored per wrench hit
 const ZONES={"head":1.5,"torso":1.,"hands":.65,"legs":.75,"feet":.55}
 static func wrench(p:Dictionary) -> bool:return int(p.role)==3 and not p.get("knife_only",false)
 static func label(p:Dictionary) -> String:return "렌치" if wrench(p) else "칼"
@@ -54,7 +55,7 @@ static func contact(g:Node,id:int,hit:Dictionary,origin:Vector3,direction:Vector
 		if not g.devices.has(did):return
 		var d=g.devices[did]
 		if tool and d.kind=="turret" and int(d.team)==int(p.team) and int(g.options.mode)!=1:
-			var gain=minf(20.,maxf(0.,float(d.max_hp)-float(d.hp)))
+			var gain=minf(WRENCH_REPAIR,maxf(0.,float(d.max_hp)-float(d.hp)))
 			d.hp+=gain
 			if gain>0.:
 				g.feedback(id,"","포탑 수리 +%d"%roundi(gain));g.effect.rpc("melee_repair",origin,hit.position,id)

@@ -102,6 +102,14 @@ static func audible_range(key:String) -> float:
 	if key=="bomb_beep":return 90.
 	if key.begins_with("gun_") or key in ["rocket_launch","skill","turret_detect"]:return 160.
 	return 40.
+var loop_streams={}
+## A looping copy of a clip marked "loop" in the manifest (LINK / FIX hum).
+func loop_stream(key:String) -> AudioStream:
+	if loop_streams.has(key):return loop_streams[key]
+	if not streams.has(key) or not streams[key] is AudioStreamWAV:return null
+	var wav:AudioStreamWAV=streams[key].duplicate()
+	wav.loop_mode=AudioStreamWAV.LOOP_FORWARD;wav.loop_begin=0;wav.loop_end=int(round(wav.get_length()*wav.mix_rate))
+	loop_streams[key]=wav;return wav
 func stop_key(key:String):
 	for voice in spatial+local+feedback_voices+movement_voices+blast_voices:
 		if is_instance_valid(voice) and voice.get_meta("cue","")==key:voice.stop()

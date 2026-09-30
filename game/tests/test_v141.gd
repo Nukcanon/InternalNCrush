@@ -51,14 +51,24 @@ func run():
 		var shapes:Dictionary=gun.get_meta("grip_shapes",{})
 		expect(shapes.has("R") and shapes.R.has("half"),"grip shape on the shooting hand: "+w.name)
 		var kind=GunLooks.hold_kind(w);if kind=="shoulder":kind="rifle"
-		var s={"hold":kind,"hands":1.,"two_hands":kind!="pistol" or bool(w.get("dual",false))}
-		for i in range(4):hero.drive(1./30.,s)
+		var s={"hold":kind,"hands":1.,"two_hands":true}
+		# Fingers ease into a new grip over a few frames (finger memory).
+		for i in range(12):hero.drive(1./30.,s)
 		var handle=gun.right_grip.global_transform;var to_handle=Transform3D(handle.basis.orthonormalized(),handle.origin).affine_inverse()
 		var ws=HeroIK.world_shape(handle,"pistol",shapes.get("R",{}))
-		var deepest=INF
-		for b in HeroIK.finger_chains(hero,"R").get("Middle",[]).slice(1)+HeroIK.finger_chains(hero,"R").get("Ring",[]).slice(1):
-			deepest=minf(deepest,HeroIK.box_distance(to_handle*hero.bone_world(b).origin,ws.half,ws.round))
-		expect(deepest>-.004,"fingers wrap the grip without sinking in: %s (%.3f)"%[w.name,deepest])
+		# 1.4.2: against the model's real surface (baked grip field): no finger
+		# or thumb bone of either hand passes into the gun.
+		var deepest=INF;var where=""
+		for side in ["R","L"]:
+			var g=gun.grip(side);var c=GripField.contact(gun,g.global_transform)
+			if c.is_empty():continue
+			var to_g=Transform3D(g.global_transform.basis.orthonormalized(),g.global_transform.origin).affine_inverse()
+			var chains=HeroIK.finger_chains(hero,side)
+			for finger in chains:
+				for b in chains[finger].slice(1):
+					var d=GripField.distance(c,to_g*hero.bone_world(b).origin)
+					if d<deepest:deepest=d;where=side+" "+hero.skeleton.get_bone_name(b)
+		expect(deepest>-.004,"fingers wrap the real grip surface without sinking in: %s (%.3f %s)"%[w.name,deepest,where])
 		var wrist=hero.bone_world(hero.bone["Wrist.R"]);var fore=hero.bone_world(hero.bone["LowerArm.R"])
 		var bend=(fore.basis.get_rotation_quaternion().inverse()*wrist.basis.get_rotation_quaternion())
 		var twist=Quaternion(0.,bend.y,0.,bend.w).normalized();var swing=(twist.inverse()*bend).normalized()

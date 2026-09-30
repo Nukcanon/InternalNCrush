@@ -1,7 +1,7 @@
 class_name MedicLink
 extends RefCounted
 const RATE=20.
-const RANGE=15.
+const RANGE=18.
 const RETAIN_ANGLE=100.
 static func valid(g:Node,id:int,target:int,check_angle=true) -> bool:
 	if target==id or not g.players.has(target) or not g.actors.has(target):return false

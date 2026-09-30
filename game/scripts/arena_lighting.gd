@@ -5,7 +5,7 @@ static func build(a:Node):
 	var world=WorldEnvironment.new();world.name="Environment";var env=Environment.new();env.background_mode=Environment.BG_SKY
 	var sky=Sky.new();var sky_mat=ProceduralSkyMaterial.new()
 	sky_mat.sky_top_color=Color("101f3d") if night else Color("4f7fb8");sky_mat.sky_horizon_color=Color("43567a") if night else Color("b4cbe0");sky_mat.ground_horizon_color=sky_mat.sky_horizon_color;sky_mat.ground_bottom_color=Color("1e2c37") if night else Color("6f7a6a");sky.sky_material=sky_mat;env.sky=sky
-	env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color("bcc9df") if night else Color("dfe6f2");env.ambient_light_energy=.8 if indoor else .6 if night else .62
+	env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=Color("bcc9df") if night else Color("dfe6f2");env.ambient_light_energy=.66 if indoor else .49 if night else .48 # 1.4.2: slightly deeper shade
 	env.tonemap_mode=Environment.TONE_MAPPER_LINEAR;env.tonemap_exposure=1.0
 	env.fog_enabled=not indoor;env.fog_density=.0009 if night else .00045;env.fog_light_color=Color("596f91") if night else Color("bdc9ce");env.fog_sky_affect=.35
 	world.environment=env;a.add_child(world)

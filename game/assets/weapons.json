@@ -940,7 +940,7 @@
     "price": 800,
     "spread": 0.1,
     "pellets": 1,
-    "reach": 15,
+    "reach": 18,
     "zoom": 64,
     "reload": 1,
     "kind": "heal",

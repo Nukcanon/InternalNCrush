@@ -46,6 +46,12 @@ Wrench repair uses high-passed Kenney plate/metal recordings for a bright ringin
 
 Shotgun shell/rack recordings: zer0_sol, Shotgun Reload Sound effects, https://opengameart.org/content/shotgun-reload-sound-effects (CC0). Source archive retained at tools/foley/new_sources/shotgunsounds.zip. Converted to mono 44.1 kHz PCM, trimmed and filtered; no pitch-to-speech or TTS. Native per-weapon Q009 adaptations retain CC BY-SA 3.0. combat_audio_refresh.py records all transformations. New propulsion/vent/hinge textures are original CC0 procedural sound designs, not claimed to be field recordings.
 
+## 1.4.2 hit marker, melee and slide
+
+- **Kenney — RPG Audio; Impact Sounds.** https://kenney.nl/assets/rpg-audio and https://kenney.nl/assets/impact-sounds. CC0 1.0 (same notice as `assets/AUDIO_KENNEY_LICENSE.txt`). The source OGGs used are kept as mono 44.1 kHz PCM in `tools/foley/k_*.wav`: knife slices, chop, knife draw, cloth, metal pot/click, metal/tin/wood/soft/punch impacts and a concrete footstep.
+
+`hit`, `confirm`, `knife_swing`, `wrench_swing`, `knife_flesh`, `knife_wall`, `wrench_flesh`, `wrench_repair`, `wrench_wall` and `slide` are rebuilt from those recordings plus generated air/friction noise (trimming, filtering, fades and layering in `tools/combat_audio_refresh.py`). The hit marker is now a short unpitched tap instead of a ringing tone. All ten mixes are CC0-1.0.
+
 ## Optional vocal gunfire
 
 Generated with ElevenLabs Sound Effects (https://elevenlabs.io/), not TTS.

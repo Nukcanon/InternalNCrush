@@ -3,7 +3,9 @@ extends Node3D
 var bars:Array=[]
 var warning:Label3D
 func _ready():
-	position=Vector3(.095,.108,-.12);rotation_degrees=Vector3(-35,0,0)
+	# On the side facing the shooter: left of the gun for right-handed players
+	# (the whole view model is mirrored for left-handed ones, putting it right).
+	position=Vector3(-.095,.108,-.12);rotation_degrees=Vector3(-35,0,0)
 	MeshFactory.box(self,Vector3(0,0,0),Vector3(.09,.095,.012),Color("15252d"))
 	for i in range(10):
 		var mesh=MeshFactory.box(self,Vector3(0,-.037+i*.008,.008),Vector3(.068,.006,.003),Color("53e57d"))

@@ -43,11 +43,12 @@ void fragment() {
     if(material_detail_enabled)NORMAL=detail_surface_normal(NORMAL,VERTEX,coords,skin?texture(skin_normal,coords).rgb:texture(detail_normal,coords).rgb,skin?.18:.55);
     ROUGHNESS=.8;
     float light = dot(normalize(world_normal), normalize(vec3(0.35, 0.85, 0.4)));
-    float band = light < 0.05 ? 0.70 : (light < 0.58 ? 0.86 : 1.0);
+    float band = light < 0.05 ? 0.64 : (light < 0.58 ? 0.83 : 1.0);
     // Grazing-angle ink darkened entire distant floors, not just silhouettes.
     // Keep paint independent of camera angle and guarantee ambient readability.
-    ALBEDO = dynamic_lighting ? paint * 0.72 : vec3(0.0);
-    EMISSION = dynamic_lighting ? paint * 0.28 : paint * band;
+    // 1.4.2: less self-light for slightly deeper shade.
+    ALBEDO = dynamic_lighting ? paint * 0.76 : vec3(0.0);
+    EMISSION = dynamic_lighting ? paint * 0.22 : paint * band;
 }
 void light() {
     float d = max(dot(NORMAL, LIGHT), 0.0);

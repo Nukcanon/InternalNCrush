@@ -808,7 +808,7 @@ func server_tick(dt:float):
 		if a.is_on_floor() and int(floor(a.gait*2))>int(p.get("step_index",0)):
 			p.step_index=int(floor(a.gait*2));p.step_variant=int(p.step_index)%4
 			var surface="water" if arena.wading(a.position) else "metal" if absf(a.position.x)>72 and absf(a.position.z)<35 else "stone"
-			if not a.input_state.crouch:step_sound.rpc(a.position,id,surface,p.step_variant,4. if a.last_sprint else 1.)
+			if not a.input_state.crouch and float(p.get("slide_until",0))<=clock:step_sound.rpc(a.position,id,surface,p.step_variant,4. if a.last_sprint else 1.)
 		if not a.input_state.crouch and ((grounded_before and not a.is_on_floor() and a.velocity.y>1.) or (not grounded_before and a.is_on_floor())):
 			step_sound.rpc(a.position,id,"water" if arena.wading(a.position) else "stone",int(p.get("step_variant",0)),5.)
 		if phase!="combat":continue
@@ -1691,7 +1691,10 @@ func bomb_announcement(kind:String):
 func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,shot_state:Dictionary={}):
 	if dedicated:return
 	if kind=="laser":
-		combat_fx.beam(from,to,false,true);play_sound("laser_fire",from,owner!=local_id);return
+		# Draw from the muzzle the viewer sees (the first-person view model for the
+		# shooter, the held weapon for others); the server origin sits at the eye.
+		var start=actors[owner].visual_muzzle() if actors.has(owner) and is_instance_valid(actors[owner]) else from
+		combat_fx.beam(start,to,false,true);play_sound("laser_fire",from,owner!=local_id);return
 	if kind=="laser_vent":play_sound("laser_vent",from,owner!=local_id);return
 	if kind=="heal_area":
 		combat_fx.heal_area(from);play_sound("heal",from,owner!=local_id);return
@@ -1700,7 +1703,8 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 		play_sound("gun_"+str(shot_state.get("weapon","h4")),from,owner!=local_id);return
 	if kind=="melee_swing":
 		if players.has(owner):players[owner].melee_started=maxf(shot_at,float(players[owner].get("melee_started",-100.)))
-		play_sound("melee_swing",from,owner!=local_id);return
+		play_sound("wrench_swing" if shot_state.get("wrench",false) else "knife_swing",from,owner!=local_id);return
+	if kind=="slide":play_sound("slide",from,owner!=local_id);return
 	if kind=="melee_wall":
 		if owner==local_id:play_sound("wrench_wall" if shot_state.get("wrench",false) else "knife_wall",from,false)
 		return
@@ -1721,6 +1725,9 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	if kind=="turret_detect":play_sound("turret_detect",from,true);return
 	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_repair","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"door","skill":"skill","smoke":"smoke"}.get(kind,"")
 	if kind=="heal":sound="link_fire"
+	# 1.4.2: the beam's own connect sound and hum (HealingStream) replace the
+	# repeated short cue, except for the optional vocal alternative.
+	if kind in ["heal","repair"] and not audio_bank.profile.get("gunfire_reduction",false):sound=""
 	if kind=="shot":sound="gun_"+(players[owner].primary if players[owner].slot==0 else players[owner].secondary) if players.has(owner) else "gun_a1"
 	if kind not in ["heal","repair"] or clock-float(heal_sound_times.get(owner,-100))>.22:
 		if not sound.is_empty() and (kind not in ["heal","repair","melee_repair"] or owner==local_id):play_sound(sound,from,owner!=local_id or kind in ["explosion","flash","smoke","turret_break","cover_break"])
@@ -1842,4 +1849,5 @@ func begin_slide(id:int,forward:bool=false,direction:Vector2=Vector2.ZERO) -> bo
 	if direction.length()>=.5:velocity=Basis(Vector3.UP,a.aim_yaw)*Vector3(direction.x,0,direction.y).normalized()
 	elif forward:velocity=Basis(Vector3.UP,a.aim_yaw)*Vector3.FORWARD
 	p.slide_until=clock+R.SLIDE_DURATION;p.slide_ready=clock+1.8;p.slide_direction=velocity.normalized();p.slide_started=clock
+	effect.rpc("slide",a.position,Vector3.ZERO,id,clock)
 	return true

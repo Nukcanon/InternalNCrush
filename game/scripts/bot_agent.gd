@@ -264,7 +264,7 @@ func support_action() -> bool:
 	var p=game.players[id];var a=game.actors[id]
 	if action=="heal" and game.players.has(ally) and game.players[ally].alive:
 		var at=game.actors[ally].eye();navigate(game.actors[ally].position,.016);look(at,.1,false)
-		if a.position.distance_to(game.actors[ally].position)<13:
+		if a.position.distance_to(game.actors[ally].position)<(MedicLink.RANGE-2. if p.primary=="m1" else 13.):
 			a.input_state.x=0.;a.input_state.z=0.;game.handle_command(id,"slot",{"slot":0})
 			a.input_state.fire=p.primary in ["m1","m2","m3"];a.input_state.alt=false;stats.heals+=1
 		return true

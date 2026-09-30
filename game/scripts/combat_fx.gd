@@ -250,20 +250,32 @@ func skill_burst(role:int,pos:Vector3,color:Color):
 		var t=node.create_tween().set_parallel(true);t.tween_property(halo,"scale",Vector3(radius,1.,radius),.75).set_delay(i*.08);t.tween_property(halo.material_override,"albedo_color:a",0.,.7).set_delay(i*.08)
 	finish(node,1.05)
 func healing_link(game:Node,from:Vector3,to:Vector3,owner:int,target:int,repairing:bool=false):
-	if not healing.has(owner):
+	if healing.has(owner) and int(healing[owner].target)!=target:
+		# Switching allies: release the old link (with its sound) and start fresh.
+		var old=healing[owner];old.node.end(old.game,owner,int(old.target));old.node.queue_free();healing.erase(owner)
+	var fresh=not healing.has(owner)
+	if fresh:
 		var stream=HealingStream.new();add_child(stream);healing[owner]={"node":stream}
 	var link=healing[owner];link.merge({"game":game,"from":from,"to":to,"target":target,"until":Time.get_ticks_msec()+350,"repair":repairing},true)
+	if game.actors.has(target):link.to=torso(game.actors[target])
 	# Populate the mesh on the event frame, including first shader compilation.
-	link.node.draw_link(from,to,1./60.,repairing)
+	link.node.position=from;link.node.draw_link(from,link.to,1./60.,repairing,aim(game,owner))
+	if fresh:link.node.begin(game,owner,target,repairing)
+## Torso centre of a hero (standing or crouched), where the heal stream lands.
+static func torso(actor:Node3D) -> Vector3:
+	return actor.global_position+Vector3.UP*(.78 if actor.input_state.crouch else 1.08)*float(actor.body_height)/1.8
+static func aim(game:Node,owner:int) -> Vector3:
+	if not game.actors.has(owner):return Vector3.ZERO
+	var a=game.actors[owner];return Basis.from_euler(Vector3(a.aim_pitch,a.aim_yaw,0.))*Vector3.FORWARD
 func update_healing(dt:float):
 	for owner in healing.keys():
 		var link=healing[owner]
-		if Time.get_ticks_msec()>int(link.until) or not is_instance_valid(link.game):link.node.queue_free();healing.erase(owner);continue
+		if Time.get_ticks_msec()>int(link.until) or not is_instance_valid(link.game):
+			link.node.end(link.game,owner,int(link.target));link.node.queue_free();healing.erase(owner);continue
 		var from:Vector3=link.from;var to:Vector3=link.to;var game=link.game
 		if game.actors.has(owner):from=game.actors[owner].visual_muzzle()
-		if game.actors.has(link.target):
-			var target=game.actors[link.target];to=target.position+Vector3.UP*(.90 if target.input_state.crouch else 1.15)*target.body_height/1.8
-		if from.distance_squared_to(to)>.001:link.node.draw_link(from,to,dt,link.repair)
+		if game.actors.has(link.target):to=torso(game.actors[link.target])
+		if from.distance_squared_to(to)>.001:link.node.draw_link(from,to,dt,link.repair,aim(game,owner))
 func sync_grenades(items:Array,now:float):
 	var live={}
 	for item in items:

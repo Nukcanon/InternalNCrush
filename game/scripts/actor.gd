@@ -151,6 +151,7 @@ func ensure_view_body():
 	if not is_instance_valid(view_mount):view_mount=Node3D.new();view_mount.name="ViewMount";gun.add_child(view_mount)
 	view_body=HeroCharacter.new();view_body.name="ViewBody";camera.add_child(view_body);view_body.build(maxi(0,shown_role),maxi(0,shown_team),false)
 	view_body.first_person_only();view_body.frame_override=view_mount;view_body.hand_size=VIEW_HAND/VIEW_BODY_SCALE
+	view_body.set_meta("fp_camera",camera)
 	for mesh in view_body.meshes():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func ensure_hit_pose():
 	if is_instance_valid(character):return
@@ -359,8 +360,8 @@ func pose_state(p:Dictionary,now:float,progress:float,item_visible:bool) -> Dict
 		if hold=="shoulder":hold="rifle"
 	s.hold=hold;s.hands=0. if hold=="none" else 1.
 	if hold=="item" and is_instance_valid(held_holder):s.two_hands=bool(held_holder.get_meta("two_handed",false))
-	# Pistols are held in one hand; only the DUET pair uses both.
-	if hold=="pistol":s.two_hands=bool(w.get("dual",false))
+	# 1.4.2: pistols and pistol-grip tools are held in both hands.
+	if hold=="pistol":s.two_hands=true
 	return s
 # Legacy gadget meshes are carried through grip markers until the gear pass.
 func holder_for(item:Node3D,right:Vector3,left:Vector3,two_handed:bool,grip:Dictionary={}) -> Node3D:
@@ -517,9 +518,12 @@ func visual(dt:float,p:Dictionary,now:float):
 	# axis instead, so the anchor moves to the eye.
 	var kind=GunLooks.hold_kind(w);var dual=bool(w.get("dual",false))
 	var rocket=bool(w.get("rocket",false));var shoulder=bool(GunLooks.look(w).get("shoulder",false))
-	var hip_base=Vector3(.21,-.245,-.37)
+	# 1.4.2: a little further out and lower than before, so the stock leaves the
+	# view at the lower right and the gripping hand shows (first-person arms lay
+	# their forearms out from the grips, HeroIK.fp_forearm).
+	var hip_base=Vector3(.19,-.265,-.46)
 	if dual:hip_base=Vector3(0,-.235,-.46)
-	elif kind=="pistol":hip_base=Vector3(.20,-.23,-.40)
+	elif kind=="pistol":hip_base=Vector3(.15,-.235,-.44)
 	# Hand-held launchers (QUAD) sit lower and further right: the tube cluster
 	# is wide and would cover the middle of the screen.
 	elif rocket and not shoulder:hip_base=Vector3(.34,-.36,-.42)
@@ -539,7 +543,8 @@ func visual(dt:float,p:Dictionary,now:float):
 	if sprint:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
 	if rocket:pass # launchers take their loading pose below (view weapon transform)
 	elif reloading:
-		base+=Vector3(.035,.015,.085)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
+		# Brought up and in so the support hand working the magazine stays in view.
+		base+=Vector3(.02,.07,.14)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
 	if p.get("cooking",0)>0:base+=Vector3(-.08,.07,.05);rotation_target+=Vector3(.25,.15,-.22)
 	if float(p.get("throw_until",-100.))>now:
 		var throw_phase=1.-(float(p.throw_until)-now)/.28
@@ -598,7 +603,10 @@ var view_head_offset=Vector3(0,1.62,0)
 # First-person arms: a larger view body gives long arms whose shoulders stay
 # below the bottom of the screen (the arm mesh's cut end never shows); the
 # hands are scaled back at the wrists to their usual first-person size.
-const VIEW_BODY_SCALE=1.9
+# 1.4.2: the shoulders slide to meet each view-model forearm (HeroIK.fp_forearm),
+# so long arms are no longer needed for reach; a modest scale keeps the
+# forearms from filling the lower screen.
+const VIEW_BODY_SCALE=1.3
 const VIEW_HAND=1.15
 const VIEW_BODY_OFFSET=Vector3(0,-.03,.10)
 func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
@@ -629,7 +637,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	var state=pose_state(p,now,progress,false);state.velocity=Vector3.ZERO;state.hold=GunLooks.hold_kind(game.current_weapon(p))
 	if state.hold=="shoulder":state.hold="rifle"
 	if item_up:state.hold="item";state.two_hands=bool(view_item.get_meta("two_handed",false))
-	elif state.hold=="pistol":state.two_hands=bool(game.current_weapon(p).get("dual",false))
+	elif state.hold=="pistol":state.two_hands=true
 	if melee_up:state.hold="item";state.two_hands=false;state.erase("melee")
 	if bomb_up:state.hold="item";state.two_hands=true;state.point=true;state.erase("plant")
 	state.hands=1.;state.sprint=false

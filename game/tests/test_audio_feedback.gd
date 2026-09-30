@@ -39,8 +39,15 @@ func run():
 	g.players[1].role=3;g.players[1].melee_hits={};g.devices[did].team=0;g.devices[did].hp=40.;heard.clear()
 	var repair_body=StaticBody3D.new();g.add_child(repair_body);repair_body.set_meta("device",did)
 	MeleeCombat.contact(g,1,{"collider":repair_body,"position":Vector3.ZERO},Vector3.ZERO,Vector3.FORWARD)
-	expect("wrench_repair" in heard and g.devices[did].hp==60.,"actual repair plays bright metallic strike with restored health")
+	expect("wrench_repair" in heard and g.devices[did].hp==70.,"actual repair plays bright metallic strike and restores 30 per hit")
 	repair_body.free();heard.clear()
+	for key in ["knife_swing","wrench_swing","slide"]:
+		expect(g.audio_bank.streams.has(key) and g.audio_bank.streams[key].get_length()>.1,"1.4.2 melee/slide sample present: "+key)
+	expect(is_equal_approx(g.audio_bank.streams.knife_swing.get_length(),g.audio_bank.streams.wrench_swing.get_length()),"knife and wrench swings last equally long (same attack speed)")
+	for tool in [false,true]:
+		heard.clear();g.effect("melee_swing",Vector3.ZERO,Vector3.ZERO,1,g.clock-10.,{"wrench":tool})
+		expect(heard==[("wrench_swing" if tool else "knife_swing")],"swing plays the held tool's own whoosh")
+	heard.clear();g.players[1].melee_started=-100.
 	g.effect("melee_flesh",Vector3.ZERO,Vector3.ZERO,2);g.effect("melee_wall",Vector3.ZERO,Vector3.ZERO,2)
 	expect(heard.is_empty(),"other players' contact impacts remain private")
 	g.players[1].role=3;g.players[1].skill_ready=0.;g.actors[1].position=Vector3(20,0,20);g.actors[1].reset_view(0.);g.players[1].placing="turret"
@@ -77,6 +84,14 @@ func run():
 	heard.clear();a.input_state.crouch=true
 	for i in range(100):g.clock+=1./60.;g.players[1].input_time=g.clock;g.server_tick(1./60.);await physics_frame
 	expect(not heard.any(func(k):return k.begins_with("step_")),"crouch walking remains silent")
+	heard.clear();a.input_state.crouch=false;g.players[1].slide_ready=0.
+	for i in range(30):g.clock+=1./60.;g.players[1].input_time=g.clock;g.server_tick(1./60.);await physics_frame
+	# The lone enemy is dead, so the round has ended; slides need live combat.
+	heard.clear();g.phase="combat";var slid=g.begin_slide(1,true)
+	expect(slid and "slide" in heard,"sliding plays the slide scrape")
+	heard.clear()
+	for i in range(int(Rules.SLIDE_DURATION*60.)-2):g.clock+=1./60.;g.players[1].input_time=g.clock;g.server_tick(1./60.);await physics_frame
+	expect(not heard.any(func(k):return k.begins_with("step_")),"no footsteps are layered over the slide")
 	AudioServer.remove_bus_effect(0,AudioServer.get_bus_effect_count(0)-1)
 	g.leave_game()
 	for i in range(4):await process_frame

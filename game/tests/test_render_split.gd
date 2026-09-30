@@ -10,7 +10,7 @@ func run():
 	if RenderStyle.web():
 		expect("toon_surface" in world.shader.code,"Web retains comic paint")
 		expect(not "normalize(VIEW)" in world.shader.code,"camera grazing angle cannot blacken distant floors")
-		expect("paint * 0.28" in world.shader.code,"lit Web paint has a readability floor")
+		expect("paint * 0.22" in world.shader.code,"lit Web paint has a readability floor (1.4.2: slightly deeper shade)")
 	else:
 		expect("material_atlas" in world.shader.code,"native retains detailed architecture atlas")
 		expect("finish_metallic" in SurfaceFinish.equipment_material().shader.code,"native equipment retains metal response")

@@ -51,7 +51,7 @@ static var LOOKS={
 static func look(w:Dictionary) -> Dictionary:
 	return LOOKS.get(str(w.get("name","")),{"base":"Pistol" if int(w.get("slot",0))==1 else "AK","scale":1.,"palette":palette(STEEL,DARK,LIGHT)})
 static func hold_kind(w:Dictionary) -> String:
-	if look(w).has("tool"):return "item" if look(w).tool=="tether" else "pistol"
+	if look(w).has("tool"):return "item" if look(w).tool=="tether" else "rifle" if look(w).tool=="link" else "pistol"
 	var b=str(look(w).get("base",""))
 	if b in ["Pistol","Revolver","Revolver_Small"]:return "pistol"
 	if bool(look(w).get("shoulder",false)):return "shoulder"
@@ -96,13 +96,31 @@ static func build_tool(kind:String) -> Node3D:
 	var muzzle=Vector3.ZERO;var right=Vector3(0,-.02,.02);var left=Vector3(-.03,-.05,.03)
 	match kind:
 		"link":
-			m.box(body,Vector3(0,.04,-.08),Vector3(.07,.08,.2),MEDIC_WHITE,Vector3.ZERO,.6)
-			m.box(body,Vector3(0,-.04,0),Vector3(.045,.11,.05),Color("55606a"),Vector3(-.25,0,0),.5)
-			m.cylinder(body,Vector3(0,.04,-.2),.045,.05,MEDIC_GREEN,Vector3(PI/2,0,0),-1.,14)
-			m.box(body,Vector3(0,.09,-.08),Vector3(.018,.018,.06),MEDIC_GREEN,Vector3.ZERO,.3)
-			m.box(body,Vector3(0,.09,-.08),Vector3(.06,.018,.018),MEDIC_GREEN,Vector3.ZERO,.3)
-			m.box(body,Vector3(0,-.012,-.045),Vector3(.01,.026,.009),DARK,Vector3(.3,0,0),.3)
-			muzzle=Vector3(0,.04,-.23)
+			# 1.4.2: two-handed medical beam gun after the 1.3.5 model: white
+			# body with green canisters on both sides, a top display and cross,
+			# twin emitter prongs, a pistol grip at the rear and a rubber
+			# support rail under the front for the other hand.
+			var grey=Color("55606a")
+			# Rear receiver as narrow as a rifle's (the thumb wraps it), the wide
+			# canister section ahead of it, a vertical foregrip underneath.
+			m.box(body,Vector3(0,.02,-.215),Vector3(.05,.1,.11),MEDIC_WHITE,Vector3.ZERO,.35)
+			m.box(body,Vector3(0,.018,-.163),Vector3(.042,.08,.016),grey,Vector3.ZERO,.4)
+			m.box(body,Vector3(0,.015,-.375),Vector3(.085,.11,.23),MEDIC_WHITE,Vector3.ZERO,.35)
+			for side in [-1,1]:
+				m.cylinder(body,Vector3(side*.05,.0,-.375),.03,.19,MEDIC_GREEN,Vector3(PI/2,0,0),-1.,14)
+				for z in [-.28,-.47]:m.cylinder(body,Vector3(side*.05,.0,z),.033,.016,grey,Vector3(PI/2,0,0),-1.,14)
+			m.box(body,Vector3(0,.076,-.37),Vector3(.05,.014,.13),DARK,Vector3.ZERO,.3)
+			m.box(body,Vector3(0,.084,-.37),Vector3(.036,.004,.095),Color("7fffd4"),Vector3.ZERO,.2)
+			m.box(body,Vector3(0,.074,-.215),Vector3(.012,.008,.04),MEDIC_GREEN,Vector3.ZERO,.3)
+			m.box(body,Vector3(0,.074,-.215),Vector3(.04,.008,.012),MEDIC_GREEN,Vector3.ZERO,.3)
+			m.cylinder(body,Vector3(0,.015,-.515),.042,.045,grey,Vector3(PI/2,0,0),-1.,16)
+			m.cylinder(body,Vector3(0,.015,-.542),.025,.016,MEDIC_GREEN,Vector3(PI/2,0,0),-1.,14)
+			for side in [-1,1]:m.cylinder(body,Vector3(side*.028,.015,-.575),.01,.09,Color("b1bec3"),Vector3(PI/2,0,0),-1.,10)
+			m.box(body,Vector3(0,-.095,-.42),Vector3(.034,.1,.04),grey,Vector3(.15,0,0),.5)
+			m.box(body,Vector3(0,-.085,-.215),Vector3(.042,.11,.048),grey,Vector3(-.25,0,0),.5)
+			m.box(body,Vector3(0,-.056,-.258),Vector3(.01,.03,.009),DARK,Vector3(.3,0,0),.3)
+			m.box(body,Vector3(0,-.074,-.255),Vector3(.012,.006,.056),grey,Vector3.ZERO,.3)
+			muzzle=Vector3(0,.015,-.6);right=Vector3(0,-.085,-.215);left=Vector3(0,-.095,-.42)
 		"fix":
 			m.box(body,Vector3(0,.04,-.07),Vector3(.075,.085,.18),Color("f0a000"),Vector3.ZERO,.55)
 			m.box(body,Vector3(0,-.04,0),Vector3(.045,.11,.05),DARK,Vector3(-.25,0,0),.5)
@@ -123,7 +141,16 @@ static func build_tool(kind:String) -> Node3D:
 	MeshFactory.merge_children(body)
 	for marker in [["Muzzle",muzzle],["RightGrip",right],["LeftGrip",left]]:
 		var node=Marker3D.new();node.name=marker[0];node.position=marker[1];root.add_child(node)
-	if kind in ["link","fix"]:
+	if kind=="link":
+		# Rifle hold: pistol grip (leaning .25), trigger ahead of its top, and a
+		# fist round the vertical foregrip; eye just over the display.
+		var grip:Marker3D=root.get_node("RightGrip");grip.rotation.x=-.25
+		root.get_node("LeftGrip").rotation.x=.15
+		root.set_meta("grip_shapes",{"R":{"half":Vector3(.021,.055,.024),"round":.012,"trigger":Vector3(0,-.054,-.258)},
+			"L":{"half":Vector3(.017,.05,.02),"round":.012}})
+		root.set_meta("grip_styles",{"R":"pistol","L":"pistol"})
+		var eye=Marker3D.new();eye.name="AimPoint";eye.position=Vector3(0,.13,-.22);root.add_child(eye)
+	elif kind=="fix":
 		# Pistol grip (leaning .25) with the trigger just ahead of its top.
 		var grip:Marker3D=root.get_node("RightGrip");grip.position=Vector3(0,-.04,0);grip.rotation.x=-.25
 		root.set_meta("grip_shapes",{"R":{"half":Vector3(.0225,.055,.025),"round":.012,"trigger":Vector3(0,-.01,-.045)}})

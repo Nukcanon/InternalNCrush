@@ -111,7 +111,7 @@ void fragment(){
  vec3 axis=abs(NORMAL);vec2 coords=axis.y>.65?p.xz:(axis.x>axis.z?p.zy:p.xy);
  if(material_detail_enabled)NORMAL=detail_surface_normal(NORMAL,VERTEX,coords*8.,texture(detail_normal,coords*8.).rgb,.6);
  ALBEDO=paint*(1.0+detail);
- EMISSION=paint*.10;
+ EMISSION=paint*.07;
  ROUGHNESS=clamp(UV2.x+detail,.24,.96);METALLIC=clamp(UV2.y,0.,1.);
  if(finish_roughness>=0.0){ROUGHNESS=finish_roughness;}
  if(finish_metallic>=0.0){METALLIC=finish_metallic;}

@@ -126,11 +126,12 @@ void fragment(){
  }
  // Gentle foot shade grounds walls without an extra pass.
  base*=mix(.9,1.,smoothstep(0.,.9,world_p.y-floor(world_p.y/40.)*40.));
- if(dynamic_lighting){ALBEDO=base*.8;EMISSION=base*.1;}
+ // 1.4.2: a little less self-light, so shade and cast shadows read deeper.
+ if(dynamic_lighting){ALBEDO=base*.82;EMISSION=base*.05;}
  else{
   // Unlit (Web/low): bake a fixed cartoon key light into the colour.
   vec3 key=normalize(vec3(.4,.85,.35));float lambert=dot(n*(FRONT_FACING?1.:-1.),key);
-  float band=lambert>.55?1.:lambert>.1?.86:.74;
+  float band=lambert>.55?1.:lambert>.1?.83:.68;
   ALBEDO=vec3(0.);EMISSION=base*band;
  }
  ROUGHNESS=.9;
