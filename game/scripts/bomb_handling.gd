@@ -27,7 +27,8 @@ static func view(actor:Node,p:Dictionary,now:float):
 		# Fingers point down onto the keys.
 		right.basis=Basis(Vector3.UP,PI)*Basis(Vector3.RIGHT,-.95)
 	# Placed in camera space and turned so the keypad faces the player.
-	actor.bomb_view.show();actor.bomb_view.global_transform=actor.camera.global_transform*Transform3D(Basis.from_euler(Vector3(.22,0,0))*Basis(Vector3.UP,PI),Vector3(0,-.38,-.6))
+	var space:Node3D=actor.view_space if is_instance_valid(actor.view_space) else actor.camera
+	actor.bomb_view.show();actor.bomb_view.global_transform=space.global_transform*Transform3D(Basis.from_euler(Vector3(.22,0,0))*Basis(Vector3.UP,PI),Vector3(0,-.38,-.6))
 	# Key sequence: a pseudo-random key each period; press down, then lift.
 	var step=int(floor(now/KEY_PERIOD));var phase=fposmod(now,KEY_PERIOD)/KEY_PERIOD
 	var key=int(abs(sin(step*12.9898)*43758.5453))%9

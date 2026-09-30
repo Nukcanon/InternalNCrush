@@ -136,6 +136,9 @@ func first_person_only():
 	var arms=skeleton.get_node_or_null("FPArms")
 	if arms:
 		arms.show();arms.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# The arms reach far from the rig's rest bounds (fixed shoulders below the
+		# view, a throw above it): a generous bound so they are never culled.
+		arms.custom_aabb=AABB(Vector3(-2.5,-2.5,-2.5),Vector3(5.,5.,5.))
 		# 1.4.4: the arms are cut from the outfit's body mesh here (shoulders
 		# included) and take its team paint surface by surface.
 		var body:MeshInstance3D
@@ -151,8 +154,11 @@ func first_person_only():
 # are thin next to their big hands, the women's half the men's, and the user
 # wants arms that read as real arms). The hands keep their shape. Built once
 # per outfit mesh (shared by every view body).
-const FP_FOREARM_R=.066
-const FP_UPPERARM_R=.066
+# World radii in first person (1.4.4): 1.5x the 1.4.3 first-person forearm
+# (0.057 m on MASON), the same on every hero. FP_BODY_SCALE: the view body's scale.
+const FP_FOREARM_R=.086
+const FP_UPPERARM_R=.09
+const FP_BODY_SCALE=2.0
 const FP_WRIST_TAPER=.62
 # First person: how far the support hand may slide back along a handguard /
 # off a vertical grip before the shoulder stretches instead.
@@ -253,9 +259,11 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 			if not girth.has(best):girth[best]=[0.,0]
 			girth[best][0]+=(rel-y*rel.dot(y)).length();girth[best][1]+=1
 	var factors={};var lengths={}
+	# Mesh units to world metres in first person.
+	var unit=absf((model.transform*skeleton.transform).basis.get_scale().y)*FP_BODY_SCALE
 	for b in axes:
 		var mean=girth[b][0]/girth[b][1] if girth.has(b) and girth[b][1]>0 else .05
-		factors[b]=maxf(1.,(FP_UPPERARM_R if axes[b][2] else FP_FOREARM_R)/maxf(.005,mean))
+		factors[b]=clampf((FP_UPPERARM_R if axes[b][2] else FP_FOREARM_R)/maxf(.001,mean*unit),.7,3.)
 		# Bone length: to the child joint (forearm -> wrist, upper arm -> forearm).
 		var child_prefix="LowerArm" if axes[b][2] else "Wrist"
 		var side=skin.get_bind_name(b) if skin.get_bind_name(b)!="" else skeleton.get_bone_name(skin.get_bind_bone(b))
@@ -304,7 +312,7 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 			# 60% of its girth at the elbow); the hand keeps its size.
 			if not axes[best][2]:
 				var t=clampf(rel.dot(y)/float(lengths[best]),0.,1.)
-				factor=lerpf(factor,maxf(1.,factor*FP_WRIST_TAPER),smoothstep(.25,1.,t))
+				factor=lerpf(factor,maxf(.7,factor*FP_WRIST_TAPER),smoothstep(.25,1.,t))
 			# The elbow (weights shared by upper arm and forearm) collapses into a
 			# thin twist when the arm bends; it is filled out a little.
 			factor*=1.+FP_ELBOW_FILL*clampf(4.*upper*fore,0.,1.)
@@ -434,11 +442,17 @@ func solve_hands(s:Dictionary):
 		if weight<=.001:return
 		for side in ["R","L"]:
 			if wrist_override.has(side):
-				HeroIK.solve_arm(self,side,wrist_override[side],weight,true);HeroIK.curl(self,side,weight,"fist")
-				# The fist continues the forearm (a straight wrist): arm, fist and
-				# tool turn as one; the forearm's roll carries the blade's facing.
-				var wrist=bone["Wrist."+side]
-				skeleton.set_bone_pose_rotation(wrist,skeleton.get_bone_pose_rotation(wrist).slerp(HeroIK.straight(self,wrist),weight))
+				HeroIK.solve_arm(self,side,wrist_override[side],weight,true)
+				# Fingers: a fist (tools), or the cupped throwing hand opening on release.
+				HeroIK.curl(self,side,weight,str(wrist_override.get("curl_"+side,"fist")))
+				var open=float(wrist_override.get("open_"+side,0.))
+				if open>0.:HeroIK.curl(self,side,weight*open,"open")
+				# A rigid wrist over a swing: at rest ("capture") the solved wrist
+				# angle is remembered; while swinging the hand keeps that angle to
+				# the forearm, so arm, fist and tool turn as one piece.
+				var wrist=bone["Wrist."+side];var key="rigid_wrist_"+side
+				if bool(wrist_override.get("capture_"+side,false)) or not has_meta(key):set_meta(key,skeleton.get_bone_pose_rotation(wrist))
+				elif bool(wrist_override.get("rigid_"+side,false)):skeleton.set_bone_pose_rotation(wrist,Quaternion(get_meta(key)))
 			else:hang_arm(side,weight)
 		return
 	if not is_instance_valid(held) or not held.visible:return

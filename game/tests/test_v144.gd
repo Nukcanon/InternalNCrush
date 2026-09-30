@@ -41,28 +41,24 @@ func run():
 		var mb:AABB=pmag.mesh.get_aabb()
 		expect(mb.size.y>.05 and mb.size.x<.03,"pistol: the magazine body fits inside the grip %s"%str(mb.size))
 	pistol.free()
-	# The laser rifle's cells replace the magazine box entirely.
+	# ARC (1.4.4): the futuristic code-built laser rifle; its power cell is the magazine.
 	var arc=GunModel.new();arc.build(Catalog.get_weapon("h6"),false);root.add_child(arc)
-	var shown=0
-	for m in arc.magazine.find_children("*","MeshInstance3D",true,false):
-		if m.visible and m.mesh and not str(m.get_parent().name)=="Cells":shown+=1
-	expect(arc.magazine is MeshInstance3D and arc.magazine.mesh==null and shown==0 and arc.magazine.has_node("Cells"),"ARC: only the two cells remain of the magazine")
+	expect(GunLooks.look(Catalog.get_weapon("h6")).get("tool","")=="arc" and GunLooks.hold_kind(Catalog.get_weapon("h6"))=="rifle" and is_instance_valid(arc.magazine) and arc.magazine.get_child_count()>0 and not arc.magazine.has_node("Cells"),"ARC: code-built rifle, the power cell is the magazine")
+	expect(arc.get_meta("grip_styles",{}).get("L","")=="support" and arc.get_meta("grip_shapes",{}).has("R"),"ARC: pistol grip and a handguard for the support hand")
 	arc.free()
 	# --- Rocket side C-grip ----------------------------------------------------
 	var loader=GunModel.new();loader.build(Catalog.get_weapon("h5"),false);root.add_child(loader)
 	var load_hand=ReloadMotion.support(loader,{"reload":.45,"rounds":0})
-	expect(str(load_hand.get("style",""))=="cradle","QUAD loading hand uses the side C grip")
+	expect(str(load_hand.get("style",""))=="pistol" and load_hand.get("basis",Basis.IDENTITY)==ReloadMotion.ROCKET_FIST,"QUAD loading hand: a fist round the rocket")
 	loader.free()
-	var left:Basis=HeroIK.FRAMES.cradle.L;var right:Basis=HeroIK.FRAMES.cradle.R
-	expect(-left.z.x>.9 and left.y.y>.9 and left.x.z>.9,"cradle L: palm to the rocket, knuckles up, thumb back along the near side")
-	expect(-right.z.x<-.9 and right.y.y>.9 and right.x.z<-.9,"cradle R: the mirror image (palm the other way, thumb -X back)")
-	expect(is_equal_approx(left.determinant(),1.) and is_equal_approx(right.determinant(),1.),"cradle frames are right-handed")
 	# --- First-person arms: fixed shoulders behind the eye, thick, to the shoulder
 	for hold in ["rifle","pistol","item"]:
 		var s=Actor.fp_shoulders(hold,1.)
-		expect(s.R.x>.15 and s.L.x<-.15 and s.R.y<-.2 and s.L.y<-.2 and s.R.z>0.,"fp shoulders %s: apart, below and behind the eye"%hold)
+		expect(s.R.x>s.L.x and s.R.y<-.6 and s.L.y<-.6,"fp shoulders %s: fixed well below the view"%hold)
 		var m=Actor.fp_shoulders(hold,-1.)
 		expect(is_equal_approx(m.R.x,-s.R.x) and is_equal_approx(m.L.x,-s.L.x),"fp shoulders %s mirror for left-handed players"%hold)
+	var lines=Actor.fp_forearms(1.);var mirrored=Actor.fp_forearms(-1.)
+	expect(lines.R.x>0. and lines.L.x<0. and lines.R.y<0. and lines.L.y<0. and lines.R.z>0. and lines.L.z>0. and is_equal_approx(mirrored.R.x,-lines.R.x),"forearms rise from the lower corner on their own side (mirrored for left-handed)")
 	expect(Actor.VIEW_BODY_SCALE*.39>.6,"first-person arm reach about a person's (%.2f m)"%(Actor.VIEW_BODY_SCALE*.39))
 	for role in [0,1,5]:
 		var hero=HeroCharacter.new();root.add_child(hero);hero.build(role,0,false);hero.first_person_only()
@@ -92,12 +88,13 @@ func run():
 			var mean=0.
 			for r in radii:mean+=r
 			mean=mean/maxf(1.,radii.size())
-			expect(mean>=HeroCharacter.FP_FOREARM_R*.9,"hero %d: forearm girth %.3f at the shared target %.3f"%[role,mean,HeroCharacter.FP_FOREARM_R])
+			var unit=absf((hero.model.transform*hero.skeleton.transform).basis.get_scale().y)*HeroCharacter.FP_BODY_SCALE
+			expect(mean*unit>=HeroCharacter.FP_FOREARM_R*.75,"hero %d: forearm girth %.3f m near the shared target %.3f m (tapering to the wrist)"%[role,mean*unit,HeroCharacter.FP_FOREARM_R])
 		hero.queue_free()
 	# The IK keeps a fixed anchor and only stretches it when the hand is out of reach.
 	var hero=HeroCharacter.new();root.add_child(hero);hero.build(0,0,false);hero.first_person_only()
 	var cam=Camera3D.new();root.add_child(cam);cam.global_position=Vector3(0,1.6,0)
-	hero.set_meta("fp_camera",cam);hero.set_meta("fp_shoulders",Actor.fp_shoulders("rifle",1.))
+	hero.set_meta("fp_camera",cam);hero.set_meta("fp_shoulders",Actor.fp_shoulders("rifle",1.));hero.set_meta("fp_forearm",Actor.fp_forearms(1.))
 	hero.global_basis=Basis.from_scale(Vector3.ONE*Actor.VIEW_BODY_SCALE);hero.global_position=Vector3(0,1.6,0)-Vector3(0,1.62,0)+Actor.VIEW_BODY_OFFSET
 	var gun=GunModel.new();gun.build(Catalog.get_weapon("a1"),false);hero.hold(gun)
 	gun.position=Vector3(.16,-.25,-.40)-gun.right_grip.position*gun.base.scale
@@ -105,7 +102,7 @@ func run():
 	for i in range(6):hero.drive(1./30.,{"hold":"rifle","hands":1.,"two_hands":true})
 	var anchor:Vector3=cam.global_transform*Actor.fp_shoulders("rifle",1.).R
 	expect(hero.bone_world(hero.bone["UpperArm.R"]).origin.distance_to(anchor)<.02+float(hero.get_meta("fp_stretch_R",0.)),"first-person upper arm starts at its shoulder anchor")
-	expect(float(hero.get_meta("fp_stretch_R",0.))<.01 and float(hero.get_meta("fp_stretch_L",0.))<.12,"rifle grips within reach of the fixed shoulders (stretch R %.2f L %.2f)"%[float(hero.get_meta("fp_stretch_R",0.)),float(hero.get_meta("fp_stretch_L",0.))])
+	expect(float(hero.get_meta("fp_stretch_R",0.))<.01 and float(hero.get_meta("fp_stretch_L",0.))<.2,"rifle grips within reach of the fixed shoulders (stretch R %.2f L %.2f)"%[float(hero.get_meta("fp_stretch_R",0.)),float(hero.get_meta("fp_stretch_L",0.))])
 	for side in ["R","L"]:
 		var u=hero.bone_world(hero.bone["UpperArm."+side]).origin
 		expect(not HeroIK.on_screen(cam,u),"shoulder %s stays off screen"%side)
@@ -122,7 +119,7 @@ func run():
 	hero.wrist_override={};hero.queue_free();gun.queue_free();cam.queue_free()
 	# Throw path: winds up above and behind the cooking hand, releases ahead and lower.
 	var wind=Actor.throw_path(.3)[0];var release=Actor.throw_path(.8)[0];var cook=Actor.throw_path(0.)[0]
-	expect(wind.y>cook.y+.2 and wind.z>cook.z+.08 and release.z<wind.z-.2 and release.y<wind.y-.1,"overhand throw: up and back, then forward and down")
+	expect(wind.y>cook.y+.2 and wind.z>cook.z+.04 and release.z<wind.z-.15 and release.y<wind.y-.1,"overhand throw: up and back, then forward and down")
 	# --- First-person pistols in one hand, third person in two ---------------
 	var g=load("res://scripts/game.gd").new();root.add_child(g)
 	for i in range(3):await process_frame

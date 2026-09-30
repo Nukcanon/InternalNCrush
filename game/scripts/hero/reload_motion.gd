@@ -142,15 +142,17 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			var show=GunModel.LOAD_SHOW;var push=GunModel.LOAD_PUSH
 			var rocket=gun.loading_round(count)
 			var r=float(rocket.get("radius",.04))*scale.x;var length=float(rocket.get("length",.3))*scale.x
-			var body={"half":Vector3(r,r,length*.22),"round":r}
+			# 1.4.4: a fist round the rocket's body (the grip solver's cylinder laid
+			# along the rocket): palm on the near side, fingers over the top and
+			# round it (a C seen from behind), thumb along the side pointing back.
+			# The other hand mirrors it (left-handed heroes are mirrored).
+			var body={"half":Vector3(r,length*.22,r),"round":r}
 			var tail_at=func(time:float) -> Vector3:return gun.loading_grip(count,time)
 			var below=Vector3(-.10,-.26,.06)
-			# 1.4.4: a side C-grip (HeroIK "cradle"): palm on the near side,
-			# fingers over the top, thumb underneath; mirrored for the other hand.
 			if t<show:
 				var from=fore.lerp(below,smoothstep(0.,show*.6,t))
-				return hand(from.lerp(tail_at.call(show),smoothstep(show*.6,show,t)),"cradle",body)
-			if t<push+.04:return hand(tail_at.call(t),"cradle",body)
+				return hand(from.lerp(tail_at.call(show),smoothstep(show*.6,show,t)),"pistol",body,ROCKET_FIST)
+			if t<push+.04:return hand(tail_at.call(t),"pistol",body,ROCKET_FIST)
 			return hand(tail_at.call(push).lerp(fore,smoothstep(push+.04,1.,t)),fore_style,fore_shape,fore_basis)
 		"battery":
 			# Laser rifle: two D-size cells under the receiver. A fist closes on
@@ -176,6 +178,9 @@ static func scaled(shape:Dictionary,factor:float) -> Dictionary:
 # lets go and returns. A top-rear handle put the whole forearm in front of
 # the first-person eye.
 const SIDE_GRAB=Basis(Vector3(0,0,1),PI/2)
+# Handle frame for a fist round a rocket: the grip axis (+Y) along the rocket
+# (gun +Z) and the knuckles (-Z of the handle) pointing up (gun +Y).
+const ROCKET_FIST=Basis(Vector3(1,0,0),Vector3(0,0,1),Vector3(0,-1,0))
 static func rack(from:Vector3,knob:Vector3,home_position:Vector3,t:float,travel:float,home:Dictionary,from_shape:Dictionary,knob_shape:Dictionary) -> Dictionary:
 	if t<.84:return hand(from,"pistol",from_shape)
 	if t<.87:return hand(from.lerp(knob,smoothstep(.84,.87,t)),"top",knob_shape,SIDE_GRAB)

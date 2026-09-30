@@ -11,6 +11,7 @@ var tag:Label3D
 var health_tag:Label3D
 var shape:CollisionShape3D
 var gun:Node3D
+var view_space:Node3D
 var item_model:Node3D
 var gadget_world:GadgetVisual
 var bomb_view:Node3D
@@ -93,7 +94,11 @@ func _ready():
 	tag=Label3D.new();tag.font=game.ui.theme.default_font;tag.position.y=2.;tag.font_size=32;tag.outline_size=8;tag.outline_modulate=Color("101f2d");tag.pixel_size=.004;tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;add_child(tag)
 	health_tag=Label3D.new();health_tag.font=game.ui.theme.default_font;health_tag.font_size=30;health_tag.outline_size=8;health_tag.pixel_size=.003;health_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED;health_tag.no_depth_test=true;health_tag.fixed_size=true;health_tag.hide();add_child(health_tag)
 	camera=Camera3D.new();camera.position.y=1.62;camera.fov=82;camera.far=300;camera.near=.08;add_child(camera)
-	gun=Node3D.new();camera.add_child(gun)
+	# 1.4.4: the view model (gun, hands, arms, held gear) lives in a view space
+	# VIEW_DEPTH times larger and farther: the same size on screen with less
+	# perspective stretch (shooters draw it with a narrower field of view).
+	view_space=Node3D.new();view_space.name="ViewSpace";view_space.scale=Vector3.ONE*VIEW_DEPTH;camera.add_child(view_space)
+	gun=Node3D.new();view_space.add_child(gun)
 	item_model=Node3D.new();gun.add_child(item_model)
 	protected_visual=MeshInstance3D.new();var shield=CapsuleMesh.new();shield.radius=.54;shield.height=2.05;protected_visual.mesh=shield;protected_visual.position.y=1.;render_root.add_child(protected_visual)
 	var mat=StandardMaterial3D.new();mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;mat.albedo_color=Color(.3,.8,1,.25);mat.cull_mode=BaseMaterial3D.CULL_DISABLED;protected_visual.material_override=mat;protected_visual.visible=false;protected_visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -154,7 +159,7 @@ func ensure_view_body():
 	if not is_instance_valid(view_mount):view_mount=Node3D.new();view_mount.name="ViewMount";gun.add_child(view_mount)
 	view_body=HeroCharacter.new();view_body.name="ViewBody";camera.add_child(view_body);view_body.build(maxi(0,shown_role),maxi(0,shown_team),false)
 	view_body.first_person_only();view_body.frame_override=view_mount;view_body.hand_size=VIEW_HAND/VIEW_BODY_SCALE
-	view_body.set_meta("fp_camera",camera)
+	view_body.set_meta("fp_camera",camera);view_body.set_meta("fp_space",view_space)
 	for mesh in view_body.meshes():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func ensure_hit_pose():
 	if is_instance_valid(character):return
@@ -533,18 +538,20 @@ func visual(dt:float,p:Dictionary,now:float):
 	# 1.4.2: a little further out and lower than before, so the stock leaves the
 	# view at the lower right and the gripping hand shows (first-person arms lay
 	# their forearms out from the grips, HeroIK.fp_forearm).
-	var hip_base=Vector3(.19,-.265,-.46)
-	if dual:hip_base=Vector3(0,-.235,-.46)
-	elif kind=="pistol":hip_base=Vector3(.16,-.27,-.46)
+	# 1.4.4: at the hip every weapon stays in the bottom third of the screen
+	# (the user's rule); aiming brings it up to the sight line.
+	var hip_base=Vector3(.235,-.44,-.56)
+	if dual:hip_base=Vector3(0,-.42,-.50)
+	elif kind=="pistol":hip_base=Vector3(.15,-.40,-.50)
 	# Hand-held launchers (QUAD) sit lower and further right: the tube cluster
 	# is wide and would cover the middle of the screen.
-	elif rocket and not shoulder:hip_base=Vector3(.34,-.36,-.42)
+	elif rocket and not shoulder:hip_base=Vector3(.34,-.42,-.46)
 	var ads_base=(Vector3(.25,-.21,-.50) if shoulder else Vector3(.29,-.27,-.50)) if rocket else hip_base+Vector3(0,.07,-.03) if dual else Vector3.ZERO
 	var base=hip_base.lerp(ads_base,ads_blend)
 	# Rear loading: the gun node moves to where the launcher's rear opening is
 	# shown (low, just right of centre); the launcher itself tips forward below.
 	var load_tip=smoothstep(0.,1.,launcher_tilt) if rocket else 0.
-	base=base.lerp(Vector3(.10,-.20,-.50),load_tip)
+	base=base.lerp(Vector3(.13,-.25,-.64),load_tip)
 	if kind=="pistol" and not dual:rotation_target_extra=Vector3(0,-.03,.10)
 	else:rotation_target_extra=Vector3.ZERO
 	base+=Vector3(-.025,.095,-.025)*crouch_blend*(1.-ads_blend)
@@ -552,6 +559,12 @@ func visual(dt:float,p:Dictionary,now:float):
 	base.y+=sin(now*1.9)*.002*(1.-move_blend)*(1.-ads_blend)
 	base+=Vector3(cos(bob)*.022,cos(bob*2)*.017,0)*motion
 	var rotation_target=Vector3(recoil*lerpf(.34,.12,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
+	# 1.4.4 view-model angle: the muzzle turned a little in toward the centre so
+	# the gun's right side and both hands read at the hip (not in aim).
+	rotation_target.y+=.13*(1.-ads_blend)
+	# ...and the muzzle dipped, so the far end of a long gun (which perspective
+	# pulls toward the centre) also stays in the bottom third at the hip.
+	rotation_target.x-=(.16 if kind!="pistol" else .06)*(1.-ads_blend)
 	if sprint:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
 	var reload_style=str(w.get("reload_style",""))
 	# Round-by-round loads (shells, break-action, revolvers) hold one steady
@@ -563,12 +576,23 @@ func visual(dt:float,p:Dictionary,now:float):
 		var hold=smoothstep(0.,1.,load_hold)
 		if reload_style=="revolver":
 			# Turned muzzle-left so the loading gate on its left side faces the eye.
-			base+=Vector3(-.07,.05,.04)*hold;rotation_target+=Vector3(.18,.85,.1)*hold
-		else:base+=Vector3(.02,.06,.10)*hold;rotation_target+=Vector3(.12,-.2,-.28)*hold
-		if reload_style=="break":rotation_target.x-=.32*hold # muzzle down, breech up toward the eye
+			# 1.4.4: pulled in toward the eye while loading (the hands over-bent
+			# and the support hand reached out too far at the hip distance).
+			base+=Vector3(-.07,.06,.16)*hold;rotation_target+=Vector3(.18,.85,.1)*hold
+		else:base+=Vector3(-.06,.05,.14)*hold;rotation_target+=Vector3(.12,-.2,-.28)*hold
+		# Break action: brought to the lower centre, muzzle down, so the open
+		# breech and the loading hand are in the middle of the view.
+		if reload_style=="break":base+=Vector3(-.06,.03,0.)*hold;rotation_target.x-=.12*hold
 	elif reloading:
 		# Brought up and in so the support hand working the magazine stays in view.
-		base+=Vector3(.02,.07,.14)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
+		# 1.4.4: pulled in toward the eye (z +.22) so neither hand reaches far.
+		base+=Vector3(.02,.08,.22)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
+		# 1.4.4 pistols: while the slide is racked the gun moves right, down and
+		# turns its left side up, so the slide and the hand on it are both seen
+		# instead of the hand covering the gun.
+		if reload_style=="pistol":
+			var rack=smoothstep(.78,.85,progress)*(1.-smoothstep(.96,1.,progress))
+			base+=Vector3(.10,-.05,-.06)*rack;rotation_target+=Vector3(-.15,-.25,.55)*rack
 	if p.get("cooking",0)>0:base+=Vector3(-.08,.07,.05);rotation_target+=Vector3(.25,.15,-.22)
 	if float(p.get("throw_until",-100.))>now:
 		# 1.4.4 overhand throw: the hand winds up beside the head, sweeps over
@@ -601,7 +625,9 @@ func visual(dt:float,p:Dictionary,now:float):
 		var grip:Vector3=view_weapon.right_grip.position*s
 		var sight:Vector3=view_weapon.aim_point.position*s
 		# DUET: the pair is held wide at the hip and drawn a little together when aiming.
-		var pair=lerpf(.40,.32,ads_blend)
+		# 1.4.4: near the baked spacing (GunModel.PAIR_SPACING) so the left hand
+		# keeps its grip field on the second pistol.
+		var pair=lerpf(.28,.26,ads_blend)
 		if dual:view_weapon.set_pair_spacing(pair/view_weapon.base.scale.x)
 		var hip=-grip+(Vector3(pair*.5*view_weapon.scale.x,0,0) if dual else Vector3.ZERO)
 		var aimed=hip if dual else Vector3(0,-.04 if kind=="rifle" else -.045,-(.27 if kind=="rifle" else .34))-sight
@@ -631,28 +657,38 @@ var view_head_offset=Vector3(0,1.62,0)
 # First-person arms: a larger view body gives long arms whose shoulders stay
 # below the bottom of the screen (the arm mesh's cut end never shows); the
 # hands are scaled back at the wrists to their usual first-person size.
-# 1.4.4: the shoulders are fixed (FP_SHOULDER) and the arms are drawn from
-# them, so the body is scaled for a real arm's reach (the rig's arms are
-# 0.39 m; a person's about 0.6 m).
-const VIEW_BODY_SCALE=1.8
+# 1.4.4: a view model, not the third-person body. As in shooters' first-person
+# arm rigs the arms are longer than a person's (the rig's 0.39 m arm scaled
+# 2x) so both hands reach a long gun, fixed shoulders sit well below the view
+# (never seen), and each forearm rises into the frame from the lower corner on
+# its own side (FP_FOREARM: wrist -> elbow direction); the elbows and upper
+# arms stay below the frame. Hands keep their first-person size (VIEW_HAND).
+const VIEW_BODY_SCALE=HeroCharacter.FP_BODY_SCALE
 const VIEW_HAND=1.15
+const VIEW_DEPTH=1.4
 const VIEW_BODY_OFFSET=Vector3(0,-.03,.10)
-# First-person shoulder anchors (camera space, right-handed; x mirrors for a
-# left-handed player): behind and below the eye like a shooter's, the
-# support-side shoulder a little forward behind a long gun (a bladed stance).
+# Camera space, right-handed (x mirrors for a left-handed player).
 const FP_SHOULDER={
-	"rifle":{"R":Vector3(.22,-.29,.12),"L":Vector3(-.20,-.31,.02)},
-	"pistol":{"R":Vector3(.22,-.30,.08),"L":Vector3(-.22,-.30,.08)},
-	"item":{"R":Vector3(.22,-.30,.08),"L":Vector3(-.22,-.30,.08)}}
+	"rifle":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.10,-.80,-.12)},
+	"pistol":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.30,-.80,.10)},
+	"item":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.30,-.78,.06)}}
+const FP_FOREARM={"R":Vector3(.35,-.55,.75),"L":Vector3(-.30,-.60,.75)}
+# Raised fist (melee, throws): the forearm comes up nearly vertically.
+const FP_FOREARM_STEEP={"R":Vector3(.30,-.88,.36),"L":Vector3(-.30,-.88,.36)}
+# Melee: a shallow forearm from the lower right, fist ahead, blade up.
+const FP_FOREARM_MELEE={"R":Vector3(.35,-.35,.87),"L":Vector3(-.35,-.35,.87)}
+static func fp_forearms(hand:float,steep:bool=false,melee:bool=false) -> Dictionary:
+	var f:Dictionary=FP_FOREARM_MELEE if melee else FP_FOREARM_STEEP if steep else FP_FOREARM
+	return {"R":Vector3(f.R.x*hand,f.R.y,f.R.z),"L":Vector3(f.L.x*hand,f.L.y,f.L.z)}
 # Overhand throw path (camera space, right-handed): [gun-node position, euler].
 # The fist points from the throwing shoulder to the hand throughout.
 static func throw_path(phase:float) -> Array:
-	var cook=Vector3(.11,-.195,-.41);var wind=Vector3(.23,.15,-.30);var release=Vector3(.02,-.09,-.58);var rest=Vector3(.06,-.22,-.50)
+	var cook=Vector3(.11,-.195,-.41);var wind=Vector3(.21,.04,-.36);var release=Vector3(.0,-.10,-.56);var rest=Vector3(.06,-.22,-.50)
 	var p:Vector3
 	if phase<.3:p=cook.lerp(wind,smoothstep(0.,.3,phase))
 	elif phase<.8:p=wind.lerp(release,smoothstep(.3,.8,phase))
 	else:p=release.lerp(rest,smoothstep(.8,1.,phase))
-	var dir:Vector3=(p-FP_SHOULDER.item.R).normalized()
+	var dir:Vector3=-Vector3(FP_FOREARM_STEEP.R).normalized() # the fist continues the raised forearm
 	return [p,Basis.looking_at(dir,Vector3.UP if absf(dir.y)<.95 else Vector3.BACK).get_euler()]
 static func fp_shoulders(hold:String,hand:float) -> Dictionary:
 	var set:Dictionary=FP_SHOULDER.get(hold,FP_SHOULDER.pistol)
@@ -666,20 +702,40 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	var weapon_up=is_instance_valid(view_weapon) and view_weapon.visible
 	view_body.visible=weapon_up or item_up or melee_up or bomb_up
 	if not view_body.visible:return
-	var carried:Node3D=bomb_view if bomb_up else null if melee_up else view_item if item_up else view_weapon
+	var throwing=float(p.get("throw_until",-100.))>now
+	var carried:Node3D=bomb_view if bomb_up else null if melee_up or (item_up and throwing) else view_item if item_up else view_weapon
 	# 1.4.4 melee: the tool rides the hand; the arm is swung to a wrist point.
 	if melee_up:
 		var wrist:Vector3=MeleeVisual.swing_wrist(now-float(p.get("melee_started",-100.)))
-		var anchor:Vector3=fp_shoulders("item",1.).R
-		var dir:Vector3=(wrist-anchor).normalized()
-		# Fist along the arm, thumb (-X of the wrist frame) forward and up, so the
-		# blade leaves the fist pointing ahead. Left-handed: the frame is
-		# mirrored like a gun's handles (a reflected basis).
-		var thumb:Vector3=(Vector3.FORWARD*.85+Vector3.UP*.5).normalized()
+		# The fist continues the forearm, which comes in from the lower right at
+		# a shallow angle (FP_FOREARM_MELEE); the blade leaves the fist on the
+		# thumb side, pointing UP and a little forward (a hammer grip with the
+		# blade up, as in most shooters' knife poses).
+		var dir:Vector3=-Vector3(FP_FOREARM_MELEE.R).normalized()
+		# Left-handed: the frame is mirrored like a gun's handles (a reflected basis).
+		var thumb:Vector3=Vector3(0,.9,-.44).normalized()
 		var x:Vector3=-(thumb-dir*dir.dot(thumb)).normalized()
 		var basis=Basis(x,dir,x.cross(dir).normalized())
 		if handedness<0:basis=Basis.from_scale(Vector3(-1,1,1))*basis;wrist.x=-wrist.x
-		view_body.wrist_override={"R":camera.global_transform*Transform3D(basis,wrist)}
+		var at:Transform3D=view_space.global_transform*Transform3D(basis,wrist)
+		var age=now-float(p.get("melee_started",-100.))
+		var swinging=age>=0. and age<MeleeCombat.DURATION
+		view_body.wrist_override={"R":Transform3D(at.basis.orthonormalized(),at.origin),"capture_R":not swinging,"rigid_R":swinging}
+		if is_instance_valid(view_body.held):view_body.hold(null)
+	elif item_up and throwing:
+		# 1.4.4 throw: the hand rides the mount's throw path (Actor.throw_path);
+		# from the release on it turns to face forward and the fingers open.
+		var phase=1.-(float(p.throw_until)-now)/.28
+		var open=smoothstep(.42,.7,phase)
+		var dir:Vector3=-Vector3(FP_FOREARM_STEEP.R).normalized()
+		# Palm (-Z of the wrist frame) forward at the release; toward the body while cocked.
+		var palm:Vector3=Vector3(.35,-.1,.93).normalized().lerp(Vector3.FORWARD,open).normalized()
+		var z:Vector3=-(palm-dir*dir.dot(palm)).normalized()
+		var basis=Basis(dir.cross(z).normalized(),dir,z)
+		var wrist:Vector3=throw_path(phase)[0]+Vector3(0,-.03,.02)
+		if handedness<0:basis=Basis.from_scale(Vector3(-1,1,1))*basis;wrist.x=-wrist.x
+		var at:Transform3D=view_space.global_transform*Transform3D(basis,wrist)
+		view_body.wrist_override={"R":Transform3D(at.basis.orthonormalized(),at.origin),"curl_R":"open" if open>.5 else "hold","open_R":open}
 		if is_instance_valid(view_body.held):view_body.hold(null)
 	else:view_body.wrist_override={}
 	if carried!=null and view_body.held!=carried:
@@ -693,7 +749,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	var yaw=Basis(Vector3.UP,aim_yaw)
 	# View-model convention: a slightly larger body and a compact gun keep both
 	# hands on long rifles with the short cartoon arms.
-	view_body.global_basis=yaw*Basis.from_scale(Vector3(float(handedness),1.,1.)*VIEW_BODY_SCALE)
+	view_body.global_basis=yaw*Basis.from_scale(Vector3(float(handedness),1.,1.)*VIEW_BODY_SCALE*VIEW_DEPTH)
 	# Only forearms and hands are drawn, so the (invisible) shoulders may sit ahead
 	# of the eye: short cartoon arms then reach both grips of long rifles.
 	view_body.global_position=camera.global_position-yaw*view_head_offset+yaw*VIEW_BODY_OFFSET
@@ -707,8 +763,8 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if bomb_up:state.hold="item";state.two_hands=true;state.point=true;state.erase("plant")
 	state.hands=1.;state.sprint=false
 	view_body.set_meta("fp_shoulders",fp_shoulders(str(state.hold),float(handedness)))
-	# Throws: the hand continues the forearm (no bent wrist over the swing).
-	view_body.straight_wrist={"R":1.} if float(p.get("throw_until",-100.))>now else {}
+	# Melee and throws: the arm rises steeply from below (a raised fist).
+	view_body.set_meta("fp_forearm",fp_forearms(float(handedness),throwing,melee_up))
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	view_head_offset=yaw.inverse()*(view_body.head_position()-view_body.global_position)
 func show_shot(at:float) -> bool:

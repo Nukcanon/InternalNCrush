@@ -80,7 +80,8 @@ func run():
 		if ws.has("trigger"):
 			var chain:Array=HeroIK.finger_chains(hero,"R").Index
 			var tip=hero.bone_world(chain[chain.size()-1])*Vector3(0,.02,0)
-			expect((to_handle*tip).distance_to(ws.trigger)<.045,"index finger at the trigger: %s (%.3f m)"%[w.name,(to_handle*tip).distance_to(ws.trigger)])
+			# 1.4.4: the firing hand may slide up to FIRING_SLIDE down the grip so the middle finger clears the guard.
+			expect((to_handle*tip).distance_to(ws.trigger)<.045+HeroIK.FIRING_SLIDE*.5,"index finger at the trigger: %s (%.3f m)"%[w.name,(to_handle*tip).distance_to(ws.trigger)])
 		# 1.4.2: no finger joint bends backwards (flexion is a rotation about -X),
 		# on either hand; the arms stay outside the torso.
 		var backward=0.
@@ -109,11 +110,9 @@ func run():
 	var loader=GunModel.new();loader.build(Catalog.get_weapon("h4"),false);root.add_child(loader)
 	var load_hand=ReloadMotion.support(loader,{"reload":.45,"rounds":0})
 	# 1.4.4: a side C-grip (palm on the near side, fingers over the top, thumb under).
-	expect(str(load_hand.get("style",""))=="cradle","rocket loading hand cradles the rocket in a side C grip")
-	var cradle:Basis=HeroIK.FRAMES.cradle.L
-	expect(-cradle.z.x>.9 and cradle.y.y>.9,"cradle: left palm toward the rocket on its far side, knuckles up")
-	var mirrored:Basis=HeroIK.FRAMES.cradle.R
-	expect(is_equal_approx(mirrored.z.x,-cradle.z.x) and is_equal_approx(mirrored.y.y,cradle.y.y),"cradle: the right hand is the mirror image")
+	expect(str(load_hand.get("style",""))=="pistol" and load_hand.get("basis",Basis.IDENTITY)==ReloadMotion.ROCKET_FIST,"rocket loading hand: a fist round the rocket body")
+	var fist:Basis=ReloadMotion.ROCKET_FIST*HeroIK.FRAMES.pistol.L
+	expect(fist.z.x<-.9 and fist.y.y>.9,"rocket fist: left palm on the rocket's near side, knuckles up over the top")
 	loader.queue_free()
 	var pad=GunModel.new();pad.build(Catalog.get_weapon("remote"),false);root.add_child(pad)
 	expect(pad.get_meta("grip_styles",{})=={"R":"pistol","L":"pistol"} and pad.right_grip.position.y<-.03 and pad.left_grip.position.y<-.03,"TETHER: both fists on the grips under the pad")

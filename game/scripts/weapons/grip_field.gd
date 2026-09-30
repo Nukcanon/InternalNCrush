@@ -94,15 +94,17 @@ static func measure(c:Dictionary,style:String,along_half:float) -> Dictionary:
 	var along=Vector3.UP if style=="pistol" else Vector3.BACK
 	var second=Vector3.BACK if style=="pistol" else Vector3.UP
 	var sums={"xp":0.,"xn":0.,"sp":0.,"sn":0.};var n=0
+	# Limits in world metres scale with the model (the view model is drawn larger).
+	var ku=float(c.k)
 	for f in [-.5,0.,.5]:
 		var o=along*along_half*f
-		var xp=reach(c,o,Vector3.RIGHT);var xn=reach(c,o,Vector3.LEFT);var sp=reach(c,o,second);var sn=reach(c,o,-second)
+		var xp=reach(c,o,Vector3.RIGHT,.09*ku);var xn=reach(c,o,Vector3.LEFT,.09*ku);var sp=reach(c,o,second,.09*ku);var sn=reach(c,o,-second,.09*ku)
 		if xp<0. or xn<0. or sp<0. or sn<0.:continue
 		sums.xp+=xp;sums.xn+=xn;sums.sp+=sp;sums.sn+=sn;n+=1
 	var out={}
 	if n>0:
 		for k in sums:sums[k]/=n
 		var centre=Vector3.RIGHT*(sums.xp-sums.xn)*.5+second*(sums.sp-sums.sn)*.5
-		out={"centre":centre.limit_length(.02),"half_x":(sums.xp+sums.xn)*.5,"half_s":(sums.sp+sums.sn)*.5,"second":second}
+		out={"centre":centre.limit_length(.02*ku),"half_x":(sums.xp+sums.xn)*.5,"half_s":(sums.sp+sums.sn)*.5,"second":second}
 	measure_cache[key]=out
 	return out

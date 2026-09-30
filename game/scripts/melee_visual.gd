@@ -48,7 +48,7 @@ func grip(_side:String) -> Node3D:return palm
 ## arm, fist and blade turn together: a wind-up back and up beside the head,
 ## a diagonal cut down across the view, then back to a low ready.
 static func swing_wrist(age:float,hand:float=1.) -> Vector3:
-	var rest=Vector3(.24,-.24,-.40);var wind=Vector3(.34,.02,-.18);var finish=Vector3(-.12,-.30,-.52)
+	var rest=Vector3(.26,-.26,-.44);var wind=Vector3(.40,.0,-.34);var finish=Vector3(-.10,-.36,-.62)
 	var p=rest
 	if age>=0. and age<MeleeCombat.DURATION:
 		if age<MeleeCombat.CONTACT_START:p=rest.lerp(wind,smoothstep(0.,MeleeCombat.CONTACT_START,age))

@@ -93,7 +93,7 @@ func build(w:Dictionary,ink:bool=false):
 	if magazine:mag_rest=magazine.transform
 	for mesh in base.find_children("*","MeshInstance3D",true,false):paint(mesh)
 	double_sided_magazine()
-	if w.get("laser",false) and is_instance_valid(magazine):batteries()
+	if w.get("laser",false) and is_instance_valid(magazine) and not look.has("tool"):batteries()
 	glaze(base,look)
 	GunLooks.attach(self,look)
 	# A dot or scope on top replaces the iron rear sight as the aiming point.

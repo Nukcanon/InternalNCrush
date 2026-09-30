@@ -47,11 +47,13 @@ static var LOOKS={
 	"LINK":{"tool":"link","palette":{}},
 	"FIX · 원격 수리 도구":{"tool":"fix","palette":{}},
 	"TETHER · 포탑 원격 조종기":{"tool":"tether","palette":{}},
-	"ARC":{"base":"Sniper_2","scale":.94,"palette":palette(Color("4a3f6b"),Color("241d38"),Color("b98cff"),Color("241d38")),"attach":["coils"]}}
+	# 1.4.4: the ARC is built in code again, after the 1.3 futuristic laser
+	# rifle (power cell under the receiver, side capacitors, coil emitter).
+	"ARC":{"tool":"arc","palette":{}}}
 static func look(w:Dictionary) -> Dictionary:
 	return LOOKS.get(str(w.get("name","")),{"base":"Pistol" if int(w.get("slot",0))==1 else "AK","scale":1.,"palette":palette(STEEL,DARK,LIGHT)})
 static func hold_kind(w:Dictionary) -> String:
-	if look(w).has("tool"):return "item" if look(w).tool=="tether" else "rifle" if look(w).tool=="link" else "pistol"
+	if look(w).has("tool"):return "item" if look(w).tool=="tether" else "rifle" if look(w).tool in ["link","arc"] else "pistol"
 	var b=str(look(w).get("base",""))
 	if b in ["Pistol","Revolver","Revolver_Small"]:return "pistol"
 	if bool(look(w).get("shoulder",false)):return "shoulder"
@@ -149,6 +151,46 @@ static func build_tool(kind:String) -> Node3D:
 			m.box(body,Vector3(0,-.056,-.258),Vector3(.01,.03,.009),DARK,Vector3(.3,0,0),.3)
 			m.box(body,Vector3(0,-.074,-.255),Vector3(.012,.006,.056),grey,Vector3.ZERO,.3)
 			muzzle=Vector3(0,.015,-.6);right=Vector3(0,-.085,-.215);left=Vector3(0,-.095,-.42)
+		"arc":
+			# 1.4.4 ARC after the 1.3 model: a long violet receiver with a stock,
+			# a dark rail and sight block on top, lilac capacitor tubes along both
+			# sides, a coil emitter ahead of the handguard and a big power cell
+			# under the receiver (the magazine: the reload swaps the cell).
+			var main=Color("4a3f6b");var deep=Color("241d38");var lilac=Color("b98cff");var glow=Color("c79bff")
+			m.box(body,Vector3(0,.03,-.20),Vector3(.07,.11,.44),main,Vector3.ZERO,.35)
+			m.box(body,Vector3(0,.0,.12),Vector3(.06,.10,.22),main,Vector3(.06,0,0),.4)
+			m.box(body,Vector3(0,0,.235),Vector3(.062,.12,.03),deep,Vector3.ZERO,.3)
+			m.box(body,Vector3(0,.095,-.20),Vector3(.036,.02,.30),deep,Vector3.ZERO,.3)
+			m.box(body,Vector3(0,.12,-.14),Vector3(.05,.04,.11),deep,Vector3.ZERO,.35)
+			m.box(body,Vector3(0,.128,-.14),Vector3(.034,.006,.08),lilac,Vector3.ZERO,.2)
+			m.cylinder(body,Vector3(0,.14,-.25),.012,.05,glow,Vector3(PI/2,0,0),-1.,10)
+			for side in [-1,1]:
+				m.cylinder(body,Vector3(side*.058,.02,-.24),.026,.24,lilac,Vector3(PI/2,0,0),-1.,14)
+				for z in [-.14,-.34]:m.cylinder(body,Vector3(side*.058,.02,z),.03,.02,deep,Vector3(PI/2,0,0),-1.,14)
+			# Pistol grip (leaning back), trigger guard, handguard and barrel.
+			m.box(body,Vector3(0,-.085,-.05),Vector3(.04,.11,.046),deep,Vector3(-.25,0,0),.5)
+			m.box(body,Vector3(0,-.045,-.095),Vector3(.01,.03,.01),deep,Vector3(.3,0,0),.3)
+			m.box(body,Vector3(0,-.065,-.095),Vector3(.014,.006,.06),deep,Vector3.ZERO,.3)
+			m.box(body,Vector3(0,-.02,-.47),Vector3(.062,.05,.16),main,Vector3.ZERO,.4)
+			for side in [-1.,1.]:
+				for k in range(3):m.box(body,Vector3(side*.031,-.02,-.42-k*.04),Vector3(.004,.02,.02),deep,Vector3.ZERO,.3)
+			m.cylinder(body,Vector3(0,.03,-.56),.024,.34,deep,Vector3(PI/2,0,0),-1.,14)
+			for i in range(3):
+				var ring=m.cylinder(body,Vector3(0,.03,-.60-i*.05),.04,.022,glow,Vector3(PI/2,0,0),-1.,14)
+				ring.set_meta("glow",true)
+			m.cylinder(body,Vector3(0,.03,-.735),.03,.03,deep,Vector3(PI/2,0,0),-1.,14)
+			m.cylinder(body,Vector3(0,.03,-.752),.018,.008,glow,Vector3(PI/2,0,0),-1.,12)
+			# Power cell: a fat accent block with dark bands and a charge strip.
+			var cell=Node3D.new();cell.name="Magazine";root.add_child(cell);cell.position=Vector3(0,-.05,-.24)
+			m.box(cell,Vector3(0,-.055,0),Vector3(.09,.11,.17),lilac,Vector3.ZERO,.4)
+			for z in [-.06,.06]:m.box(cell,Vector3(0,-.055,z),Vector3(.094,.112,.02),deep,Vector3.ZERO,.3)
+			m.box(cell,Vector3(-.047,-.05,0),Vector3(.004,.06,.03),glow,Vector3.ZERO,.2)
+			m.box(cell,Vector3(0,-.113,0),Vector3(.07,.008,.14),deep,Vector3.ZERO,.3)
+			MeshFactory.merge_children(cell)
+			# Authored butt-at-origin like the baked rifles (the third-person frame
+			# puts the origin at the shoulder): the whole gun sits 25 cm forward.
+			body.position.z=-.25;cell.position.z-=.25
+			muzzle=Vector3(0,.03,-1.01);right=Vector3(0,-.085,-.30);left=Vector3(0,-.02,-.72)
 		"fix":
 			m.box(body,Vector3(0,.04,-.07),Vector3(.075,.085,.18),Color("f0a000"),Vector3.ZERO,.55)
 			m.box(body,Vector3(0,-.04,0),Vector3(.045,.11,.05),DARK,Vector3(-.25,0,0),.5)
@@ -178,6 +220,14 @@ static func build_tool(kind:String) -> Node3D:
 			"L":{"half":Vector3(.017,.05,.02),"round":.012}})
 		root.set_meta("grip_styles",{"R":"pistol","L":"pistol"})
 		var eye=Marker3D.new();eye.name="AimPoint";eye.position=Vector3(0,.13,-.22);root.add_child(eye)
+	elif kind=="arc":
+		# Rifle hold: pistol grip (leaning .25), trigger ahead of its top, the
+		# support hand under the handguard; the eye over the top rail's sight.
+		var grip:Marker3D=root.get_node("RightGrip");grip.rotation.x=-.25
+		root.set_meta("grip_shapes",{"R":{"half":Vector3(.02,.055,.023),"round":.012,"trigger":Vector3(0,-.045,-.345)},
+			"L":{"half":Vector3(.031,.025,.08),"round":.02}})
+		root.set_meta("grip_styles",{"R":"pistol","L":"support"})
+		var eye=Marker3D.new();eye.name="AimPoint";eye.position=Vector3(0,.14,-.40);root.add_child(eye)
 	elif kind=="fix":
 		# Pistol grip (leaning .25) with the trigger just ahead of its top.
 		var grip:Marker3D=root.get_node("RightGrip");grip.position=Vector3(0,-.04,0);grip.rotation.x=-.25

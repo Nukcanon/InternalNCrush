@@ -330,5 +330,6 @@ func drive_arms(dt:float,_state:Dictionary,hand:float):
 	fp_body.global_position=camera.global_position-yaw*fp_head+yaw*Actor.VIEW_BODY_OFFSET
 	var kind=GunLooks.hold_kind(model.spec)
 	fp_body.set_meta("fp_shoulders",Actor.fp_shoulders("rifle" if kind=="shoulder" else kind,hand))
+	fp_body.set_meta("fp_forearm",Actor.fp_forearms(hand))
 	fp_body.drive(dt,{"hold":"rifle" if kind=="shoulder" else kind,"two_hands":kind!="pistol" or bool(model.spec.get("dual",false)),"hands":1.,"sprint":false,"velocity":Vector3.ZERO,"grounded":true,"crouch":false,"pitch":asin(clampf(forward.y,-1.,1.)),"reload":-1.})
 	fp_head=yaw.inverse()*(fp_body.head_position()-fp_body.global_position)

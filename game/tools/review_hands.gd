@@ -292,10 +292,25 @@ func run():
 				for sd in ["L","R"]:
 					if HeroIK.on_screen(a.camera,a.view_body.bone_world(a.view_body.bone["UpperArm."+sd]).origin):cut.append(sd)
 				print("ELBOWS ",label," on_screen=",cut," ",arm_metrics(a.view_body))
+			# Highest screen point of the view weapon (fraction of the height from the top).
+			if is_instance_valid(a.view_weapon) and a.view_weapon.visible:
+				var top=1.;var size=a.camera.get_viewport().get_visible_rect().size
+				for m in a.view_weapon.find_children("*","MeshInstance3D",true,false):
+					if not m.is_visible_in_tree() or m.mesh==null:continue
+					var box:AABB=m.mesh.get_aabb();var xf:Transform3D=m.global_transform
+					for i in range(8):
+						var pt:Vector3=xf*box.get_endpoint(i)
+						if a.camera.is_position_behind(pt):continue
+						top=minf(top,a.camera.unproject_position(pt).y/size.y)
+				print("GUNTOP ",label," top=%.2f"%top)
 				if "closeup" in only:await closeups(a,label)
 				if "audit" in only and is_instance_valid(a.view_body.held):audit(a.view_body,a.view_body.held,label)
+			if "debug" in only and is_instance_valid(a.melee_view) and a.melee_view.visible:
+				var cb:Basis=a.camera.global_basis.inverse();var vb=a.view_body
+				var wx:Vector3=vb.bone_world(vb.bone["Wrist.R"]).basis.x.normalized()
+				print("BLADE ",label," blade_cam=",(cb*a.melee_view.pivot.global_basis.y.normalized()).snapped(Vector3.ONE*.01)," wrist_x_cam=",(cb*wx).snapped(Vector3.ONE*.01)," pivot_rot=",a.melee_view.pivot.rotation," parent=",a.melee_view.get_parent().name," parent_bone=",a.melee_view.get_parent().bone_name if a.melee_view.get_parent() is BoneAttachment3D else "-")
 			if "debug" in only and is_instance_valid(a.view_body):
-				var vb=a.view_body;var line="JOINTS "+label
+				var vb=a.view_body;var line="JOINTS "+label+" vis=%s tree=%s arms=%s held=%s item=%s"%[str(vb.visible),str(vb.is_visible_in_tree()),str(vb.skeleton.get_node("FPArms").is_visible_in_tree()),str(vb.held),str(a.item_model.visible)]
 				for n in ["UpperArm.L","LowerArm.L","Wrist.L","UpperArm.R","LowerArm.R","Wrist.R"]:
 					line+=" %s=%s"%[n,str(a.camera.to_local(vb.bone_world(vb.bone[n]).origin).snapped(Vector3.ONE*.01))]
 				print(line)
