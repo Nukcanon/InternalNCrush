@@ -1,0 +1,194 @@
+[
+ {
+  "file": "asphalt.png",
+  "asset": "Asphalt031",
+  "source": "https://ambientcg.com/view?id=Asphalt031",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "concrete.png",
+  "asset": "Concrete042A",
+  "source": "https://ambientcg.com/view?id=Concrete042A",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "paving.png",
+  "asset": "PavingStones146",
+  "source": "https://ambientcg.com/view?id=PavingStones146",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "cobble.png",
+  "asset": "PavingStones151",
+  "source": "https://ambientcg.com/view?id=PavingStones151",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "setts.png",
+  "asset": "PavingStones070",
+  "source": "https://ambientcg.com/view?id=PavingStones070",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "sand.png",
+  "asset": "Ground054",
+  "source": "https://ambientcg.com/view?id=Ground054",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "dirt.png",
+  "asset": "Ground079S",
+  "source": "https://ambientcg.com/view?id=Ground079S",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "gravel.png",
+  "asset": "Gravel023",
+  "source": "https://ambientcg.com/view?id=Gravel023",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "grass.png",
+  "asset": "Grass004",
+  "source": "https://ambientcg.com/view?id=Grass004",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "steel_floor.png",
+  "asset": "DiamondPlate008D",
+  "source": "https://ambientcg.com/view?id=DiamondPlate008D",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "wood_floor.png",
+  "asset": "WoodFloor041",
+  "source": "https://ambientcg.com/view?id=WoodFloor041",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "planks.png",
+  "asset": "Planks037A",
+  "source": "https://ambientcg.com/view?id=Planks037A",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "tiles_white.png",
+  "asset": "Tiles107",
+  "source": "https://ambientcg.com/view?id=Tiles107",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "tiles_stone.png",
+  "asset": "Tiles141",
+  "source": "https://ambientcg.com/view?id=Tiles141",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "brick_red.png",
+  "asset": "Bricks101",
+  "source": "https://ambientcg.com/view?id=Bricks101",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "brick_yellow.png",
+  "asset": "Bricks105",
+  "source": "https://ambientcg.com/view?id=Bricks105",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "brick_old.png",
+  "asset": "Bricks097",
+  "source": "https://ambientcg.com/view?id=Bricks097",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "stone_wall.png",
+  "asset": "Bricks075A",
+  "source": "https://ambientcg.com/view?id=Bricks075A",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "plaster.png",
+  "asset": "Plaster001",
+  "source": "https://ambientcg.com/view?id=Plaster001",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "concrete_wall.png",
+  "asset": "Concrete048",
+  "source": "https://ambientcg.com/view?id=Concrete048",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "corrugated.png",
+  "asset": "CorrugatedSteel005",
+  "source": "https://ambientcg.com/view?id=CorrugatedSteel005",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "rock.png",
+  "asset": "Rock051",
+  "source": "https://ambientcg.com/view?id=Rock051",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "roof_tiles.png",
+  "asset": "RoofingTiles012A",
+  "source": "https://ambientcg.com/view?id=RoofingTiles012A",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ },
+ {
+  "file": "rust.png",
+  "asset": "Metal022",
+  "source": "https://ambientcg.com/view?id=Metal022",
+  "license": "CC0-1.0",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "modification": "Colour luminance high-passed and mixed with a baked NormalGL emboss into one grey relief channel, levelled, 1024 px; tinted in game by map palettes."
+ }
+]

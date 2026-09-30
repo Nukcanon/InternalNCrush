@@ -112,7 +112,10 @@ static func apply_world(root:Node,automatic:bool=false):
 				if material is ShaderMaterial and "rich_detail" in material.shader.code:material.set_shader_parameter("rich_detail",detail==2)
 				if material is ShaderMaterial and "texture_detail" in material.shader.code:material.set_shader_parameter("texture_detail",detail>0)
 	for mesh in root.get_tree().get_nodes_in_group("quality_mesh"):
-		if mesh.material_override is ShaderMaterial and "district_surface" in mesh.material_override.shader.code:mesh.material_override.set_shader_parameter("dynamic_lighting",lighting>0)
+		if mesh.material_override is ShaderMaterial and "district_surface" in mesh.material_override.shader.code:
+			mesh.material_override.set_shader_parameter("dynamic_lighting",lighting>0)
+			# Relief maps cost one sample: always on natively, Web minimum drops them.
+			mesh.material_override.set_shader_parameter("texture_detail",relief())
 		if mesh.has_meta("district_detail"):
 			mesh.visible=true;mesh.visibility_range_end=([28.,65.,100.] if RenderStyle.web() else [28.,65.,100.])[detail];mesh.visibility_range_end_margin=5.
 	var points=0;var pooled=true
@@ -142,5 +145,6 @@ static func apply_world(root:Node,automatic:bool=false):
 			if RenderStyle.web():world.environment.tonemap_mode=Environment.TONE_MAPPER_LINEAR
 			world.environment.ambient_light_energy=maxf(world.environment.ambient_light_energy,.65 if RenderStyle.web() else .55)
 
+static func relief() -> bool:return detail>0 or not OS.has_feature("web")
 static func physical_pose_limit() -> int:return 1 if physics_effects==2 and not OS.has_feature("web") else 0
 

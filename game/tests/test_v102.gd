@@ -45,7 +45,8 @@ func run():
 		expect(a.indoors==(index in CombatLayout.INDOOR),"indoor selection "+str(index))
 		if a.indoors:
 			var start=a.spawn_points[0][0]
-			var hit=a.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(start+Vector3.UP*5.,start+Vector3.UP*8.,1))
+			# 1.5 halls with raised galleries are 9.6 m tall (7.2 m without).
+			var hit=a.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(start+Vector3.UP*5.,start+Vector3.UP*11.,1))
 			expect(not hit.is_empty(),"indoor map has solid ceiling "+str(index))
 		var distances=[]
 		for x in range(-4,5):

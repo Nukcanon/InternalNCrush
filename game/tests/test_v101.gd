@@ -41,8 +41,9 @@ func run():
 		DistrictLayout.route_spec(index)
 		var spec=DistrictLayout.specs[index]
 		var terrain=spec.get("terrain")
-		var high=not spec.upper_path.is_empty() or (terrain!=null and float(terrain[2].max())>1.)
-		var low=not spec.lower_path.is_empty() or (terrain!=null and float(terrain[2].min())< -1.)
+		# 1.5 blueprints declare raised terraces / sunken passages directly.
+		var high=not spec.upper_path.is_empty() or (terrain!=null and float(terrain[2].max())>1.) or bool(spec.get("terraces",false))
+		var low=not spec.lower_path.is_empty() or (terrain!=null and float(terrain[2].min())< -1.) or bool(spec.get("sunken",false))
 		expect(arena.navigation_goals.any(func(p):return p.y>1.)==high and arena.navigation_goals.any(func(p):return p.y< -1.)==low,"map %d exposes its authored terrace or bridge elevations"%index)
 		for team in [0,1]:
 			var start=arena.spawn_points[team][3]

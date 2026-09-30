@@ -58,6 +58,23 @@ static func tree_for(index:int,ordinal:int) -> String:
 ## Returns the collision box (local AABB) or an empty AABB for none.
 static func build(node:Node3D,kind:String,index:int,ordinal:int) -> AABB:
 	var material=WorldSurface.material("detail",index,true)
+	if kind.begins_with("vehicle_"):
+		# Parked vehicles (original transport set) as hard cover, length along local X.
+		var holder=Node3D.new();node.add_child(holder)
+		ImportedWorldProp.build(holder,kind,Vector3.ONE,"transport_original",true)
+		var local_bounds=func() -> AABB:
+			var out=AABB();var first=true
+			for mesh in holder.find_children("*","MeshInstance3D",true,false):
+				var xf=holder.transform
+				var parent=mesh.get_parent()
+				while parent!=holder:xf=xf*parent.transform;parent=parent.get_parent()
+				var b=(xf*mesh.transform)*mesh.get_aabb()
+				out=b if first else out.merge(b);first=false
+			return out
+		var bounds:AABB=local_bounds.call()
+		if bounds.size.z>bounds.size.x:holder.rotation.y=PI*.5;bounds=local_bounds.call()
+		var centre=bounds.get_center();holder.position-=Vector3(centre.x,0,centre.z)
+		return AABB(Vector3(-bounds.size.x*.5,0,-bounds.size.z*.5),Vector3(bounds.size.x,minf(bounds.size.y,1.6),bounds.size.z))
 	if has_baked(kind):
 		var mesh=MeshInstance3D.new();mesh.mesh=baked(kind);mesh.material_override=material;node.add_child(mesh)
 		var box=mesh.get_aabb()
@@ -72,6 +89,16 @@ static func c(hex:String) -> Color:return Color(hex)
 static func procedural(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 	var wood=c("9a6a42");var dark_wood=c("6b4a2f");var metal=c("7f8a92");var dark=c("3a4046")
 	match kind:
+		# 1.5 blueprint cover: concrete pillar and a chest-high wall.
+		"pillar":
+			k.box(Vector3(0,1.7,0),Vector3(.8,3.4,.8),c("a7aaa6"),true)
+			k.box(Vector3(0,.12,0),Vector3(1.,.24,1.),c("8c8f8b"),true)
+			k.box(Vector3(0,3.3,0),Vector3(1.,.2,1.),c("8c8f8b"),true)
+			return AABB(Vector3(-.5,0,-.5),Vector3(1.,3.4,1.))
+		"low_wall":
+			k.box(Vector3(0,.55,0),Vector3(3.,1.1,.4),c(["b9ada0","a6a9a2","b39a86"][hs%3]),true)
+			k.box(Vector3(0,1.14,0),Vector3(3.1,.08,.5),c("8c8f8b"),true)
+			return AABB(Vector3(-1.55,0,-.25),Vector3(3.1,1.18,.5))
 		"planter","planter_long":
 			var w=2.4 if kind=="planter_long" else 1.3
 			k.box(Vector3(0,.3,0),Vector3(w,.6,.8),c(["b5634a","a8a39a","7a6a5a"][hs%3]),true)

@@ -38,6 +38,9 @@ func run():
 	g.players[1].cash=4000;g.apply_loadout(1,{"role":0,"primary":"a1","armor":2,"gadget":-1,"confirmed":true});expect(g.players[1].cash==1000 and g.players[1].primary=="a1","confirmed purchase costs deducted")
 	g.players[1].alive=true;g.apply_loadout(1,{"role":0,"primary":"r2","confirmed":true});expect(g.players[1].primary=="a1","class weapon restriction")
 	g.phase="combat";g.remaining=500;g.players[1].alive=true;g.players[1].protect=0;g.players[1].slot=0;g.players[1].mag.a1=0;g.players[1].reserve.a1=20;g.clock=200
+	# The staging point comes from the current map-19 spec; keep a fixture ammo
+	# supply that happens to lie there from topping up the reserve mid-check.
+	for supply in g.arena.supplies:supply.ready=1e9
 	g.handle_command(1,"reload",{});g.clock=203;g.server_tick(.01);expect(g.players[1].mag.a1==20 and g.players[1].reserve.a1==0,"finite reload transfers existing reserve")
 	g.options.infinite=true;g.players[1].mag.a1=0;g.players[1].reserve.a1=0;g.clock=204;g.handle_command(1,"reload",{});g.clock=207;g.server_tick(.01);expect(g.players[1].mag.a1==30,"infinite reserve still reloads magazine")
 	g.players[1].fire_ready=0;g.players[1].reload=0;g.actors[1].sprint_release=208;g.fire(1);expect(g.players[1].mag.a1==30,"sprint-to-fire delay enforced")

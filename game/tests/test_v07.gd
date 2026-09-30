@@ -41,7 +41,8 @@ func run():
 	# Aim pitch drives the upper-body aim blend.
 	c.drive(.016,{"velocity":Vector3.ZERO,"grounded":true,"pitch":.8})
 	expect(float(c.tree.get("parameters/aim/blend_position"))>.5,"looking up raises the aim layer")
-	for index in [7,10,12,16]:
+	# 1.5 blueprints: 과수원 (10) is a flat orchard; these four keep terraces.
+	for index in [7,9,12,16]:
 		var arena=Arena.new();root.add_child(arena);arena.build(index);var nav=BotNavigation.new();nav.build(arena)
 		expect(arena.playable_polygon.size()>4,"map %d has a nonrectangular perimeter"%index)
 		expect(arena.district_surfaces.any(func(s):return absf(s.plane.x)+absf(s.plane.y)>.01),"map %d has traversable terraces and ramps"%index)

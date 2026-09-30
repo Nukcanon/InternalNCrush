@@ -134,6 +134,7 @@ static func skin_material(index:int) -> ShaderMaterial:
 	var mat:ShaderMaterial=WorldSurface.material("wall",index).duplicate()
 	mat.set_shader_parameter("vertex_paint",true);mat.set_shader_parameter("pattern",int(style_for(index).pattern))
 	mat.set_shader_parameter("tile_meters",1.3 if int(style_for(index).pattern)==BRICKS else 2.4);mat.set_shader_parameter("line_strength",.12)
+	WorldSurface.apply_detail(mat,WorldSurface.detail_slot("skin",index))
 	skin_materials[index]=mat;return mat
 
 ## Geometry kit: vertex-colour quads/boxes in a front's local frame
@@ -222,7 +223,8 @@ static func build(a:Node,plan:Dictionary) -> Array:
 		var n=Vector3(-d.z,0,d.x)
 		kit.xf=Transform3D(Basis(d,Vector3.UP,n),u)
 		var piece={"length":length,"y0":float(f[4]),"y1":float(f[5]),"from":float(f[6]),"top":float(f[7]),"lot":int(f[8]),"flags":int(f[9]),"storey":storey,"lite":lite,"index":index}
-		front(kit,style,piece,fixtures)
+		# 1.5 blueprints name a style per building lot so one map mixes building types.
+		front(kit,STYLES.get(str(f[10]),style) if f.size()>10 else style,piece,fixtures)
 	for key in kits:
 		var kit:Kit=kits[key]
 		for pair in [[kit.skin,skin_material(index),"FacadeSkin"],[kit.detail,WorldSurface.material("detail",index,true),"FacadeDetail"]]:
@@ -617,6 +619,9 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 	var low=minf(y0,y1);var top:float=p.top
 	var storey:float=p.storey
 	var floors=maxi(1,floori((top-p.from)/storey+.01))
+	# A wall above an opening (covered room, gate): ornaments start above the
+	# opening instead of hanging across it.
+	if p.from>0.:low+=p.from;top-=p.from;crown-=p.from
 	# Continuous window bands (industrial) per upper storey.
 	if str(style.win[0])=="band" and not indoor and w>2.:
 		for s in range(1 if p.from<=0. else 0,floors):

@@ -39,9 +39,10 @@ def main():
         if 'source' in p.parts:
             continue
         with Image.open(p) as source:
-            picture = source.convert('RGBA' if 'A' in source.getbands() else 'RGB')
+            # 1.5 world detail maps are single-channel relief; keep them grey.
+            picture = source.convert('L' if source.mode == 'L' else 'RGBA' if 'A' in source.getbands() else 'RGB')
             before = picture.size
-            limit = 1920 if 'menu_slides' in p.parts else 768 if 'plans' in p.parts else 680 if p.name in ['building_atlas.png','building_normals.png','roof_atlas.png','roof_normals.png'] else 256 if 'world' in p.parts else 192 if 'thumbnails' in p.parts else 128
+            limit = 1920 if 'menu_slides' in p.parts else 768 if 'plans' in p.parts else 512 if 'detail' in p.parts else 680 if p.name in ['building_atlas.png','building_normals.png','roof_atlas.png','roof_normals.png'] else 256 if 'world' in p.parts else 192 if 'thumbnails' in p.parts else 128
             picture.thumbnail((limit, limit), Image.Resampling.LANCZOS)
             picture.save(p, optimize=True)
             converted.append({'path': str(p.relative_to(STAGE)), 'before': before, 'after': picture.size})
