@@ -94,7 +94,9 @@ static func edge_geometry(source:Mesh) -> ArrayMesh:
 	edge_builds+=1
 	var edges={}
 	for surface in range(source.get_surface_count()):
-		if source.surface_get_primitive_type(surface)!=Mesh.PRIMITIVE_TRIANGLES:continue
+		# Primitive meshes (the devices' lamps) are always triangles and have no
+		# surface_get_primitive_type.
+		if source is ArrayMesh and source.surface_get_primitive_type(surface)!=Mesh.PRIMITIVE_TRIANGLES:continue
 		var arrays=source.surface_get_arrays(surface);var vertices=arrays[Mesh.ARRAY_VERTEX];var indices=arrays[Mesh.ARRAY_INDEX]
 		var count=indices.size() if indices!=null and not indices.is_empty() else vertices.size()
 		for triangle in range(0,count-2,3):

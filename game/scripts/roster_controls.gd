@@ -20,6 +20,9 @@ static func remove_bot(g:Node,requester:int,target:int):
 	g.options.manual_roster=true;TeamBalance.remove_auto(g,target);g.broadcast_state(true)
 static func populate(g:Node,parent:Node,results:bool):
 	var grid=GridContainer.new();grid.columns=2;grid.size_flags_horizontal=Control.SIZE_EXPAND_FILL;grid.add_theme_constant_override("h_separation",12);grid.add_theme_constant_override("v_separation",6);parent.add_child(grid)
+	# 1.4.2: the rows are menu-skin cards, so their text, buttons and dropdowns
+	# take the menu skin too (the in-match scoreboard used the dark HUD theme).
+	if is_instance_valid(g.ui) and g.ui.theme:grid.theme=g.ui.theme
 	var teams=[[],[]];var players=g.players.values();players.sort_custom(func(a,b):return Rules.score(a)>Rules.score(b) if results else int(a.id)>int(b.id))
 	for p in players:
 		var side=int(p.team) if int(g.options.mode)!=1 else (0 if teams[0].size()<16 else 1)

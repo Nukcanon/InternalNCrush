@@ -71,7 +71,14 @@ func run():
 	for i in range(300):
 		g.spawn(1)
 		if p.hand==-1:left+=1
-	expect(left>15 and left<60,"server chooses a low left-handed proportion ("+str(left)+"/300)")
+	# 1.4.2: players keep their hands from life to life; only bots vary.
+	expect(left==0,"players stay right-handed across respawns ("+str(left)+"/300)")
+	g.add_player(-7,"BOT","hand_bot");var bot=g.players[-7];var bot_left=0
+	for i in range(300):
+		g.spawn(-7)
+		if bot.hand==-1:bot_left+=1
+	expect(bot_left>15 and bot_left<60,"bots are sometimes left-handed ("+str(bot_left)+"/300)")
+	TeamBalance.remove_auto(g,-7)
 	g.phase="combat";g.clock=100.;p.primary="a1";p.slot=0;p.protect=0.;p.reload=0.;p.fire_ready=0.;p.switch_until=0.;p.bloom=0.;p.spray_phase=0.;g.equip_ammo(p)
 	actor.position=Vector3(0,.15,76);actor.reset_view(0);await physics_frame;await physics_frame
 	actor.simulate(.016,g.clock,false);actor.visual(.016,p,g.clock);var initial=actor.visual_spread

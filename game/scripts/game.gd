@@ -492,7 +492,9 @@ func spawn(id:int):
 	if int(options.mode)==4:p.armor=armor_before
 	else:p.owned_primary=true;p.owned_secondary=true;p.owned_gadget=true;GadgetLoadout.reset(p)
 	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.;p.reveal_to={}
-	p.hand=-1 if randf()<.12 else 1
+	# 1.4.2: only bots are sometimes left-handed (variety in third person); a
+	# player's own hands no longer swap sides from one life to the next.
+	p.hand=(-1 if randf()<.12 else 1) if id<0 else 1
 	a.reset_view((0. if p.team==MatchFlow.attackers(self) else PI) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else 0. if options.get("practice",false) and id==1 else 0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0 if p.get("owned_primary",true) else 1;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
 	if bot_agents.has(id):bot_agents[id].reset_after_spawn()
 	if id==local_id:capture_pointer()
@@ -516,7 +518,7 @@ func choose_spawn(id:int) -> Vector3:
 		var score=minf(enemy_distance,100.)*1.5-ally_distance*.35-exposed+randf()*7
 		if score>best_score:best_score=score;best=pos
 	return best
-func can_attack(p:Dictionary) -> bool:return not (int(options.mode)==4 and phase=="buy") and p.alive and float(p.get("protect",0))<=clock and not BombLogic.busy(self,int(p.id))
+func can_attack(p:Dictionary) -> bool:return not (int(options.mode)==4 and phase=="buy") and p.alive and Rules.attack_blocked_until(p)<=clock and not BombLogic.busy(self,int(p.id))
 func passive_regen(p:Dictionary,dt:float):
 	if options.autoheal and p.alive and clock-maxf(p.last_hit,float(p.get("shot_time",-100.)))>=R.REGEN_DELAY:p.hp=minf(R.max_hp(p),p.hp+R.REGEN_RATE*dt)
 func kick_player(requester:int,target:int,by_vote=false) -> bool:
@@ -815,7 +817,7 @@ func server_tick(dt:float):
 		p.played+=dt
 		MarkerTracker.tick(self,id,dt)
 		var held_weapon=current_weapon(p)
-		ReloadAudio.tick(self,id)
+		ReloadAudio.tick(self,id);MagazineReload.tick(self,id)
 		if p.reload>0 and clock>=p.reload:
 			MagazineReload.finish(self,id)
 		passive_regen(p,dt)
@@ -884,7 +886,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 			if MeleeCombat.active(p,clock):return
 			if slot==p.slot:return
 			GrenadeLogic.release(self,id)
-			p.slot=slot;p.reload=0.;p.burst_left=0;p.trigger_until=0.;p.fire_ready=maxf(p.fire_ready,clock+.32);p.switch_until=clock+.32
+			p.slot=slot;p.reload=0.;p.revolver_open=false;p.burst_left=0;p.trigger_until=0.;p.fire_ready=maxf(p.fire_ready,clock+.32);p.switch_until=clock+.32
 			p.placing=""
 			if slot==2 and p.role==3 and p.gadget in [0,1,2] and can_attack(p) and p.gadget_count>0 and clock>=p.gadget_ready:Deployment.begin(self,id,"cover")
 			feedback(id,"switch","")
@@ -1010,7 +1012,8 @@ func begin_reload(id:int):
 	if w.kind!="gun":return
 	var capacity=MagazineReload.capacity(w,int(p.mag.get(wid,0)))
 	if int(p.mag.get(wid,0))<capacity and (options.infinite or int(p.reserve.get(wid,0))>0):
-		p.reload=clock+float(w.reload);p.reload_started=clock;p.reload_weapon=wid;p.burst_left=0
+		p.reload=clock+MagazineReload.duration(w);p.reload_started=clock;p.reload_weapon=wid;p.burst_left=0;p.reload_half=false
+		if str(w.get("reload_style",""))=="revolver" and not p.get("revolver_open",false):p.revolver_open=true;reload_sound.rpc(id,"reload")
 		p.reload_capacity=capacity;p.reload_tactical=MagazineReload.chambered(w) and int(p.mag.get(wid,0))>0
 		p.reload_count=mini(capacity-int(p.mag.get(wid,0)),capacity if options.infinite else int(p.reserve.get(wid,0)))
 		if w.get("single_load",false):p.reload_count=1
@@ -1045,7 +1048,7 @@ func process_trigger(id:int):
 		return
 	var w=current_weapon(p);var mode=w.get("fire_mode","auto")
 	if w.get("single_load",false) and (pressed or held) and p.reload>0 and int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0:
-		p.reload=0.;MagazineReload.settle(self,p,w);p.trigger_until=clock+.55
+		p.reload=0.;MagazineReload.settle(self,p,w);MagazineReload.close_cylinder(self,id,w);p.trigger_until=clock+.55
 	if pressed and p.reload<=0:p.trigger_until=clock+.55
 	if mode=="auto":
 		if held:fire(id)

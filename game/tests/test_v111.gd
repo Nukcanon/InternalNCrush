@@ -13,8 +13,8 @@ func run():
 	for name in ["bomb_planted","bomb_dropped","bomb_defused","bomb_defuse"]:expect(sounds.has(name) and ResourceLoader.exists(sounds[name].file),"bomb audio ships in build "+name)
 	var d={"pos":Vector3.ZERO,"yaw":0.,"level":1}
 	expect(TurretLogic.in_arc(d,Vector3(0,0,-20)) and not TurretLogic.in_arc(d,Vector3(30,0,-20)),"automatic turret has a 100 degree arc")
-	expect(is_equal_approx(TurretLogic.remote_damage(10.,12.),10.) and is_equal_approx(TurretLogic.remote_damage(10.,48.),1.),"remote bullets sharply fall off between 12 and 48 metres")
-	expect(TurretLogic.remote_damage(10.,30.)>TurretLogic.remote_damage(10.,40.),"remote damage decreases continuously")
+	expect(is_equal_approx(TurretLogic.remote_damage(10.,80.),10.) and is_equal_approx(TurretLogic.remote_damage(10.,150.),4.) and is_equal_approx(TurretLogic.remote_damage(10.,300.),4.),"remote bullets keep full damage to 80 m and fall to 40% at 150 m")
+	expect(TurretLogic.remote_damage(10.,100.)>TurretLogic.remote_damage(10.,120.),"remote damage decreases continuously")
 	expect(TurretLogic.SCALES[0]==.5 and TurretLogic.SCALES[3]==1.,"turret grows from half size to full size")
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.options.map_random=false;g.options.mode=4;g.options.map=19;g.options.max_players=12;g.phase="lobby";g.build_world()
 	for id in range(1,13):g.add_player(id,"TEST "+str(id),"test"+str(id));g.players[id].team=0 if id<=6 else 1
@@ -69,7 +69,7 @@ func run():
 	g.bomb.planted=true;g.bomb.site=0;g.bomb.carrier=0;g.bomb.position=g.arena.sites[0];g.actors[2].position=g.arena.sites[1];g.interact(2,4.)
 	expect(g.bomb.site==0,"a planted bomb cannot be placed at the second site")
 	var radius=BombLogic.radius(g)
-	expect(radius<=30. and radius<=minf(g.arena.bounds.x,g.arena.bounds.y)*.4,"bomb blast respects both map and thirty-metre limits")
+	expect(radius<=60. and is_equal_approx(radius,2.*minf(30.,minf(g.arena.bounds.x,g.arena.bounds.y)*.4)),"1.4.2: bomb blast reaches twice the map-scaled radius (at most 60 m)")
 	g.players[1].protect=0.;g.players[1].armor=0.;g.players[1].hp=100.;g.actors[1].position=g.bomb.position+Vector3.RIGHT*2.
 	g.players[7].protect=0.;g.players[7].armor=0.;g.players[7].hp=100.;g.actors[7].position=g.bomb.position+Vector3.RIGHT*(radius+3.)
 	g.bomb.time=.001;g.check_objectives(.016)

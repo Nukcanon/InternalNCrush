@@ -140,8 +140,66 @@ func first_person_only():
 # First person scales the whole body up for reach; the upper arms and forearms
 # are drawn slimmer about their bone axes so they do not fill the screen.
 # Hands keep their shape. Built once per arm mesh (shared by every view body).
-const FP_ARM_SLIM=.74
+const FP_ARM_SLIM=.8
+const FP_ELBOW_FILL=.55
 static var slim_cache={}
+# 1.4.2: the upper arm's cut end (at the dropped shoulder) is closed with a flat
+# cap in the sleeve's material, so a glimpse of it reads as a sleeve end, not a
+# hole. `keep` marks kept vertices; cut edges belong to one kept triangle and
+# to a dropped one. Both windings (the cap is seen from either side).
+static func cap_cut(arrays:Array,indices:PackedInt32Array,keep:PackedByteArray,kept:PackedInt32Array,welded:Array,per:int):
+	var kept_edges={};var dropped={}
+	for t in range(0,indices.size(),3):
+		var tri=[indices[t],indices[t+1],indices[t+2]]
+		var is_kept=keep[tri[0]]==1 or keep[tri[1]]==1 or keep[tri[2]]==1
+		for e in range(3):
+			var a=tri[e];var b=tri[(e+1)%3]
+			var ka=str(welded[a]);var kb=str(welded[b]);var key=ka+"|"+kb if ka<kb else kb+"|"+ka
+			if is_kept:
+				if not kept_edges.has(key):kept_edges[key]=[]
+				kept_edges[key].append([a,b])
+			else:dropped[key]=true
+	var next={} # welded key -> [vertex, following vertex]
+	for key in kept_edges:
+		if kept_edges[key].size()==1 and dropped.has(key):
+			var e=kept_edges[key][0];next[str(welded[e[0]])]=[e[0],e[1]]
+	var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+	var count=verts.size();var seen={}
+	for start in next.keys():
+		if seen.has(start):continue
+		var loop=[];var k=start
+		while next.has(k) and not seen.has(k):
+			seen[k]=true;loop.append(next[k][0]);k=str(welded[next[k][1]])
+		if loop.size()<3:continue
+		var centre=Vector3.ZERO
+		for v in loop:centre+=verts[v]
+		centre/=loop.size()
+		var normal=Vector3.ZERO
+		for i in range(loop.size()):normal+=(verts[loop[i]]-centre).cross(verts[loop[(i+1)%loop.size()]]-centre)
+		if normal.length()<1e-8:continue
+		normal=normal.normalized()
+		for side in [1.,-1.]:
+			var n=normal*side;var base=count
+			copy_vertex(arrays,loop[0],count,per,centre,n);count+=1
+			for v in loop:copy_vertex(arrays,v,count,per,verts[v],n);count+=1
+			for i in range(loop.size()):
+				var a=base;var b=base+1+i;var c=base+1+(i+1)%loop.size()
+				# Godot's front faces are clockwise: (c-a)x(b-a) must point along n.
+				var pa:Vector3=centre;var pb:Vector3=verts[loop[i]];var pc:Vector3=verts[loop[(i+1)%loop.size()]]
+				if (pc-pa).cross(pb-pa).dot(n)<0.:kept.append_array([a,c,b])
+				else:kept.append_array([a,b,c])
+	arrays[Mesh.ARRAY_INDEX]=kept
+# Appends a copy of vertex `src` (every attribute) at `position` with `normal`.
+static func copy_vertex(arrays:Array,src:int,count:int,per:int,position:Vector3,normal:Vector3):
+	for k in range(arrays.size()):
+		if k==Mesh.ARRAY_INDEX or arrays[k]==null:continue
+		var a=arrays[k];var size=a.size()/maxi(1,count)
+		if size<=0:continue
+		for j in range(size):a.append(a[src*size+j])
+		arrays[k]=a
+	var v:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];v[count]=position;arrays[Mesh.ARRAY_VERTEX]=v
+	if arrays[Mesh.ARRAY_NORMAL]!=null:
+		var n:PackedVector3Array=arrays[Mesh.ARRAY_NORMAL];n[count]=normal;arrays[Mesh.ARRAY_NORMAL]=n
 func slim_arms(source:Mesh,skin:Skin) -> Mesh:
 	if source==null or skin==null:return source
 	var key=source.get_instance_id()
@@ -157,7 +215,7 @@ func slim_arms(source:Mesh,skin:Skin) -> Mesh:
 		if name=="":name=skeleton.get_bone_name(skin.get_bind_bone(bind))
 		if name.begins_with("UpperArm") or name.begins_with("LowerArm"):
 			var bone:Transform3D=skin.get_bind_pose(bind).affine_inverse()
-			axes[bind]=[bone.origin,bone.basis.y.normalized()]
+			axes[bind]=[bone.origin,bone.basis.y.normalized(),name.begins_with("UpperArm")]
 		if not (name.begins_with("Shoulder") or name in ["Chest","Neck","Head","Abdomen","Hips","Body","Root"]):lower[bind]=true
 	var out=ArrayMesh.new()
 	for s in range(source.get_surface_count()):
@@ -175,21 +233,29 @@ func slim_arms(source:Mesh,skin:Skin) -> Mesh:
 		var kept=PackedInt32Array()
 		for t in range(0,indices.size(),3):
 			if keep[indices[t]]==1 or keep[indices[t+1]]==1 or keep[indices[t+2]]==1:kept.append_array([indices[t],indices[t+1],indices[t+2]])
-		arrays[Mesh.ARRAY_INDEX]=kept
+		var welded=[]
+		for i in range(verts.size()):welded.append(verts[i].snapped(Vector3.ONE*.0005))
 		for i in range(verts.size()):
 			# Slim only where arm bones carry (nearly) all of the weight.
-			var arm_weight=0.;var best=-1;var bw=-1.
+			var arm_weight=0.;var best=-1;var bw=-1.;var upper=0.;var fore=0.
 			for k in range(per):
 				var b=bones[i*per+k];var wgt=weights[i*per+k]
-				if axes.has(b):arm_weight+=wgt
+				if axes.has(b):
+					arm_weight+=wgt
+					if axes[b][2]:upper+=wgt
+					else:fore+=wgt
 				if wgt>bw:bw=wgt;best=b
 			if not axes.has(best) or arm_weight<.6:continue
 			var o:Vector3=axes[best][0];var y:Vector3=axes[best][1]
 			var rel=verts[i]-o;var along=y*rel.dot(y)
 			var factor=lerpf(1.,FP_ARM_SLIM,clampf((arm_weight-.6)/.35,0.,1.))
+			# 1.4.2: the elbow (weights shared by upper arm and forearm) collapsed
+			# into a thin twist when the arm bent; it is filled out instead.
+			factor*=1.+FP_ELBOW_FILL*clampf(4.*upper*fore,0.,1.)
 			verts[i]=o+along+(rel-along)*factor
 		arrays[Mesh.ARRAY_VERTEX]=verts
 		if kept.is_empty():continue
+		cap_cut(arrays,indices,keep,kept,welded,per)
 		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays,[],{},source.surface_get_format(s)&Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
 		out.surface_set_material(out.get_surface_count()-1,source.surface_get_material(s))
 	slim_cache[key]=out
@@ -377,20 +443,37 @@ func hide_parts(suffixes:Array):
 	for mesh in meshes():
 		for suffix in suffixes:
 			if str(mesh.name).ends_with(suffix):mesh.hide()
-# Armour tier (0..2) worn over the outfit; the vest model arrives with the gear pass.
+# Armour tier (0..2) worn over the outfit. 1.4.2: the vest is fitted to each
+# hero's own torso and skinned to its skeleton (FittedArmor); the old strapped
+# box vest stays as the fallback for an outfit without a torso mesh.
 func set_armor(level:int):
 	level=clampi(level,0,2)
-	if level==armor_level and (level==0 or skeleton.has_node("ChestMount")):return
+	if level==armor_level and (level==0 or skeleton.has_node("ChestMount") or skeleton.has_node("FittedArmor")):return
 	armor_level=level
-	var mount=skeleton.get_node_or_null("ChestMount")
-	if mount:skeleton.remove_child(mount);mount.queue_free()
+	for old in ["ChestMount","FittedArmor"]:
+		var node=skeleton.get_node_or_null(old)
+		if node:skeleton.remove_child(node);node.queue_free()
 	if level==0 or meshes().all(func(m):return not m.visible):return
+	var fitted=FittedArmor.build(self,level)
+	if fitted:
+		skeleton.add_child(fitted)
+		if first_person:fitted.hide()
+		return
 	HeroHitbox.load_volumes()
 	for v in HeroHitbox.volumes.get(OUTFITS[role],[]):
 		if v.bone=="Chest" and v.type=="ellipsoid":
-			mount=BoneAttachment3D.new();mount.name="ChestMount";mount.bone_name="Chest";skeleton.add_child(mount)
+			var mount=BoneAttachment3D.new();mount.name="ChestMount";mount.bone_name="Chest";skeleton.add_child(mount)
 			GearModels.vest(mount,level,team,HeroHitbox.v3(v.c),HeroHitbox.v3(v.e))
 			break
+# Corpses wear what the living hero wore: armour and the carried kit (the
+# weapon that was in hand goes back to its place).
+func dress_like(source:HeroCharacter):
+	if not is_instance_valid(source):return
+	if source.armor_level>0:set_armor(source.armor_level)
+	var spec:Dictionary=source.get_meta("carried_spec",{})
+	if not spec.is_empty():
+		var copy=spec.duplicate();copy.primary_out=false;copy.secondary_out=false
+		CarriedGear.apply(self,copy)
 # Bone-attached node on a hand (melee tools, thrown items).
 func hand_attachment(side:String) -> BoneAttachment3D:
 	var name="Hand"+side

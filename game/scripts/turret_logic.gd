@@ -7,13 +7,28 @@ const TRACK_SPEED=HALF_ARC*2./.45
 const FIRE_TOLERANCE=PI/90.
 const SCALES=[.5,.65,.82,1.]
 const INTERVALS=[.12,.15,.10,.10]
-const DAMAGE=[2.8,4.5,3.6,3.8]
+# 1.4.2: bullets deal BULLET_SHARE of these. After that cut a 100 HP target
+# falls in about 3.8 / 3.1 / 2.4 s (33 / 22 / 25 hits), and in 1.7 s at level 4
+# with its first missile (18 hits + 30).
+const DAMAGE=[3.8,5.7,5.01,4.87]
+const BULLET_SHARE=.8
 const ROCKET_SPEED=30.
+const ROCKET_DAMAGE=30.
+const ROCKET_RADIUS=2.4
+const ROCKET_LIFETIME=10.
+## Level 1 reaches from the map's centre to a corner (55-100 m); every upgrade
+## adds a tenth of that.
+static func base_range(game:Node) -> float:return clampf(game.arena.bounds.length(),55.,100.)
 static func range_for(game:Node,level:int) -> float:
-	return clampf(game.arena.bounds.length(),55.,100.)+float(level-1)*2.
+	return base_range(game)*(1.+.1*float(clampi(level,1,4)-1))
+static func bullet_damage(level:int) -> float:return DAMAGE[clampi(level,1,4)-1]*BULLET_SHARE
 static func origin(d:Dictionary) -> Vector3:return d.pos+Vector3.UP*(1.7*SCALES[clampi(int(d.level)-1,0,3)])
+# TETHER (remote control): full bullet damage to 80 m, 40% at 150 m and beyond.
+const REMOTE_FULL=80.
+const REMOTE_FAR=150.
+const REMOTE_FLOOR=.4
 static func remote_damage(base:float,distance:float) -> float:
-	return base*lerpf(1.,.10,clampf((distance-12.)/36.,0.,1.))
+	return base*lerpf(1.,REMOTE_FLOOR,clampf((distance-REMOTE_FULL)/(REMOTE_FAR-REMOTE_FULL),0.,1.))
 static func in_arc(d:Dictionary,point:Vector3) -> bool:
 	var delta=point-d.pos;delta.y=0
 	return delta.length_squared()<.001 or (Basis(Vector3.UP,d.yaw)*Vector3.FORWARD).dot(delta.normalized())>=cos(HALF_ARC)
@@ -61,7 +76,7 @@ static func tick(game:Node,dt:float):
 		if game.clock>d.expires:game.remove_device(did);continue
 		if d.kind!="turret" or Construction.active(game,d) or game.clock<d.disabled or game.phase!="combat":continue
 		var owner=game.players.get(d.owner,{})
-		if owner.is_empty() or owner.protect>game.clock:continue
+		if owner.is_empty() or Rules.attack_blocked_until(owner)>game.clock:continue
 		var from=origin(d);var target=int(d.get("target",0));var aim=Vector3.INF
 		var remote=owner.alive and owner.slot==0 and game.current_weapon(owner).kind=="remote"
 		d.remote=remote
@@ -107,7 +122,7 @@ static func tick(game:Node,dt:float):
 			d.next_fire=game.clock+INTERVALS[d.level-1]
 			var flight=Ballistics.trace(game,muzzle,direction,300. if remote else muzzle.distance_to(aim)+2.,exclude)
 			var hit:Dictionary=flight.hit;var end:Vector3=flight.end
-			var amount=DAMAGE[d.level-1]
+			var amount=bullet_damage(d.level)
 			if remote:amount=remote_damage(amount,muzzle.distance_to(end))
 			for passed_id in flight.get("passed",{}):game.damage_device(passed_id,amount,int(d.owner))
 			if not hit.is_empty():
@@ -117,26 +132,31 @@ static func tick(game:Node,dt:float):
 			game.effect.rpc("shot",muzzle,end,0)
 		if d.level==4 and game.clock>=float(d.get("rocket_ready",0)):
 			d.rocket_ready=game.clock+2.
-			game.rockets.append({"pos":muzzle,"velocity":direction*ROCKET_SPEED,"owner":int(d.owner),"device":did,"until":game.clock+10.,"origin":muzzle})
+			game.rockets.append({"pos":muzzle,"velocity":direction*ROCKET_SPEED,"owner":int(d.owner),"device":did,"until":game.clock+ROCKET_LIFETIME,"origin":muzzle})
 	tick_rockets(game,dt)
 static func tick_rockets(game:Node,dt:float):
 	for rocket in game.rockets:
 		if rocket.get("launcher",false):RocketCombat.tick(game,rocket,dt);continue
-		if rocket.until<=game.clock:game.event_fx.rpc("explosion",rocket.pos,Vector3.ZERO,rocket.owner);continue
-		var from:Vector3=rocket.pos;var to=from+rocket.velocity*dt;var exclude=[]
+		var exclude=[]
 		if game.device_nodes.has(int(rocket.device)):exclude.append(game.device_nodes[int(rocket.device)].get_rid())
+		# 1.4.2: a missile still flying after ROCKET_LIFETIME bursts where it is.
+		if rocket.until<=game.clock:
+			rocket.until=0.;blast(game,rocket,{"position":rocket.pos,"normal":Vector3.UP,"collider":null},exclude);continue
+		var from:Vector3=rocket.pos;var to=from+rocket.velocity*dt
 		var hit=game.ray(from,to,exclude)
-		Construction.projectile(game,rocket,from,hit.get("position",to),30.)
+		Construction.projectile(game,rocket,from,hit.get("position",to),ROCKET_DAMAGE)
 		if not hit.is_empty():
-			rocket.pos=hit.position;rocket.until=0.
-			for id in game.players:
-				if not game.players[id].alive:continue
-				var point=game.actors[id].eye()-Vector3.UP*.3;var distance=point.distance_to(hit.position)
-				if hit.collider==game.actors[id]:game.damage(id,30.,rocket.owner,false,"turret_missile",rocket.origin,hit.position)
-				elif distance<2.4 and game.clear_line(hit.position+hit.normal*.08,point,exclude+[game.actors[id].get_rid()]):game.damage(id,30.*clampf(1.-distance/2.4,.2,1.),rocket.owner,false,"turret_missile",rocket.origin,point)
-			for struck in game.devices.keys():
-				var device=game.devices[struck];var point=device.pos+Vector3.UP*.6;var distance=point.distance_to(hit.position)
-				if distance<2.4 and game.clear_line(hit.position+hit.normal*.08,point,[game.device_nodes[struck].get_rid()] if game.device_nodes.has(struck) else []):game.damage_device(struck,30.*clampf(1.-distance/2.4,.2,1.),int(rocket.owner))
-			game.event_fx.rpc("explosion",hit.position,Vector3.ZERO,rocket.owner)
+			rocket.pos=hit.position;rocket.until=0.;blast(game,rocket,hit,exclude)
 		else:rocket.pos=to
 	game.rockets=game.rockets.filter(func(r):return r.until>game.clock)
+static func blast(game:Node,rocket:Dictionary,hit:Dictionary,exclude:Array):
+	var at:Vector3=hit.position;var normal:Vector3=hit.get("normal",Vector3.UP)
+	for id in game.players:
+		if not game.players[id].alive:continue
+		var point=game.actors[id].eye()-Vector3.UP*.3;var distance=point.distance_to(at)
+		if hit.collider!=null and hit.collider==game.actors[id]:game.damage(id,ROCKET_DAMAGE,rocket.owner,false,"turret_missile",rocket.origin,at)
+		elif distance<ROCKET_RADIUS and game.clear_line(at+normal*.08,point,exclude+[game.actors[id].get_rid()]):game.damage(id,ROCKET_DAMAGE*clampf(1.-distance/ROCKET_RADIUS,.2,1.),rocket.owner,false,"turret_missile",rocket.origin,point)
+	for struck in game.devices.keys():
+		var device=game.devices[struck];var point=device.pos+Vector3.UP*.6;var distance=point.distance_to(at)
+		if distance<ROCKET_RADIUS and game.clear_line(at+normal*.08,point,[game.device_nodes[struck].get_rid()] if game.device_nodes.has(struck) else []):game.damage_device(struck,ROCKET_DAMAGE*clampf(1.-distance/ROCKET_RADIUS,.2,1.),int(rocket.owner))
+	game.event_fx.rpc("explosion",at,Vector3.ZERO,rocket.owner)

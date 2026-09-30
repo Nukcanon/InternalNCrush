@@ -4,6 +4,9 @@ Version 1.1.
 Covers assets/Korean.ttf (Noto Sans KR) and assets/fonts/Symbols.ttf, a
 subset of the same Noto Sans KR font holding only punctuation, arrows,
 geometric shapes and other symbols (made with fontTools pyftsubset for 1.4.1).
+In 1.4.2 its vertical line metrics (ascent / descent / line gap) were set to
+those of DoHyeon (tools/fit_symbol_font.py) so mixed text stays centred; the
+glyph outlines are unchanged.
 
 This license is copied below, and is also available with a FAQ at:
 http://scripts.sil.org/OFL

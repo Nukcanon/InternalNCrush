@@ -69,8 +69,9 @@ static func tick(game:Node,dt:float):
 static func beep_interval(remaining:float,total:float) -> float:
 	var fraction=remaining/maxf(1.,total)
 	return 1.2 if fraction>.5 else .75 if fraction>.25 else .4 if fraction>.1 else .16
+# 1.4.2: twice the 1.4 reach (the shorter side x 0.8, at most 60 m).
 static func radius(game:Node) -> float:
-	return minf(30.,minf(game.arena.bounds.x,game.arena.bounds.y)*2./5.)
+	return 2.*minf(30.,minf(game.arena.bounds.x,game.arena.bounds.y)*2./5.)
 static func detonate(game:Node):
 	if game.bomb.get("exploded",false):return
 	game.bomb.exploded=true

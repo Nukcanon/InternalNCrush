@@ -46,8 +46,9 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 			bounds=box if first else bounds.merge(box);first=false
 		var focus=bounds.get_center();camera.position=focus+Vector3(0,.35,-3);camera.look_at(focus);camera.size=maxf(.52,bounds.size.x*.70)
 	elif kind==3:
-		GearModels.vest(model,clampi(gadget,1,2),0,Vector3(0,.2,0),Vector3(.15,.2,.11))
-		camera.position=Vector3(.5,.6,-3);camera.look_at(Vector3(0,.15,0));camera.size=1.0
+		# 1.4.2: the armour as this hero wears it (fitted per hero and tier).
+		var c=HeroCharacter.new();model.add_child(c);c.build(role,team,true);c.play("Idle",.4);c.set_armor(clampi(gadget,0,2))
+		model.rotation.y=-.55;camera.position=Vector3(0,1.2,-4);camera.look_at(Vector3(0,1.17,0));camera.size=1.3
 	elif kind==4:
 		if not is_instance_valid(skill_symbol):skill_symbol=SkillIcon.new();add_child(skill_symbol);skill_symbol.size=Vector2(76,76)
 		skill_symbol.role=role;skill_symbol.show();skill_symbol.queue_redraw()
@@ -59,7 +60,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 		var material=mesh.material_override
 		if material is ShaderMaterial:
 			mesh.material_override=material.duplicate();mesh.material_override.set_shader_parameter("dynamic_lighting",true)
-	if kind in [1,2,3]:
+	if kind in [1,2]:
 		var bounds=AABB();var first=true
 		for mesh in model.find_children("*","MeshInstance3D",true,false):
 			var part=model.global_transform.affine_inverse()*mesh.global_transform*mesh.get_aabb()

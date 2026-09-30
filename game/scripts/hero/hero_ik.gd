@@ -442,6 +442,8 @@ static func segment_end(sk:Skeleton3D,bones:Array,frames:Array,i:int,tip:float) 
 # Solved finger rotations, cached per rig, style and grip geometry (hand units).
 static var grip_cache={}
 const MAX_FLEX=[.4,.4,1.65,1.8,1.35]
+# Least flexion of the firing hand's middle finger per joint (see grip_pose).
+const MIDDLE_TUCK=[0.,1.0,1.1,.8]
 const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
@@ -495,6 +497,18 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			else:
 				for i in range(1,bones.size()):
 					angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,FINGER_RADIUS[mini(i+1,4)],0.,MAX_FLEX[mini(i+1,4)],MAX_FLEX[mini(i+1,4)])
+				# 1.4.2: on the firing hand the middle finger touched the trigger
+				# guard while still straight and stayed out along it; it now tucks
+				# under the guard and closes round the front of the grip.
+				if finger=="Middle" and trigger!=null:
+					var wrapped=angles.duplicate()
+					angles[0]=maxf(float(angles[0]),.12)
+					for i in range(1,bones.size()):angles[i]=maxf(float(angles[i]),float(MIDDLE_TUCK[mini(i,MIDDLE_TUCK.size()-1)]))
+					# ...but never into the grip: ease the tip joints back until the
+					# finger lies on the surface (a touch, as the other fingers).
+					for step in range(12):
+						if chain_clearance(sk,bones,angles,tip,dist)>=-.003:break
+						for i in range(bones.size()-1,0,-1):angles[i]=maxf(float(wrapped[i]),float(angles[i])-.06)
 		if debug_contact and not contact.is_empty():
 			var frames=finger_frames(sk,bones,angles);var ends=[]
 			for i in range(bones.size()):ends.append(snappedf(dist.call(segment_end(sk,bones,frames,i,tip)),.0001))

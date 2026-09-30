@@ -11,7 +11,7 @@ func build(source:HeroCharacter,pos:Vector3,push:Vector3,role:int,team:int,facin
 	var horizontal=Vector3(push.x,0,push.z).normalized()
 	velocity=horizontal*3.4+previous_velocity.limit_length(4.)*.2+Vector3.UP*1.6
 	hero=HeroCharacter.new();add_child(hero);hero.build(role,team,false)
-	if is_instance_valid(source):hero.scale=source.scale
+	if is_instance_valid(source):hero.scale=source.scale;hero.dress_like(source)
 	# The death clip falls backward: turn the back (+Z) along the shot.
 	var local=Basis(Vector3.UP,-facing)*push
 	if Vector2(local.x,local.z).length()>.01:hero.rotation.y=atan2(local.x,local.z)

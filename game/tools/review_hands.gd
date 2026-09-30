@@ -137,7 +137,8 @@ func equip(a,p:Dictionary,role:int,slot:int,item:String,gadget:int=-1):
 	a.shown_weapon="";a.set_team(0)
 func reload_at(p:Dictionary,wid:String,phase:float):
 	var w=Catalog.get_weapon(wid);p.reload_tactical=false;p.reload_weapon=wid;p.mag[wid]=0
-	p.reload=g.clock+float(w.reload)*(1.-phase);p.reload_started=g.clock-float(w.reload)*phase
+	var d=MagazineReload.duration(w);p.reload_count=int(w.mag);p.reload_capacity=int(w.mag)
+	p.reload=g.clock+d*(1.-phase);p.reload_started=g.clock-d*phase
 func run():
 	for arg in OS.get_cmdline_user_args():only.append(arg)
 	HeroIK.debug_contact="debugcontact" in only
@@ -162,7 +163,12 @@ func run():
 		["tether",3,0,"remote",-1,""],["laser-hip",2,0,"h6",-1,""],["laser-fire",2,0,"h6",-1,"beam"],["laser-reload20",2,0,"h6",-1,"reload:.2"],["laser-reload45",2,0,"h6",-1,"reload:.45"],["laser-reload70",2,0,"h6",-1,"reload:.7"],["fix",3,1,"repair",-1,""],["link",5,0,"m1",-1,""],["link-aim",5,0,"m1",-1,"aim"],["link-heal",5,0,"m1",-1,"heal"],
 		["smg-reload45",0,0,"a2",-1,"reload:.45"],["sniper-reload30",1,0,"r1",-1,"reload:.3"],["sniper-reload60",1,0,"r1",-1,"reload:.6"],["lmg-reload45",2,0,"h1",-1,"reload:.45"],
 		["shotgun-reload20",3,0,"e1",-1,"reload:.2"],["shotgun-reload85",3,0,"e1",-1,"reload:.85"],["pistol-reload20",0,1,"pistol",-1,"reload:.2"],["pistol-reload70",0,1,"pistol",-1,"reload:.7"],
-		["fold-hip",3,0,"e3",-1,""],["tidal-hip",3,0,"e2",-1,""],["mender-hip",5,0,"m3",-1,""]]
+		["fold-hip",3,0,"e3",-1,""],["tidal-hip",3,0,"e2",-1,""],["mender-hip",5,0,"m3",-1,""],
+		["rifle-reload10",0,0,"a1",-1,"reload:.1"],["rifle-reload35",0,0,"a1",-1,"reload:.35"],["rifle-reload62",0,0,"a1",-1,"reload:.62"],
+		["revolver-reload30",1,1,"heavy_pistol",-1,"reload:.3"],["revolver-reload65",1,1,"heavy_pistol",-1,"reload:.65"],["rivet-reload65",3,1,"eng_pistol",-1,"reload:.65"],
+		["tidal-reload45",3,0,"e2",-1,"reload:.45"],["tidal-reload66",3,0,"e2",-1,"reload:.66"],["fold-reload45",3,0,"e3",-1,"reload:.45"],["fold-reload65",3,0,"e3",-1,"reload:.65"],
+		["shotgun-reload45",3,0,"e1",-1,"reload:.45"],["shotgun-reload70",3,0,"e1",-1,"reload:.7"],["mender-reload70",5,0,"m3",-1,"reload:.7"],
+		["duet-reload25",0,1,"dual_pistols",-1,"reload:.25"],["duet-reload75",0,1,"dual_pistols",-1,"reload:.75"],["sniper2-hip",1,0,"r1",-1,""],["atlas-hip",0,0,"a3",-1,""]]
 	# "allguns": every weapon and tool in first person at the hip (right-handed).
 	if "allguns" in only:
 		var chosen=only.filter(func(x):return Catalog.weapons.has(x))

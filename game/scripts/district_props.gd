@@ -85,6 +85,154 @@ static func build(node:Node3D,kind:String,index:int,ordinal:int) -> AABB:
 	var box=procedural(kit,kind,ordinal+index*7)
 	var visual=MeshInstance3D.new();visual.mesh=kit.detail.commit();visual.material_override=material;node.add_child(visual)
 	return box
+## 1.4.2 collision that follows the prop instead of one box round everything
+## (a box on a fountain, a barrel group or a stepped crate stack left invisible
+## corners and air a player could stand on). Returns [[Shape3D, Transform3D]]
+## in the prop's local frame. Procedural props list their solid parts; baked
+## props use the convex hull of their mesh; the rest keep the footprint box.
+const CYL="cyl"
+static var hull_cache={}
+static func cylinder(p:Vector3,radius:float,height:float,axis_z:=false) -> Array:
+	var s=CylinderShape3D.new();s.radius=radius;s.height=height
+	var basis=Basis(Vector3.RIGHT,PI*.5) if axis_z else Basis()
+	return [s,Transform3D(basis,p+(Vector3.ZERO if axis_z else Vector3.UP*height*.5))]
+static func block(lo:Vector3,hi:Vector3) -> Array:
+	var s=BoxShape3D.new();s.size=hi-lo;return [s,Transform3D(Basis(),(lo+hi)*.5)]
+static func collision(node:Node3D,kind:String,occupied:AABB) -> Array:
+	if occupied.size==Vector3.ZERO:return []
+	match kind:
+		"cask_pair","drums":
+			var out=[]
+			for p in [Vector3(-.45,0,-.2),Vector3(.45,0,-.2),Vector3(0,0,.45)]:out.append(cylinder(p,.37,.95))
+			return out
+		"fountain":return [cylinder(Vector3.ZERO,1.5,.52),cylinder(Vector3.ZERO,.3,1.3),cylinder(Vector3(0,1.3,0),.7,.14)]
+		"bollards":return [cylinder(Vector3(-.7,0,0),.24,.82),cylinder(Vector3(.7,0,0),.24,.82)]
+		"pots":
+			var out=[]
+			for i in range(3):out.append(cylinder(Vector3(-.5+i*.5,0,(i%2)*.2),.22,.7))
+			return out
+		"well":return [cylinder(Vector3.ZERO,.9,.82),block(Vector3(-.86,0,-.06),Vector3(-.74,2.,.06)),block(Vector3(.74,0,-.06),Vector3(.86,2.,.06))]
+		"cable_drum":return [cylinder(Vector3(0,.7,-.35),.7,.1,true),cylinder(Vector3(0,.7,.35),.7,.1,true),cylinder(Vector3(0,.7,0),.42,.7,true)]
+		"cafe_table":return [cylinder(Vector3.ZERO,.5,.77),block(Vector3(-1.,0,-.2),Vector3(-.6,.82,.2)),block(Vector3(.6,0,-.2),Vector3(1.,.82,.2)),cylinder(Vector3(0,.77,0),.05,1.7)]
+		"crate_stack":return [block(Vector3(-.9,0,-.45),Vector3(0,.9,.45)),block(Vector3(.05,0,-.3),Vector3(.85,.8,.5)),block(Vector3(-.75,.9,-.4),Vector3(.05,1.7,.4))]
+		"bench":return [block(Vector3(-.95,0,-.25),Vector3(.95,.51,.25)),block(Vector3(-.95,.51,-.25),Vector3(.95,.95,-.19))]
+		"laundry":return [cylinder(Vector3(-1.3,0,0),.06,2.2),cylinder(Vector3(1.3,0,0),.06,2.2)]
+		"hay_bale":return [block(Vector3(-.7,0,-.45),Vector3(.7,.8,.45)),block(Vector3(-.3,.8,-.4),Vector3(.9,1.2,.4))]
+		"rock_pile":
+			var out=[]
+			for i in range(5):
+				var p=Vector3([-.6,.5,0,-.2,.4][i],[.35,.3,.8,.25,.7][i],[.1,-.2,0,.4,.2][i]);var half=Vector3(.9,.7,.8)*[1.,.9,.7,.8,.6][i]*.5
+				out.append(block(p-half,p+half))
+			return out
+		"desk":return [block(Vector3(-.8,0,-.4),Vector3(.8,.77,.4)),block(Vector3(-.3,.77,-.25),Vector3(.3,1.22,-.15)),block(Vector3(-.25,0,.35),Vector3(.25,.65,.85))]
+		"lab_bench":return [block(Vector3(-1.15,0,-.45),Vector3(1.15,.95,.45)),block(Vector3(.45,.95,-.2),Vector3(.95,1.25,.2))]
+		"workbench":return [block(Vector3(-1.,0,-.4),Vector3(1.,.95,.4)),block(Vector3(-.7,.95,-.15),Vector3(-.3,1.15,.15))]
+		"target_stand":return [block(Vector3(-.65,0,-.25),Vector3(.65,.8,.25)),block(Vector3(-.6,.8,-.04),Vector3(.6,1.8,.04))]
+		"potting_bench":return [block(Vector3(-.9,0,-.35),Vector3(.9,.89,.35)),block(Vector3(-.75,.89,-.15),Vector3(.75,1.33,.15))]
+		"weapon_rack":return [block(Vector3(-.8,0,-.25),Vector3(.8,.2,.25)),block(Vector3(-.8,.2,-.27),Vector3(.8,1.5,-.05))]
+		"globe":return [cylinder(Vector3.ZERO,.3,.8),block(Vector3(-.28,.78,-.28),Vector3(.28,1.35,.28))]
+		"money_cart":return [block(Vector3(-.6,0,-.35),Vector3(.6,1.1,.35))]
+		"bike_rack":return [block(Vector3(-1.05,0,-.08),Vector3(1.05,.68,.08))]
+		"market_stall":
+			# Counter plus the canopy (reachable from the counter: it must hold a player).
+			var roof=BoxShape3D.new();roof.size=Vector3(2.7,.06,1.4)
+			return [block(Vector3(-1.25,0,-.5),Vector3(1.25,1.2,.5)),[roof,Transform3D(Basis(Vector3.RIGHT,atan2(.3,1.35)),Vector3(0,2.33,.075))]]
+	if kind.begins_with("tree_") or kind=="streetlight" or kind.begins_with("vehicle_"):return [block(occupied.position,occupied.end)]
+	if has_baked(kind):
+		# Baked mesh cut into horizontal bands, one convex hull per band (a single
+		# hull ran from a tank's valve to its rim, leaving an invisible cone of
+		# air on top). Cached per kind; deterministic on every platform.
+		if not hull_cache.has(kind):hull_cache[kind]=band_hulls(baked(kind),4)
+		var hulls:Array=hull_cache[kind]
+		if not hulls.is_empty():return hulls.map(func(h):return [h,Transform3D()])
+	return [block(occupied.position,occupied.end)]
+static func band_hulls(mesh:Mesh,bands:int) -> Array:
+	var faces:PackedVector3Array=mesh.get_faces()
+	if faces.is_empty():return []
+	var lo=INF;var hi=-INF
+	for p in faces:lo=minf(lo,p.y);hi=maxf(hi,p.y)
+	var out=[]
+	for b in range(bands):
+		var y0=lerpf(lo,hi,float(b)/bands);var y1=lerpf(lo,hi,float(b+1)/bands)
+		var points=PackedVector3Array()
+		for i in range(0,faces.size(),3):
+			# The triangle clipped to y0..y1 (its corners inside plus edge crossings).
+			var tri=[faces[i],faces[i+1],faces[i+2]]
+			for k in range(3):
+				var p:Vector3=tri[k];var q:Vector3=tri[(k+1)%3]
+				if p.y>=y0-.0001 and p.y<=y1+.0001:points.append(p)
+				for level in [y0,y1]:
+					if (p.y-level)*(q.y-level)<0.:points.append(p.lerp(q,(level-p.y)/(q.y-p.y)))
+		if points.size()<4:continue
+		# Skip flat or needle-thin bands (a degenerate hull cannot be built).
+		var box=AABB(points[0],Vector3.ZERO)
+		for p in points:box=box.expand(p)
+		if box.size.x<.02 or box.size.y<.02 or box.size.z<.02:continue
+		var unique={}
+		for p in points:unique[p.snapped(Vector3.ONE*.002)]=true
+		var shape=ConvexPolygonShape3D.new();shape.points=PackedVector3Array(unique.keys())
+		out.append(shape)
+	return out
+const JOINTS=[["low_wall","pillar"],["sacktrench","sacktrench_small"],["sacktrench","sacktrench"],["sacktrench_small","sacktrench_small"]]
+static func joint(a:String,b:String) -> bool:
+	var pair=[a,b];pair.sort();return pair in JOINTS
+## Map bake pass (after a physics step, so the space holds every wall): props
+## sunk more than 8 cm into walls move to a nearby spot on the same floor, or
+## are removed. Returns [moved, removed].
+static func settle_props(a:Node3D) -> Array:
+	var bodies=[]
+	for node in a.architecture.get_children():
+		if not node.has_meta("footprint"):continue
+		for child in node.get_children():
+			if child is StaticBody3D:bodies.append(child);break
+	var moved=0;var dropped=[]
+	for body in bodies:
+		var node:Node3D=body.get_parent();var kind=str(node.get_meta("prop_asset",""))
+		var footprint:AABB=node.get_meta("footprint");var base_y=float(node.get_meta("base_y"))
+		var fits=func() -> bool:
+			for x in [footprint.position.x,footprint.end.x]:
+				for z in [footprint.position.z,footprint.end.z]:
+					var levels=DistrictLayout.heights(a,node.transform*Vector3(x,0,z))
+					if levels.is_empty() or absf(float(levels[0])-base_y)>.12:return false
+			var at=node.position
+			return not (a.navigation_goals+a.zones).any(func(goal):return Vector2(goal.x-at.x,goal.z-at.z).length()<2.5+footprint.size.length()*.5 and absf(goal.y-at.y)<2.)
+		var before=node.position
+		# Designed joints (a low wall into its end pillar, sandbag corners) may overlap.
+		var others=[]
+		for other in bodies:
+			if other!=body and is_instance_valid(other) and joint(kind,str(other.get_parent().get_meta("prop_asset",""))):others.append(other.get_rid())
+		if not clear_of_walls(a,node,body,1. if kind.begins_with("vehicle_") else .5,others,fits):dropped.append(node);continue
+		if node.position!=before:
+			moved+=1;a.navigation_blocks[int(node.get_meta("nav_block"))]=node.transform*AABB(node.get_meta("occupied"))
+	# Drop the unplaceable ones (their navigation blocks too, highest index first).
+	var indices=dropped.map(func(n):return int(n.get_meta("nav_block")));indices.sort();indices.reverse()
+	for i in indices:a.navigation_blocks.remove_at(i)
+	for n in dropped:n.free()
+	return [moved,dropped.size()]
+## Moves a freshly placed prop sideways out of walls it sinks into (more than
+## 8 cm), at most `limit` metres; false when it still overlaps. Only static
+## world geometry counts (other props and cover are allowed to touch).
+static func clear_of_walls(a:Node3D,node:Node3D,body:StaticBody3D,limit:float,others:Array,fits:Callable) -> bool:
+	var space=a.get_world_3d().direct_space_state
+	var depth=func() -> float:
+		var deepest=0.
+		for cs in body.get_children():
+			if not cs is CollisionShape3D:continue
+			var q=PhysicsShapeQueryParameters3D.new();q.shape=cs.shape;q.transform=node.global_transform*cs.transform;q.collision_mask=1;q.exclude=[body.get_rid()]+others
+			var pairs=space.collide_shape(q,32)
+			for i in range(0,pairs.size(),2):deepest=maxf(deepest,pairs[i].distance_to(pairs[i+1]))
+		return deepest
+	if depth.call()<=.08:return true
+	# Nearby spots on the same floor, nearest first (8 directions per ring).
+	var start=node.position
+	for r in [.25,.5,.75,1.]:
+		if r>limit+.001:break
+		for k in range(8):
+			var dir=Vector3(cos(k*TAU/8.),0,sin(k*TAU/8.))
+			node.position=start+dir*r
+			if fits.call() and depth.call()<=.08:return true
+	node.position=start
+	return false
 static func c(hex:String) -> Color:return Color(hex)
 static func procedural(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 	var wood=c("9a6a42");var dark_wood=c("6b4a2f");var metal=c("7f8a92");var dark=c("3a4046")

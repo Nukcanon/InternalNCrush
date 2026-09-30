@@ -58,7 +58,7 @@ func run():
 	p=reset_bot(2,"h1");p.hp=40;b.visible_target=true;b.utilities()
 	expect(GadgetLoadout.mounted(p,bool(a.input_state.crouch)) and p.shield>g.clock,"heavy bot mounts and shields under pressure")
 	p=reset_bot(3,"e1");p.secondary="repair";b.goal=a.position;b.utilities();await physics_frame
-	expect(g.devices.size()==1 and p.skill_ready==g.clock+30,"engineer bot places one turret with 30-second charge")
+	expect(g.devices.size()==1 and p.skill_ready==g.clock+AbilityBalance.COOLDOWNS[3],"engineer bot places one turret with its 20-second charge")
 	var did=g.devices.keys()[0];g.update_world_visuals(.1);await physics_frame
 	g.clock+=5.1;p.skill_ready=0.;g.devices[did].upgrade_ready=g.clock;b.utilities();expect(g.devices[did].level==2 and g.devices.size()==1,"engineer bot upgrades existing turret")
 	p.skill_ready=g.clock+30;b.visible_target=true;p.gadget_ready=0.;b.utilities();g.update_world_visuals(.1);await physics_frame

@@ -87,8 +87,17 @@ static func tinted(color:Color,outlined:bool,gloss:float) -> ShaderMaterial:
 	if materials.has(key):return materials[key]
 	var m=toon_material(outlined,gloss).duplicate();m.set_shader_parameter("tint",color);m.set_shader_parameter("vertex_color",0.)
 	materials[key]=m;return m
+# Same cel material drawn from both sides (open meshes: baked magazines).
+static var double_shader:Shader
+static func double_sided(source:Material) -> Material:
+	if not source is ShaderMaterial:return source
+	var key="double"+str(source.get_instance_id())
+	if materials.has(key):return materials[key]
+	if double_shader==null:double_shader=load("res://shaders/hero_toon_double.gdshader")
+	var m:ShaderMaterial=source.duplicate();m.shader=double_shader;m.next_pass=null
+	materials[key]=m;return m
 # Releases every cached shader/material/mesh (tests and shutdown).
 static func clear_cache():
-	materials.clear();smoothed.clear();toon=null;outline=null;sphere_mesh=null
+	materials.clear();smoothed.clear();toon=null;outline=null;sphere_mesh=null;double_shader=null
 	GunModel.bases.clear();GadgetVisual.templates.clear();CombatFX.device_templates.clear()
 	HeroCharacter.scenes.clear();HeroCharacter.libraries.clear();HeroCharacter.bodies.clear()

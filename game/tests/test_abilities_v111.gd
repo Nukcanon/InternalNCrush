@@ -30,7 +30,7 @@ func run():
 		if q.hp<100.:break
 	g.clock=100.
 	expect(turret.remote and q.hp<100.,"remote control can hit a target outside the automatic arc")
-	expect(100.-q.hp<TurretLogic.DAMAGE[0],"remote hit applies distance falloff")
+	expect(100.-q.hp<=TurretLogic.bullet_damage(int(turret.level))+.001,"remote hit deals turret bullet damage (80% share)")
 	p.role=0;p.skill_ready=0.;g.use_skill(1);expect(p.dash==105. and p.dash_recovery==108.,"movement skill has five fast seconds and three recovery seconds")
 	p.role=1;p.skill_ready=0.;g.use_skill(1);expect(q.mark==104. and p.skill_ready==140.,"scan marks for four seconds with forty-second cooldown")
 	p.role=2;p.skill_ready=0.;g.use_skill(1);expect(p.shield==106.,"heavy protection lasts six seconds")

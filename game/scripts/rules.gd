@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.4.1"
+const VERSION = "1.4.2"
 const MAPS = ["항구", "조선소", "제철소", "연구소", "사막 기지", "운하", "중앙역", "구시가지", "정비 공장", "산동네", "과수원", "발전소", "분수 광장", "물류 창고", "실험 단지", "폐공장", "고층 빌딩", "재래시장", "채석장", "요새", "원전", "수로교", "도서관", "폐선장", "수도원", "용광로", "온실", "지하 금고", "해안 기지", "서버 센터", "산성", "훈련장"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16]
 static func maps_for_size(count:int,mode:int=-1) -> Array:
@@ -20,6 +20,9 @@ const SLIDE_DECAY = 4.4
 const REGEN_DELAY = 10.0
 const REGEN_RATE = 1.0
 const SPAWN_PROTECTION = 1.5
+# 1.4.2: a respawned player may fire back after one second (still protected).
+const SPAWN_ATTACK_DELAY = 1.0
+static func attack_blocked_until(p:Dictionary) -> float:return float(p.get("protect",0))-(SPAWN_PROTECTION-SPAWN_ATTACK_DELAY)
 static var PORT:int = clampi(int(OS.get_environment("INC_TEST_PORT")),1024,65533) if OS.has_environment("INC_TEST_PORT") else 27888
 static var DISCOVERY:int = PORT+1
 const CLASS_HP=[100.,100.,150.,100.,130.,100.]
@@ -29,7 +32,7 @@ const MODES = ["팀 데스매치", "개인전", "제한 부활 팀전", "거점 
 const GADGETS = ["보호판", "표식기", "거치대", "엄폐물", "연막탄", "응급 키트"]
 const SKILLS = ["기동", "하드비트센서", "방호", "포탑", "둔화 구역", "무적 보호"]
 const GADGET_HELP = ["보호판: 3개 지급 · 한 장당 내구도 25 · 방어구보다 먼저 소모 · 한 번에 한 장만 사용", "표식기: 장착 시 자동 · 스코프 영역 안 가까운 적 1.5초 고정 추적 → 팀 전체 6초 투시 · 대상에게 경고", "거치대: 장착하면 앉아서 사격 시 자동으로 퍼짐 65% · 반동 60% 감소", "엄폐물: 조준 방향에 설치, 내구도별 선택", "연막 3 / 섬광 3 / 파편 2 중 하나 선택 · 3번 선택 후 클릭 또는 G 사용", "응급 키트: 가까운 아군 또는 자신을 25 회복"]
-const SKILL_HELP = ["기동: 5초 고속이동 3초 빠른이동 · 재사용 24초", "하드비트센서: 맵 크기에 따라 35~60m · 4초 표시 · 재사용 40초", "방호: 이동하며 6초 동안 전방 피해 85% 감소", "포탑: F 위치 선택, 클릭 설치 · F키로 업그레이드 · 전방 100도 · 자동 사격", "둔화 구역: 반경 15m / 8초 / 이동 속도 65% 감소 · 벽 너머 제외", "무적 보호: F 후 아군 클릭: 자신과 아군 / 빈 곳 클릭: 자신 · 6초 무적 · 재사용 45초"]
+const SKILL_HELP = ["기동: 5초 고속이동 3초 빠른이동 · 재사용 24초", "하드비트센서: 맵 크기에 따라 35~60m · 4초 표시 · 재사용 40초", "방호: 이동하며 6초 동안 전방 피해 85% 감소", "포탑: F 위치 선택, 클릭 설치 · F키로 업그레이드 · 전방 100도 · 자동 사격 · 사거리 55~100m(맵 크기) · 강화마다 +10% · 재사용 20초", "둔화 구역: 반경 15m / 8초 / 이동 속도 65% 감소 · 벽 너머 제외", "무적 보호: F 후 아군 클릭: 자신과 아군 / 빈 곳 클릭: 자신 · 6초 무적 · 재사용 45초"]
 const SECONDARIES = ["pistol", "heavy_pistol", "auto_pistol", "eng_pistol", "burst_pistol", "med_pistol"]
 static func medic_cap(count:int) -> int:
 	return 0 if count <= 0 else 1 + maxi(0, count - 4) / 3

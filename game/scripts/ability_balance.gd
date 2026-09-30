@@ -1,6 +1,6 @@
 extends RefCounted
 class_name AbilityBalance
-const COOLDOWNS=[24.,40.,30.,30.,30.,45.]
+const COOLDOWNS=[24.,40.,30.,20.,30.,45.]
 const DURATIONS=[5.,4.,6.,180.,8.,6.]
 const COVER_HP=[180,300,420]
 const SCAN_RANGE=35.
@@ -17,7 +17,7 @@ static func skill_state(game:Node,id:int) -> Dictionary:
 	var duration=COOLDOWNS[role];var label=Rules.SKILLS[role]
 	var enabled=game.options.skills and game.options.classes and game.phase=="combat" and game.can_attack(p)
 	if role==3:
-		# Installation and every upgrade share one 30-second ability clock.
+		# Installation and every upgrade share one 20-second ability clock.
 		# Distance changes the action label, never the progress denominator/deadline.
 		for device in game.devices.values():
 			if device.kind=="turret" and int(device.owner)==id:
@@ -29,7 +29,6 @@ static func skill_state(game:Node,id:int) -> Dictionary:
 		elif p.get("placing","")=="turret":label="설치 위치 선택"
 	return {"remaining":remaining,"duration":duration,"enabled":enabled,"label":label}
 static func turret_hp(level:int) -> float:return 180.+40.*(clampi(level,1,4)-1)
-static func turret_dps(level:int) -> float:return TurretLogic.DAMAGE[clampi(level,1,4)-1]/TurretLogic.INTERVALS[clampi(level,1,4)-1]
-static func turret_range(level:int) -> float:return 55.+2.*(clampi(level,1,4)-1)
+static func turret_dps(level:int) -> float:return TurretLogic.bullet_damage(level)/TurretLogic.INTERVALS[clampi(level,1,4)-1]
 static func flash_duration(distance:float,facing:float) -> float:
 	return lerpf(FLASH_MAX,2.,clampf(distance/FLASH_RANGE,0.,1.)) if distance<=FLASH_RANGE else 0.

@@ -29,7 +29,7 @@ func build(source:HeroCharacter,pos:Vector3,push:Vector3,role:int,team:int,facin
 	hero=HeroCharacter.new();add_child(hero);hero.build(role,team,HeroStyle.outlines_enabled());hero.tree.active=false
 	hero.global_position=pos;hero.rotation.y=facing
 	if is_instance_valid(source):
-		hero.scale=source.scale
+		hero.scale=source.scale;hero.dress_like(source)
 		for i in range(source.skeleton.get_bone_count()):hero.skeleton.set_bone_pose(i,source.skeleton.get_bone_pose(i))
 	# The struck part is chosen in the living pose, then the corpse is laid flat
 	# along the bullet travel (the existing exaggerated launch).

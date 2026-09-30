@@ -16,26 +16,34 @@ static var bases={}
 #  sight: rear-sight point the camera lines up with when aiming without optics.
 const HANDLES={
 	"AK":{"right":Vector3(0,-.125,-.231),"tilt":.05,"grip":Vector3(.0215,.058,.04),"round":.015,"trigger":Vector3(0,-.054,-.298),
-		# 1.4.2: support hand on the slim handguard ahead of the receiver face.
-		"left":Vector3(0,.02,-.67),"fore":Vector3(.029,.045,.028),"fore_round":.02,"sight":Vector3(0,.12,-.36)},
+		# 1.4.2: no handguard on this base (only a bare barrel ahead of the
+		# receiver), so the support hand closes round the upper magazine, which
+		# leans forward 25 degrees. "front": where attachments hang (old grip).
+		"left":Vector3(-.0025,-.17,-.452),"left_style":"pistol","left_tilt":-.43,"fore":Vector3(.0245,.05,.036),"fore_round":.012,
+		"front":Vector3(0,.02,-.67),"sight":Vector3(0,.12,-.36)},
 	# No stock: held forward so the rear grip sits where a rifle's grip would.
 	"SMG":{"frame_offset":Vector3(0,0,-.2),"right":Vector3(0,-.108,-.056),"tilt":.18,"grip":Vector3(.016,.058,.036),"round":.013,"trigger":Vector3(0,-.078,-.135),
 		"left":Vector3(0,-.16,-.292),"left_style":"pistol","left_tilt":-.23,"fore":Vector3(.0195,.05,.05),"fore_round":.016,"sight":Vector3(0,.085,-.30)},
 	"Pistol":{"right":Vector3(0,-.047,.001),"tilt":.2,"grip":Vector3(.011,.036,.024),"round":.009,"trigger":Vector3(0,-.03,-.045),"sight":Vector3(0,.055,0)},
-	"Revolver":{"right":Vector3(0,-.055,.003),"tilt":.45,"grip":Vector3(.011,.032,.026),"round":.009,"trigger":Vector3(0,-.035,-.064),"sight":Vector3(0,.07,-.02)},
-	"Revolver_Small":{"right":Vector3(0,-.067,-.008),"tilt":.36,"grip":Vector3(.014,.035,.028),"round":.011,"trigger":Vector3(0,-.042,-.079),"sight":Vector3(0,.07,-.02)},
+	"Revolver":{"right":Vector3(0,-.055,.003),"tilt":.45,"grip":Vector3(.011,.032,.026),"round":.009,"trigger":Vector3(0,-.035,-.064),"sight":Vector3(0,.07,-.02),"gate":Vector3(-.024,.018,-.018)},
+	"Revolver_Small":{"right":Vector3(0,-.067,-.008),"tilt":.36,"grip":Vector3(.014,.035,.028),"round":.011,"trigger":Vector3(0,-.042,-.079),"sight":Vector3(0,.07,-.02),"gate":Vector3(-.024,.016,-.015)},
 	# 1.4.2: the firing hand at the front of the stock wrist (the web against the
 	# receiver) and the support hand on the pump itself (measured on the model).
 	"Shotgun":{"right":Vector3(0,-.05,-.262),"tilt":.36,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
-		"left":Vector3(0,-.045,-.84),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60)},
+		# "port": the loading port under the receiver just ahead of the trigger
+		# guard (shells went into the guard before).
+		"left":Vector3(0,-.045,-.84),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60),"port":Vector3(0,-.085,-.50)},
 	"ShortCannon":{"right":Vector3(0,-.02,-.255),"tilt":.45,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
 		# 1.4.2: on the pump, not on the barrel tip (the fingers passed the muzzle).
-		"left":Vector3(0,0,-.52),"fore":Vector3(.033,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45)},
+		"left":Vector3(-.007,-.008,-.485),"fore":Vector3(.034,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45),"breech":Vector3(0,.03,-.56)},
 	"Sniper":{"right":Vector3(0,-.115,-.258),"tilt":.47,"grip":Vector3(.014,.048,.039),"round":.012,"trigger":Vector3(0,-.07,-.346),
 		"left":Vector3(0,.004,-.70),"fore":Vector3(.0184,.0326,.05),"fore_round":.016,"sight":Vector3(0,.15,-.45)},
 	"Sniper_2":{"right":Vector3(0,-.11,-.264),"tilt":.40,"grip":Vector3(.0215,.048,.04),"round":.015,"trigger":Vector3(0,-.068,-.359),
-		# 1.4.2: on the barrel ahead of the magazine (the palm used to reach back into it).
-		"left":Vector3(0,.02,-.70),"fore":Vector3(.0219,.072,.03),"fore_round":.015,"sight":Vector3(0,.15,-.42)}}
+		# 1.4.2: the bare barrel ahead of the receiver gets a forend (GunLooks
+		# "handguard", z -.648 to -.80) and the support hand holds that, not the
+		# barrel; the curved magazine is too deep for a hand to close round.
+		"left":Vector3(0,.011,-.722),"fore":Vector3(.028,.041,.05),"fore_round":.016,"sight":Vector3(0,.15,-.42),
+		"handguard":[-.648,-.80,-.03,.052,.028]}}
 # Scope glass of the baked sniper bases (base-local): [centre, facing, radius]
 # of the ocular and the objective, just proud of the recessed faces. Measured
 # with tools/probe_scopes.gd.
@@ -84,6 +92,7 @@ func build(w:Dictionary,ink:bool=false):
 	magazine=base.get_node_or_null("Magazine")
 	if magazine:mag_rest=magazine.transform
 	for mesh in base.find_children("*","MeshInstance3D",true,false):paint(mesh)
+	double_sided_magazine()
 	if w.get("laser",false) and is_instance_valid(magazine):batteries()
 	glaze(base,look)
 	GunLooks.attach(self,look)
@@ -167,7 +176,8 @@ func batteries():
 const PAIR_SPACING=.26
 func set_pair_spacing(width:float):
 	if dual_guns.size()<2:return
-	dual_guns[1].position=Vector3(-width,0,.02)
+	dual_rest=[Vector3.ZERO,Vector3(-width,0,.02)]
+	if dual_guns[1].rotation==Vector3.ZERO:dual_guns[1].position=dual_rest[1]
 # Moves a base's grip markers onto the measured handles and returns the grip
 # shapes per hand (handle frame, base units): half extents, rounding and the
 # trigger point. Code-built bases (launchers, tools) carry their own shapes.
@@ -248,10 +258,54 @@ func paint(mesh:MeshInstance3D):
 		mesh.set_surface_override_material(s,HeroStyle.tinted(color,outlined,.25))
 	mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 ## Reload: magazine out (drop/slide down), in, seat. `t` is 0..1 progress, -1 idle.
+## 1.4.2: the magazine follows ReloadMotion's curve (the hand's), so both leave
+## the first-person view together and the new one comes back in the hand; the
+## round being loaded shows in the hand for shell / break / revolver cycles, and
+## the DUET pistols leave the view one after the other.
+var load_round:Node3D
+var dual_rest:Array=[]
 func animate_reload(t:float,recoil:float=0.,_shot_age:float=10.):
+	var style=str(spec.get("reload_style",""))
+	if style in ["shell","break","revolver"]:show_load_round(t)
+	if dual_guns.size()>1:animate_pair(t)
 	if not is_instance_valid(magazine):return
 	if t<0.:magazine.transform=mag_rest;magazine.visible=true;return
-	var out=smoothstep(.08,.30,t)*(1.-smoothstep(.55,.80,t))
-	magazine.transform=mag_rest.translated_local(Vector3(0,-.22*out,.03*out))
+	var drop=ReloadMotion.mag_drop(t)
+	# Gun space -> the magazine's parent (the scaled base).
+	var offset=ReloadMotion.mag_offset(t)/maxf(.01,base.scale.x)
+	magazine.transform=Transform3D(Basis(Vector3.RIGHT,.55*drop)*mag_rest.basis,mag_rest.origin+offset)
 	# The magazine stays in the support hand through the swap (old one out, new one in).
 	magazine.visible=true
+# The baked magazines are open at the top (they sat in the well): drawn from
+# both sides so a magazine in the hand never shows as a cut shell.
+func double_sided_magazine():
+	if not is_instance_valid(magazine):return
+	for m in magazine.find_children("*","MeshInstance3D",true,false)+([magazine] if magazine is MeshInstance3D else []):
+		if m.mesh==null:continue
+		for s in range(m.mesh.get_surface_count()):
+			var mat=m.get_surface_override_material(s)
+			if mat:m.set_surface_override_material(s,HeroStyle.double_sided(mat))
+		if m.material_override:m.material_override=HeroStyle.double_sided(m.material_override)
+func show_load_round(t:float):
+	if not is_instance_valid(load_round):
+		load_round=Node3D.new();load_round.name="LoadRound";add_child(load_round)
+		var shell=str(spec.get("reload_style",""))!="revolver"
+		var r=.0095 if shell else .0058;var length=.062 if shell else .034
+		# Along -Z (the way it goes in): shell hull + brass head, or case + bullet.
+		MeshFactory.cylinder(load_round,Vector3(0,0,-length*.1),r,length*.8,Color("c9423a") if shell else Color("d9b04a"),Vector3(PI/2,0,0),-1.,10)
+		MeshFactory.cylinder(load_round,Vector3(0,0,length*.38),r*1.08,length*.24,Color("d6ae55") if shell else Color("c79a3c"),Vector3(PI/2,0,0),-1.,10)
+		if not shell:MeshFactory.cylinder(load_round,Vector3(0,0,-length*.58),r*.72,length*.2,Color("b87333"),Vector3(PI/2,0,0),r*.35,10)
+		MeshFactory.merge_children(load_round)
+		for m in load_round.get_children():
+			if m is MeshInstance3D:m.material_override=HeroStyle.toon_material(outlined,.3);m.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if t<0.:load_round.visible=false;return
+	var r=ReloadMotion.round_point(self,t)
+	load_round.visible=bool(r[1]);load_round.position=r[0]
+func animate_pair(t:float):
+	if dual_rest.size()!=dual_guns.size():
+		dual_rest=dual_guns.map(func(g):return g.position)
+	for i in range(dual_guns.size()):
+		var phase=0. if t<0. else clampf((t-.5*i)/.5,0.,1.) if (t>=.5*i and t<.5*(i+1)) else 0.
+		var away=sin(phase*PI)
+		dual_guns[i].position=dual_rest[i]+Vector3(0,-.7,.22)*smoothstep(0.,1.,away)
+		dual_guns[i].rotation=Vector3(.6*away,0,0)

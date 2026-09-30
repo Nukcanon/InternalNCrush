@@ -12,52 +12,130 @@ const LIGHT=Color("c9d2dc")
 const TIERS=[Color("f2c03e"),Color("4fae62"),Color("59606c")]
 static func finish(node:Node3D,outlined:bool=false):
 	M.merge_children(node)
-	for mesh in node.get_children():
-		if mesh is MeshInstance3D:
-			mesh.material_override=HeroStyle.toon_material(outlined,.2);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	# Nested groups (a tilted plate, a carried mini device) share the cel material;
+	# glowing lamps keep their own.
+	for mesh in node.find_children("*","MeshInstance3D",true,false):
+		if mesh.has_meta("lamp"):continue
+		mesh.material_override=HeroStyle.toon_material(outlined,.2);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 # --- Deployables -----------------------------------------------------------
+const HAZARD=Color("f2c03e")
+# Emissive lamps / sensor glass: kept out of the merged cel mesh (one small
+# unshaded mesh per device part).
+static func lamp(parent:Node3D,pos:Vector3,size:Vector3,color:Color,round:=false) -> MeshInstance3D:
+	var node:MeshInstance3D=M.sphere(parent,pos,size,color) if round else M.box(parent,pos,size,color,Vector3.ZERO,.4)
+	var mat=StandardMaterial3D.new();mat.albedo_color=color;mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+	node.material_override=mat;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.set_meta("lamp",true)
+	return node
+static func finish_with_lamps(node:Node3D,lamps:Array):
+	# Lamps are added after the merge so they keep their own glow material.
+	finish(node)
+	for spec in lamps:lamp(node,spec[0],spec[1],spec[2],spec.size()>3 and spec[3])
 # Cover: 3.4 m wide, 1.25 m high, depth .30/.55/.80 by tier (collision box).
+# 1.4.2 after the 1.3.5 assembly: a steel frame with end posts, three tier
+# panels (ribbed, riveted, a vision slot on the heavier tiers), hazard-striped
+# skids, carry handles, back braces; the heavy tier adds bolted armour plates
+# and sandbags at its feet. The face toward the enemy is -Z.
 static func cover(parent:Node3D,team:int,tier:int):
 	var body=Node3D.new();body.name="CoverBody";parent.add_child(body)
-	var depth=[.30,.55,.80][clampi(tier,0,2)];var color=TIERS[clampi(tier,0,2)];var dark=color.darkened(.35)
-	# Rounded base sled and three stacked panels with a top rail.
-	M.box(body,Vector3(0,.09,0),Vector3(3.4,.18,depth),dark,Vector3.ZERO,.5)
+	tier=clampi(tier,0,2)
+	var depth=[.30,.55,.80][tier];var color=TIERS[tier];var dark=color.darkened(.35);var frame=Color("4a515c")
+	var front=-depth*.5;var accent=TEAM[team]
+	# Skids with hazard stripes, and the base beam.
+	for x in [-1.46,1.46]:
+		M.box(body,Vector3(x,.1,0),Vector3(.3,.2,depth+.34),frame.darkened(.25),Vector3.ZERO,.5)
+		for k in range(3):M.box(body,Vector3(x-.1+k*.1,.1,-(depth+.34)*.5-.004),Vector3(.05,.14,.01),HAZARD if k%2==0 else INK,Vector3(0,0,.5),.3)
+	M.box(body,Vector3(0,.17,0),Vector3(3.2,.14,depth*.9),frame,Vector3.ZERO,.4)
+	# End posts with team caps.
+	for x in [-1.62,1.62]:
+		M.box(body,Vector3(x,.66,0),Vector3(.18,1.2,depth+.06),frame,Vector3.ZERO,.4)
+		M.box(body,Vector3(x,1.28,0),Vector3(.24,.08,depth+.12),accent,Vector3.ZERO,.5)
+	# Three panels.
 	for i in range(3):
-		var x=-1.12+i*1.12
-		M.box(body,Vector3(x,.66,0),Vector3(1.06,1.0,depth*.86),color,Vector3.ZERO,.35)
-		M.box(body,Vector3(x,.66,-depth*.44),Vector3(.72,.6,.04),color.lightened(.22),Vector3.ZERO,.5)
-		if tier>=1:M.box(body,Vector3(x,.9,-depth*.47),Vector3(.5,.06,.03),INK,Vector3.ZERO,.3)
-		if tier>=2:
-			for bolt in [-.36,.36]:M.sphere(body,Vector3(x+bolt,1.02,-depth*.45),Vector3(.06,.06,.04),LIGHT)
-	M.box(body,Vector3(0,1.2,0),Vector3(3.44,.1,depth*.95),dark,Vector3.ZERO,.5)
-	# Team stripe along the top rail.
-	M.box(body,Vector3(0,1.21,-depth*.48),Vector3(3.3,.06,.03),TEAM[team],Vector3.ZERO,.3)
-	for x in [-1.5,1.5]:M.box(body,Vector3(x,.12,0),Vector3(.26,.24,depth+.3),dark.darkened(.2),Vector3.ZERO,.5)
-	finish(body)
+		var x=-1.04+i*1.04
+		M.box(body,Vector3(x,.7,0),Vector3(1.0,1.02,depth*.82),color,Vector3.ZERO,.3)
+		# Raised face plate with two horizontal ribs.
+		M.box(body,Vector3(x,.7,front+.02),Vector3(.82,.82,.04),color.lightened(.14),Vector3.ZERO,.5)
+		for y in [.48,.92]:M.box(body,Vector3(x,y,front-.005),Vector3(.72,.05,.03),dark,Vector3.ZERO,.3)
+		# Corner rivets.
+		for dx in [-.36,.36]:
+			for y in [.34,1.06]:M.sphere(body,Vector3(x+dx,y,front-.004),Vector3(.045,.045,.03),LIGHT)
+		if tier>=1 and i==1:
+			# Vision slot with a steel hood.
+			M.box(body,Vector3(x,1.02,front-.012),Vector3(.34,.06,.03),INK,Vector3.ZERO,.3)
+			M.box(body,Vector3(x,1.07,front-.03),Vector3(.4,.035,.08),frame,Vector3(-.3,0,0),.3)
+		if tier==2:
+			# Bolted armour plate over the panel.
+			M.box(body,Vector3(x,.62,front-.035),Vector3(.62,.5,.05),Color("6a717c"),Vector3.ZERO,.35)
+			for dx in [-.26,.26]:
+				for y in [.42,.82]:M.cylinder(body,Vector3(x+dx,y,front-.062),.022,.02,LIGHT,Vector3(PI/2,0,0),-1.,8)
+	# Top rail, team stripe and carry handles.
+	M.box(body,Vector3(0,1.24,0),Vector3(3.26,.09,depth*.92),dark,Vector3.ZERO,.5)
+	M.box(body,Vector3(0,1.25,front+.005),Vector3(3.0,.05,.03),accent,Vector3.ZERO,.3)
+	for x in [-.9,.9]:
+		for dx in [-.12,.12]:M.box(body,Vector3(x+dx,1.33,0),Vector3(.035,.12,.035),frame,Vector3.ZERO,.3)
+		M.box(body,Vector3(x,1.39,0),Vector3(.28,.035,.035),frame,Vector3.ZERO,.3)
+	# Back braces (visible from the friendly side).
+	for x in [-.52,.52]:
+		M.box(body,Vector3(x,.62,depth*.5+.14),Vector3(.08,1.1,.08),frame,Vector3(-.42,0,0),.3)
+		M.box(body,Vector3(x,.08,depth*.5+.36),Vector3(.2,.08,.14),frame.darkened(.2),Vector3.ZERO,.4)
+	if tier==2:
+		# Sandbags at the feet (enemy side).
+		for k in range(5):
+			M.box(body,Vector3(-1.2+k*.6,.14,front-.2),Vector3(.52,.24,.3),Color("b8a47a"),Vector3(0,(k%2-.5)*.12,0),.8)
+		for k in range(4):
+			M.box(body,Vector3(-.9+k*.6,.36,front-.19),Vector3(.5,.2,.28),Color("a8946a"),Vector3(0,(k%2-.5)*.1,0),.8)
+	finish_with_lamps(body,[[Vector3(-1.62,1.1,front-.03),Vector3(.06,.06,.02),TEAM_LIGHT[team]],[Vector3(1.62,1.1,front-.03),Vector3(.06,.06,.02),TEAM_LIGHT[team]]])
 # Turret: tripod, pedestal, "TurretHead" at 1.7 m that game.gd aims with look_at.
+# 1.4.2 after the 1.3.5 assembly: a broad anchored base with three splayed
+# legs and feet, a tapered team-coloured body with side braces and an ammo
+# box, a yaw ring; the head has armoured cheeks with vents, twin barrels with
+# cooling rings and muzzle brakes, a sensor block with a glowing eye, a rear
+# counterweight and an antenna.
 static func turret(parent:Node3D,team:int):
 	var base=Node3D.new();base.name="TurretBase";parent.add_child(base)
-	var color=TEAM[team];var light=TEAM_LIGHT[team]
-	M.cylinder(base,Vector3(0,.12,0),.5,.2,STEEL,Vector3.ZERO,.42,14)
+	var color=TEAM[team];var light=TEAM_LIGHT[team];var metal=Color("4a515c");var pale=Color("9aa6ad")
+	M.cylinder(base,Vector3(0,.1,0),.62,.16,metal,Vector3.ZERO,.52,18)
+	M.cylinder(base,Vector3(0,.19,0),.5,.04,HAZARD,Vector3.ZERO,-1.,18)
 	for i in range(3):
-		var a=TAU*i/3.
-		M.box(base,Vector3(cos(a)*.42,.1,sin(a)*.42),Vector3(.2,.16,.75),INK,Vector3(0,-a+PI/2,0),.5)
-		M.sphere(base,Vector3(cos(a)*.72,.07,sin(a)*.72),Vector3(.2,.12,.2),STEEL)
-	M.cylinder(base,Vector3(0,.8,0),.14,1.2,STEEL,Vector3.ZERO,-1.,12)
-	M.cylinder(base,Vector3(0,1.36,0),.26,.24,color,Vector3.ZERO,.2,16)
-	finish(base)
+		var a=TAU*i/3.+PI/6.
+		var dir=Vector3(cos(a),0,sin(a))
+		M.box(base,dir*.55+Vector3(0,.16,0),Vector3(.16,.12,.6),INK,Vector3(0,-a+PI/2,0),.5)
+		M.box(base,dir*.86+Vector3(0,.06,0),Vector3(.3,.1,.3),metal,Vector3(0,-a,0),.6)
+		M.cylinder(base,dir*.86+Vector3(0,.12,0),.035,.06,pale,Vector3.ZERO,-1.,8)
+	# Tapered body with side braces and an ammo box.
+	M.tapered(base,Vector3(0,.58,0),Vector3(.62,.72,.56),color,.72)
+	for side in [-1,1]:
+		M.box(base,Vector3(side*.34,.66,0),Vector3(.1,.6,.22),metal,Vector3(0,0,side*-.2),.4)
+		M.cylinder(base,Vector3(side*.3,.98,0),.09,.1,pale,Vector3(0,0,PI/2),-1.,12)
+	M.box(base,Vector3(.36,.4,.18),Vector3(.2,.28,.3),Color("5b6b3a"),Vector3.ZERO,.4)
+	M.box(base,Vector3(.36,.56,.18),Vector3(.22,.04,.32),INK,Vector3.ZERO,.3)
+	# Status panel on the front of the body.
+	M.box(base,Vector3(0,.62,-.3),Vector3(.36,.18,.03),metal,Vector3.ZERO,.3)
+	# Yaw ring.
+	M.cylinder(base,Vector3(0,1.02,0),.3,.12,pale,Vector3.ZERO,-1.,18)
+	M.cylinder(base,Vector3(0,1.3,0),.16,.44,metal,Vector3.ZERO,.2,14)
+	M.cylinder(base,Vector3(0,1.5,0),.24,.07,pale,Vector3.ZERO,-1.,18)
+	finish_with_lamps(base,[[Vector3(-.09,.63,-.318),Vector3(.05,.05,.012),light],[Vector3(0,.63,-.318),Vector3(.05,.05,.012),Color("7dff9a")],[Vector3(.09,.63,-.318),Vector3(.05,.05,.012),light]])
 	var head=Node3D.new();head.name="TurretHead";head.position.y=1.7;parent.add_child(head)
-	M.box(head,Vector3(0,0,0),Vector3(.62,.4,.6),color,Vector3.ZERO,.6)
-	M.box(head,Vector3(0,.2,.05),Vector3(.42,.12,.4),light,Vector3.ZERO,.6)
-	M.box(head,Vector3(0,.04,-.31),Vector3(.36,.14,.04),INK,Vector3.ZERO,.5)
-	M.sphere(head,Vector3(0,.04,-.33),Vector3(.2,.08,.03),Color("72eed4"))
-	for x in [-.2,.2]:
-		M.cylinder(head,Vector3(x,-.06,-.52),.06,.5,STEEL,Vector3(PI/2,0,0),-1.,12)
-		M.cylinder(head,Vector3(x,-.06,-.79),.08,.08,INK,Vector3(PI/2,0,0),-1.,12)
-		M.sphere(head,Vector3(x*1.6,0,.05),Vector3(.14,.26,.3),STEEL)
-	M.cylinder(head,Vector3(.24,.34,.18),.012,.3,INK,Vector3.ZERO,-1.,8)
-	M.sphere(head,Vector3(.24,.5,.18),Vector3(.05,.05,.05),Color("ff5b4a"))
-	finish(head)
+	M.box(head,Vector3(0,0,0),Vector3(.56,.36,.56),color,Vector3.ZERO,.55)
+	M.box(head,Vector3(0,.2,.06),Vector3(.4,.1,.38),light,Vector3.ZERO,.6)
+	for side in [-1,1]:
+		# Armoured cheek with three vents and a trunnion.
+		M.box(head,Vector3(side*.36,-.02,.04),Vector3(.18,.4,.5),metal,Vector3.ZERO,.5)
+		for z in [-.08,.04,.16]:M.box(head,Vector3(side*.456,.08,z),Vector3(.02,.06,.07),INK,Vector3.ZERO,.3)
+		M.cylinder(head,Vector3(side*.29,-.02,.04),.1,.08,pale,Vector3(0,0,PI/2),-1.,14)
+		# Barrel: shroud, cooling rings, muzzle brake.
+		var x=side*.15
+		M.cylinder(head,Vector3(x,-.05,-.34),.07,.2,metal,Vector3(PI/2,0,0),-1.,14)
+		M.cylinder(head,Vector3(x,-.05,-.6),.038,.56,pale,Vector3(PI/2,0,0),-1.,12)
+		for k in range(4):M.cylinder(head,Vector3(x,-.05,-.5-k*.07),.055,.018,INK,Vector3(PI/2,0,0),-1.,12)
+		M.box(head,Vector3(x,-.05,-.9),Vector3(.1,.08,.1),metal,Vector3.ZERO,.4)
+		M.cylinder(head,Vector3(x,-.05,-.955),.03,.012,Color("11181c"),Vector3(PI/2,0,0),-1.,10)
+	# Sensor block, rear counterweight, antenna.
+	M.box(head,Vector3(0,.2,-.18),Vector3(.22,.16,.2),metal,Vector3.ZERO,.5)
+	M.box(head,Vector3(0,.02,.34),Vector3(.36,.24,.16),metal.darkened(.2),Vector3.ZERO,.5)
+	M.cylinder(head,Vector3(.2,.38,.2),.012,.3,INK,Vector3.ZERO,-1.,8)
+	finish_with_lamps(head,[[Vector3(0,.2,-.285),Vector3(.12,.08,.02),Color("72eed4"),true],[Vector3(.2,.54,.2),Vector3(.05,.05,.05),Color("ff5b4a"),true]])
 # --- Held gadgets ----------------------------------------------------------
 ## Returns {"node":Node3D,"right":Vector3,"left":Vector3,"two_handed":bool} in
 ## the node's space. Items sit in front of the chest; grips are wrist targets.
@@ -77,10 +155,28 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> 
 		finish(node);return {"node":node,"right":Vector3(.15,0,-.05),"left":Vector3(-.15,0,-.05),"two_handed":true,"grip":sides("pistol",Vector3(.015,.07,.09))}
 	match role:
 		0:
-			# Armour plate: rounded curved slab with a chevron.
-			M.box(node,Vector3(0,.04,-.06),Vector3(.28,.34,.06),Color("6e8aa8"),Vector3(.1,0,0),.7)
-			M.box(node,Vector3(0,.07,-.1),Vector3(.12,.03,.02),accent,Vector3(0,0,.5),.4)
-			M.box(node,Vector3(0,.04,-.1),Vector3(.12,.03,.02),accent,Vector3(0,0,-.5),.4)
+			# 1.4.2 armour plate insert: shooter's-cut outline (narrower top with
+			# angled corners), slight curve, rubber edge, fabric cover with a
+			# label patch and the class chevron, strap loops on the back.
+			var pivot=Node3D.new();pivot.position=Vector3(0,.04,-.06);pivot.rotation.x=.1;node.add_child(pivot)
+			var cover_color=Color("4f5d6e");var edge=Color("262c38")
+			M.box(pivot,Vector3(0,-.04,0),Vector3(.28,.26,.05),cover_color,Vector3.ZERO,.5)
+			M.box(pivot,Vector3(0,.12,0),Vector3(.18,.1,.05),cover_color,Vector3.ZERO,.5)
+			for side in [-1,1]:
+				M.box(pivot,Vector3(side*.098,.11,0),Vector3(.06,.12,.049),cover_color,Vector3(0,0,side*.72),.5)
+				# Curve: the side thirds fold back a little.
+				M.box(pivot,Vector3(side*.12,-.04,.012),Vector3(.05,.25,.045),cover_color.darkened(.08),Vector3(0,side*-.25,0),.5)
+			# Rubber edge along the bottom and sides.
+			M.box(pivot,Vector3(0,-.172,0),Vector3(.29,.022,.056),edge,Vector3.ZERO,.5)
+			for side in [-1,1]:M.box(pivot,Vector3(side*.142,-.05,0),Vector3(.02,.24,.056),edge,Vector3.ZERO,.5)
+			# Label patch and chevron on the front (-Z).
+			M.box(pivot,Vector3(0,.06,-.027),Vector3(.12,.05,.006),Color("e6e0cf"),Vector3.ZERO,.3)
+			M.box(pivot,Vector3(0,.064,-.031),Vector3(.08,.012,.004),INK,Vector3.ZERO,.2)
+			M.box(pivot,Vector3(-.025,-.06,-.03),Vector3(.07,.025,.008),accent,Vector3(0,0,.55),.4)
+			M.box(pivot,Vector3(.025,-.06,-.03),Vector3(.07,.025,.008),accent,Vector3(0,0,-.55),.4)
+			# Strap loops on the back.
+			for y in [-.1,.03]:M.box(pivot,Vector3(0,y,.03),Vector3(.2,.02,.012),edge,Vector3.ZERO,.3)
+			M.merge_children(pivot)
 			right=Vector3(.14,.02,-.06);left=Vector3(-.14,.02,-.06);two=true;grip=sides("pistol",Vector3(.012,.1,.03))
 		1:
 			# Marker: rugged tablet with antenna and glowing screen.
@@ -105,10 +201,25 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> 
 			# Medkit: white rounded case with a green cross and handle, carried low
 			# in front of the belly with both hands on its sides.
 			var low=Vector3(0,-MEDKIT_DROP,0)
-			M.box(node,low+Vector3(0,0,-.08),Vector3(.26,.18,.1),Color("eef2f5"),Vector3.ZERO,.6)
-			M.box(node,low+Vector3(0,0,-.135),Vector3(.1,.03,.01),Color("3fcf8e"),Vector3.ZERO,.3)
-			M.box(node,low+Vector3(0,0,-.135),Vector3(.03,.1,.01),Color("3fcf8e"),Vector3.ZERO,.3)
-			M.box(node,low+Vector3(0,.12,-.08),Vector3(.12,.03,.03),INK,Vector3.ZERO,.5)
+			# 1.4.2: hard case in two halves (seam and hinge), corner bumpers,
+			# two latches, a padded handle on posts, a green cross on the lid
+			# and on the top, and a small label strip.
+			var c=low+Vector3(0,0,-.08);var white=Color("eef2f5");var green=Color("3fcf8e");var bumper=Color("2f9a6a")
+			M.box(node,c,Vector3(.26,.18,.1),white,Vector3.ZERO,.55)
+			M.box(node,c+Vector3(0,0,.0),Vector3(.262,.012,.102),Color("c9d2da"),Vector3.ZERO,.2) # seam between the halves
+			M.box(node,c+Vector3(0,-.02,.052),Vector3(.2,.02,.012),Color("9aa6ad"),Vector3.ZERO,.3) # hinge (back)
+			for sx in [-1,1]:
+				for sy in [-1,1]:M.box(node,c+Vector3(sx*.118,sy*.078,0),Vector3(.034,.034,.106),bumper,Vector3.ZERO,.6)
+			for sx in [-.07,.07]:
+				M.box(node,c+Vector3(sx,.02,-.054),Vector3(.034,.05,.014),Color("9aa6ad"),Vector3.ZERO,.4) # latch
+				M.box(node,c+Vector3(sx,.044,-.058),Vector3(.02,.01,.008),INK,Vector3.ZERO,.2)
+			M.box(node,c+Vector3(0,-.02,-.052),Vector3(.1,.03,.008),green,Vector3.ZERO,.3)
+			M.box(node,c+Vector3(0,-.02,-.052),Vector3(.03,.09,.008),green,Vector3.ZERO,.3)
+			M.box(node,c+Vector3(0,.092,.0),Vector3(.06,.004,.018),green,Vector3.ZERO,.2)
+			M.box(node,c+Vector3(0,.092,.0),Vector3(.018,.004,.06),green,Vector3.ZERO,.2)
+			M.box(node,c+Vector3(0,-.07,-.052),Vector3(.12,.018,.006),Color("d8dde2"),Vector3.ZERO,.2)
+			for sx in [-.05,.05]:M.box(node,c+Vector3(sx,.105,0),Vector3(.018,.03,.02),INK,Vector3.ZERO,.4)
+			M.box(node,c+Vector3(0,.125,0),Vector3(.13,.026,.032),Color("3a4046"),Vector3.ZERO,.6)
 			right=low+Vector3(.13,0,-.08);left=low+Vector3(-.13,0,-.08);two=true;grip=sides("pistol",Vector3(.012,.07,.045))
 	finish(node)
 	return {"node":node,"right":right,"left":left,"two_handed":two,"grip":grip,"view_lift":MEDKIT_DROP if role==5 else 0.}

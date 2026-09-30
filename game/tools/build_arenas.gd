@@ -21,6 +21,10 @@ func run():
 			for entry in arg.trim_prefix("--maps=").split(","):indices.append(int(entry))
 	for index in indices:
 		var started=Time.get_ticks_msec();var arena=Arena.new();arena.bake_geometry=true;root.add_child(arena);arena.build(index)
+		# 1.4.2: once the physics space holds the finished walls, move props out of them.
+		for i in range(2):await physics_frame
+		var settled=DistrictProps.settle_props(arena)
+		if settled[0]+settled[1]>0:print("ARENA_PROPS_SETTLED ",index," moved=",settled[0]," removed=",settled[1])
 		MeshFactory.own_recursive(arena.architecture,arena.architecture)
 		var packed=PackedScene.new();var result=packed.pack(arena.architecture)
 		if result==OK:result=ResourceSaver.save(packed,"res://assets/arenas/geometry/map_%02d.scn"%index,ResourceSaver.FLAG_COMPRESS)

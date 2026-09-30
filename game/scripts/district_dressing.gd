@@ -86,22 +86,28 @@ static func build(a:Node,plan:Dictionary):
 		for mesh in node.get_children():
 			if mesh is MeshInstance3D:
 				var bounds=mesh.transform*mesh.get_aabb();visual_bounds=bounds if first else visual_bounds.merge(bounds);first=false
-		var supported=true
 		var footprint=occupied if kind.begins_with("tree_") or kind=="streetlight" else visual_bounds
-		for x in [footprint.position.x,footprint.end.x]:
-			for z in [footprint.position.z,footprint.end.z]:
-				var point=node.transform*Vector3(x,0,z);var levels=DistrictLayout.heights(a,point)
-				if levels.is_empty() or absf(float(levels[0])-pos.y)>.12:supported=false
-		# Never cover an objective or a navigation landing.
-		if (a.navigation_goals+a.zones).any(func(goal):return Vector2(goal.x-pos.x,goal.z-pos.z).length()<2.5+footprint.size.length()*.5 and absf(goal.y-pos.y)<2.):supported=false
-		if not supported:node.free();continue
+		var fits=func() -> bool:
+			for x in [footprint.position.x,footprint.end.x]:
+				for z in [footprint.position.z,footprint.end.z]:
+					var point=node.transform*Vector3(x,0,z);var levels=DistrictLayout.heights(a,point)
+					if levels.is_empty() or absf(float(levels[0])-pos.y)>.12:return false
+			# Never cover an objective or a navigation landing.
+			var at=node.position
+			return not (a.navigation_goals+a.zones).any(func(goal):return Vector2(goal.x-at.x,goal.z-at.z).length()<2.5+footprint.size.length()*.5 and absf(goal.y-at.y)<2.)
+		if not fits.call():node.free();continue
+		if occupied.size!=Vector3.ZERO:
+			# 1.4.2: collision follows the prop's solid parts (DistrictProps.collision);
+			# identical in native and Web builds.
+			var body=StaticBody3D.new();node.add_child(body);body.collision_layer=1;body.collision_mask=0
+			for part in DistrictProps.collision(node,kind,occupied):
+				var collision=CollisionShape3D.new();collision.shape=part[0];collision.transform=part[1];body.add_child(collision)
+			# 1.4.2: kept for DistrictProps.settle_props (the bake moves props out of
+			# walls once the physics space holds the finished geometry).
+			node.set_meta("footprint",footprint);node.set_meta("occupied",occupied);node.set_meta("base_y",pos.y);node.set_meta("nav_block",a.navigation_blocks.size())
+			a.navigation_blocks.append(node.transform*occupied)
 		if kind=="streetlight":
 			fixtures.append({"pos":node.transform*Vector3(0,4.3,.6),"direction":Vector3(0,-1,0),"color":Color("ffe2b0"),"range":9.,"energy":2.})
-		if occupied.size==Vector3.ZERO:continue
-		# One box collider per prop: identical cover in native and Web builds.
-		var body=StaticBody3D.new();node.add_child(body);body.collision_layer=1;body.collision_mask=0
-		var collision=CollisionShape3D.new();var shape=BoxShape3D.new();shape.size=occupied.size;collision.shape=shape;collision.position=occupied.get_center();body.add_child(collision)
-		a.navigation_blocks.append(node.transform*occupied)
 	for p in plan.get("loose_props",[]):
 		var id=a.props.size();var item=DistrictArt.loose(index,id);var prop=InteractiveProp.new()
 		var height={"barrel":.485,"crate":.29,"cone":.31,"canister":.325,"tire":.365}[item]

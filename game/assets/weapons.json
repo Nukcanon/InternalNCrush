@@ -1082,7 +1082,7 @@
     "kind": "gun",
     "fire_mode": "semi",
     "model_index": 21,
-    "reload_style": "pistol",
+    "reload_style": "revolver",
     "move_spread": 1.15,
     "shot_bloom": 2.535,
     "bloom_max": 5.071,
@@ -1113,7 +1113,8 @@
     "spray_frequency": 2.67,
     "spray_seed": 7.77,
     "spray_direction": 1,
-    "pattern_recovery": 31.22
+    "pattern_recovery": 31.22,
+    "single_load": true
   },
   "auto_pistol": {
     "name": "SPARK",
@@ -1182,7 +1183,7 @@
     "kind": "gun",
     "fire_mode": "semi",
     "model_index": 23,
-    "reload_style": "pistol",
+    "reload_style": "revolver",
     "move_spread": 0.872,
     "shot_bloom": 1.473,
     "bloom_max": 4.311,
@@ -1213,7 +1214,8 @@
     "spray_frequency": 3.01,
     "spray_seed": 8.51,
     "spray_direction": 1,
-    "pattern_recovery": 34.16
+    "pattern_recovery": 34.16,
+    "single_load": true
   },
   "burst_pistol": {
     "name": "TRIO",
@@ -1529,7 +1531,7 @@
     "kind": "gun",
     "fire_mode": "semi",
     "model_index": 20,
-    "reload_style": "pistol",
+    "reload_style": "dual",
     "move_spread": 0.74,
     "shot_bloom": 3.1,
     "bloom_max": 6.5,

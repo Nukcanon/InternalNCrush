@@ -49,7 +49,7 @@ func run():
 	wall.free();await physics_frame;await physics_frame
 	g.use_skill(1)
 	expect(g.devices[2].level==2 and g.devices[1].level==1,"F upgrades exactly highlighted allied turret")
-	expect(g.devices[2].owner==2 and p.skill_ready==130. and g.devices[2].building_until==103.,"ownership preserved; upgrade duration and shared cooldown retained")
+	expect(g.devices[2].owner==2 and p.skill_ready==100.+AbilityBalance.COOLDOWNS[3] and g.devices[2].building_until==103.,"ownership preserved; upgrade duration and shared cooldown retained")
 	g.ui.refresh();g.update_world_visuals(0.)
 	expect(not g.ui.upgrade_hint.visible and not g.device_nodes[2].get_meta("upgrade_selected",false),"upgrade immediately hides prompt and outline")
 	p.skill_ready=0.;TurretLogic.upgrade(g,1,3);expect(g.devices[3].level==1,"server rejects enemy upgrade")

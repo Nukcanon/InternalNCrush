@@ -13,26 +13,26 @@ static func palette(main:Color,dark:Color,light:Color,wood:Color=WOOD) -> Dictio
 	return {"Grey":main,"Grey2":light,"LightGrey":light,"DarkGrey":dark,"Black":dark.darkened(.25),"Wood":wood,"DarkWood":wood.darkened(.3),"Red":Color("d9483b"),"DarkRed":Color("8e2a24"),"Green":Color("5a8a3a"),"DarkGreen":Color("355228")}
 # Looks keyed by weapon name (weapons.json "name").
 static var LOOKS={
-	"VECTOR-24":{"base":"AK","scale":.9,"palette":palette(Color("64707e"),DARK,Color("9fb0bf"),Color("3a4552")),"attach":["dot"]},
-	"RAPID-9":{"base":"SMG","scale":1.12,"palette":palette(Color("56606c"),DARK,Color("f2b233"),DARK),"attach":["dot"]},
+	"VECTOR-24":{"base":"AK","scale":1.058,"palette":palette(Color("64707e"),DARK,Color("9fb0bf"),Color("3a4552")),"attach":["dot"]},
+	"RAPID-9":{"base":"AK","scale":1.012,"palette":palette(Color("56606c"),DARK,Color("f2b233"),DARK),"attach":["dot"]},
 	# ATLAS aims as a semi-sniper without optics (weapons.json "semi_scope").
-	"ATLAS":{"base":"AK","scale":.98,"palette":palette(Color("7c6f5c"),DARK,Color("c9b08a"))},
-	"TRIAD":{"base":"AK","scale":.86,"palette":palette(Color("3f4c5f"),DARK,Color("e36b4f"),DARK),"attach":["dot"]},
-	"SCOUT":{"base":"Sniper_2","scale":.95,"palette":palette(Color("6b7d5a"),DARK,LIGHT,Color("8a6a44"))},
+	"ATLAS":{"base":"AK","scale":1.116,"palette":palette(Color("7c6f5c"),DARK,Color("c9b08a"))},
+	"TRIAD":{"base":"AK","scale":1.093,"palette":palette(Color("3f4c5f"),DARK,Color("e36b4f"),DARK),"attach":["dot"]},
+	"SCOUT":{"base":"Sniper_2","scale":1.097,"palette":palette(Color("6b7d5a"),DARK,LIGHT,Color("8a6a44"))},
 	"MONOLITH":{"base":"Sniper","scale":1.,"palette":palette(Color("3e4652"),DARK,Color("8fa0b2"))},
-	"ECHO":{"base":"Sniper_2","scale":.86,"palette":palette(Color("56627a"),DARK,Color("9fd0ff"),DARK)},
-	"LARK":{"base":"AK","scale":.92,"palette":palette(Color("8b8f99"),DARK,LIGHT,Color("6d4a2e")),"attach":["scope"]},
-	"KESTREL":{"base":"Sniper_2","scale":.9,"palette":palette(Color("7a6a55"),DARK,Color("d7c29e"))},
-	"ANCHOR":{"base":"AK","scale":1.02,"palette":palette(Color("4a5446"),DARK,Color("8d9a78"),DARK),"attach":["box","bipod"]},
-	"BASTION":{"base":"AK","scale":1.12,"palette":palette(Color("3c3f47"),DARK,Color("a5a9b3"),DARK),"attach":["box","bipod","dot"]},
-	"PULSE":{"base":"Shotgun","scale":.95,"palette":palette(STEEL,DARK,LIGHT)},
-	"TIDAL":{"base":"Shotgun","scale":.82,"palette":palette(Color("4f6b86"),DARK,Color("9cc6e8"),DARK)},
-	"FOLD":{"base":"ShortCannon","scale":.85,"palette":palette(Color("6b5f58"),DARK,LIGHT)},
-	"SWIFT":{"base":"SMG","scale":.9,"palette":palette(STEEL,DARK,LIGHT)},
-	"FLUX":{"base":"SMG","scale":.88,"palette":palette(Color("5b5374"),DARK,Color("b7a6f2"))},
-	"LINE":{"base":"SMG","scale":1.,"palette":palette(Color("4e5a52"),DARK,Color("a8c49a")),"attach":["dot"]},
-	"HIVE":{"base":"SMG","scale":1.02,"palette":palette(Color("6e5a2f"),DARK,Color("f0c040")),"attach":["drum"]},
-	"PIPER":{"base":"SMG","scale":1.04,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a")),"attach":["dot"]},
+	"ECHO":{"base":"Sniper_2","scale":1.058,"palette":palette(Color("56627a"),DARK,Color("9fd0ff"),DARK)},
+	"LARK":{"base":"AK","scale":1.209,"palette":palette(Color("8b8f99"),DARK,LIGHT,Color("6d4a2e")),"attach":["scope"]},
+	"KESTREL":{"base":"Sniper_2","scale":1.029,"palette":palette(Color("7a6a55"),DARK,Color("d7c29e"))},
+	"ANCHOR":{"base":"AK","scale":1.14,"palette":palette(Color("4a5446"),DARK,Color("8d9a78"),DARK),"attach":["box","bipod"]},
+	"BASTION":{"base":"AK","scale":1.186,"palette":palette(Color("3c3f47"),DARK,Color("a5a9b3"),DARK),"attach":["box","bipod","dot"]},
+	"PULSE":{"base":"Shotgun","scale":.816,"palette":palette(STEEL,DARK,LIGHT)},
+	"TIDAL":{"base":"Shotgun","scale":.755,"palette":palette(Color("4f6b86"),DARK,Color("9cc6e8"),DARK),"attach":["shotmag"]},
+	"FOLD":{"base":"ShortCannon","scale":1.139,"palette":palette(Color("6b5f58"),DARK,LIGHT)},
+	"SWIFT":{"base":"SMG","scale":1.103,"palette":palette(STEEL,DARK,LIGHT)},
+	"FLUX":{"base":"SMG","scale":1.034,"palette":palette(Color("5b5374"),DARK,Color("b7a6f2"))},
+	"LINE":{"base":"SMG","scale":1.172,"palette":palette(Color("4e5a52"),DARK,Color("a8c49a")),"attach":["dot"]},
+	"HIVE":{"base":"SMG","scale":1.069,"palette":palette(Color("6e5a2f"),DARK,Color("f0c040")),"attach":["drum"]},
+	"PIPER":{"base":"SMG","scale":1.138,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a")),"attach":["dot"]},
 	"SIDE":{"base":"Pistol","scale":1.,"palette":palette(STEEL,DARK,LIGHT,DARK)},
 	"CHIME":{"base":"Revolver","scale":1.,"palette":palette(Color("8a8f98"),DARK,LIGHT)},
 	"SPARK":{"base":"Pistol","scale":1.05,"palette":palette(Color("5a6270"),DARK,Color("7fd0ff"),DARK)},
@@ -40,7 +40,7 @@ static var LOOKS={
 	"TRIO":{"base":"Pistol","scale":1.02,"palette":palette(Color("6a4f63"),DARK,Color("f08fb8"),DARK)},
 	"FEATHER":{"base":"Pistol","scale":.98,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
 	"DUET":{"base":"Revolver_Small","scale":.95,"palette":palette(Color("7a808a"),DARK,Color("ffcf6b"),DARK)},
-	"MENDER":{"base":"Shotgun","scale":.88,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
+	"MENDER":{"base":"Shotgun","scale":.786,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
 	# 1.4.1: launchers are built in code (LauncherModels) so the tubes show the rockets they hold.
 	"COMET":{"launcher":"comet","scale":.9,"palette":{},"shoulder":true},
 	"QUAD":{"launcher":"quad","scale":1.,"palette":{}},
@@ -61,7 +61,22 @@ static func attach(gun:GunModel,l:Dictionary):
 	var accent:Color=l.get("palette",{}).get("Grey2",LIGHT)
 	var dark:Color=l.get("palette",{}).get("DarkGrey",DARK)
 	var top=gun.muzzle.position.y*gun.base.scale.y
-	var grip_z=gun.right_grip.position.z*gun.base.scale.z;var left_z=gun.left_grip.position.z*gun.base.scale.z
+	var handles:Dictionary=GunModel.HANDLES.get(str(l.get("base","")),{})
+	# Attachments hang from the front of the gun ("front"), not from wherever
+	# the support hand holds (the AK base's hand is on the magazine).
+	var grip_z=gun.right_grip.position.z*gun.base.scale.z;var left_z=Vector3(handles.get("front",gun.left_grip.position)).z*gun.base.scale.z
+	if handles.has("handguard"):
+		# 1.4.2 forend over the bare barrel (the support hand's place).
+		var h:Array=handles.handguard;var s:Vector3=gun.base.scale;var main:Color=l.get("palette",{}).get("Grey",STEEL)
+		var guard=Node3D.new();guard.name="Handguard";gun.add_child(guard)
+		var centre=Vector3(0,(h[2]+h[3])*.5,(h[0]+h[1])*.5)*s;var size=Vector3(h[4]*2.,h[3]-h[2],absf(h[1]-h[0]))*s
+		MeshFactory.box(guard,centre,size,main,Vector3.ZERO,.45)
+		for side in [-1.,1.]:
+			for k in range(3):MeshFactory.box(guard,centre+Vector3(side*size.x*.5,.004,(k-1)*size.z*.26),Vector3(.004,size.y*.34,size.z*.14),dark,Vector3.ZERO,.3)
+		MeshFactory.box(guard,centre+Vector3(0,-size.y*.5,0),Vector3(size.x*.7,.006,size.z*.9),dark,Vector3.ZERO,.3)
+		MeshFactory.merge_children(guard)
+		for mesh in guard.get_children():
+			if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for kind in l.get("attach",[]):
 		var part=Node3D.new();part.name="Attach_"+kind;gun.add_child(part)
 		match kind:
@@ -80,9 +95,22 @@ static func attach(gun:GunModel,l:Dictionary):
 				MeshFactory.cylinder(part,Vector3(0,top-.13,left_z+.05),.06,.06,accent.darkened(.2),Vector3(0,0,PI/2),-1.,14)
 			"bipod":
 				for side in [-1,1]:MeshFactory.box(part,Vector3(side*.03,top-.1,left_z-.12),Vector3(.014,.16,.014),dark,Vector3(0,0,side*.35),.3)
+			"shotmag":
+				# 1.4.2 TIDAL: a box magazine ahead of the trigger guard (base units,
+				# under the scaled base so it reloads like the other magazines).
+				part.queue_free()
+				var mag=Node3D.new();mag.name="Magazine";gun.base.add_child(mag);mag.position=Vector3(0,-.08,-.515)
+				MeshFactory.box(mag,Vector3(0,-.085,0),Vector3(.046,.17,.085),dark,Vector3(-.12,0,0),.3)
+				MeshFactory.box(mag,Vector3(0,-.172,.01),Vector3(.052,.02,.09),accent.darkened(.2),Vector3(-.12,0,0),.3)
+				MeshFactory.box(mag,Vector3(0,-.06,-.044),Vector3(.036,.09,.004),accent.darkened(.35),Vector3(-.12,0,0),.3)
+				MeshFactory.merge_children(mag)
+				for mesh in mag.get_children():
+					if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				gun.magazine=mag;gun.mag_rest=mag.transform
+				continue
 			"coils":
 				for i in range(3):
-					var ring=MeshFactory.cylinder(part,Vector3(0,top,left_z-.07-i*.07),.032,.022,Color("c79bff"),Vector3(PI/2,0,0),-1.,12)
+					var ring=MeshFactory.cylinder(part,Vector3(0,top,left_z-.11-i*.07),.032,.022,Color("c79bff"),Vector3(PI/2,0,0),-1.,12)
 					ring.set_meta("glow",true)
 		MeshFactory.merge_children(part)
 		for mesh in part.get_children():

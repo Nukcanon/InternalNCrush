@@ -11,12 +11,12 @@ func run():
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(50,50);g.arena.has_water=false;g.arena.spawn_points=[[Vector3.ZERO],[Vector3(20,0,20)]];g.arena.box(Vector3(0,-.5,0),Vector3(100,1,100),Color.GRAY)
 	g.add_player(1,"Tester","one");g.add_player(2,"Ally","two");g.phase="combat";g.clock=100.;g.options.mode=0
 	var p=g.players[1];var q=g.players[2];var a=g.actors[1];var b=g.actors[2]
-	p.role=3;p.primary="e1";p.team=0;p.skill_ready=125.;p.placing="";p.gadget=0;p.alive=true;q.team=0;q.alive=true
-	g.spawn(1);expect(p.skill_ready==125.,"respawn preserves absolute skill deadline")
+	p.role=3;p.primary="e1";p.team=0;p.skill_ready=115.;p.placing="";p.gadget=0;p.alive=true;q.team=0;q.alive=true
+	g.spawn(1);expect(p.skill_ready==115.,"respawn preserves absolute skill deadline")
 	g.commit_loadout(1,{"role":5,"primary":"m1","armor":0,"gadget":0})
 	expect(p.skill_ready==140.,"class switch carries five elapsed seconds into medic charge")
 	g.commit_loadout(1,{"role":3,"primary":"e1","armor":0,"gadget":0})
-	expect(p.skill_ready==125.,"class switch cannot reset elapsed charge")
+	expect(p.skill_ready==115.,"class switch cannot reset elapsed charge")
 	p.role=5;p.skill_ready=0.;p.protect=0.;q.protect=0.;a.position=Vector3.ZERO;b.position=Vector3(.7,0,-8);a.aim_yaw=0.;a.aim_pitch=0.
 	await physics_frame;await physics_frame
 	expect(g.invulnerability_target(1)==2,"medic cone accepts slightly off-center ally")
@@ -56,7 +56,7 @@ func run():
 	var expired={"launcher":true,"owner":1,"device":0,"pos":Vector3(0,360,0),"origin":Vector3.ZERO,"velocity":Vector3.UP*RocketCombat.SPEED,"until":g.clock}
 	g.rockets.append(expired);g.add_device("cover",Vector3(40,0,40),1,100.)
 	TurretLogic.tick_rockets(g,.016);expect(g.rockets.is_empty() and expired.until==0.,"ten-second aerial rocket explodes and is removed even with devices present")
-	expect(AbilityBalance.COOLDOWNS[3]==30. and AbilityBalance.SLOW_RADIUS==15.,"turret and control balance")
+	expect(AbilityBalance.COOLDOWNS[3]==20. and AbilityBalance.SLOW_RADIUS==15.,"turret and control balance")
 	# An unfinished cover cannot absorb a shot, but receives its own damage.
 	p.team=0;q.team=1;p.primary="a1";p.slot=0;p.protect=0.;p.invulnerable=0.;p.hp=100.;q.hp=100.;q.protect=0.;q.invulnerable=0.;q.armor=0.;p.placing="";p.slide_until=0.
 	a.position=Vector3.ZERO;b.position=Vector3(0,0,-8);a.aim_yaw=0.;a.aim_pitch=0.;a.input_state.yaw=0.
@@ -75,7 +75,7 @@ func run():
 	for key in g.devices.keys():g.remove_device(key)
 	p.skill_ready=0.;p.alive=true;p.protect=0.;a.position=Vector3(10,0,2);var tower=g.add_device("turret",Vector3(10,0,0),1,180.);g.devices[tower].upgrade_ready=0.
 	TurretLogic.upgrade(g,1,tower)
-	expect(is_equal_approx(g.devices[tower].building_until-g.clock,3.) and is_equal_approx(p.skill_ready-g.clock,30.),"upgrade starts three-second build and thirty-second charge together")
+	expect(is_equal_approx(g.devices[tower].building_until-g.clock,3.) and is_equal_approx(p.skill_ready-g.clock,AbilityBalance.COOLDOWNS[3]),"upgrade starts three-second build and a full charge together")
 	var level=g.devices[tower].level;p.skill_ready=0.;g.devices[tower].upgrade_ready=0.;TurretLogic.upgrade(g,1,tower)
 	expect(g.devices[tower].level==level,"cannot upgrade while construction is in progress")
 	var progress_device={"hp":100.,"max_hp":200.,"build_growth":100.,"build_progress":0.,"building_started":g.clock,"building_until":g.clock+5.}

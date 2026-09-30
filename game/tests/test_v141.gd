@@ -102,10 +102,10 @@ func run():
 	expect(support.y.z<-.4 and support.y.x>.4 and support.y.y>0. and -support.z.y>.7,"support hand: knuckles forward-across-up, palm up")
 	# First person: the arms come up from below the view (shoulders behind the eye).
 	expect(Actor.VIEW_BODY_OFFSET.z>0.,"first-person shoulders sit behind the eye")
-	# Rocket reload: overhand on the rocket; TETHER: a game-pad grip for both hands.
+	# Rocket reload (1.4.2): underhand in a C (thumb under, fingers over the top); TETHER: a game-pad grip for both hands.
 	var loader=GunModel.new();loader.build(Catalog.get_weapon("h4"),false);root.add_child(loader)
 	var load_hand=ReloadMotion.support(loader,{"reload":.45,"rounds":0})
-	expect(str(load_hand.get("style",""))=="over","rocket loading hand grips the rocket overhand")
+	expect(str(load_hand.get("style",""))=="support","rocket loading hand cradles the rocket underhand (C grip)")
 	loader.queue_free()
 	var pad=GunModel.new();pad.build(Catalog.get_weapon("remote"),false);root.add_child(pad)
 	expect(pad.get_meta("grip_styles",{})=={"R":"pistol","L":"pistol"} and pad.right_grip.position.y<-.03 and pad.left_grip.position.y<-.03,"TETHER: both fists on the grips under the pad")

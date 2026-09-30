@@ -14,6 +14,7 @@ model; inside/outside is the generalised winding number, so overlapping closed
 parts of a model are handled.
 """
 import json
+import os
 import math
 import sys
 import time
@@ -128,7 +129,8 @@ def main():
     jobs = [(wid, name, entry['tris'], side['origin']) for wid, entry in data.items() if not only or wid in only
             for name, side in entry['sides'].items()]
     # One field per process (numpy releases no GIL for this mix of work).
-    with Pool(processes=max(1, min(len(jobs), 16))) as pool:
+    # GRIP_BAKE_PROCESSES limits the workers (each holds a model's winding data).
+    with Pool(processes=max(1, min(len(jobs), int(os.environ.get('GRIP_BAKE_PROCESSES', '16'))))) as pool:
         for wid, name, entry in pool.imap_unordered(bake_one, jobs):
             index.setdefault(wid, {})[name] = entry
     index_path.write_text(json.dumps(index))

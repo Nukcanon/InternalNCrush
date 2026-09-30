@@ -146,7 +146,7 @@ func _ready():
 	if ResourceLoader.exists("res://assets/fonts/Rajdhani-SemiBold.ttf"):
 		# Symbols.ttf (Noto Sans KR subset: punctuation, arrows, shapes) comes first:
 		# DoHyeon lacks "·", "−", "…" and the Web build ships no full Korean font.
-		var font=FontVariation.new();font.base_font=load("res://assets/fonts/Rajdhani-SemiBold.ttf");font.fallbacks=[load("res://assets/fonts/DoHyeon-Regular.ttf"),load("res://assets/fonts/Symbols.ttf"),load("res://assets/Korean.ttf")];theme.default_font=font
+		var font=FontVariation.new();font.base_font=load("res://assets/fonts/Rajdhani-SemiBold.ttf");font.fallbacks=[load("res://assets/fonts/DoHyeon-Regular.ttf"),UiSkin.symbol_font(),load("res://assets/Korean.ttf")];theme.default_font=font
 		for source_font in [font.base_font]+font.fallbacks:
 			source_font.multichannel_signed_distance_field=true;source_font.msdf_size=96
 	var style=StyleBoxFlat.new();style.bg_color=Color(.055,.09,.13,.86);style.border_color=Color("4c5f72");style.set_border_width_all(1);style.set_corner_radius_all(4);style.content_margin_left=18;style.content_margin_right=18;style.content_margin_top=12;style.content_margin_bottom=12
@@ -170,7 +170,7 @@ func _ready():
 	# 1.4: the dark theme stays with the in-match HUD; menus, lobbies and dialogs
 	# get the cartoon skin (explicitly assigned to each menu root).
 	hud_theme=theme
-	var menu_font=FontVariation.new();menu_font.base_font=load("res://assets/fonts/DoHyeon-Regular.ttf");menu_font.fallbacks=[load("res://assets/fonts/Symbols.ttf"),load("res://assets/Korean.ttf")]
+	var menu_font=FontVariation.new();menu_font.base_font=load("res://assets/fonts/DoHyeon-Regular.ttf");menu_font.fallbacks=[UiSkin.symbol_font(),load("res://assets/Korean.ttf")]
 	theme=UiSkin.build(menu_font,TouchControls.supported())
 func clear_panel(keep_background=false):
 	if is_instance_valid(map_viewer):map_viewer.queue_free();map_viewer=null
@@ -430,6 +430,12 @@ func lobby():
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
 	if int(game.options.mode)!=4:button("병과 · 무기 · 가젯",gear,actions)
 	button("팀 편성",teams_menu,actions);button("참가자 관리",members_menu,actions)
+	# 1.4.2: the tool buttons share the row on touch (clipped captions let them
+	# collapse to nothing) and keep comfortable side margins on desktop.
+	for tool in actions.get_children():
+		if tool is Button:
+			if TouchControls.supported():tool.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			else:tool.custom_minimum_size.x=tool.get_theme_font("font").get_string_size(tool.text,HORIZONTAL_ALIGNMENT_LEFT,-1,tool.get_theme_font_size("font_size")).x+64
 	# Team rows follow the tool buttons directly so more of the roster fits.
 	team_columns=HBoxContainer.new();team_columns.add_theme_constant_override("separation",18);stack.add_child(team_columns)
 	actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions);pin_actions(actions)
@@ -812,7 +818,7 @@ func refresh_gear_detail():
 	if float(w.get("heal_per_pellet",0.))>0:gear_detail.text=str(w.get("description",""))+"\n아군은 치료, 적군은 피해 · 모바일 자동 사격 지원"
 	if w.get("rocket",false):gear_detail.text=str(w.description)+"\n속도 36m/s · 완만한 낙하 · 직격 시 강한 밀림"
 	if w.get("laser",false):gear_detail.text=str(w.description)+"\n100m까지 동일 피해 · 150m에서 30% · 머리 ×1.5 / 다리 ×0.5"
-	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n12m 이후 탄환 피해 감소 · 48m에서 10%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
+	if w.kind=="remote":gear_detail.text="TETHER · 원격 포탑 조종\n클릭: 자동 각도·사거리 제한 없이 사격\n80m까지 탄환 피해 100% · 150m에서 40%\n4단계 미사일은 2초 간격 · 거리 감쇠 없음"
 	if w.kind=="repair":gear_detail.text="FIX · 원격 수리 도구 · 10m · 초당 30 수리\n아군 엄폐물과 포탑을 향해 발사하세요.\n권총 자리를 사용합니다."
 	if preview_kind==0:
 		preview_caption.text=HeroCharacter.IDENTITIES[role]+" · "+Rules.CLASSES[role]+" · %d cm"%roundi(HeroCharacter.HEIGHTS[role]*100)
@@ -895,7 +901,7 @@ func show_hud():
 	reticle=Reticle.new();reticle.game=game;reticle.ui=self;reticle.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(reticle)
 	kill_feed=KillFeed.new();hud.add_child(kill_feed)
 	if is_instance_valid(scoreboard):scoreboard.queue_free()
-	scoreboard=MatchScoreboard.new();scoreboard.game=game;scoreboard.theme=hud_theme;root.add_child(scoreboard);scoreboard.visible=false
+	scoreboard=MatchScoreboard.new();scoreboard.game=game;scoreboard.theme=theme;root.add_child(scoreboard);scoreboard.visible=false
 	flash_overlay=ColorRect.new();flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);flash_overlay.color=Color(1,1,1,0);flash_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(flash_overlay)
 	HudLayout.attach(self)
 	if is_instance_valid(game.touch):
@@ -968,15 +974,16 @@ func refresh():
 	if w.kind=="heal":ammo.text="%d / 180"%p.energy;weapon_title.text="LINK  /  회복 에너지"
 	if w.kind=="repair":ammo.text="%d / 100"%p.repair_energy;weapon_title.text="FIX  /  수리 에너지"
 	if p.slot>=2:weapon_title.text=Rules.GADGETS[p.role] if p.role!=4 else "섬광탄" if p.slot==3 else "연막탄";ammo.text="스코프로 1.5초 추적 · 자동" if MarkerTracker.equipped(p) else "클릭하여 사용"
-	if p.reload>game.clock:ammo.text="재장전 %.1f"%(p.reload-game.clock)
+	# 1.4.2: the reload time rides on the title line so the rounds stay in view.
+	if p.reload>game.clock and p.slot<2:weapon_title.text="%s / %s · 재장전 %.1f초"%[w.name,fire_mode,p.reload-game.clock]
 	var health_color=Color("6bc7ff") if p.team==0 else Color("ffa35f")
 	if health.get_theme_color("font_color")!=health_color:health.add_theme_color_override("font_color",health_color)
 	var skill="준비" if p.skill_ready<=game.clock else "%.0f초"%ceil(p.skill_ready-game.clock)
 	if GrenadeLogic.equipped(p) and p.slot==2:weapon_title.text=GadgetLoadout.label(p);ammo.text="누르고 준비 · 놓아 투척"
 	if p.get("cooking",0)>0:weapon_title.text="수류탄 안전핀 해제";ammo.text="%.1f초 · 놓아 투척"%maxf(0.,GrenadeLogic.FUSE-game.clock+float(p.grenade_started))
-	var ammo_size=16 if p.slot>=2 or p.get("cooking",0)>0 else 26 if p.reload>game.clock else 30
+	var ammo_size=16 if p.slot>=2 or p.get("cooking",0)>0 else 30
 	if ammo.get_theme_font_size("font_size")!=ammo_size:ammo.add_theme_font_size_override("font_size",ammo_size)
-	ammo.visible=p.slot>=2 or p.get("cooking",0)>0 or p.reload>game.clock
+	ammo.visible=p.slot>=2 or p.get("cooking",0)>0
 	skill_label.text="F  "+Rules.SKILLS[p.role]+"  ·  "+skill if game.options.skills and game.options.classes else "특수 스킬 OFF"
 	if p.primary in ["m2","m3"]:skill_label.text+="     C 범위 회복 · %s"%("준비" if p.heal_ready<=game.clock else "%.1f초"%(p.heal_ready-game.clock))
 	if p.get("mounted",0)>game.clock:skill_label.text+="     거치대 %.0f초"%(p.mounted-game.clock)
@@ -1005,7 +1012,7 @@ func refresh():
 	if p.flash>game.clock and float(p.flash)>float(hud.get_meta("last_flash",0))+.15:
 		hud.set_meta("last_flash",p.flash);game.play_sound("flash_ring",Vector3.ZERO,false)
 	if p.flash<=game.clock:game.audio_bank.stop_key("flash_ring")
-	if p.alive and p.protect>game.clock:banner.text="부활 보호 %.1f초 · 공격 대기"%(p.protect-game.clock)
+	if p.alive and p.protect>game.clock:banner.text=("부활 보호 %.1f초 · 공격 가능"%(p.protect-game.clock)) if Rules.attack_blocked_until(p)<=game.clock else ("부활 보호 %.1f초 · 공격 대기"%(p.protect-game.clock))
 	elif p.flash>game.clock:banner.text="섬광 · 시야 회복 중"
 	elif game.phase=="buy":banner.text="준비 %.0f초 · B 병과/장비 · 공격팀 대기 / 수비팀 배치"%game.remaining
 	elif game.bomb.planted:banner.text="폭탄 폭발까지 %.1f초 · 해체 E 유지"%maxf(0.,game.bomb.time)

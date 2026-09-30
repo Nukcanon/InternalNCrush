@@ -54,6 +54,9 @@ var input_state={"x":0.0,"z":0.0,"yaw":0.0,"pitch":0.0,"ads":false,"sprint":fals
 var aim_yaw=0.0
 var aim_pitch=0.0
 var sprint_release=0.0
+const SPRINT_OUT=.15
+var load_hold=0. # 0..1 steady loading pose of round-by-round reloads
+var sprint_fov=0. # 0..1 blend toward the sprint field of view
 var last_sprint=false
 var target_pos=Vector3.ZERO
 var local=false
@@ -163,7 +166,7 @@ func ensure_hit_pose():
 func reset_view(yaw:float):
 	camera.top_level=false;camera.transform=Transform3D(Basis.IDENTITY,Vector3(0,eye_height(false),0))
 	input_state.yaw=yaw;input_state.pitch=0.;input_state.crouch=false;input_state.sprint=false;input_state.fire=false;input_state.ads=false;input_state.x=0.;input_state.z=0.;input_state.jump=false
-	aim_yaw=yaw;aim_pitch=0.;rotation=Vector3(0,yaw,0);last_sprint=false;sprint_release=0.;old_visual_pos=global_position;spread_angle=.4;visual_spread=.4;seen_shot=-100.;recoil=0.;land_kick=0.
+	aim_yaw=yaw;aim_pitch=0.;rotation=Vector3(0,yaw,0);last_sprint=false;sprint_release=0.;sprint_fov=0.;old_visual_pos=global_position;spread_angle=.4;visual_spread=.4;seen_shot=-100.;recoil=0.;land_kick=0.
 	fall_peak=global_position.y;falling=false
 	gait=0.;net_gait=0.;net_gait_target=0.;turn_sway=0.;previous_yaw=yaw;aim_progress=0.;ads_blend=0.
 	handedness=int(game.players.get(pid,{}).get("hand",1))
@@ -201,7 +204,9 @@ func simulate(dt:float,now:float,can_move:bool):
 
 	var cooking=game.players.get(pid,{}).get("cooking",0)>0
 	var sprint=not cooking and not MeleeCombat.active(game.players.get(pid,{}),now) and bool(input_state.sprint) and not crouch and not input_state.ads and not input_state.fire
-	if last_sprint and not sprint:sprint_release=now+.5
+	# 1.4.2: firing out of a sprint waited half a second (and the sprint FOV
+	# snapped back like a zoom): the gun now comes up in SPRINT_OUT seconds.
+	if last_sprint and not sprint:sprint_release=now+SPRINT_OUT
 	last_sprint=sprint
 	var speed=Rules.RUN_SPEED if sprint else Rules.CROUCH_SPEED if crouch else Rules.WALK_SPEED
 	if game.arena and game.arena.wading(global_position):speed*=.72
@@ -413,7 +418,7 @@ func headless_pose(p:Dictionary):
 	# avoids 32 clients redundantly animating 32 complete authoritative rigs each.
 	if not game.server:return
 	ensure_hit_pose();character.scale.x=float(p.get("hand",1));character.pose_fingers=false
-	var w=game.current_weapon(p);var progress=clampf((game.clock-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0.,1.) if p.reload>game.clock else -1.
+	var w=game.current_weapon(p);var progress=MagazineReload.progress(game,p,w)
 	var held=character.held
 	if not held is GunModel or held.spec.get("name","")!=w.get("name",""):
 		if is_instance_valid(held):held.queue_free()
@@ -453,7 +458,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	var speed=Vector2(velocity.x,velocity.z).length() if local or game.server else Vector2(net_velocity.x,net_velocity.z).length()
 	var grounded=is_on_floor() if local or game.server else net_grounded
 	var sprint=last_sprint if local or game.server else net_sprint
-	var progress=clampf((now-float(p.get("reload_started",0)))/maxf(.01,float(w.reload)),0,1) if p.reload>now else -1.
+	var progress=MagazineReload.progress(game,p,w)
 	move_blend=lerpf(move_blend,minf(1,speed/Rules.WALK_SPEED),1.-exp(-dt*9))
 	if not local and not game.server and grounded:
 		var advance=dt*speed/(2.*Rules.step_length(sprint,bool(input_state.crouch)))
@@ -493,6 +498,9 @@ func visual(dt:float,p:Dictionary,now:float):
 		if is_instance_valid(gadget_world):gadget_world.hide()
 		if is_instance_valid(melee_world):melee_world.hide()
 	if is_instance_valid(world_weapon) and MeleeCombat.shown(p,now):world_weapon.hide()
+	# 1.4.2: weapons not in hand and the kit show on the body (rebuilt only when
+	# the loadout changes; drawing a weapon only toggles its stowed copy).
+	CarriedGear.apply(character,CarriedGear.spec_for(p,shown_weapon if is_instance_valid(world_weapon) and world_weapon.visible else "",item_shown))
 	if not local:
 		TargetReveal.apply(self,p)
 		MedicSelection.apply(self)
@@ -512,7 +520,8 @@ func visual(dt:float,p:Dictionary,now:float):
 	# ATLAS (semi_scope): a magnified look without optics; the gun leaves the view.
 	var semi_scoped=ads and bool(w.get("semi_scope",false)) and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
-	camera.fov=lerpf(88. if sprint else 82.,SniperScope.fov(game.profile,w),ads_blend)
+	sprint_fov=move_toward(sprint_fov,1. if sprint else 0.,dt/.22)
+	camera.fov=lerpf(lerpf(82.,88.,smoothstep(0.,1.,sprint_fov)),SniperScope.fov(game.profile,w),ads_blend)
 	# View-model anchor: the right handle sits at this point in camera space at
 	# the hip. Aiming brings the rear sight (GunModel.aim_point) to the camera
 	# axis instead, so the anchor moves to the eye.
@@ -541,7 +550,19 @@ func visual(dt:float,p:Dictionary,now:float):
 	base+=Vector3(cos(bob)*.022,cos(bob*2)*.017,0)*motion
 	var rotation_target=Vector3(recoil*lerpf(.34,.12,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
 	if sprint:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
+	var reload_style=str(w.get("reload_style",""))
+	# Round-by-round loads (shells, break-action, revolvers) hold one steady
+	# loading pose across their cycles instead of bobbing with each round.
+	load_hold=move_toward(load_hold,1. if reloading and reload_style in ["shell","break","revolver"] else 0.,dt*5.)
 	if rocket:pass # launchers take their loading pose below (view weapon transform)
+	elif reload_style=="dual":pass # the pistols leave the view in turn (GunModel.animate_pair)
+	elif load_hold>0.:
+		var hold=smoothstep(0.,1.,load_hold)
+		if reload_style=="revolver":
+			# Turned muzzle-left so the loading gate on its left side faces the eye.
+			base+=Vector3(-.07,.05,.04)*hold;rotation_target+=Vector3(.18,.85,.1)*hold
+		else:base+=Vector3(.02,.06,.10)*hold;rotation_target+=Vector3(.12,-.2,-.28)*hold
+		if reload_style=="break":rotation_target.x-=.32*hold # muzzle down, breech up toward the eye
 	elif reloading:
 		# Brought up and in so the support hand working the magazine stays in view.
 		base+=Vector3(.02,.07,.14)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)

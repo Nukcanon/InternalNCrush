@@ -24,7 +24,10 @@ var signatures={}
 var first_person_guns={}
 var ghost_props={}
 var ghost_devices={}
-var gun:Node3D # first-person replay mount; child 0 is the GunModel
+var gun:Node3D # first-person replay mount; meta "model" is its GunModel
+# 1.4.2: the killer's first-person arms (the replay showed a floating gun).
+var fp_body:HeroCharacter
+var fp_head=Vector3(0,1.62,0)
 var title:Label
 var detail:Label
 var nickname:Label
@@ -108,10 +111,11 @@ func warm_one():
 			var body=node.get_node("Body")
 			if is_instance_valid(body.held):body.held.free()
 			var weapon=GunModel.new();weapon.build(Catalog.get_weapon(wid),HeroStyle.outlines_enabled());body.hold(weapon);body.set_meta("hold",GunLooks.hold_kind(Catalog.get_weapon(wid)))
+			body.set_armor(clampi(int(p.get("armor_max",0))/25,0,2));CarriedGear.apply(body,CarriedGear.spec_for(p,wid,false))
 			signatures[id]=signature
 			return
 		if not first_person_guns.has(wid):
-			var mount=Node3D.new();camera.add_child(mount);var weapon=GunModel.new();mount.add_child(weapon);weapon.build(Catalog.get_weapon(wid));weapon.position=-weapon.right_grip.position*weapon.base.scale;mount.hide();first_person_guns[wid]=mount;return
+			var mount=Node3D.new();camera.add_child(mount);var weapon=GunModel.new();mount.add_child(weapon);weapon.build(Catalog.get_weapon(wid));weapon.position=-weapon.right_grip.position*weapon.base.scale;mount.set_meta("model",weapon);mount.hide();first_person_guns[wid]=mount;return
 	for id in game.arena.props:
 		if not ghost_props.has(id):
 			var prop=game.arena.props[id];var node=Node3D.new();stage.add_child(node);ghost_props[id]=node
@@ -196,7 +200,13 @@ func _process(dt):
 		camera.rotation=Vector3(lerpf(state.pitch,right.actors.get(killer,state).pitch,blend),attacker.rotation.y,0)
 		if event.weapon in ["turret","turret_missile"]:
 			camera.position=event.origin+(event.hit_point-event.origin).normalized()*.25+Vector3.UP*.10;camera.look_at(event.hit_point);gun.hide()
-		gun.scale.x=float(state.get("hand",1));gun.rotation=Vector3(kick*.24,0,0);gun.position=Vector3(.255*float(state.get("hand",1)),-.255,-.46+kick*.11);gun.get_child(0).animate_reload(-1.,kick,0. if kick>.75 else 10.)
+		# Whole transform at once: flipping scale.x on a node whose transform was
+		# decomposed turned the mirrored gun round (muzzle backward).
+		var hand=float(state.get("hand",1))
+		gun.transform=Transform3D(Basis(Vector3.RIGHT,kick*.24)*Basis.from_scale(Vector3(hand,1.,1.)),Vector3(.255*hand,-.255,-.46+kick*.11))
+		var model:GunModel=gun.get_meta("model",null)
+		if is_instance_valid(model):model.animate_reload(-1.,kick,0. if kick>.75 else 10.)
+		drive_arms(dt,state,hand)
 		if elapsed>=RUNUP_SECONDS and event.weapon not in ["knife","wrench","h6"]:
 			camera.look_at(event.hit_point);camera.fov=70.
 			if elapsed<FIRST_PERSON_SECONDS:
@@ -213,6 +223,7 @@ func _process(dt):
 	else:
 		if not punch_played:punch_played=true;title.text="킬 리플레이 · 처치한 플레이어";nickname.text=str(event.attacker_name);nickname.show();game.play_sound("kill_sting",Vector3.ZERO,false)
 		attacker.show();gun.hide()
+		if is_instance_valid(fp_body):fp_body.hide()
 		var t=clampf((elapsed-FIRST_PERSON_SECONDS-DEATH_SECONDS)/PORTRAIT_SECONDS,0,1)
 		var focus=attacker.position+Vector3.UP*1.43*HeroCharacter.HEIGHTS[int(state.role)]/1.8
 		var desired=focus+Basis(Vector3.UP,attacker.rotation.y)*Vector3(.45,.16,-lerpf(3.2,1.35,1.-pow(1.-t,3)))
@@ -248,6 +259,7 @@ func begin(kill:Dictionary):
 	var weapon=fatal_frame.actors[killer].weapon
 	if not first_person_guns.has(weapon):return
 	gun=first_person_guns[weapon]
+	arms_for(int(fatal_frame.actors[killer].role),int(fatal_frame.actors[killer].team))
 	if kill.weapon in ["knife","wrench"]:
 		var role=int(fatal_frame.actors[killer].role)
 		melee_view=MeleeVisual.new();camera.add_child(melee_view);melee_view.build(kill.weapon=="wrench",role,true)
@@ -279,6 +291,7 @@ func finish():
 	if is_instance_valid(stage):stage.hide();stage.process_mode=Node.PROCESS_MODE_DISABLED;camera.current=false;fx.clear(true)
 	if is_instance_valid(overlay):overlay.hide()
 	for weapon in first_person_guns.values():weapon.hide()
+	if is_instance_valid(fp_body):fp_body.hide()
 	for model in models.values():
 		var held=model.get_node("Body").held
 		if is_instance_valid(held):held.show()
@@ -290,8 +303,31 @@ func reset(keep_models:bool=false):
 		ghost_devices.clear();return
 	if is_instance_valid(stage):stage.queue_free()
 	if is_instance_valid(overlay):overlay.queue_free()
-	stage=null;overlay=null;models.clear();signatures.clear();first_person_guns.clear();ghost_props.clear();ghost_devices.clear()
+	stage=null;overlay=null;fp_body=null;models.clear();signatures.clear();first_person_guns.clear();ghost_props.clear();ghost_devices.clear()
 func record_shot(from:Vector3,to:Vector3,owner:int):
 	var now=Time.get_ticks_msec()/1000.
 	shot_history.append({"time":now,"from":from,"to":to,"owner":owner})
 	while shot_history.size()>512 or (not shot_history.is_empty() and now-shot_history[0].time>4.5):shot_history.pop_front()
+# 1.4.2 first-person arms for the replay: the killer's hero (head hidden) under
+# the replay camera, reaching both hands onto the replay gun, as in live play.
+func arms_for(role:int,team:int):
+	var key=str([role,team])
+	if is_instance_valid(fp_body) and str(fp_body.get_meta("key",""))==key:fp_body.show();return
+	if is_instance_valid(fp_body):fp_body.held=null;fp_body.queue_free()
+	fp_body=HeroCharacter.new();fp_body.name="ReplayArms";stage.add_child(fp_body);fp_body.build(role,team,false)
+	fp_body.first_person_only();fp_body.hand_size=Actor.VIEW_HAND/Actor.VIEW_BODY_SCALE
+	fp_body.set_meta("fp_camera",camera);fp_body.set_meta("key",key)
+	for mesh in fp_body.meshes():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	fp_head=Vector3(0,1.62,0)
+func drive_arms(dt:float,_state:Dictionary,hand:float):
+	if not is_instance_valid(fp_body):return
+	var model:GunModel=gun.get_meta("model",null)
+	fp_body.visible=gun.visible and is_instance_valid(model)
+	if not fp_body.visible:return
+	if fp_body.held!=model:fp_body.hold(model,false)
+	var forward=-camera.global_basis.z;var yaw=Basis(Vector3.UP,atan2(-forward.x,-forward.z))
+	fp_body.global_basis=yaw*Basis.from_scale(Vector3(hand,1.,1.)*Actor.VIEW_BODY_SCALE)
+	fp_body.global_position=camera.global_position-yaw*fp_head+yaw*Actor.VIEW_BODY_OFFSET
+	var kind=GunLooks.hold_kind(model.spec)
+	fp_body.drive(dt,{"hold":"rifle" if kind=="shoulder" else kind,"two_hands":kind=="pistol","hands":1.,"sprint":false,"velocity":Vector3.ZERO,"grounded":true,"crouch":false,"pitch":asin(clampf(forward.y,-1.,1.)),"reload":-1.})
+	fp_head=yaw.inverse()*(fp_body.head_position()-fp_body.global_position)

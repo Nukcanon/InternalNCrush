@@ -40,11 +40,12 @@ func _input(event):
 		if not Rect2(Vector2.ZERO,size).has_point(point):close();get_viewport().set_input_as_handled()
 func _ready():
 	position=Vector2(30,76);custom_minimum_size=Vector2(1220,590);mouse_filter=Control.MOUSE_FILTER_STOP;z_index=80
-	var style=StyleBoxFlat.new();style.bg_color=Color("101e2c");style.set_corner_radius_all(16);style.set_content_margin_all(20);style.border_color=Color("344d62");style.set_border_width_all(1);add_theme_stylebox_override("panel",style)
+	# 1.4.2: the menu skin's paper panel (the 1.3 dark panel and buttons were
+	# the last of the old style); the rows are skin cards (RosterControls).
 	var main=VBoxContainer.new();main.size_flags_vertical=Control.SIZE_EXPAND_FILL;add_child(main)
 	var heading=HBoxContainer.new();main.add_child(heading)
 	var caption=Label.new();caption.text="경기 기록 · 팀 편성";caption.size_flags_horizontal=Control.SIZE_EXPAND_FILL;heading.add_child(caption)
-	close_button=Button.new();close_button.text="×";close_button.tooltip_text="닫기 (Tab)";close_button.custom_minimum_size=Vector2(48,40);close_button.pressed.connect(close);heading.add_child(close_button)
+	close_button=Button.new();close_button.text="×";close_button.tooltip_text="닫기 (Tab)";close_button.custom_minimum_size=Vector2(48,40);close_button.pressed.connect(close);heading.add_child(close_button);UiSkin.paint(close_button,"stop")
 	lineup=WinnerLineup.new();lineup.game=game;main.add_child(lineup)
 	layout=BoxContainer.new();layout.vertical=false;layout.size_flags_vertical=Control.SIZE_EXPAND_FILL;layout.add_theme_constant_override("separation",18);main.add_child(layout)
 	var scroll=ScrollContainer.new();scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL;scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL;scroll.custom_minimum_size=Vector2(520,0);layout.add_child(scroll)

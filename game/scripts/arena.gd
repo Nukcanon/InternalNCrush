@@ -60,7 +60,7 @@ func box(pos:Vector3,size:Vector3,color:Color,solid=true,parent:Node=null) -> No
 	return node
 func text3d(txt:String,pos:Vector3,color:Color,size:int=32,parent:Node=null):
 	if world_font==null and ResourceLoader.exists("res://assets/Korean.ttf"):
-		var f=FontVariation.new();f.base_font=load("res://assets/Korean.ttf");f.fallbacks=[load("res://assets/fonts/Symbols.ttf")];f.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):650.0};world_font=f
+		var f=FontVariation.new();f.base_font=load("res://assets/Korean.ttf");f.fallbacks=[UiSkin.symbol_font()];f.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):650.0};world_font=f
 	var l=Label3D.new();l.font=world_font;l.outline_size=8;l.outline_modulate=Color("102535");l.text=txt;l.position=pos;l.font_size=size;l.pixel_size=.008;l.modulate=color;l.billboard=BaseMaterial3D.BILLBOARD_ENABLED;l.no_depth_test=false;l.visibility_range_end=60;l.visibility_range_end_margin=10
 	(parent if parent else self).add_child(l);return l
 func detail(pos:Vector3,size:Vector3,color:Color,rot=Vector3.ZERO):

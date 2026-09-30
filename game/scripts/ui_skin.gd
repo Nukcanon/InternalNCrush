@@ -20,6 +20,15 @@ const BLUE=Color("4ea4ff")
 const ORANGE=Color("ff9a3c")
 const DISABLED=Color("ddd5c4")
 const KINDS={"primary":PRIMARY,"neutral":NEUTRAL,"go":GO,"stop":STOP,"blue":BLUE,"orange":ORANGE}
+## Symbols.ttf (punctuation, arrows, shapes) as a fallback font. It declares
+## no Hangul support, so in a Korean run ("병과 · 무기") the text server passed it
+## over for the full Korean font, whose taller ascent pushed the whole caption
+## down. The override keeps "·", "−", "…" on Symbols (same metrics as DoHyeon).
+static func symbol_font() -> FontFile:
+	var font:FontFile=load("res://assets/fonts/Symbols.ttf")
+	if not font.get_script_support_overrides().has("Hang"):
+		font.set_script_support_override("Hang",true);font.set_language_support_override("ko",true)
+	return font
 static func box(bg:Color,border:=INK,width:=3,bottom:=3,radius:=14,margin:=Vector4(16,10,16,10)) -> StyleBoxFlat:
 	var s=StyleBoxFlat.new();s.bg_color=bg;s.border_color=border;s.set_border_width_all(width);s.border_width_bottom=bottom
 	s.set_corner_radius_all(radius);s.anti_aliasing=true
