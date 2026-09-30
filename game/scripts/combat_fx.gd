@@ -232,6 +232,17 @@ func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.,bomb:bool=false):
 		node.retire()
 	node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.bomb=bomb;node.build(fire)
 	temporary_light(pos+Vector3.UP*.3,Color("ffc78a"),6.,10.,.20)
+## First explosion of a match stalled a frame (~60 ms: the burst's shaders and
+## the first point light's lit variants compile). Draw a tiny, faint one in
+## view once during the buy/lobby phase so the real one is ready.
+func warm_effects(camera:Camera3D):
+	if not is_instance_valid(camera):return
+	var at=camera.global_position-camera.global_basis.z*3.+Vector3.DOWN*1.1
+	explosion(at,true,.02)
+	# explosion() lit the scene briefly at full strength; keep its range (every
+	# lit surface nearby compiles its light variant) but make it invisible.
+	for child in get_children():
+		if child is OmniLight3D and child.global_position.distance_to(at+Vector3.UP*.3)<.01:child.light_energy=.002
 func skill_burst(role:int,pos:Vector3,color:Color):
 	var node=group(pos);var radius=[2.5,12.,2.2,2.,5.,2.4][role]
 	for i in range(3):
@@ -294,7 +305,7 @@ func ragdoll(source:HeroCharacter,pos:Vector3,push:Vector3,role:int,team:int,fac
 		var old=ragdolls.pop_front()
 		if is_instance_valid(old):old.queue_free()
 	var node:Node3D=HeroRagdoll.new() if physical else HeroDeath.new()
-	add_child(node);node.build(source,pos,push,role,team,facing,crouched,velocity,point);ragdolls.append(node)
+	var _t=Prof.now();add_child(node);node.build(source,pos,push,role,team,facing,crouched,velocity,point);ragdolls.append(node);Prof.add("death_ragdoll",_t)
 	return node
 
 func sync_rockets(rockets:Array):

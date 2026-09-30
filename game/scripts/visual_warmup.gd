@@ -8,6 +8,12 @@ var done={}
 func _process(dt:float):
 	if not is_instance_valid(game) or game.dedicated or game.demo_mode or not game.render_actors:return
 	elapsed+=dt
+	# Effects: one faint explosion per arena as soon as the local view exists.
+	if is_instance_valid(game.arena) and game.actors.has(game.local_id) and is_instance_valid(game.combat_fx):
+		var fx_key="fx"+str(game.arena.get_instance_id())
+		if not done.has(fx_key):
+			done[fx_key]=true
+			game.combat_fx.warm_effects(game.actors[game.local_id].camera)
 	# One build per tick outside combat; in combat only rarely, as a fallback.
 	var interval=.12 if game.phase in ["lobby","buy","round_end","result"] else 2.5
 	if game.phase=="menu" or elapsed<interval:return

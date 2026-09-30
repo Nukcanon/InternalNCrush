@@ -1658,7 +1658,7 @@ func update_world_visuals(dt:float):
 	for d in drops:
 		var key=str(d.until)+str(d.pos)+d.weapon;live_drops[key]=true
 		if not drop_nodes.has(key):
-			var n=GunModel.new();add_child(n);n.build(Catalog.get_weapon(d.weapon),false);n.position=d.pos+Vector3.UP*.04;n.rotation=Vector3(0,float(d.get("yaw",0)),PI/2);drop_nodes[key]=n
+			var _dt=Prof.now();var n=GunModel.new();add_child(n);n.build(Catalog.get_weapon(d.weapon),false);n.position=d.pos+Vector3.UP*.04;n.rotation=Vector3(0,float(d.get("yaw",0)),PI/2);drop_nodes[key]=n;Prof.add("death_drop_model",_dt)
 			for mesh in n.find_children("*","GeometryInstance3D",true,false):mesh.visibility_range_end=55. if RenderStyle.web() else 80.;mesh.visibility_range_end_margin=5.
 			var tag=arena.text3d(Catalog.get_weapon(d.weapon).name,Vector3(0,.4,0),Color("d7e8ef"),24,n);tag.top_level=true;tag.global_position=d.pos+Vector3.UP*.5;tag.visibility_range_end=12;tag.visibility_range_end_margin=1.5;tag.pixel_size=.004
 	for key in drop_nodes.keys():
