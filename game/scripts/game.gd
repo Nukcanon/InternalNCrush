@@ -1635,7 +1635,11 @@ func update_world_visuals(dt:float):
 			var label=arena.text3d("",Vector3(0,top,0),Color.WHITE,25,b);label.name="Label"
 			var health_label=arena.text3d("",Vector3(0,top-.25,0),Color.WHITE,25,b);health_label.name="HealthLabel"
 			var build_timer=arena.text3d("",Vector3(0,top+.3,0),Color.WHITE,28,b);build_timer.name="BuildTimer"
-		var node=device_nodes[did];node.position=d.pos;node.rotation.y=d.yaw
+		var node=device_nodes[did];node.position=d.pos
+		# 1.4.4: cover lies along the ground's slope (measured once; the ground is static).
+		if not node.has_meta("ground_basis") or node.get_meta("ground_yaw",INF)!=d.yaw:
+			node.set_meta("ground_basis",Deployment.basis_on_ground(self,d.pos,d.yaw,d.kind));node.set_meta("ground_yaw",d.yaw)
+		node.basis=node.get_meta("ground_basis")
 		var factor=TurretLogic.SCALES[int(d.level)-1] if d.kind=="turret" else 1.;node.scale=Vector3.ONE*factor
 		if d.kind=="turret":
 			var head=node.get_node("TurretHead");var target:Vector3=d.get("aim",TurretLogic.origin(d)+Basis(Vector3.UP,d.yaw)*Vector3.FORWARD*5.)

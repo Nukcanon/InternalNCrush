@@ -145,10 +145,12 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			var body={"half":Vector3(r,r,length*.22),"round":r}
 			var tail_at=func(time:float) -> Vector3:return gun.loading_grip(count,time)
 			var below=Vector3(-.10,-.26,.06)
+			# 1.4.4: a side C-grip (HeroIK "cradle"): palm on the near side,
+			# fingers over the top, thumb underneath; mirrored for the other hand.
 			if t<show:
 				var from=fore.lerp(below,smoothstep(0.,show*.6,t))
-				return hand(from.lerp(tail_at.call(show),smoothstep(show*.6,show,t)),"support",body)
-			if t<push+.04:return hand(tail_at.call(t),"support",body)
+				return hand(from.lerp(tail_at.call(show),smoothstep(show*.6,show,t)),"cradle",body)
+			if t<push+.04:return hand(tail_at.call(t),"cradle",body)
 			return hand(tail_at.call(push).lerp(fore,smoothstep(push+.04,1.,t)),fore_style,fore_shape,fore_basis)
 		"battery":
 			# Laser rifle: two D-size cells under the receiver. A fist closes on

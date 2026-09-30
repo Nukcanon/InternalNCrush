@@ -34,12 +34,28 @@ func build(wrench:bool,_role:int,first_person:bool):
 	# Handle marker: -Z of the marker runs along the blade (+Y of the model).
 	palm=Marker3D.new();palm.name="RightGrip";pivot.add_child(palm);palm.position=Vector3(0,-.02 if tool else .01,0);palm.rotation=Vector3(PI/2,0,0)
 	set_meta("grip_styles",{"R":"knife"})
-	if not first_person:
-		# Hand-bone mount (wrist frame: +Y fingers, -Z palm, -X thumb): the handle
-		# sits in the palm and the blade leaves the fist on the thumb side.
-		pivot.rotation=Vector3(0,0,PI*.5);pivot.position=Vector3(0,.085,-.03)
+	# 1.4.4: first person too rides the hand bone (the tool never parts from
+	# the fist); the arm itself is swung (swing_wrist).
+	in_hand=true
+	# Hand-bone mount (wrist frame: +Y fingers, -Z palm, -X thumb): the handle
+	# sits in the palm and the blade leaves the fist on the thumb side.
+	pivot.rotation=Vector3(0,0,PI*.5);pivot.position=Vector3(0,.085,-.03)
 	pose(-1.)
 func grip(_side:String) -> Node3D:return palm
+## 1.4.4 first-person swing: the wrist's place in camera space (right-handed;
+## x mirrors for a left-handed player) over the swing. The hand keeps its
+## orientation from the arm (HeroCharacter solves the arm straight to it), so
+## arm, fist and blade turn together: a wind-up back and up beside the head,
+## a diagonal cut down across the view, then back to a low ready.
+static func swing_wrist(age:float,hand:float=1.) -> Vector3:
+	var rest=Vector3(.24,-.24,-.40);var wind=Vector3(.34,.02,-.18);var finish=Vector3(-.12,-.30,-.52)
+	var p=rest
+	if age>=0. and age<MeleeCombat.DURATION:
+		if age<MeleeCombat.CONTACT_START:p=rest.lerp(wind,smoothstep(0.,MeleeCombat.CONTACT_START,age))
+		elif age<=MeleeCombat.CONTACT_END:p=wind.lerp(finish,clampf((age-MeleeCombat.CONTACT_START)/(MeleeCombat.CONTACT_END-MeleeCombat.CONTACT_START),0.,1.))
+		else:p=finish.lerp(rest,smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age))
+	p.x*=hand
+	return p
 func pose(age:float):
 	if not is_instance_valid(pivot) or in_hand:return
 	# Blade forward at rest; a wind-up back and up, then a downward diagonal cut

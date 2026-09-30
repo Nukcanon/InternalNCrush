@@ -18,7 +18,7 @@ const BASES={
 	"Shotgun":{"length":.98,"muzzle":.70,"right":Vector3(.60,.55,.06),"left":Vector3(.22,.40,-.05),"mag":Vector2(-1.,-1.),"origin":"butt"},
 	"ShortCannon":{"length":.72,"muzzle":.62,"right":Vector3(.50,.55,.06),"left":Vector3(.22,.40,-.05),"mag":Vector2(-1.,-1.),"origin":"butt"},
 	"Sniper":{"length":1.18,"muzzle":.66,"right":Vector3(.64,.50,.06),"left":Vector3(.38,.60,-.05),"mag":Vector2(.44,.62),"origin":"butt"},
-	"Sniper_2":{"length":1.04,"muzzle":.62,"right":Vector3(.58,.50,.06),"left":Vector3(.30,.56,-.05),"mag":Vector2(.34,.52),"origin":"butt"},
+	"Sniper_2":{"length":1.04,"muzzle":.62,"right":Vector3(.58,.50,.06),"left":Vector3(.30,.56,-.05),"mag":Vector2(.34,.62),"origin":"butt"},
 	"RocketLauncher":{"length":1.05,"muzzle":.60,"right":Vector3(.36,.20,.06),"left":Vector3(.62,.30,-.08),"mag":Vector2(-1.,-1.),"origin":"butt"},
 	"GrenadeLauncher":{"length":.74,"muzzle":.72,"right":Vector3(.80,.45,.06),"left":Vector3(.28,.30,-.05),"mag":Vector2(-1.,-1.),"origin":"butt"},
 	"Knife_1":{"length":.30,"muzzle":.5,"right":Vector3(.85,.5,0),"left":Vector3(.85,.5,0),"mag":Vector2(-1.,-1.),"origin":"grip","vertical":true},
@@ -26,6 +26,55 @@ const BASES={
 	"Grenade":{"length":.11,"muzzle":.5,"right":Vector3(.5,.5,0),"left":Vector3(.5,.5,0),"mag":Vector2(-1.,-1.),"origin":"center","vertical":true},
 	"FireGrenade":{"length":.14,"muzzle":.5,"right":Vector3(.5,.5,0),"left":Vector3(.5,.5,0),"mag":Vector2(-1.,-1.),"origin":"center","vertical":true}}
 func _initialize():call_deferred("run")
+# Connected piece id of every triangle (in by_material / names order), by
+# welding vertices within half a millimetre (union-find).
+static func piece_ids(by_material:Dictionary,names:Array,turn:Basis) -> PackedInt32Array:
+	var ids={};var parent=PackedInt32Array()
+	var tri_vertex=PackedInt32Array()
+	for name in names:
+		var verts:PackedVector3Array=by_material[name].v
+		for i in range(verts.size()):
+			var key=str((turn*verts[i]).snapped(Vector3.ONE*.0005))
+			if not ids.has(key):ids[key]=parent.size();parent.append(parent.size())
+			tri_vertex.append(ids[key])
+	var find=func(i:int) -> int:
+		while parent[i]!=i:parent[i]=parent[parent[i]];i=parent[i]
+		return i
+	for t in range(0,tri_vertex.size(),3):
+		for k in range(1,3):
+			var a=find.call(tri_vertex[t]);var b=find.call(tri_vertex[t+k])
+			if a!=b:parent[a]=b
+	var out=PackedInt32Array()
+	for t in range(0,tri_vertex.size(),3):out.append(find.call(tri_vertex[t]))
+	return out
+# Bounds (turned source space) of every piece.
+static func piece_bounds(by_material:Dictionary,names:Array,turn:Basis,piece_of:PackedInt32Array) -> Dictionary:
+	var out={};var tri=0
+	for name in names:
+		var verts:PackedVector3Array=by_material[name].v
+		for t in range(0,verts.size(),3):
+			var id=piece_of[tri];tri+=1
+			for k in range(3):
+				var p:Vector3=turn*verts[t+k]
+				if not out.has(id):out[id]=AABB(p,Vector3.ZERO)
+				else:out[id]=out[id].expand(p)
+	return out
+# A box (half extents, in the given frame) as its own surface, both windings
+# so it reads solid from any side.
+static func add_box(mesh:ArrayMesh,frame:Transform3D,half:Vector3,mat:Material):
+	var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var faces=[[Vector3(1,0,0),Vector3(0,1,0),Vector3(0,0,1)],[Vector3(-1,0,0),Vector3(0,0,1),Vector3(0,1,0)],[Vector3(0,1,0),Vector3(0,0,1),Vector3(1,0,0)],[Vector3(0,-1,0),Vector3(1,0,0),Vector3(0,0,1)],[Vector3(0,0,1),Vector3(1,0,0),Vector3(0,1,0)],[Vector3(0,0,-1),Vector3(0,1,0),Vector3(1,0,0)]]
+	for f in faces:
+		var n:Vector3=f[0];var a:Vector3=f[1];var b:Vector3=f[2]
+		var c:Vector3=n*half.abs().dot(n.abs())
+		var ea:Vector3=a*half.abs().dot(a.abs());var eb:Vector3=b*half.abs().dot(b.abs())
+		var corners=[c-ea-eb,c+ea-eb,c+ea+eb,c-ea+eb]
+		var wn:Vector3=(frame.basis*n).normalized()
+		for order in [[0,1,2],[0,2,3]]:
+			for winding in [true,false]:
+				var seq=order if winding else [order[0],order[2],order[1]]
+				for i in seq:st.set_normal(wn if winding else -wn);st.add_vertex(frame*corners[i])
+	st.set_material(mat);st.commit(mesh)
 func run():
 	DirAccess.make_dir_recursive_absolute("res://assets/weapons")
 	for base in BASES:bake(base,BASES[base])
@@ -65,30 +114,92 @@ func bake(base:String,spec:Dictionary):
 		_:origin=(lo+hi)*.5
 	var place=func(p:Vector3) -> Vector3:return (turn*p-origin)*scale
 	var place_turned=func(q:Vector3) -> Vector3:return (q-origin)*scale
-	# Magazine split: triangles whose centroid lies in the magazine u-range and the lower half.
+	# Magazine split (1.4.4): whole connected pieces of the model (welded by
+	# position) whose centre lies in the magazine u-range and below the
+	# receiver, plus the small pieces sitting inside that group's bounds
+	# (floor plates). A triangle-by-triangle cut left slivers of the magazine
+	# on the body and took part of the receiver with the magazine.
 	var mag_range:Vector2=spec.mag
+	var piece_of=piece_ids(by_material,names,turn)
+	var mag_pieces={};var housing={}
+	if mag_range.x>=0.:
+		var bounds=piece_bounds(by_material,names,turn,piece_of)
+		var union=AABB()
+		for id in bounds:
+			var b:AABB=bounds[id];var c=b.get_center()
+			var u=inverse_lerp(lo.z,hi.z,c.z);var v=inverse_lerp(lo.y,hi.y,c.y);var v_top=inverse_lerp(lo.y,hi.y,b.end.y)
+			var low_only=str(spec.origin)=="grip" # pistols: only the floor plate shows below the grip
+			if u>=mag_range.x and u<=mag_range.y and v<.45 and v_top<(.12 if low_only else .72):
+				mag_pieces[id]=true;union=b if union.size==Vector3.ZERO else union.merge(b)
+		if union.size!=Vector3.ZERO:
+			var grown=union.grow(.012)
+			for id in bounds:
+				if mag_pieces.has(id):continue
+				var b:AABB=bounds[id];var c=b.get_center()
+				# Floor plates inside the group go with the magazine. The magazine
+				# housing (the receiver's lower block the magazine goes into: over
+				# the same u-span, about as wide, ending below the receiver top)
+				# stays on the body but is painted in the receiver's main colour,
+				# so it never reads as a piece of magazine left behind.
+				if grown.encloses(b) and b.size.y<union.size.y*.5:mag_pieces[id]=true
+				elif not (str(spec.origin)=="grip") and c.z>=union.position.z-.02 and c.z<=union.end.z+.02 and inverse_lerp(lo.y,hi.y,b.position.y)<.5 and inverse_lerp(lo.y,hi.y,b.end.y)<.76 and b.size.x<=union.size.x*1.5 and b.size.z<=union.size.z*1.3:housing[id]=true
 	var root_node=Node3D.new();root_node.name=base
 	var body=MeshInstance3D.new();body.name="Body";root_node.add_child(body);body.owner=root_node
 	var mag_mesh=MeshInstance3D.new();mag_mesh.name="Magazine";root_node.add_child(mag_mesh);mag_mesh.owner=root_node
 	var body_mesh=ArrayMesh.new();var mag_array=ArrayMesh.new()
+	var mag_lo=Vector3.INF;var mag_hi=-Vector3.INF # baked metres
+	var top_lo=Vector3.INF;var top_hi=-Vector3.INF # the magazine's top cross-section
+	var tri_index=0
+	var st_housing=SurfaceTool.new();st_housing.begin(Mesh.PRIMITIVE_TRIANGLES);var any_housing=false
 	for name in names:
 		var st_body=SurfaceTool.new();st_body.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var st_mag=SurfaceTool.new();st_mag.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var any_body=false;var any_mag=false
 		var verts:PackedVector3Array=by_material[name].v;var norms:PackedVector3Array=by_material[name].n
 		for t in range(0,verts.size(),3):
-			var c=(turn*verts[t]+turn*verts[t+1]+turn*verts[t+2])/3.
-			var u=inverse_lerp(lo.z,hi.z,c.z) if not vertical else 0.;var v=inverse_lerp(lo.y,hi.y,c.y)
-			var in_mag=mag_range.x>=0. and u>=mag_range.x and u<=mag_range.y and v<.45
-			var st=st_mag if in_mag else st_body
+			var in_mag=mag_pieces.has(piece_of[tri_index]);var in_housing=housing.has(piece_of[tri_index]);tri_index+=1
+			var st=st_mag if in_mag else st_housing if in_housing else st_body
 			if in_mag:any_mag=true
+			elif in_housing:any_housing=true
 			else:any_body=true
 			# Godot's glTF importer already converted the winding.
 			for k in [0,1,2]:
-				st.set_normal((turn*norms[t+k]).normalized());st.add_vertex(place.call(verts[t+k]))
+				var p:Vector3=place.call(verts[t+k])
+				st.set_normal((turn*norms[t+k]).normalized());st.add_vertex(p)
+				if in_mag:mag_lo=mag_lo.min(p);mag_hi=mag_hi.max(p)
 		var mat=StandardMaterial3D.new();mat.resource_name=name;mat.albedo_color=by_material[name].color
 		if any_body:st_body.set_material(mat);st_body.commit(body_mesh)
 		if any_mag:st_mag.set_material(mat);st_mag.commit(mag_array)
+	if any_housing:
+		var main=StandardMaterial3D.new();main.resource_name="Grey";main.albedo_color=by_material.get("Grey",{"color":Color(.5,.5,.5)}).color
+		st_housing.set_material(main);st_housing.commit(body_mesh)
+	if mag_array.get_surface_count()>0:
+		# The top cross-section (vertices within 8 mm of the top) gets a lid on
+		# the magazine and a matching plug in the body's well, so neither shows
+		# as a hollow shell when the magazine is out.
+		tri_index=0
+		for name in names:
+			var verts:PackedVector3Array=by_material[name].v
+			for t in range(0,verts.size(),3):
+				var in_mag=mag_pieces.has(piece_of[tri_index]);tri_index+=1
+				if not in_mag:continue
+				for k in [0,1,2]:
+					var p:Vector3=place.call(verts[t+k])
+					if p.y>=mag_hi.y-.008:top_lo=top_lo.min(p);top_hi=top_hi.max(p)
+		var dark=StandardMaterial3D.new();dark.resource_name="DarkGrey";dark.albedo_color=by_material.get("DarkGrey",{"color":Color(.2,.2,.22)}).color
+		if str(spec.origin)=="grip":
+			# Pistols: the model shows only the floor plate; a straight box body
+			# rises from it inside the grip (raked like the grip) so a magazine
+			# comes out of the grip on reload and the grip stays.
+			var plate_c=(mag_lo+mag_hi)*.5;var plate_size=mag_hi-mag_lo
+			var half=Vector3(plate_size.x*.34,.03,plate_size.z*.30)
+			var tilt=float(spec.get("tilt",.2))
+			add_box(mag_array,Transform3D(Basis(Vector3.RIGHT,-tilt),Vector3(plate_c.x,mag_hi.y,plate_c.z))*Transform3D(Basis.IDENTITY,Vector3(0,half.y,0)),half,dark)
+		else:
+			var c=(top_lo+top_hi)*.5;var half=(top_hi-top_lo)*.5
+			half.y=.002;half.x=maxf(half.x,.004);half.z=maxf(half.z,.004)
+			add_box(mag_array,Transform3D(Basis.IDENTITY,Vector3(c.x,mag_hi.y-.002,c.z)),half,dark)
+			add_box(body_mesh,Transform3D(Basis.IDENTITY,Vector3(c.x,mag_hi.y+.003,c.z)),half*Vector3(1.08,1.,1.08),dark)
 	body.mesh=body_mesh
 	if mag_array.get_surface_count()>0:mag_mesh.mesh=mag_array
 	else:root_node.remove_child(mag_mesh);mag_mesh.free()

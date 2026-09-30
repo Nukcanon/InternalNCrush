@@ -86,8 +86,15 @@ func _draw():
 func cartridge(r:Rect2,loaded:bool,shell:bool):
 	var x=r.position.x;var y=r.position.y;var w=r.size.x;var h=r.size.y
 	if not loaded:
-		var outline=PackedVector2Array([Vector2(x,y+h),Vector2(x,y+h*.36),Vector2(x+w,y+h*.36),Vector2(x+w,y+h),Vector2(x,y+h)])
-		draw_polyline(outline,SPENT,1.,true);return
+		# 1.4.4: an empty outline of the same round (shell or cartridge), so a
+		# spent slot reads as that ammunition, not as a square.
+		if shell:
+			draw_polyline(PackedVector2Array([Vector2(x,y),Vector2(x+w,y),Vector2(x+w,y+h),Vector2(x,y+h),Vector2(x,y)]),SPENT,1.,true)
+			draw_line(Vector2(x,y+h*.74),Vector2(x+w,y+h*.74),SPENT,1.,true)
+		else:
+			var neck=y+h*.38
+			draw_polyline(PackedVector2Array([Vector2(x+w*.12,neck),Vector2(x+w*.18,y+h*.14),Vector2(x+w*.5,y),Vector2(x+w*.82,y+h*.14),Vector2(x+w*.88,neck),Vector2(x+w,neck),Vector2(x+w,y+h),Vector2(x,y+h),Vector2(x,neck),Vector2(x+w*.12,neck)]),SPENT,1.,true)
+		return
 	if shell:
 		draw_rect(Rect2(x,y,w,h*.74),SHELL);draw_rect(Rect2(x,y+h*.74,w,h*.26),CASE)
 		draw_rect(Rect2(x-w*.08,y+h*.92,w*1.16,h*.08),CASE.darkened(.25));return

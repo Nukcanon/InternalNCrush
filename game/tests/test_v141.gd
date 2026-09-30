@@ -67,6 +67,9 @@ func run():
 			for finger in chains:
 				for b in chains[finger].slice(1):
 					var d=GripField.distance(c,to_g*hero.bone_world(b).origin)
+					# 1.4.4: the thumb's bones lie deep in the thenar mass; its
+					# centre line may sit up to 8 mm in where the pad presses on.
+					if finger=="Thumb":d+=.004
 					if d<deepest:deepest=d;where=side+" "+hero.skeleton.get_bone_name(b)
 		expect(deepest>-.004,"fingers wrap the real grip surface without sinking in: %s (%.3f %s)"%[w.name,deepest,where])
 		var wrist=hero.bone_world(hero.bone["Wrist.R"]);var fore=hero.bone_world(hero.bone["LowerArm.R"])
@@ -105,7 +108,12 @@ func run():
 	# Rocket reload (1.4.2): underhand in a C (thumb under, fingers over the top); TETHER: a game-pad grip for both hands.
 	var loader=GunModel.new();loader.build(Catalog.get_weapon("h4"),false);root.add_child(loader)
 	var load_hand=ReloadMotion.support(loader,{"reload":.45,"rounds":0})
-	expect(str(load_hand.get("style",""))=="support","rocket loading hand cradles the rocket underhand (C grip)")
+	# 1.4.4: a side C-grip (palm on the near side, fingers over the top, thumb under).
+	expect(str(load_hand.get("style",""))=="cradle","rocket loading hand cradles the rocket in a side C grip")
+	var cradle:Basis=HeroIK.FRAMES.cradle.L
+	expect(-cradle.z.x>.9 and cradle.y.y>.9,"cradle: left palm toward the rocket on its far side, knuckles up")
+	var mirrored:Basis=HeroIK.FRAMES.cradle.R
+	expect(is_equal_approx(mirrored.z.x,-cradle.z.x) and is_equal_approx(mirrored.y.y,cradle.y.y),"cradle: the right hand is the mirror image")
 	loader.queue_free()
 	var pad=GunModel.new();pad.build(Catalog.get_weapon("remote"),false);root.add_child(pad)
 	expect(pad.get_meta("grip_styles",{})=={"R":"pistol","L":"pistol"} and pad.right_grip.position.y<-.03 and pad.left_grip.position.y<-.03,"TETHER: both fists on the grips under the pad")

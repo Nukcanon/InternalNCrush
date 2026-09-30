@@ -119,7 +119,7 @@ func build_gun(wid:String):
 	if local:
 		ensure_view_body()
 		# Long guns are compact in the view; pistols keep their size next to the big cartoon hand.
-		view_weapon=GunModel.new();view_weapon.build(w,false);view_mount.add_child(view_weapon);view_weapon.scale=Vector3.ONE*(1. if GunLooks.hold_kind(w)=="pistol" else .9)
+		view_weapon=GunModel.new();view_weapon.build(w,false);view_mount.add_child(view_weapon);view_weapon.scale=Vector3.ONE*(1.18 if GunLooks.hold_kind(w)=="pistol" else .9)
 	world_weapon=GunModel.new();world_weapon.build(w,HeroStyle.outlines_enabled())
 	if is_instance_valid(character):character.hold(world_weapon)
 	else:render_root.add_child(world_weapon)
@@ -340,9 +340,12 @@ func update_melee(p:Dictionary,now:float):
 		melee_role=int(p.role)
 		melee_world=MeleeVisual.new();character.hand_attachment("R").add_child(melee_world);melee_world.build(MeleeCombat.wrench(p),melee_role,false)
 		if local:
-			melee_view=MeleeVisual.new();gun.add_child(melee_view);melee_view.build(MeleeCombat.wrench(p),melee_role,true)
+			# 1.4.4: the first-person tool rides the view body's hand bone; the
+			# arm is swung instead (MeleeVisual.swing_wrist, update_view_body).
+			ensure_view_body()
+			melee_view=MeleeVisual.new();view_body.hand_attachment("R").add_child(melee_view);melee_view.build(MeleeCombat.wrench(p),melee_role,true)
 	if is_instance_valid(melee_world):melee_world.visible=shown;melee_world.pose(-1.)
-	if is_instance_valid(melee_view):melee_view.visible=shown;melee_view.pose(now-float(p.get("melee_started",-100.)))
+	if is_instance_valid(melee_view):melee_view.visible=shown
 # Animation state for HeroCharacter.drive(), shared by render and server poses.
 func pose_state(p:Dictionary,now:float,progress:float,item_visible:bool) -> Dictionary:
 	var networked=not local and not game.server
@@ -511,7 +514,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		tag.visible=allied
 		health_tag.visible=allied and int(viewer.get("role",-1))==5
 		AllyHealthLabels.layout(self);health_tag.text="%d HP"%ceili(p.hp);health_tag.modulate=Color("ff3434").lerp(Color("68ef9c"),clampf(float(p.hp)/Rules.max_hp(p),0.,1.))
-		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
+		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("??" if p.team==0 else "??")+p.nick
 		return
 	var reloading=p.reload>now
 	var ads=input_state.ads and p.slot<2 and not reloading and not MeleeCombat.shown(p,now)
@@ -532,7 +535,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	# their forearms out from the grips, HeroIK.fp_forearm).
 	var hip_base=Vector3(.19,-.265,-.46)
 	if dual:hip_base=Vector3(0,-.235,-.46)
-	elif kind=="pistol":hip_base=Vector3(.15,-.235,-.44)
+	elif kind=="pistol":hip_base=Vector3(.16,-.27,-.46)
 	# Hand-held launchers (QUAD) sit lower and further right: the tube cluster
 	# is wide and would cover the middle of the screen.
 	elif rocket and not shoulder:hip_base=Vector3(.34,-.36,-.42)
@@ -568,8 +571,12 @@ func visual(dt:float,p:Dictionary,now:float):
 		base+=Vector3(.02,.07,.14)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
 	if p.get("cooking",0)>0:base+=Vector3(-.08,.07,.05);rotation_target+=Vector3(.25,.15,-.22)
 	if float(p.get("throw_until",-100.))>now:
+		# 1.4.4 overhand throw: the hand winds up beside the head, sweeps over
+		# and forward-down, and the fist points along the arm the whole way
+		# (a straight wrist), like a pitcher.
 		var throw_phase=1.-(float(p.throw_until)-now)/.28
-		base.z-=sin(throw_phase*PI)*.48;rotation_target.x-=sin(throw_phase*PI)*.9
+		var path=throw_path(throw_phase)
+		base=path[0];rotation_target=path[1]
 		item_model.visible=false
 	var swap=clampf((float(p.get("switch_until",0))-now)/.32,0,1);base.y-=swap*.32;rotation_target.z-=swap*.3
 	base.x-=turn_sway*.004*(1.-ads_blend*.85)
@@ -624,12 +631,32 @@ var view_head_offset=Vector3(0,1.62,0)
 # First-person arms: a larger view body gives long arms whose shoulders stay
 # below the bottom of the screen (the arm mesh's cut end never shows); the
 # hands are scaled back at the wrists to their usual first-person size.
-# 1.4.2: the shoulders slide to meet each view-model forearm (HeroIK.fp_forearm),
-# so long arms are no longer needed for reach; a modest scale keeps the
-# forearms from filling the lower screen.
-const VIEW_BODY_SCALE=1.3
+# 1.4.4: the shoulders are fixed (FP_SHOULDER) and the arms are drawn from
+# them, so the body is scaled for a real arm's reach (the rig's arms are
+# 0.39 m; a person's about 0.6 m).
+const VIEW_BODY_SCALE=1.8
 const VIEW_HAND=1.15
 const VIEW_BODY_OFFSET=Vector3(0,-.03,.10)
+# First-person shoulder anchors (camera space, right-handed; x mirrors for a
+# left-handed player): behind and below the eye like a shooter's, the
+# support-side shoulder a little forward behind a long gun (a bladed stance).
+const FP_SHOULDER={
+	"rifle":{"R":Vector3(.22,-.29,.12),"L":Vector3(-.20,-.31,.02)},
+	"pistol":{"R":Vector3(.22,-.30,.08),"L":Vector3(-.22,-.30,.08)},
+	"item":{"R":Vector3(.22,-.30,.08),"L":Vector3(-.22,-.30,.08)}}
+# Overhand throw path (camera space, right-handed): [gun-node position, euler].
+# The fist points from the throwing shoulder to the hand throughout.
+static func throw_path(phase:float) -> Array:
+	var cook=Vector3(.11,-.195,-.41);var wind=Vector3(.23,.15,-.30);var release=Vector3(.02,-.09,-.58);var rest=Vector3(.06,-.22,-.50)
+	var p:Vector3
+	if phase<.3:p=cook.lerp(wind,smoothstep(0.,.3,phase))
+	elif phase<.8:p=wind.lerp(release,smoothstep(.3,.8,phase))
+	else:p=release.lerp(rest,smoothstep(.8,1.,phase))
+	var dir:Vector3=(p-FP_SHOULDER.item.R).normalized()
+	return [p,Basis.looking_at(dir,Vector3.UP if absf(dir.y)<.95 else Vector3.BACK).get_euler()]
+static func fp_shoulders(hold:String,hand:float) -> Dictionary:
+	var set:Dictionary=FP_SHOULDER.get(hold,FP_SHOULDER.pistol)
+	return {"R":Vector3(set.R.x*hand,set.R.y,set.R.z),"L":Vector3(set.L.x*hand,set.L.y,set.L.z)}
 func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if not is_instance_valid(view_body):return
 	var item_up=is_instance_valid(view_item) and item_model.visible
@@ -639,8 +666,23 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	var weapon_up=is_instance_valid(view_weapon) and view_weapon.visible
 	view_body.visible=weapon_up or item_up or melee_up or bomb_up
 	if not view_body.visible:return
-	var carried:Node3D=bomb_view if bomb_up else melee_view if melee_up else view_item if item_up else view_weapon
-	if view_body.held!=carried:
+	var carried:Node3D=bomb_view if bomb_up else null if melee_up else view_item if item_up else view_weapon
+	# 1.4.4 melee: the tool rides the hand; the arm is swung to a wrist point.
+	if melee_up:
+		var wrist:Vector3=MeleeVisual.swing_wrist(now-float(p.get("melee_started",-100.)))
+		var anchor:Vector3=fp_shoulders("item",1.).R
+		var dir:Vector3=(wrist-anchor).normalized()
+		# Fist along the arm, thumb (-X of the wrist frame) forward and up, so the
+		# blade leaves the fist pointing ahead. Left-handed: the frame is
+		# mirrored like a gun's handles (a reflected basis).
+		var thumb:Vector3=(Vector3.FORWARD*.85+Vector3.UP*.5).normalized()
+		var x:Vector3=-(thumb-dir*dir.dot(thumb)).normalized()
+		var basis=Basis(x,dir,x.cross(dir).normalized())
+		if handedness<0:basis=Basis.from_scale(Vector3(-1,1,1))*basis;wrist.x=-wrist.x
+		view_body.wrist_override={"R":camera.global_transform*Transform3D(basis,wrist)}
+		if is_instance_valid(view_body.held):view_body.hold(null)
+	else:view_body.wrist_override={}
+	if carried!=null and view_body.held!=carried:
 		if carried==bomb_view:view_body.hold(carried,false)
 		else:
 			# The view body's weapon frame follows the view mount (gun space), so
@@ -658,10 +700,15 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	var state=pose_state(p,now,progress,false);state.velocity=Vector3.ZERO;state.hold=GunLooks.hold_kind(game.current_weapon(p))
 	if state.hold=="shoulder":state.hold="rifle"
 	if item_up:state.hold="item";state.two_hands=bool(view_item.get_meta("two_handed",false))
-	elif state.hold=="pistol":state.two_hands=true
+	# 1.4.4: first-person pistols are held in one hand (third person keeps
+	# both); DUET has a pistol in each hand.
+	elif state.hold=="pistol":state.two_hands=bool(game.current_weapon(p).get("dual",false))
 	if melee_up:state.hold="item";state.two_hands=false;state.erase("melee")
 	if bomb_up:state.hold="item";state.two_hands=true;state.point=true;state.erase("plant")
 	state.hands=1.;state.sprint=false
+	view_body.set_meta("fp_shoulders",fp_shoulders(str(state.hold),float(handedness)))
+	# Throws: the hand continues the forearm (no bent wrist over the swing).
+	view_body.straight_wrist={"R":1.} if float(p.get("throw_until",-100.))>now else {}
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	view_head_offset=yaw.inverse()*(view_body.head_position()-view_body.global_position)
 func show_shot(at:float) -> bool:

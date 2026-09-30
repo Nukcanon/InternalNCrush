@@ -112,7 +112,7 @@ def bake_one(job):
     tris = np.array(flat, dtype=np.float64).reshape(-1, 3, 3)
     area = np.linalg.norm(np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0]), axis=1)
     tris = tris[area > 1e-10]
-    grid, dims, lo, used, reach = box_field(tris, np.array(origin), .30 if name == 'L' else 0.)
+    grid, dims, lo, used, reach = box_field(tris, np.array(origin), .45 if name == 'L' else 0.)
     file = f'{wid}_{name}.bin'
     (WORK / file).write_bytes(grid.tobytes())
     print(f'{wid:>14} {name} tris {len(tris):5d} near {used:5d} winding {reach:5d} inside {int((grid < 0).sum()):6d}', flush=True)

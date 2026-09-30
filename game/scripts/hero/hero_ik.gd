@@ -12,48 +12,22 @@ extends RefCounted
 const POLE={"R":Vector3(.55,-.75,.35),"L":Vector3(-.55,-.75,.35)} # hero-local: +x right, -z forward
 const ELBOW_SAMPLES=12
 const TORSO_W=24. # elbow cost per unit of arm depth inside the torso (third person)
-const POLE_FP={"R":Vector3(.3,-1.,.15),"L":Vector3(-.3,-1.,.15)} # first person: elbows hang below the view
-# First person (1.4.2): only forearms and hands are drawn, so each forearm is
-# laid out like a shooter view model instead of hanging from a real shoulder:
-# from the wrist it runs back, down and out toward its lower screen corner
-# (hero-local: +x right, +y up, +z back), bent from the hand by at most
-# FP_BEND. The hidden shoulder slides so the upper arm meets that elbow.
-const FOREARM_FP={"R":Vector3(.32,-.52,.79),"L":Vector3(-.46,-.58,.67)}
-const FP_BEND=.8
-static func fp_forearm(hero:HeroCharacter,side:String,hand_dir:Vector3,wrist:Vector3=Vector3.INF,length:float=0.) -> Vector3:
-	var natural:Vector3=(hero.facing_basis()*FOREARM_FP[side]).normalized()
-	var back:Vector3=-hand_dir.normalized()
-	var angle=natural.angle_to(back)
-	var f=natural if angle<=FP_BEND else back.slerp(natural,FP_BEND/angle).normalized()
-	# Only forearms are drawn: the elbow end must stay out of view (reloads and
-	# gear bring the hands low and close), so swing it further down until the
-	# end of the forearm leaves the screen.
+const POLE_FP={"R":Vector3(.45,-1.,.1),"L":Vector3(-.45,-1.,.1)} # first person: elbows hang below and out
+# First person (1.4.4): each arm hangs from a fixed shoulder (Actor.fp_shoulders,
+# camera space, set on the hero as meta "fp_shoulders") behind and below the
+# eye, like a real shooter's; the whole arm is drawn from the shoulder down.
+# A hand beyond the arm's reach pulls its shoulder toward it only as far as
+# needed (a safety net for the longest guns), recorded in meta "fp_stretch_<side>".
+const FP_REACH=.985
+# Forearm twist beyond this (rad) costs in the elbow search: the forearm mesh
+# twists like a wrapper when its bone rolls far about its own axis.
+const TWIST_FREE=.6
+const TWIST_W=1.4
+static func fp_anchor(hero:HeroCharacter,side:String) -> Vector3:
 	var cam=hero.get_meta("fp_camera",null)
-	if cam is Camera3D and is_instance_valid(cam) and wrist!=Vector3.INF:
-		# Down and back toward the eye (down alone cannot leave the frame when
-		# the hand is far forward), and out to the arm's own side.
-		var away=fp_away(hero,side,cam)
-		for i in range(12):
-			if not on_screen(cam,wrist+f*length) and not on_screen(cam,wrist+f*length*.85):break
-			f=(f+away*.25).normalized()
-	return f
-# Down, back toward the eye and out to the arm's own side (down alone cannot
-# leave the frame when the hand is far forward).
-static func fp_away(hero:HeroCharacter,side:String,cam:Camera3D) -> Vector3:
-	var b:Basis=cam.global_basis
-	var out=hero.facing_basis().x.normalized()*(1. if side=="R" else -1.)
-	return (-b.y*.7+b.z*.6+out*.3).normalized()
-# The drawn arm's open end is the (hidden) shoulder: point the upper arm from
-# the elbow toward the resting shoulder, swung out of view if needed.
-static func fp_upper(hero:HeroCharacter,side:String,elbow:Vector3,rest_shoulder:Vector3,length:float) -> Vector3:
-	var u=(rest_shoulder-elbow).normalized()
-	var cam=hero.get_meta("fp_camera",null)
-	if cam is Camera3D and is_instance_valid(cam):
-		var away=fp_away(hero,side,cam)
-		for i in range(12):
-			if not on_screen(cam,elbow+u*length) and not on_screen(cam,elbow+u*length*.8):break
-			u=(u+away*.25).normalized()
-	return u
+	var anchors=hero.get_meta("fp_shoulders",{})
+	if not (cam is Camera3D and is_instance_valid(cam)) or not anchors.has(side):return Vector3.INF
+	return cam.global_transform*Vector3(anchors[side])
 static func on_screen(cam:Camera3D,p:Vector3) -> bool:
 	var local:Vector3=cam.global_transform.affine_inverse()*p
 	if local.z>-.02:return false
@@ -61,8 +35,8 @@ static func on_screen(cam:Camera3D,p:Vector3) -> bool:
 	var t=tan(deg_to_rad(cam.fov)*.5)*1.04
 	return absf(local.y)<-local.z*t and absf(local.x)<-local.z*t*size.x/maxf(1.,size.y)
 # Human limits: wrist bend (flexion / deviation) and forearm twist.
-const WRIST_LIMIT=1.15
-const TWIST_LIMIT=1.9
+const WRIST_LIMIT=1.25
+const TWIST_LIMIT=1.3
 static var calibration={}
 static func rot(hero:HeroCharacter,index:int) -> Quaternion:return hero.bone_world(index).basis.get_rotation_quaternion()
 # Wrist orientation relative to the facing frame in the two-handed aim clip
@@ -120,6 +94,13 @@ static func top_frame(side:String) -> Basis:
 	if side=="L":return left
 	var m=Basis.from_scale(Vector3(-1,1,1))
 	return m*left*m
+static func cradle_frame(side:String) -> Basis:
+	var y=Vector3(.30,.95,0.).normalized();var z=Vector3(-1,0,0)
+	z=(z-y*z.dot(y)).normalized();var x=y.cross(z).normalized()
+	var left=Basis(x,y,z)
+	if side=="L":return left
+	var m=Basis.from_scale(Vector3(-1,1,1))
+	return m*left*m
 const TOP_KNUCKLES=Vector3(.6,0.,-.8)
 const SUPPORT_KNUCKLES=Vector3(.62,.40,-.68) # handle frame: +x far side (left hand), +y up, -z forward
 const SUPPORT_PALM=Vector3(.25,1.,0.)
@@ -137,12 +118,20 @@ static var FRAMES={
 	# top, knuckles across to the far side, fingers curl down around it, thumb
 	# back along the near side.
 	"over":{"R":Basis(Vector3(0,0,-1),Vector3(-1,0,0),Vector3(0,1,0)),"L":Basis(Vector3(0,0,1),Vector3(1,0,0),Vector3(0,1,0))},
+	# 1.4.4 side C-grip on a round body along Z (a rocket being loaded): the
+	# palm lies on the near side, the knuckles point up (a little over the
+	# top), the fingers curl over the top to the far side and the thumb runs
+	# back along the near side underneath: a C seen from behind. Built for the
+	# left hand; the right hand is its mirror image.
+	"cradle":{"R":cradle_frame("R"),"L":cradle_frame("L")},
 	# Hanging at the side: fingers down, palm toward the body, thumb forward.
 	"rest":{"R":Basis(Vector3(0,0,1),Vector3(0,-1,0),Vector3(1,0,0)),"L":Basis(Vector3(0,0,-1),Vector3(0,-1,0),Vector3(-1,0,0))}}
 # Handle position inside the wrist frame for shapeless styles (metres at hand scale 1).
-const PALM={"pistol":Vector3(0,.085,-.025),"over":Vector3(0,.09,-.03),"support":Vector3(0,.09,-.03),"knife":Vector3(0,.08,-.025),"hold":Vector3(0,.095,-.04),"top":Vector3(0,.09,-.03),"rest":Vector3(0,.09,-.03)}
+const PALM={"pistol":Vector3(0,.085,-.025),"over":Vector3(0,.09,-.03),"support":Vector3(0,.09,-.03),"knife":Vector3(0,.08,-.025),"hold":Vector3(0,.095,-.04),"top":Vector3(0,.09,-.03),"cradle":Vector3(0,.09,-.03),"rest":Vector3(0,.09,-.03)}
 # Relaxed finger curl for the shapeless "rest" hand.
-const CURLS={"rest":{"index":.35,"fingers":[.4,.35,.2],"thumb":.2}}
+const CURLS={"rest":{"index":.35,"fingers":[.4,.35,.2],"thumb":.2},
+	# A closed fist round a tool handle (first-person melee).
+	"fist":{"index":1.,"fingers":[1.25,1.4,1.0],"thumb":.9}}
 # Hand geometry of the Quaternius rig in bone units (tools/probe_hand_mesh.gd):
 # palm skin below the metacarpals, finger radius per joint, fingertip length.
 const PALM_SKIN=.026
@@ -151,7 +140,7 @@ const TIP={"Index":.028,"Middle":.031,"Ring":.03,"Pinky":.024,"Thumb":.033}
 # Default grip shapes (handle frame, metres at item scale 1): half extents and rounding.
 const SHAPES={"pistol":{"half":Vector3(.016,.05,.03),"round":.013},"support":{"half":Vector3(.024,.024,.06),"round":.02},
 	"knife":{"half":Vector3(.013,.013,.05),"round":.012},"hold":{"half":Vector3(.032,.032,.032),"round":.032},
-	"top":{"half":Vector3(.018,.012,.02),"round":.01},"over":{"half":Vector3(.024,.024,.06),"round":.024}}
+	"top":{"half":Vector3(.018,.012,.02),"round":.01},"over":{"half":Vector3(.024,.024,.06),"round":.024},"cradle":{"half":Vector3(.024,.024,.06),"round":.024}}
 static func shaped(style:String) -> bool:return SHAPES.has(style)
 # Shape of a handle in world metres, trigger in the handle frame (or null).
 static func world_shape(handle:Transform3D,style:String,shape:Dictionary) -> Dictionary:
@@ -221,10 +210,10 @@ static func grip_offset(hero:HeroCharacter,side:String,style:String,ws:Dictionar
 		if style=="pistol":h.z=fit.half_s
 		else:h.y=fit.half_s
 		shape.half=h;shape.round=minf(float(ws.round),minf(h.x,minf(h.y,h.z)));centre=fit.centre
-	var offset=placed_on_surface(hero,side,style,wrist_offset(hero,side,style,shape,hand_scale)+centre,hand_scale,contact)
+	var offset=placed_on_surface(hero,side,style,wrist_offset(hero,side,style,shape,hand_scale)+centre,hand_scale,contact,ws.has("trigger"))
 	offset_cache[key]=offset
 	return offset
-static func placed_on_surface(hero:HeroCharacter,side:String,style:String,offset:Vector3,hand_scale:float,contact:Dictionary) -> Vector3:
+static func placed_on_surface(hero:HeroCharacter,side:String,style:String,offset:Vector3,hand_scale:float,contact:Dictionary,trigger:bool=false) -> Vector3:
 	var frame:Basis=FRAMES.get(style,FRAMES.pistol)[side];var normal:Vector3=-frame.z
 	var k_hand:Dictionary=knuckles(hero,side)
 	# Palm surface points (hand space, bone units): under the knuckles and mid palm.
@@ -232,6 +221,8 @@ static func placed_on_surface(hero:HeroCharacter,side:String,style:String,offset
 	for f in ["Index","Middle","Ring","Pinky"]:
 		if k_hand.has(f):points.append(Vector3(k_hand[f].x,k_hand[f].y*.9,k_hand[f].z-PALM_SKIN))
 	if k_hand.has("Middle"):points.append(Vector3(k_hand.Middle.x,k_hand.Middle.y*.5,k_hand.Middle.z-PALM_SKIN))
+	# 1.4.4: the thumb's base joint too (it sank into bulging parts beside the palm).
+	if k_hand.has("Thumb"):points.append(Vector3(k_hand.Thumb.x,k_hand.Thumb.y,k_hand.Thumb.z)+Vector3(0,0,-THUMB_RADIUS*.5))
 	var moved=0.;var far=GripField.FAR*float(contact.k)*.99
 	for i in range(3):
 		var gap=INF
@@ -241,6 +232,32 @@ static func placed_on_surface(hero:HeroCharacter,side:String,style:String,offset
 		var step=clampf(gap,-.08,PALM_PULL-moved)
 		if absf(step)<.0005:break
 		offset+=normal*step;moved+=step
+	# 1.4.4 firing hand: the index finger lines up with the trigger, which put
+	# the middle finger's base in the trigger guard / receiver on most guns (it
+	# then poked through the far side). The hand slides down the grip until the
+	# middle and ring fingers' bases and first bones, tucked under the guard,
+	# are clear of the real surface; the index finger reaches up instead.
+	if style=="pistol" and trigger:
+		var probes=[]
+		for f in ["Middle","Ring"]:
+			if not k_hand.has(f):continue
+			var kn:Vector3=k_hand[f]
+			var phalanx=.03
+			var chains:Dictionary=finger_chains(hero,side)
+			if chains.has(f) and chains[f].size()>2:phalanx=hero.skeleton.get_bone_rest(chains[f][2]).origin.length()
+			# Knuckle, and the first bone tucked under the guard (MIDDLE_TUCK):
+			# its middle and its end (the second joint).
+			probes.append(kn)
+			for along in [.5,1.]:probes.append(kn+Vector3(0,cos(MIDDLE_TUCK[1])*phalanx*along,-sin(MIDDLE_TUCK[1])*phalanx*along))
+		var down=Vector3(0,-1,0) # handle frame: down the grip
+		var slid=0.
+		for i in range(12):
+			var worst=INF
+			for p in probes:worst=minf(worst,GripField.distance(contact,frame*(p*hand_scale)+offset)-FINGER_RADIUS[2]*hand_scale)
+			if worst>=.002 or worst>=far or slid>=FIRING_SLIDE:break
+			var step=minf(maxf(.003,-worst+.001),FIRING_SLIDE-slid)
+			offset+=down*step;slid+=step
+		return offset
 	# Support hands: knuckles past the handguard's far edge (fingers can only
 	# wrap from there), sliding along the knuckle direction until the finger
 	# bases are clear. (A firing hand stays on its grip.)
@@ -275,16 +292,19 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var la=a.distance_to(b);var lb=b.distance_to(c)
 	var t:Vector3=target.origin
 	var fp=hero.first_person
-	var fp_elbow=Vector3.INF
-	if fp and wrist_basis:
-		# View-model forearm: choose the elbow, then slide the (hidden) shoulder
-		# so the upper arm keeps its length and ends there.
-		fp_elbow=t+fp_forearm(hero,side,target.basis.y,t,lb)*lb
-		var moved=fp_elbow+fp_upper(hero,side,fp_elbow,a,la)*la
-		var parent=hero.bone_world(sk.get_bone_parent(shoulder))
-		sk.set_bone_pose_position(shoulder,sk.get_bone_pose_position(shoulder)+parent.basis.inverse()*(moved-a))
-		wu=hero.bone_world(upper);wl=hero.bone_world(lower);ww=hero.bone_world(wrist)
-		a=wu.origin;b=wl.origin;c=ww.origin
+	if fp:
+		# First person: the arm hangs from its fixed shoulder anchor (the shoulder
+		# bone is moved so the upper arm starts there), stretched toward the hand
+		# only when the hand is out of reach.
+		var anchor=fp_anchor(hero,side)
+		if anchor!=Vector3.INF:
+			var over=anchor.distance_to(t)-(la+lb)*FP_REACH
+			if over>0.:anchor+=(t-anchor).normalized()*over
+			hero.set_meta("fp_stretch_"+side,maxf(0.,over))
+			var parent=hero.bone_world(sk.get_bone_parent(shoulder))
+			sk.set_bone_pose_position(shoulder,sk.get_bone_pose_position(shoulder)+parent.basis.inverse()*(anchor-a))
+			wu=hero.bone_world(upper);wl=hero.bone_world(lower);ww=hero.bone_world(wrist)
+			a=wu.origin;b=wl.origin;c=ww.origin
 	var d=clampf(a.distance_to(t),absf(la-lb)+.01,(la+lb)*.999)
 	var dir=(t-a).normalized()
 	var pole:Vector3=a+hero.facing_basis()*(POLE_FP if fp else POLE)[side]
@@ -296,18 +316,17 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	# The elbow may sit anywhere on its circle. People keep the wrist fairly
 	# straight: pick the elbow whose forearm best continues the hand, staying
 	# near the natural (down and out) elbow and never above the shoulder.
-	if fp_elbow!=Vector3.INF:
-		var off=(fp_elbow-a)-dir*(fp_elbow-a).dot(dir)
-		if off.length_squared()>.0000001:perp=off.normalized()
-	elif wrist_basis and radius>.001:
+	if wrist_basis and radius>.001:
 		var hand_dir:Vector3=target.basis.y.normalized()
 		var up:Vector3=hero.facing_basis().y.normalized()
 		var side_axis=dir.cross(perp).normalized()
-		# First person: the elbows hang (only forearms rise into view). Third
-		# person: the upper arm and forearm stay outside the torso.
-		var align_w=.5 if fp else 1.;var pole_w=1.2 if fp else .45
+		# First person: the elbows hang below and out (the arm is seen from the
+		# shoulder). Third person: the upper arm and forearm stay outside the torso.
+		var align_w=1.6 if fp else 1.;var pole_w=.25 if fp else .45
 		var torso=torso_frame(hero) if not fp else {}
 		var w_end=a+dir*d
+		var want:Quaternion=target.basis.get_rotation_quaternion()
+		var from_b:Vector3=(b-a).normalized();var wl_rot:Quaternion=wl.basis.get_rotation_quaternion()
 		# 12 samples round the circle, then three halving refinements (18
 		# evaluations; 1.4.1 used 32 through a lambda, the costliest part of a pose).
 		var best_angle=0.;var best_cost=INF
@@ -318,6 +337,14 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 			for angle in candidates:
 				var e=centre+(perp*cos(angle)+side_axis*sin(angle))*radius
 				var cost=align_w*(w_end-e).normalized().angle_to(hand_dir)+pole_w*absf(wrapf(angle,-PI,PI))+maxf(0.,(e-a).dot(up)/la-.15)*4.
+				# 1.4.4: the forearm roll this elbow forces (the wrist cannot twist;
+				# a large roll wrings the forearm mesh).
+				var cq1=Quaternion(from_b,(e-a).normalized())
+				var cq2=Quaternion((e+cq1*(c-b)-e).normalized(),(w_end-e).normalized())
+				var cl=((cq2*cq1*wl_rot).inverse()*want).normalized()
+				if cl.w<0.:cl=-cl
+				var roll=absf(wrapf(2.*atan2(cl.y,cl.w),-PI,PI))
+				cost+=TWIST_W*maxf(0.,roll-TWIST_FREE)
 				if not torso.is_empty():
 					cost+=TORSO_W*(torso_depth(torso,e)+torso_depth(torso,(a+e)*.5)+torso_depth(torso,(e+w_end)*.5)+torso_depth(torso,e.lerp(w_end,.25)))
 				if cost<best_cost:best_cost=cost;best_angle=angle
@@ -354,18 +381,22 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var local=(lower_world.inverse()*wrist_world).normalized()
 	if local.w<0.:local=-local
 	var twist=Quaternion(0.,local.y,0.,local.w)
+	# 1.4.4: roll past the forearm's limit goes to the wrist joint instead of
+	# being dropped, so the hand still lands on its grip.
+	var excess=Quaternion.IDENTITY
 	if twist.length_squared()<.0000001:twist=Quaternion.IDENTITY
 	else:
 		twist=twist.normalized()
 		var angle=wrapf(2.*atan2(twist.y,twist.w),-PI,PI)
-		twist=Quaternion(Vector3.UP,clampf(angle,-TWIST_LIMIT,TWIST_LIMIT))
-	var swing=(twist.inverse()*local).normalized()
+		var kept=clampf(angle,-TWIST_LIMIT,TWIST_LIMIT)
+		twist=Quaternion(Vector3.UP,kept);excess=Quaternion(Vector3.UP,angle-kept)
+	var swing=(twist.inverse()*excess.inverse()*local).normalized()
 	# q and -q are the same rotation: measure the short way round.
 	if swing.w<0.:swing=-swing
 	var bend=swing.get_angle()
 	if bend>WRIST_LIMIT:swing=Quaternion.IDENTITY.slerp(swing,WRIST_LIMIT/bend)
 	lower_world=(lower_world*twist).normalized()
-	wrist_world=(lower_world*swing).normalized()
+	wrist_world=(lower_world*excess*swing).normalized()
 	var parent_world=hero.bone_world(shoulder).basis.get_rotation_quaternion()
 	set_world(sk,upper,parent_world,upper_world,weight)
 	set_world(sk,lower,upper_world,lower_world,weight)
@@ -444,7 +475,14 @@ static var grip_cache={}
 const MAX_FLEX=[.4,.4,1.65,1.8,1.35]
 # Least flexion of the firing hand's middle finger per joint (see grip_pose).
 const MIDDLE_TUCK=[0.,1.0,1.1,.8]
-const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
+# Thumb contact radius (hand units): the thumb is thicker than the fingers and
+# its bones lie deeper in the mesh, so it keeps a little more clearance.
+const THUMB_RADIUS=.016
+const WRAP_MARGIN=.0015
+# How far the firing hand may slide down a grip so the middle finger clears the
+# trigger guard (further and the index finger can no longer reach the trigger).
+const FIRING_SLIDE=.022
+const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15,"cradle":.1}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
 static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3,shape:Dictionary,pointing:bool,contact:Dictionary={},hand_scale:float=1.) -> Dictionary:
@@ -473,7 +511,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 		var tip=float(TIP.get(finger,.03))
 		if finger=="Thumb":
 			angles[0]=float(THUMB_BASE.get(style,.15))
-			for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,.013,0.,1.2,.9)
+			for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
 			# On the real surface the thumb may run into the receiver / tube above
 			# the grip: swing it further across (round the handle) until it lies
 			# clear, keeping the least swing that works.
@@ -481,7 +519,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 				var best=angles.duplicate();var best_clear=chain_clearance(sk,bones,angles,tip,dist)
 				for extra in [.25,.5,.75,1.,-.25]:
 					var trial=angles.duplicate();trial[0]=float(THUMB_BASE.get(style,.15))+extra
-					for i in range(1,bones.size()):trial[i]=wrap_joint(sk,bones,trial,i,tip,dist,.013,0.,1.2,.9)
+					for i in range(1,bones.size()):trial[i]=wrap_joint(sk,bones,trial,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
 					var clear=chain_clearance(sk,bones,trial,tip,dist)
 					if clear>best_clear+.001:best=trial;best_clear=clear
 					if clear>=-.002:break
@@ -493,7 +531,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			elif finger=="Index" and trigger!=null:
 				# The trigger sits inside a thin guard that the grip field (6.5 mm
 				# cells) cannot resolve: the index finger keeps the grip box.
-				angles=trigger_finger(sk,bones,angles,tip,box_dist,to_handle.affine_inverse()*trigger)
+				angles=trigger_finger(sk,bones,angles,tip,box_dist,to_handle.affine_inverse()*trigger,dist if not contact.is_empty() else Callable())
 			else:
 				for i in range(1,bones.size()):
 					angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,FINGER_RADIUS[mini(i+1,4)],0.,MAX_FLEX[mini(i+1,4)],MAX_FLEX[mini(i+1,4)])
@@ -507,7 +545,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 					# ...but never into the grip: ease the tip joints back until the
 					# finger lies on the surface (a touch, as the other fingers).
 					for step in range(12):
-						if chain_clearance(sk,bones,angles,tip,dist)>=-.003:break
+						if chain_clearance(sk,bones,angles,tip,dist)>=.0005:break
 						for i in range(bones.size()-1,0,-1):angles[i]=maxf(float(wrapped[i]),float(angles[i])-.06)
 		if debug_contact and not contact.is_empty():
 			var frames=finger_frames(sk,bones,angles);var ends=[]
@@ -531,6 +569,9 @@ static func chain_clearance(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dis
 # Bends joint i until its segment touches the shape (distance <= radius).
 # No contact within the range: `fallback` (a closed fist).
 static func wrap_joint(sk:Skeleton3D,bones:Array,angles:Array,i:int,tip:float,dist:Callable,radius:float,lo:float,hi:float,fallback:float) -> float:
+	# 1.4.4: a small margin over the finger radius (the field's cells are 6.5 mm;
+	# a bone centre exactly one radius out still read as sunk on the mesh).
+	radius+=WRAP_MARGIN
 	var touching=func(a:float) -> bool:
 		angles[i]=a
 		var frames=finger_frames(sk,bones,angles)
@@ -564,7 +605,7 @@ static func wrap_joint(sk:Skeleton3D,bones:Array,angles:Array,i:int,tip:float,di
 	angles[i]=minf(hi,fallback);return angles[i]
 # Index finger on a trigger: pick the joint angles whose finger pad comes
 # closest to the trigger point without the finger sinking into the grip.
-static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist:Callable,trigger:Vector3) -> Array:
+static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist:Callable,trigger:Vector3,field:Callable=Callable()) -> Array:
 	var n=bones.size()
 	if n<4:return angles.duplicate()
 	var cost_of=func(trial:Array) -> float:
@@ -572,6 +613,8 @@ static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist
 		var cost=0.
 		for i in range(1,n):
 			var d=dist.call(segment_end(sk,bones,frames,i,tip))-FINGER_RADIUS[mini(i+1,4)]
+			# 1.4.4: the first bone also keeps out of the real receiver / guard.
+			if i==1 and field.is_valid():d=minf(d,field.call(segment_end(sk,bones,frames,i,tip))-FINGER_RADIUS[2])
 			if d<0.:cost+=-d*40.
 		var pad:Vector3=frames[n-1]*Vector3(0,tip*.6,-FINGER_RADIUS[4]*.8)
 		return cost+pad.distance_to(trigger)+float(trial[3])*.004

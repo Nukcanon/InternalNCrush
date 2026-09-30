@@ -24,7 +24,7 @@ func _process(dt:float):
 	timer-=dt
 	if timer>0:return
 	timer=.05
-	var placement=Deployment.candidate(game,game.local_id,kind);position=placement.pos;rotation.y=placement.yaw
+	var placement=Deployment.candidate(game,game.local_id,kind);position=placement.pos;basis=Deployment.basis_on_ground(game,placement.pos,placement.yaw,kind)
 	material.albedo_color=Color(.16,1.,.65,.32) if placement.valid else Color(1.,.12,.08,.43)
 	if is_instance_valid(arc) and arc.material_override!=material:arc.material_override.albedo_color=Color(.3,1.,.75,.7) if placement.valid else Color(1.,.25,.15,.7)
 	if is_instance_valid(fan):fan.material_override.albedo_color=Color(.16,1.,.65,.13) if placement.valid else Color(1.,.2,.1,.13)

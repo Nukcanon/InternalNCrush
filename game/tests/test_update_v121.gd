@@ -31,9 +31,15 @@ func run():
 			expect(gear.right_socket.is_finite() and gear.find_children("*","MeshInstance3D",true,false).size()>=1,"cartoon gear has a model and a grip, role %d variant %d"%[role,variant])
 			gear.free()
 	GadgetVisual.templates.clear();GunModel.bases.clear()
-	var melee=MeleeVisual.new();root.add_child(melee);melee.build(false,0,true);melee.pose(MeleeCombat.CONTACT_START);var high=melee.pivot.position;melee.pose(MeleeCombat.CONTACT_END);var low=melee.pivot.position
+	# 1.4.4: the first-person tool rides the hand; the arm is swung (the wrist
+	# path) from a wind-up beside the head to a low cut across the view.
+	var melee=MeleeVisual.new();root.add_child(melee);melee.build(false,0,true)
+	expect(melee.in_hand and melee.pivot.position.is_equal_approx(Vector3(0,.085,-.03)),"first-person tool is mounted in the fist")
+	var high=MeleeVisual.swing_wrist(MeleeCombat.CONTACT_START);var low=MeleeVisual.swing_wrist(MeleeCombat.CONTACT_END)
 	expect(high.x>low.x and high.y>low.y,"cut travels upper-right to lower-left")
-	melee.pose(MeleeCombat.DURATION);expect(melee.pivot.position.is_equal_approx(Vector3(.12,-.08,-.14)),"single swing returns to ready");melee.free()
+	expect(MeleeVisual.swing_wrist(MeleeCombat.DURATION).is_equal_approx(MeleeVisual.swing_wrist(-1.)),"single swing returns to ready")
+	expect(MeleeVisual.swing_wrist(MeleeCombat.CONTACT_START,-1.).x==-high.x,"left-handed swing mirrors")
+	melee.free()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.dedicated=true;g.local_id=1;g.phase="lobby"
 	g.arena=Arena.new();g.add_child(g.arena);g.arena.bounds=Vector2(100,100);g.arena.has_water=false
 	g.add_player(1,"Medic","m");g.add_player(2,"Heavy","h");g.phase="combat";g.clock=100.

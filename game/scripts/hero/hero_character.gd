@@ -136,22 +136,41 @@ func first_person_only():
 	var arms=skeleton.get_node_or_null("FPArms")
 	if arms:
 		arms.show();arms.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		arms.mesh=slim_arms(arms.mesh,arms.skin)
-# First person scales the whole body up for reach; the upper arms and forearms
-# are drawn slimmer about their bone axes so they do not fill the screen.
-# Hands keep their shape. Built once per arm mesh (shared by every view body).
-const FP_ARM_SLIM=.8
-const FP_ELBOW_FILL=.55
+		# 1.4.4: the arms are cut from the outfit's body mesh here (shoulders
+		# included) and take its team paint surface by surface.
+		var body:MeshInstance3D
+		for mesh in meshes():
+			if str(mesh.name).ends_with("_Body") and mesh.skin:body=mesh;break
+		if body:
+			var built=fp_arms(body.mesh,body.skin)
+			arms.mesh=built[0];arms.skin=body.skin
+			for i in range(built[1].size()):arms.set_surface_override_material(i,body.get_surface_override_material(built[1][i]))
+# First person (1.4.4): the arms are the outfit's own arm triangles from the
+# shoulder down, thickened about the upper-arm and forearm bone axes to the
+# same girth on every hero (mean radius in rig units; the cartoon rigs' arms
+# are thin next to their big hands, the women's half the men's, and the user
+# wants arms that read as real arms). The hands keep their shape. Built once
+# per outfit mesh (shared by every view body).
+const FP_FOREARM_R=.066
+const FP_UPPERARM_R=.066
+const FP_WRIST_TAPER=.62
+# First person: how far the support hand may slide back along a handguard /
+# off a vertical grip before the shoulder stretches instead.
+const FP_SLIDE=.06
+const FP_SLIDE_GRIP=0.
+const FP_ELBOW_FILL=.3
 static var slim_cache={}
+# Bones whose triangles make up the first-person arm mesh.
+const FP_ARM_BONES=["Shoulder","UpperArm","LowerArm","Wrist","Index","Middle","Ring","Pinky","Thumb"]
 # 1.4.2: the upper arm's cut end (at the dropped shoulder) is closed with a flat
 # cap in the sleeve's material, so a glimpse of it reads as a sleeve end, not a
 # hole. `keep` marks kept vertices; cut edges belong to one kept triangle and
 # to a dropped one. Both windings (the cap is seen from either side).
-static func cap_cut(arrays:Array,indices:PackedInt32Array,keep:PackedByteArray,kept:PackedInt32Array,welded:Array,per:int):
+static func cap_cut(arrays:Array,indices:PackedInt32Array,keep:PackedByteArray,kept:PackedInt32Array,welded:Array,per:int,all_vertices:bool=false):
 	var kept_edges={};var dropped={}
 	for t in range(0,indices.size(),3):
 		var tri=[indices[t],indices[t+1],indices[t+2]]
-		var is_kept=keep[tri[0]]==1 or keep[tri[1]]==1 or keep[tri[2]]==1
+		var is_kept=(keep[tri[0]]==1 and keep[tri[1]]==1 and keep[tri[2]]==1) if all_vertices else (keep[tri[0]]==1 or keep[tri[1]]==1 or keep[tri[2]]==1)
 		for e in range(3):
 			var a=tri[e];var b=tri[(e+1)%3]
 			var ka=str(welded[a]);var kb=str(welded[b]);var key=ka+"|"+kb if ka<kb else kb+"|"+ka
@@ -200,43 +219,75 @@ static func copy_vertex(arrays:Array,src:int,count:int,per:int,position:Vector3,
 	var v:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];v[count]=position;arrays[Mesh.ARRAY_VERTEX]=v
 	if arrays[Mesh.ARRAY_NORMAL]!=null:
 		var n:PackedVector3Array=arrays[Mesh.ARRAY_NORMAL];n[count]=normal;arrays[Mesh.ARRAY_NORMAL]=n
-func slim_arms(source:Mesh,skin:Skin) -> Mesh:
-	if source==null or skin==null:return source
+## First-person arm mesh from an outfit's body mesh: [mesh, source surface of
+## each output surface]. Triangles whose vertices all belong mainly to arm
+## bones (shoulder to fingertips) are kept, the cut at the chest is capped, and
+## upper arm / forearm vertices are pushed out radially from their bone axes.
+func fp_arms(source:Mesh,skin:Skin) -> Array:
+	if source==null or skin==null:return [source,range(source.get_surface_count() if source else 0)]
 	var key=source.get_instance_id()
 	if slim_cache.has(key):return slim_cache[key]
 	# Bone axes in mesh space: origin and +Y of each bound arm bone.
-	var axes={}
-	# 1.4.2: first-person shoulders slide to meet each forearm (HeroIK), which
-	# would stretch the shoulder caps into loose pieces: the arms are kept from
-	# the upper arm down (its open end sits at the hidden shoulder, off screen).
-	var lower={}
+	var axes={};var arm={}
 	for bind in range(skin.get_bind_count()):
 		var name=skin.get_bind_name(bind)
 		if name=="":name=skeleton.get_bone_name(skin.get_bind_bone(bind))
 		if name.begins_with("UpperArm") or name.begins_with("LowerArm"):
 			var bone:Transform3D=skin.get_bind_pose(bind).affine_inverse()
 			axes[bind]=[bone.origin,bone.basis.y.normalized(),name.begins_with("UpperArm")]
-		if not (name.begins_with("Shoulder") or name in ["Chest","Neck","Head","Abdomen","Hips","Body","Root"]):lower[bind]=true
-	var out=ArrayMesh.new()
+		for prefix in FP_ARM_BONES:
+			if name.begins_with(prefix):arm[bind]=true;break
+	# Mean radius of each arm bone's own vertices, for the girth factors.
+	var girth={}
 	for s in range(source.get_surface_count()):
 		var arrays=source.surface_get_arrays(s)
 		var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS]
+		if bones==null or weights==null:continue
 		var per=bones.size()/maxi(1,verts.size())
-		# Vertices carried mostly by the forearm, wrist and fingers.
+		for i in range(verts.size()):
+			var best=-1;var bw=-1.
+			for k in range(per):
+				if weights[i*per+k]>bw:bw=weights[i*per+k];best=bones[i*per+k]
+			if not axes.has(best) or bw<.8:continue
+			var rel=verts[i]-axes[best][0];var y:Vector3=axes[best][1]
+			if not girth.has(best):girth[best]=[0.,0]
+			girth[best][0]+=(rel-y*rel.dot(y)).length();girth[best][1]+=1
+	var factors={};var lengths={}
+	for b in axes:
+		var mean=girth[b][0]/girth[b][1] if girth.has(b) and girth[b][1]>0 else .05
+		factors[b]=maxf(1.,(FP_UPPERARM_R if axes[b][2] else FP_FOREARM_R)/maxf(.005,mean))
+		# Bone length: to the child joint (forearm -> wrist, upper arm -> forearm).
+		var child_prefix="LowerArm" if axes[b][2] else "Wrist"
+		var side=skin.get_bind_name(b) if skin.get_bind_name(b)!="" else skeleton.get_bone_name(skin.get_bind_bone(b))
+		side=side.substr(side.length()-1)
+		lengths[b]=.2
+		for other in range(skin.get_bind_count()):
+			var name=skin.get_bind_name(other)
+			if name=="":name=skeleton.get_bone_name(skin.get_bind_bone(other))
+			if name==child_prefix+"."+side:lengths[b]=maxf(.05,(skin.get_bind_pose(other).affine_inverse().origin-axes[b][0]).length())
+	var out=ArrayMesh.new();var sources=[]
+	for s in range(source.get_surface_count()):
+		var arrays=source.surface_get_arrays(s)
+		var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS]
+		if bones==null or weights==null:continue
+		var per=bones.size()/maxi(1,verts.size())
+		# Vertices carried mostly by arm bones.
 		var keep=PackedByteArray();keep.resize(verts.size())
 		for i in range(verts.size()):
 			var w=0.
 			for k in range(per):
-				if lower.has(bones[i*per+k]):w+=weights[i*per+k]
+				if arm.has(bones[i*per+k]):w+=weights[i*per+k]
 			keep[i]=1 if w>=.5 else 0
 		var indices:PackedInt32Array=arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX]!=null else PackedInt32Array(range(verts.size()))
 		var kept=PackedInt32Array()
 		for t in range(0,indices.size(),3):
-			if keep[indices[t]]==1 or keep[indices[t+1]]==1 or keep[indices[t+2]]==1:kept.append_array([indices[t],indices[t+1],indices[t+2]])
+			if keep[indices[t]]==1 and keep[indices[t+1]]==1 and keep[indices[t+2]]==1:kept.append_array([indices[t],indices[t+1],indices[t+2]])
+		if kept.is_empty():continue
 		var welded=[]
 		for i in range(verts.size()):welded.append(verts[i].snapped(Vector3.ONE*.0005))
 		for i in range(verts.size()):
-			# Slim only where arm bones carry (nearly) all of the weight.
+			# Thicken only where arm bones carry (nearly) all of the weight, so the
+			# wrist and the shoulder taper into the hand and the chest.
 			var arm_weight=0.;var best=-1;var bw=-1.;var upper=0.;var fore=0.
 			for k in range(per):
 				var b=bones[i*per+k];var wgt=weights[i*per+k]
@@ -248,18 +299,25 @@ func slim_arms(source:Mesh,skin:Skin) -> Mesh:
 			if not axes.has(best) or arm_weight<.6:continue
 			var o:Vector3=axes[best][0];var y:Vector3=axes[best][1]
 			var rel=verts[i]-o;var along=y*rel.dot(y)
-			var factor=lerpf(1.,FP_ARM_SLIM,clampf((arm_weight-.6)/.35,0.,1.))
-			# 1.4.2: the elbow (weights shared by upper arm and forearm) collapsed
-			# into a thin twist when the arm bent; it is filled out instead.
+			var factor=lerpf(1.,float(factors[best]),clampf((arm_weight-.6)/.35,0.,1.))
+			# A forearm tapers toward the wrist (a real one narrows to about
+			# 60% of its girth at the elbow); the hand keeps its size.
+			if not axes[best][2]:
+				var t=clampf(rel.dot(y)/float(lengths[best]),0.,1.)
+				factor=lerpf(factor,maxf(1.,factor*FP_WRIST_TAPER),smoothstep(.25,1.,t))
+			# The elbow (weights shared by upper arm and forearm) collapses into a
+			# thin twist when the arm bends; it is filled out a little.
 			factor*=1.+FP_ELBOW_FILL*clampf(4.*upper*fore,0.,1.)
 			verts[i]=o+along+(rel-along)*factor
 		arrays[Mesh.ARRAY_VERTEX]=verts
-		if kept.is_empty():continue
-		cap_cut(arrays,indices,keep,kept,welded,per)
+		# The cut at the chest is closed (a kept triangle's edge shared with a
+		# dropped one): the arm never shows as a hollow tube.
+		cap_cut(arrays,indices,keep,kept,welded,per,true)
 		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays,[],{},source.surface_get_format(s)&Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
 		out.surface_set_material(out.get_surface_count()-1,source.surface_get_material(s))
-	slim_cache[key]=out
-	return out
+		sources.append(s)
+	slim_cache[key]=[out,sources]
+	return slim_cache[key]
 
 ## Pose update. `s` keys (all optional):
 ##  velocity (world), grounded, crouch, sprint, pitch (rad, + up), reload (-1 or 0..1),
@@ -283,6 +341,10 @@ func drive(dt:float,s:Dictionary):
 	place_weapon_frame(s)
 	Prof.add("hero_frame",_t);_t=Prof.now()
 	solve_hands(s)
+	# 1.4.4: a throw keeps the wrist straight (the hand continues the forearm).
+	for side in straight_wrist:
+		var wrist=bone["Wrist."+side]
+		skeleton.set_bone_pose_rotation(wrist,skeleton.get_bone_pose_rotation(wrist).slerp(HeroIK.straight(self,wrist),float(straight_wrist[side])))
 	Prof.add("hero_hands",_t)
 # World size of the hands relative to the rig's own units.
 func hand_scale() -> float:return absf(skeleton.global_transform.basis.get_scale().y)*hand_size
@@ -360,9 +422,26 @@ func place_weapon_frame(s:Dictionary):
 		origin=origin.lerp(chest+facing_basis()*Vector3(.05,-.12,-.18)*scale_factor,sprint)
 	weapon_frame.global_transform=Transform3D(basis,origin)
 	weapon_frame.scale=Vector3.ONE*scale_factor
+# 1.4.4: wrist transforms (world) that replace the held item's grips for a
+# side, e.g. the first-person melee swing (the tool rides the hand bone). The
+# fingers close into a fist; the other arm hangs.
+var wrist_override={}
+# Sides whose wrist is held straight after the hands are solved (side -> weight).
+var straight_wrist={}
 func solve_hands(s:Dictionary):
-	if not is_instance_valid(held) or not held.visible:return
 	var weight=clampf(float(s.get("hands",1.)),0.,1.)
+	if not wrist_override.is_empty():
+		if weight<=.001:return
+		for side in ["R","L"]:
+			if wrist_override.has(side):
+				HeroIK.solve_arm(self,side,wrist_override[side],weight,true);HeroIK.curl(self,side,weight,"fist")
+				# The fist continues the forearm (a straight wrist): arm, fist and
+				# tool turn as one; the forearm's roll carries the blade's facing.
+				var wrist=bone["Wrist."+side]
+				skeleton.set_bone_pose_rotation(wrist,skeleton.get_bone_pose_rotation(wrist).slerp(HeroIK.straight(self,wrist),weight))
+			else:hang_arm(side,weight)
+		return
+	if not is_instance_valid(held) or not held.visible:return
 	if weight<=.001:return
 	var right:Node3D=held.grip("R") if held.has_method("grip") else held.get_node_or_null("RightGrip")
 	var left:Node3D=held.grip("L") if held.has_method("grip") else held.get_node_or_null("LeftGrip")
@@ -389,22 +468,42 @@ func solve_hands(s:Dictionary):
 		if styles.has("L"):
 			var handle:Transform3D=left.global_transform
 			var c=support_contact(handle,shapes.get("L",{}))
-			# Third person: a handguard beyond the support arm's reach (long guns
-			# held from the shoulder) is taken further back along the gun, in 1 cm
-			# steps so the grip caches stay warm. First person arms always reach.
-			if not first_person and held is GunModel:
+			# A handguard beyond the support arm's reach (long guns held from the
+			# shoulder) is taken further back along the gun, in 1 cm steps so the
+			# grip caches stay warm. 1.4.4: first person too, from its fixed shoulder.
+			if held is GunModel:
 				var shoulder=bone_world(bone["UpperArm.L"]).origin;var reach=arm_length("L")*.97
+				# First person: at most FP_SLIDE back along a handguard (the hand
+				# stays on the front half), and hardly at all off a vertical grip
+				# or magazine (a "pistol" support style); the fixed shoulder then
+				# stretches for the rest (HeroIK.solve_arm), out of view.
+				var cap=INF
+				if first_person:
+					var anchor=HeroIK.fp_anchor(self,"L")
+					if anchor!=Vector3.INF:shoulder=anchor;reach=arm_length("L")*.94
+					cap=FP_SLIDE_GRIP if str(styles.L)=="pistol" else FP_SLIDE
+				var slid=0.
 				for i in range(2):
 					var over=shoulder.distance_to(HeroIK.wrist_target(handle,"L",str(styles.L),hand_scale(),self,shapes.get("L",{}),c).origin)-reach
-					if over<=0.:break
-					handle.origin+=handle.basis.orthonormalized().z*snappedf(over*1.2+.005,.01)
+					if over<=0. or slid>=cap:break
+					var step=minf(snappedf(over*1.2+.005,.01),cap-slid)
+					handle.origin+=handle.basis.orthonormalized().z*step;slid+=step
 					c=support_contact(handle,shapes.get("L",{}))
 			grip_hand("L",handle,str(styles.L),shapes.get("L",{}),lw,false,c)
 		else:HeroIK.solve_arm(self,"L",left.global_transform,lw);HeroIK.curl(self,"L",lw)
 	elif styles.has("R"):
 		# One-handed: the free arm hangs at the side (off screen in first person).
-		var side_rest=Transform3D(facing_basis()*HeroIK.FRAMES.rest.L,global_position+facing_basis()*Vector3(-.27,.88,-.10)*(HEIGHTS[role]/1.8)*absf(global_basis.get_scale().y))
-		HeroIK.solve_arm(self,"L",side_rest,weight,true);HeroIK.curl(self,"L",weight,"rest")
+		hang_arm("L",weight)
+# The free arm hanging at the side: fingers down, palm toward the body. In first
+# person it hangs from its fixed shoulder anchor (well below the view).
+func hang_arm(side:String,weight:float):
+	var x=-.27 if side=="L" else .27
+	var at:Vector3=global_position+facing_basis()*Vector3(x,.88,-.10)*(HEIGHTS[role]/1.8)*absf(global_basis.get_scale().y)
+	if first_person:
+		var anchor=HeroIK.fp_anchor(self,side)
+		if anchor!=Vector3.INF:at=anchor+facing_basis().orthonormalized()*Vector3(.04*(-1. if side=="L" else 1.),-arm_length(side)*.9,.06)
+	var side_rest=Transform3D(facing_basis()*HeroIK.FRAMES.rest[side],at)
+	HeroIK.solve_arm(self,side,side_rest,weight,true);HeroIK.curl(self,side,weight,"rest")
 # Grip field contact for the support hand (pistol cup: the support hand closes
 # round the firing hand's fingers, a box round the grip).
 func support_contact(handle:Transform3D,shape:Dictionary) -> Dictionary:

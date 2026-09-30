@@ -20,12 +20,13 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	dialog.about_to_popup.connect(func():
 		(func():
 			if is_instance_valid(dialog) and dialog.visible:
+				hide_spacers(dialog)
 				var size=fitted_size(dialog)
 				if size!=dialog.size:dialog.size=size;dialog.position=(dialog.get_tree().root.size-dialog.size)/2).call_deferred())
 	var positive=dialog.get_ok_button();var row=positive.get_parent();var buttons=[]
-	for child in row.get_children():
+	for child in row.get_children(true):
 		if child is Button:buttons.append(child)
-		elif child is Control:child.hide()
+	hide_spacers(dialog)
 	# Ignore platform-specific OK/Cancel ordering; every confirmation is LTR.
 	row.layout_direction=Control.LAYOUT_DIRECTION_LTR
 	row.move_child(positive,row.get_child_count()-1)
@@ -45,6 +46,14 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 		# 1.4 cartoon skin: green = go ahead / stay, coral = cancel / leave.
 		UiSkin.paint(button,"go" if affirmative else "stop")
 
+# 1.4.4: AcceptDialog keeps (internal) spacers in its button row, and
+# add_button() brings more; all of them are hidden so three buttons sit at
+# equal gaps (they used to bunch the left pair and leave a hole before OK).
+static func hide_spacers(dialog:AcceptDialog):
+	var row=dialog.get_ok_button().get_parent()
+	for child in row.get_children(true):
+		if child is Control and not child is Button:child.hide()
+
 static func finish_keyboard(dialog,accepted:bool):
 	if not is_instance_valid(dialog) or dialog.is_queued_for_deletion():return
 	if not dialog.visible:return
@@ -61,6 +70,7 @@ static func scale_factor(dialog:Window) -> float:
 ## Window size for the dialog's final message and buttons (equal-width
 ## buttons as wide as the longest caption), in window pixels.
 static func fitted_size(dialog:AcceptDialog) -> Vector2i:
+	hide_spacers(dialog)
 	var row_buttons=dialog.get_ok_button().get_parent().get_children().filter(func(c):return c is Button and c.visible)
 	var widest=120.
 	for b in row_buttons:

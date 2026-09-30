@@ -112,8 +112,11 @@ func build(w:Dictionary,ink:bool=false):
 	# the left of the grip, a little lower so its index sits under the guard.
 	if pistol and not w.get("dual",false) and shapes.has("R"):
 		var k=1./maxf(.01,base.scale.x);var r:Dictionary=shapes.R
-		left_grip.transform=right_grip.transform*Transform3D(Basis.IDENTITY,Vector3(0,-.014,.004)*k)
-		shapes.L={"half":Vector3(r.half)+Vector3(.02,.004,.017)*k,"round":float(r.get("round",.012))+.008*k,"cup":true}
+		# 1.4.4: the cup is the grip plus the firing hand round it (its fingers
+		# a finger deep at the front and past the left side, the palm heel at
+		# the back), so the support hand closes over the fingers, not through them.
+		left_grip.transform=right_grip.transform*Transform3D(Basis.IDENTITY,Vector3(0,-.024,-.006)*k)
+		shapes.L={"half":Vector3(r.half)+Vector3(.026,.012,.032)*k,"round":float(r.get("round",.012))+.012*k,"cup":true}
 		set_meta("grip_styles",{"R":"pistol","L":"pistol"})
 	set_meta("grip_shapes",shapes)
 	# Third person: where the weapon sits in the shoulder frame (HeroCharacter).
