@@ -8,6 +8,7 @@ const LIGHT=Color("b8c2cc")
 const WOOD=Color("b0763c")
 const MEDIC_WHITE=Color("e9eef2")
 const MEDIC_GREEN=Color("3fcf8e")
+const REMOTE_GRIP_TILT=-.35 # TETHER grips rake back like pistol grips
 static func palette(main:Color,dark:Color,light:Color,wood:Color=WOOD) -> Dictionary:
 	return {"Grey":main,"Grey2":light,"LightGrey":light,"DarkGrey":dark,"Black":dark.darkened(.25),"Wood":wood,"DarkWood":wood.darkened(.3),"Red":Color("d9483b"),"DarkRed":Color("8e2a24"),"Green":Color("5a8a3a"),"DarkGreen":Color("355228")}
 # Looks keyed by weapon name (weapons.json "name").
@@ -116,7 +117,9 @@ static func build_tool(kind:String) -> Node3D:
 			m.box(body,Vector3(0,.018,-.1),Vector3(.12,.006,.07),Color("7fe0ff"),Vector3(.5,0,0),.3)
 			m.cylinder(body,Vector3(.07,.06,-.13),.006,.1,DARK,Vector3.ZERO,-1.,8)
 			m.sphere(body,Vector3(.07,.11,-.13),Vector3(.02,.02,.02),Color("ff983e"))
-			right=Vector3(.1,-.02,-.08);left=Vector3(-.1,-.02,-.08);muzzle=Vector3(0,.02,-.17)
+			# Game-pad grips under both ends, leaning back toward the player.
+			for side in [-1,1]:m.box(body,Vector3(side*.085,-.07,-.04),Vector3(.044,.11,.042),Color("35404f"),Vector3(REMOTE_GRIP_TILT,0,0),.8)
+			right=Vector3(.085,-.07,-.04);left=Vector3(-.085,-.07,-.04);muzzle=Vector3(0,.02,-.17)
 	MeshFactory.merge_children(body)
 	for marker in [["Muzzle",muzzle],["RightGrip",right],["LeftGrip",left]]:
 		var node=Marker3D.new();node.name=marker[0];node.position=marker[1];root.add_child(node)
@@ -125,7 +128,11 @@ static func build_tool(kind:String) -> Node3D:
 		var grip:Marker3D=root.get_node("RightGrip");grip.position=Vector3(0,-.04,0);grip.rotation.x=-.25
 		root.set_meta("grip_shapes",{"R":{"half":Vector3(.0225,.055,.025),"round":.012,"trigger":Vector3(0,-.01,-.045)}})
 	else:
-		# Remote: each hand makes a fist around one end of the pad.
-		root.get_node("RightGrip").rotation.z=-.5;root.get_node("LeftGrip").rotation.z=.5
-		root.set_meta("grip_shapes",{"R":{"half":Vector3(.02,.03,.045),"round":.015},"L":{"half":Vector3(.02,.03,.045),"round":.015}})
+		# Remote: held like a game pad. Each hand makes a fist around one of
+		# the grips under the ends (palm on its outer side, fingers round the
+		# front, thumb up on the pad) with the forearms coming from behind.
+		for grip in [root.get_node("RightGrip"),root.get_node("LeftGrip")]:grip.rotation=Vector3(REMOTE_GRIP_TILT,0,0)
+		var end={"half":Vector3(.022,.055,.021),"round":.016}
+		root.set_meta("grip_shapes",{"R":end,"L":end.duplicate()})
+		root.set_meta("grip_styles",{"R":"pistol","L":"pistol"})
 	return root

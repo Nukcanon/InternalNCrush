@@ -10,6 +10,8 @@ extends RefCounted
 ##    so fingers wrap handles of any size without passing through them. On gun
 ##    grips the index finger reaches for the trigger instead.
 const POLE={"R":Vector3(.55,-.75,.35),"L":Vector3(-.55,-.75,.35)} # hero-local: +x right, -z forward
+const TORSO_W=24. # elbow cost per unit of arm depth inside the torso (third person)
+const POLE_FP={"R":Vector3(.3,-1.,.15),"L":Vector3(-.3,-1.,.15)} # first person: elbows hang below the view
 # Human limits: wrist bend (flexion / deviation) and forearm twist.
 const WRIST_LIMIT=1.15
 const TWIST_LIMIT=1.9
@@ -49,10 +51,21 @@ static func knife_frame(side:String) -> Basis:
 	var f=Basis(Vector3(0,0,1),Vector3(0,-1,0),Vector3(1,0,0)) if side=="R" else Basis(Vector3(0,0,-1),Vector3(0,-1,0),Vector3(-1,0,0))
 	return Basis(Vector3.RIGHT,.75)*f
 static func support_frame(side:String) -> Basis:
-	# Palm up under a handguard, thumb along it, rolled toward the body side so
-	# the forearm comes up from below and outside.
-	var f=Basis(Vector3(0,0,1),Vector3(-1,0,0),Vector3(0,-1,0)) if side=="R" else Basis(Vector3(0,0,-1),Vector3(1,0,0),Vector3(0,-1,0))
-	return Basis(Vector3.BACK,.35 if side=="R" else -.35)*f
+	# A shooter's support hand under a handguard: the palm faces up (a little
+	# toward the gun's far side), the knuckles point forward, across and up, the
+	# thumb lies along the near side pointing forward, and the fingers curl up
+	# the far side. The forearm then continues down, back and out from the wrist
+	# instead of crossing the gun at right angles. Built for the left hand; the
+	# right hand is its mirror image (M * B * M keeps the basis right-handed).
+	var knuckles=SUPPORT_KNUCKLES.normalized()
+	var palm=(SUPPORT_PALM-knuckles*SUPPORT_PALM.dot(knuckles)).normalized()
+	var z=-palm;var y=knuckles;var x=y.cross(z).normalized()
+	var left=Basis(x,y,z)
+	if side=="L":return left
+	var m=Basis.from_scale(Vector3(-1,1,1))
+	return m*left*m
+const SUPPORT_KNUCKLES=Vector3(.62,.40,-.68) # handle frame: +x far side (left hand), +y up, -z forward
+const SUPPORT_PALM=Vector3(.25,1.,0.)
 static var FRAMES={
 	# Fist around a vertical grip: palm toward the gun, thumb up, knuckles forward.
 	"pistol":{"R":Basis(Vector3(0,-1,0),Vector3(0,0,-1),Vector3(1,0,0)),"L":Basis(Vector3(0,1,0),Vector3(0,0,-1),Vector3(-1,0,0))},
@@ -63,10 +76,14 @@ static var FRAMES={
 	# Overhand on top of the item (charging handle, slide, battery pack): palm
 	# down, fingers forward and hooked over, thumb toward the body's centre.
 	"top":{"R":Basis(Vector3(1,0,0),Vector3(0,0,-1),Vector3(0,1,0)),"L":Basis(Vector3(1,0,0),Vector3(0,0,-1),Vector3(0,1,0))},
+	# Overhand on a round body along Z (a rocket being loaded): palm down on
+	# top, knuckles across to the far side, fingers curl down around it, thumb
+	# back along the near side.
+	"over":{"R":Basis(Vector3(0,0,-1),Vector3(-1,0,0),Vector3(0,1,0)),"L":Basis(Vector3(0,0,1),Vector3(1,0,0),Vector3(0,1,0))},
 	# Hanging at the side: fingers down, palm toward the body, thumb forward.
 	"rest":{"R":Basis(Vector3(0,0,1),Vector3(0,-1,0),Vector3(1,0,0)),"L":Basis(Vector3(0,0,-1),Vector3(0,-1,0),Vector3(-1,0,0))}}
 # Handle position inside the wrist frame for shapeless styles (metres at hand scale 1).
-const PALM={"pistol":Vector3(0,.085,-.025),"support":Vector3(0,.09,-.03),"knife":Vector3(0,.08,-.025),"hold":Vector3(0,.095,-.04),"top":Vector3(0,.09,-.03),"rest":Vector3(0,.09,-.03)}
+const PALM={"pistol":Vector3(0,.085,-.025),"over":Vector3(0,.09,-.03),"support":Vector3(0,.09,-.03),"knife":Vector3(0,.08,-.025),"hold":Vector3(0,.095,-.04),"top":Vector3(0,.09,-.03),"rest":Vector3(0,.09,-.03)}
 # Relaxed finger curl for the shapeless "rest" hand.
 const CURLS={"rest":{"index":.35,"fingers":[.4,.35,.2],"thumb":.2}}
 # Hand geometry of the Quaternius rig in bone units (tools/probe_hand_mesh.gd):
@@ -77,7 +94,7 @@ const TIP={"Index":.028,"Middle":.031,"Ring":.03,"Pinky":.024,"Thumb":.033}
 # Default grip shapes (handle frame, metres at item scale 1): half extents and rounding.
 const SHAPES={"pistol":{"half":Vector3(.016,.05,.03),"round":.013},"support":{"half":Vector3(.024,.024,.06),"round":.02},
 	"knife":{"half":Vector3(.013,.013,.05),"round":.012},"hold":{"half":Vector3(.032,.032,.032),"round":.032},
-	"top":{"half":Vector3(.018,.012,.02),"round":.01}}
+	"top":{"half":Vector3(.018,.012,.02),"round":.01},"over":{"half":Vector3(.024,.024,.06),"round":.024}}
 static func shaped(style:String) -> bool:return SHAPES.has(style)
 # Shape of a handle in world metres, trigger in the handle frame (or null).
 static func world_shape(handle:Transform3D,style:String,shape:Dictionary) -> Dictionary:
@@ -142,7 +159,8 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var t:Vector3=target.origin
 	var d=clampf(a.distance_to(t),absf(la-lb)+.01,(la+lb)*.999)
 	var dir=(t-a).normalized()
-	var pole:Vector3=a+hero.facing_basis()*POLE[side]
+	var fp=hero.first_person
+	var pole:Vector3=a+hero.facing_basis()*(POLE_FP if fp else POLE)[side]
 	var perp=((pole-a)-dir*(pole-a).dot(dir))
 	if perp.length_squared()<.000001:perp=hero.facing_basis()*Vector3.DOWN
 	perp=perp.normalized()
@@ -155,11 +173,19 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		var hand_dir:Vector3=target.basis.y.normalized()
 		var up:Vector3=hero.facing_basis().y.normalized()
 		var side_axis=dir.cross(perp).normalized()
+		# First person: the elbows hang (only forearms rise into view). Third
+		# person: the upper arm and forearm stay outside the torso.
+		var align_w=.5 if fp else 1.;var pole_w=1.2 if fp else .45
+		var torso=torso_frame(hero) if not fp else {}
+		var w_end=a+dir*d
 		var cost_of=func(angle:float) -> float:
 			var u=perp*cos(angle)+side_axis*sin(angle)
 			var e=centre+u*radius
-			var fore=(a+dir*d-e).normalized()
-			return fore.angle_to(hand_dir)+.45*absf(wrapf(angle,-PI,PI))+maxf(0.,(e-a).dot(up)/la-.15)*4.
+			var fore=(w_end-e).normalized()
+			var cost=align_w*fore.angle_to(hand_dir)+pole_w*absf(wrapf(angle,-PI,PI))+maxf(0.,(e-a).dot(up)/la-.15)*4.
+			if not torso.is_empty():
+				for p in [e,(a+e)*.5,(e+w_end)*.5,e.lerp(w_end,.25)]:cost+=TORSO_W*torso_depth(torso,p)
+			return cost
 		var best_angle=0.;var best_cost=INF
 		for k in range(24):
 			var cost=cost_of.call(k*TAU/24.)
@@ -220,6 +246,22 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	set_world(sk,wrist,lower_world,wrist_world,weight)
 	if hero.has_meta("ik_debug"):
 		print("IKDBG ",side," want ",target.basis.get_rotation_quaternion()," solved ",wrist_world," got ",hero.bone_world(wrist).basis.get_rotation_quaternion()," bend ",bend," twist ",twist.get_angle()," parent_err ",hero.bone_world(shoulder).basis.get_rotation_quaternion().angle_to(parent_world))
+# Torso as an elliptic cylinder between the abdomen and the chest (world).
+static func torso_frame(hero:HeroCharacter) -> Dictionary:
+	var sk=hero.skeleton
+	var ab=sk.find_bone("Abdomen");var ch=sk.find_bone("Chest")
+	if ab<0 or ch<0:return {}
+	var low:Vector3=hero.bone_world(ab).origin;var high:Vector3=hero.bone_world(ch).origin
+	var f:Basis=hero.facing_basis().orthonormalized()
+	var s=low.distance_to(high)/.354 # rig: abdomen to chest 0.354 m at scale 1
+	return {"low":low,"high":high,"x":f.x,"z":f.z,"rx":.115*s,"rz":.10*s,"top":.12*s}
+# 0 outside, up to 1 at the torso axis.
+static func torso_depth(t:Dictionary,p:Vector3) -> float:
+	var axis:Vector3=t.high-t.low;var h=(p-t.low).dot(axis.normalized())
+	if h<0. or h>axis.length()+float(t.top):return 0.
+	var q=p-(t.low+axis.normalized()*h)
+	var r=sqrt(pow(q.dot(t.x)/float(t.rx),2.)+pow(q.dot(t.z)/float(t.rz),2.))
+	return maxf(0.,1.-r)
 static func set_world(sk:Skeleton3D,index:int,parent_world:Quaternion,world:Quaternion,weight:float):
 	var local=(parent_world.inverse()*world).normalized()
 	sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(local,weight))
@@ -268,7 +310,7 @@ static func segment_end(sk:Skeleton3D,bones:Array,frames:Array,i:int,tip:float) 
 # Solved finger rotations, cached per rig, style and grip geometry (hand units).
 static var grip_cache={}
 const MAX_FLEX=[.4,.4,1.65,1.8,1.35]
-const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1}
+const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3,shape:Dictionary,pointing:bool) -> Dictionary:
 	var trigger=shape.get("trigger",null)
 	var key=str([hero.role,side,style,offset.snapped(Vector3.ONE*.002),shape.half.snapped(Vector3.ONE*.002),snappedf(shape.round,.002),trigger.snapped(Vector3.ONE*.002) if trigger!=null else null,pointing])
@@ -288,7 +330,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 		var tip=float(TIP.get(finger,.03))
 		if finger=="Thumb":
 			angles[0]=float(THUMB_BASE.get(style,.15))
-			for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,.013,-.2,1.2,.9)
+			for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,.013,0.,1.2,.9)
 		else:
 			angles[0]={"Index":.05,"Middle":.06,"Ring":.1,"Pinky":.15}.get(finger,.06)
 			if finger=="Index" and pointing:
@@ -297,7 +339,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 				angles=trigger_finger(sk,bones,angles,tip,dist,to_handle.affine_inverse()*trigger)
 			else:
 				for i in range(1,bones.size()):
-					angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,FINGER_RADIUS[mini(i+1,4)],-.25,MAX_FLEX[mini(i+1,4)],MAX_FLEX[mini(i+1,4)])
+					angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,FINGER_RADIUS[mini(i+1,4)],0.,MAX_FLEX[mini(i+1,4)],MAX_FLEX[mini(i+1,4)])
 		for i in range(bones.size()):
 			var rest:Quaternion=sk.get_bone_rest(bones[i]).basis.get_rotation_quaternion()
 			out[bones[i]]=(rest*Quaternion(Vector3.RIGHT,-float(angles[i]))).normalized()
@@ -342,7 +384,7 @@ static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist
 		return cost+pad.distance_to(trigger)+float(trial[3])*.004
 	# Coarse grid over the three joints, then a finer one around the best.
 	var best=angles.duplicate();var best_cost=INF
-	for a2 in range(-1,8):
+	for a2 in range(0,8):
 		for a3 in range(0,9):
 			for a4 in range(0,5):
 				var trial=[angles[0],a2*.2,a3*.2,a4*.3]
@@ -352,7 +394,7 @@ static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist
 	for d2 in range(-4,5):
 		for d3 in range(-4,5):
 			for d4 in range(-2,3):
-				var trial=[angles[0],centre[1]+d2*.05,maxf(0.,centre[2]+d3*.05),maxf(0.,centre[3]+d4*.1)]
+				var trial=[angles[0],maxf(0.,centre[1]+d2*.05),maxf(0.,centre[2]+d3*.05),maxf(0.,centre[3]+d4*.1)]
 				var cost=cost_of.call(trial)
 				if cost<best_cost:best_cost=cost;best=trial
 	return best

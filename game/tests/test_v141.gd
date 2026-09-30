@@ -68,8 +68,44 @@ func run():
 			var chain:Array=HeroIK.finger_chains(hero,"R").Index
 			var tip=hero.bone_world(chain[chain.size()-1])*Vector3(0,.02,0)
 			expect((to_handle*tip).distance_to(ws.trigger)<.045,"index finger at the trigger: %s (%.3f m)"%[w.name,(to_handle*tip).distance_to(ws.trigger)])
+		# 1.4.2: no finger joint bends backwards (flexion is a rotation about -X),
+		# on either hand; the arms stay outside the torso.
+		var backward=0.
+		for side in ["R","L"]:
+			var chains:Dictionary=HeroIK.finger_chains(hero,side)
+			for finger in chains:
+				for b in chains[finger].slice(1):
+					var rel:Quaternion=hero.skeleton.get_bone_rest(b).basis.get_rotation_quaternion().inverse()*hero.skeleton.get_bone_pose_rotation(b)
+					if rel.w<0.:rel=-rel
+					backward=maxf(backward,rel.x)
+		expect(backward<.03,"no finger bent backwards: %s (%.3f)"%[w.name,backward])
+		var torso=HeroIK.torso_frame(hero);var inside=0.
+		for side in ["R","L"]:
+			var s0=hero.bone_world(hero.bone["UpperArm."+side]).origin;var e0=hero.bone_world(hero.bone["LowerArm."+side]).origin;var w0=hero.bone_world(hero.bone["Wrist."+side]).origin
+			for k in range(3,9):inside=maxf(inside,HeroIK.torso_depth(torso,s0.lerp(e0,k/8.)))
+			for k in range(9):inside=maxf(inside,HeroIK.torso_depth(torso,e0.lerp(w0,k/8.)))
+		expect(inside<.05,"arms outside the torso: %s (%.2f)"%[w.name,inside])
 		gun.queue_free();await process_frame
 	hero.queue_free()
+	# Support hand: knuckles forward and across the handguard, forearm from below.
+	var support:Basis=HeroIK.FRAMES.support.L
+	expect(support.y.z<-.4 and support.y.x>.4 and support.y.y>0. and -support.z.y>.7,"support hand: knuckles forward-across-up, palm up")
+	# First person: the arms come up from below the view (shoulders behind the eye).
+	expect(Actor.VIEW_BODY_OFFSET.z>0.,"first-person shoulders sit behind the eye")
+	# Rocket reload: overhand on the rocket; TETHER: a game-pad grip for both hands.
+	var loader=GunModel.new();loader.build(Catalog.get_weapon("h4"),false);root.add_child(loader)
+	var load_hand=ReloadMotion.support(loader,{"reload":.45,"rounds":0})
+	expect(str(load_hand.get("style",""))=="over","rocket loading hand grips the rocket overhand")
+	loader.queue_free()
+	var pad=GunModel.new();pad.build(Catalog.get_weapon("remote"),false);root.add_child(pad)
+	expect(pad.get_meta("grip_styles",{})=={"R":"pistol","L":"pistol"} and pad.right_grip.position.y<-.03 and pad.left_grip.position.y<-.03,"TETHER: both fists on the grips under the pad")
+	pad.queue_free()
+	# Medkit carried low with both hands; the grenade fist closes on its body.
+	var kit_holder=Node3D.new();root.add_child(kit_holder);var kit=GearModels.held(kit_holder,5,0)
+	expect(kit.two_handed and kit.right.y<-.1 and float(kit.view_lift)>0.,"medkit carried low in both hands")
+	var nade=GearModels.held(kit_holder,0,1)
+	expect(nade.right.distance_to(Vector3(0,.02,-.02))<.01 and float(nade.grip.R.shape.half.x)>=.035,"grenade grip centred on its body")
+	kit_holder.queue_free()
 	# ATLAS: semi-sniper without optics; only snipers, DMRs and the laser rifle have scopes.
 	var atlas=Catalog.get_weapon("a3")
 	expect(bool(atlas.get("semi_scope",false)) and float(atlas.zoom)<58. and not SniperScope.overlay(atlas),"ATLAS zooms further than other rifles, without a scope overlay")

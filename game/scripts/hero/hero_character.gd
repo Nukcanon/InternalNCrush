@@ -125,7 +125,9 @@ func team_tint(source:Color) -> Color:
 func meshes() -> Array:
 	return skeleton.get_children().filter(func(n):return n is MeshInstance3D and n.name!="FPArms")
 # First person: only the arm/hand mesh is drawn.
+var first_person=false
 func first_person_only():
+	first_person=true
 	for mesh in meshes():mesh.hide()
 	var arms=skeleton.get_node_or_null("FPArms")
 	if arms:arms.show();arms.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

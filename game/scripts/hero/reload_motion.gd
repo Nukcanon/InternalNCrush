@@ -12,7 +12,8 @@ extends RefCounted
 ##    grip and racks the slide overhand when needed.
 ##  shell / break: fetch a shell from the belt and push it up into the port.
 ##  rocket: fetch a rocket, bring it up behind the tipped launcher and push it,
-##    nose first, into the open rear end (palm up under the rocket's tail).
+##    nose first, into the open rear end (overhand: palm on top of the tail,
+##    fingers wrapped down around its far side).
 ## Also the pump on shell guns after every shot.
 const OUT_START=.08
 const OUT_END=.30
@@ -76,7 +77,7 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			var back=hand(port.lerp(fore,smoothstep(.7,1.,t)),fore_style,fore_shape,fore_basis)
 			return back
 		"rocket":
-			# Rear loading: the hand carries the rocket under its tail from below,
+			# Rear loading: the hand grips the rocket's tail overhand,
 			# brings it up behind the tube, pushes it in, then returns.
 			var count=int(s.get("rounds",0))
 			var show=GunModel.LOAD_SHOW;var push=GunModel.LOAD_PUSH
@@ -87,8 +88,8 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			var below=Vector3(-.10,-.26,.06)
 			if t<show:
 				var from=fore.lerp(below,smoothstep(0.,show*.6,t))
-				return hand(from.lerp(tail_at.call(show),smoothstep(show*.6,show,t)),"support",body)
-			if t<push+.04:return hand(tail_at.call(t),"support",body)
+				return hand(from.lerp(tail_at.call(show),smoothstep(show*.6,show,t)),"over",body)
+			if t<push+.04:return hand(tail_at.call(t),"over",body)
 			return hand(tail_at.call(push).lerp(fore,smoothstep(push+.04,1.,t)),fore_style,fore_shape,fore_basis)
 		"battery":
 			var pack=Vector3(0,top+.02,grip.z-.04)

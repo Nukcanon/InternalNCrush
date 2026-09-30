@@ -89,6 +89,8 @@ func build(w:Dictionary,ink:bool=false):
 	# SMG whose support hand holds the magazine.
 	var h:Dictionary=HANDLES.get(str(look.get("base","")),{})
 	set_meta("grip_styles",{"R":"pistol","L":str(h.get("left_style","pistol" if launcher else "support"))})
+	# Code-built tools may name their own hand styles (the TETHER pad).
+	if base.has_meta("grip_styles"):set_meta("grip_styles",base.get_meta("grip_styles"))
 	set_meta("grip_shapes",shapes)
 	# Third person: where the weapon sits in the shoulder frame (HeroCharacter).
 	if h.has("frame_offset"):set_meta("frame_offset",h.frame_offset*base.scale.x)

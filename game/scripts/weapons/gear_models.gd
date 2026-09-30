@@ -70,7 +70,7 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> 
 		# Carried by its mast (radius .034 at this scale), one fist above the other.
 		return {"node":node,"right":Vector3(0,.0,-.12),"left":Vector3(0,-.13,-.12),"two_handed":true,"grip":sides("pistol",Vector3(.034,.05,.034))}
 	if variant==8 or (role==0 and variant==1):
-		grenade(node,"frag");return {"node":node,"right":Vector3(0,.035,-.02),"left":left,"two_handed":false,"grip":ball()}
+		grenade(node,"frag");return {"node":node,"right":GRENADE_GRIP,"left":left,"two_handed":false,"grip":ball()}
 	if variant==9:
 		M.box(node,Vector3(0,0,-.05),Vector3(.3,.16,.2),Color("6f7d4a"),Vector3.ZERO,.5)
 		M.box(node,Vector3(0,.09,-.05),Vector3(.2,.03,.12),Color("f2c03e"),Vector3.ZERO,.4)
@@ -100,22 +100,28 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> 
 			var mini=Node3D.new();node.add_child(mini);cover(mini,0,clampi(variant,0,2));mini.scale=Vector3.ONE*.18;mini.position=Vector3(0,-.12,-.18)
 			return {"node":node,"right":Vector3(.28,-.04,-.14),"left":Vector3(-.28,-.04,-.14),"two_handed":true,"grip":sides("pistol",Vector3(.015,.05,.04))}
 		4:
-			grenade(node,"flash" if variant==1 else "smoke");return {"node":node,"right":Vector3(0,.035,-.02),"left":left,"two_handed":false,"grip":ball()}
+			grenade(node,"flash" if variant==1 else "smoke");return {"node":node,"right":GRENADE_GRIP,"left":left,"two_handed":false,"grip":ball()}
 		5:
-			# Medkit: white rounded case with a green cross and handle.
-			M.box(node,Vector3(0,0,-.08),Vector3(.26,.18,.1),Color("eef2f5"),Vector3.ZERO,.6)
-			M.box(node,Vector3(0,0,-.135),Vector3(.1,.03,.01),Color("3fcf8e"),Vector3.ZERO,.3)
-			M.box(node,Vector3(0,0,-.135),Vector3(.03,.1,.01),Color("3fcf8e"),Vector3.ZERO,.3)
-			M.box(node,Vector3(0,.12,-.08),Vector3(.12,.03,.03),INK,Vector3.ZERO,.5)
-			right=Vector3(0,.12,-.08);grip={"R":{"style":"top","shape":{"half":Vector3(.06,.015,.015),"round":.012}}}
+			# Medkit: white rounded case with a green cross and handle, carried low
+			# in front of the belly with both hands on its sides.
+			var low=Vector3(0,-MEDKIT_DROP,0)
+			M.box(node,low+Vector3(0,0,-.08),Vector3(.26,.18,.1),Color("eef2f5"),Vector3.ZERO,.6)
+			M.box(node,low+Vector3(0,0,-.135),Vector3(.1,.03,.01),Color("3fcf8e"),Vector3.ZERO,.3)
+			M.box(node,low+Vector3(0,0,-.135),Vector3(.03,.1,.01),Color("3fcf8e"),Vector3.ZERO,.3)
+			M.box(node,low+Vector3(0,.12,-.08),Vector3(.12,.03,.03),INK,Vector3.ZERO,.5)
+			right=low+Vector3(.13,0,-.08);left=low+Vector3(-.13,0,-.08);two=true;grip=sides("pistol",Vector3(.012,.07,.045))
 	finish(node)
-	return {"node":node,"right":right,"left":left,"two_handed":two,"grip":grip}
+	return {"node":node,"right":right,"left":left,"two_handed":two,"grip":grip,"view_lift":MEDKIT_DROP if role==5 else 0.}
 # Grip styles and shapes (handle frame) for held gear: a fist on each side
 # edge, or a small ball cupped in the palm.
 static func sides(style:String,half:Vector3) -> Dictionary:
 	var shape={"half":half,"round":minf(half.x,minf(half.y,half.z))}
 	return {"R":{"style":style,"shape":shape},"L":{"style":style,"shape":shape}}
-static func ball() -> Dictionary:return {"R":{"style":"hold","shape":{"half":Vector3.ONE*.03,"round":.03}}}
+# Grenade body: measured Toon Shooter shapes (tools/probe_gear_bounds.gd) are
+# about 8 cm across around (0,.02,-.02); the fist closes on that sphere.
+static func ball() -> Dictionary:return {"R":{"style":"hold","shape":{"half":Vector3.ONE*.037,"round":.037}}}
+const GRENADE_GRIP=Vector3(0,.018,-.02)
+const MEDKIT_DROP=.16
 # Throwables reuse the Toon Shooter (CC0) grenade shapes, repainted.
 static func grenade(parent:Node3D,kind:String):
 	# Copy the meshes only: a nested scene instance would not survive template packing.

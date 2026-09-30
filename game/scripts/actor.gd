@@ -77,6 +77,10 @@ var fall_peak=0.
 var falling=false
 var rotation_target_extra=Vector3.ZERO # hip-only view-model tilt (one-handed pistol cant)
 var launcher_tilt=0. # 0..1: launcher tipped forward so the rear end can be loaded
+# Third-person loading pose: far enough ahead of the chest that the arms stay outside the torso.
+const LOAD_SHIFT=Vector3(-.03,-.24,-.52)
+const LOAD_YAW=.22
+const LOAD_PITCH=1.0 # muzzle down so the rocket lined up behind the rear end clears the chest
 const STEP_HEIGHT=.28
 func _ready():
 	motion_seed=fposmod(float(pid)*2.39996,TAU)
@@ -403,7 +407,7 @@ func visual(dt:float,p:Dictionary,now:float):
 			for child in item_model.get_children():item_model.remove_child(child);child.queue_free()
 			var first=GadgetVisual.new();first.build(int(p.role),int(p.gadget),true,p.get("placing","")=="turret");item_model.scale=Vector3.ONE;item_model.position=Vector3.ZERO
 			if is_instance_valid(view_item):view_item.queue_free()
-			view_item=holder_for(first,first.right_socket,first.left_socket,first.two_handed,first.grip);view_item.position=Vector3(-.04,.04,.10);item_model.add_child(view_item)
+			view_item=holder_for(first,first.right_socket,first.left_socket,first.two_handed,first.grip);view_item.position=Vector3(-.04,.04+first.view_lift*.75,.10);item_model.add_child(view_item)
 			if is_instance_valid(held_holder):held_holder.queue_free()
 			gadget_world=GadgetVisual.new();gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
 			held_holder=holder_for(gadget_world,gadget_world.right_socket,gadget_world.left_socket,gadget_world.two_handed,gadget_world.grip)
@@ -430,7 +434,8 @@ func visual(dt:float,p:Dictionary,now:float):
 	if state.hold=="item" and is_instance_valid(held_holder):character.hold(held_holder)
 	elif is_instance_valid(world_weapon):character.hold(world_weapon)
 	if is_instance_valid(world_weapon):
-		world_weapon.visible=state.hold in ["rifle","pistol"]
+		# Two-handed tools held like items (the TETHER pad) are still this weapon.
+		world_weapon.visible=state.hold in ["rifle","pistol"] or (state.hold=="item" and character.held==world_weapon)
 		world_weapon.fire_side=int(p.mag.get(wid,0))%2;world_weapon.animate_reload(progress,recoil,age);world_weapon.set_rounds(int(p.mag.get(wid,0)),progress)
 		# Launchers tip forward while a rocket goes into the rear end, and stay
 		# down between the rockets of a tube-by-tube reload.
@@ -440,7 +445,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		var tip=smoothstep(0.,1.,launcher_tilt)
 		# The launcher comes down in front of the chest, muzzle low and turned a
 		# little across the body, so the rear opening faces the support hand.
-		world_weapon.position=Vector3(0,0,recoil*.045)+Vector3(-.10,-.13,-.30)*tip;world_weapon.rotation=Vector3(recoil*.10-.6*tip,.35*tip,0)
+		world_weapon.position=Vector3(0,0,recoil*.045)+LOAD_SHIFT*tip;world_weapon.rotation=Vector3(recoil*.10-LOAD_PITCH*tip,LOAD_YAW*tip,0)
 	if is_instance_valid(held_holder):held_holder.visible=state.hold=="item"
 	character.drive(dt,state)
 	update_melee(p,now)
@@ -555,9 +560,9 @@ var view_head_offset=Vector3(0,1.62,0)
 # First-person arms: a larger view body gives long arms whose shoulders stay
 # below the bottom of the screen (the arm mesh's cut end never shows); the
 # hands are scaled back at the wrists to their usual first-person size.
-const VIEW_BODY_SCALE=1.55
+const VIEW_BODY_SCALE=1.9
 const VIEW_HAND=1.15
-const VIEW_BODY_OFFSET=Vector3(0,-.16,-.30)
+const VIEW_BODY_OFFSET=Vector3(0,-.03,.10)
 func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if not is_instance_valid(view_body):return
 	var item_up=is_instance_valid(view_item) and item_model.visible
