@@ -376,6 +376,32 @@ func holder_for(item:Node3D,right:Vector3,left:Vector3,two_handed:bool,grip:Dict
 		if grip[side].has("shape"):shapes[side]=grip[side].shape
 	holder.set_meta("grip_styles",styles);holder.set_meta("grip_shapes",shapes)
 	return holder
+# Named descendants looked up once per item (the view model asks every frame).
+func cached_child(node:Node,child:String) -> Node:
+	var key="child_"+child
+	if node.has_meta(key):
+		var found=node.get_meta(key)
+		if found is Node and is_instance_valid(found):return found
+		if found is bool:return null
+	var hit=node.find_child(child,true,false)
+	node.set_meta(key,hit if hit else false)
+	return hit
+const HEADLESS_POSE_INTERVAL=2
+const HELD_OFFSET=Vector3(0,-.05,.02)
+var pose_dt=0.
+var pose_frame=0
+# Full-rate / half-rate pose distances per decoration tier (low, medium, high).
+const POSE_NEAR=[10.,18.,28.]
+const POSE_MID=[24.,40.,60.]
+func pose_interval() -> int:
+	if local:return 1
+	var view:=get_viewport().get_camera_3d() if is_inside_tree() else null
+	if view==null:return 1
+	var at=global_position+Vector3.UP
+	var distance=view.global_position.distance_to(at)
+	if not view.is_position_in_frustum(at) and distance>2.5:return 4
+	var tier=clampi(GraphicsOptions.detail,0,2)
+	return 1 if distance<POSE_NEAR[tier] else 2 if distance<POSE_MID[tier] else 3
 func headless_pose(p:Dictionary):
 	# The same hero skeleton drives authoritative hit volumes (meshes hidden).
 	set_team(int(p.team))
@@ -392,7 +418,11 @@ func headless_pose(p:Dictionary):
 		if is_instance_valid(held):held.queue_free()
 		var gun_model=GunModel.new();gun_model.build(w,false);character.hold(gun_model)
 		for mesh in gun_model.find_children("*","MeshInstance3D",true,false):mesh.hide()
-	character.drive(1./60.,pose_state(p,game.clock,progress,false))
+	# Hit rigs re-pose every other tick (staggered); the volumes still move with
+	# the actor every tick. Keeps a 32-player dedicated server within its budget.
+	pose_dt+=1./60.;pose_frame+=1
+	if (pose_frame+absi(pid))%HEADLESS_POSE_INTERVAL==0 or character.held!=held:
+		character.drive(pose_dt,pose_state(p,game.clock,progress,false));pose_dt=0.
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
 	if not p.alive:tag.hide();health_tag.hide();return
@@ -411,7 +441,9 @@ func visual(dt:float,p:Dictionary,now:float):
 			if is_instance_valid(held_holder):held_holder.queue_free()
 			gadget_world=GadgetVisual.new();gadget_world.build(int(p.role),int(p.gadget),false,p.get("placing","")=="turret")
 			held_holder=holder_for(gadget_world,gadget_world.right_socket,gadget_world.left_socket,gadget_world.two_handed,gadget_world.grip)
-			held_holder.position=Vector3(0,-.05,-.28)
+			# The hero's item frame already sits ahead of the chest; a further 28 cm put
+			# grenades and kits beyond arm's reach (hands stopped short of them).
+			held_holder.position=HELD_OFFSET
 	var wid=(p.primary if p.slot==0 else p.secondary) if p.slot<2 or shown_weapon.is_empty() else shown_weapon
 	if shown_weapon!=wid:shown_weapon=wid;build_gun(wid)
 	var w=Catalog.get_weapon(wid);var age=now-float(p.get("shot_time",-100.))
@@ -447,7 +479,13 @@ func visual(dt:float,p:Dictionary,now:float):
 		# little across the body, so the rear opening faces the support hand.
 		world_weapon.position=Vector3(0,0,recoil*.045)+LOAD_SHIFT*tip;world_weapon.rotation=Vector3(recoil*.10-LOAD_PITCH*tip,LOAD_YAW*tip,0)
 	if is_instance_valid(held_holder):held_holder.visible=state.hold=="item"
-	character.drive(dt,state)
+	# Pose LOD: far or off-screen heroes re-pose every 2-4 drawn frames (the
+	# collected time keeps their animation speed); staggered by id so the work
+	# spreads over frames. Near, on-screen and local heroes pose every frame.
+	pose_dt+=dt;pose_frame+=1
+	var interval=pose_interval()
+	if interval<=1 or (pose_frame+absi(pid))%interval==0:
+		var _tp=Prof.now();character.drive(pose_dt,state);Prof.add("actor_tp_drive",_tp);pose_dt=0.
 	update_melee(p,now)
 	if BombHandling.active(self):
 		if is_instance_valid(world_weapon):world_weapon.hide()
@@ -516,7 +554,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	var throwing=p.get("throw_until",0)>now
 	for carried in [view_item,gadget_world]:
 		if is_instance_valid(carried):
-			var payload=carried.find_child("Payload",true,false)
+			var payload=cached_child(carried,"Payload")
 			if payload:payload.visible=not throwing
 	item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
 	if is_instance_valid(view_weapon):
@@ -547,7 +585,7 @@ func visual(dt:float,p:Dictionary,now:float):
 			var rear_local=Vector3(0,view_weapon.muzzle.position.y,float(view_weapon.base.get_meta("rear",0.)))*view_weapon.base.scale
 			var loading=Transform3D(turn*Basis.from_scale(view_weapon.scale),-(turn*(rear_local*view_weapon.scale)))
 			view_weapon.transform=view_weapon.transform.interpolate_with(loading,load_tip)
-		var gauge=view_weapon.find_child("HeatGauge",true,false)
+		var gauge=cached_child(view_weapon,"HeatGauge")
 		if gauge:gauge.update_heat(float(p.get("laser_heat",0)),float(p.get("laser_lock",0))>now)
 	update_view_body(dt,p,now,progress)
 	BombHandling.view(self,p,now)
@@ -595,7 +633,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if melee_up:state.hold="item";state.two_hands=false;state.erase("melee")
 	if bomb_up:state.hold="item";state.two_hands=true;state.point=true;state.erase("plant")
 	state.hands=1.;state.sprint=false
-	view_body.drive(dt,state)
+	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	view_head_offset=yaw.inverse()*(view_body.head_position()-view_body.global_position)
 func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false

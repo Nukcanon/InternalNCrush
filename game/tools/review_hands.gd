@@ -44,10 +44,10 @@ func run():
 	g.ui.show_hud();g.phase="combat";g.clock=100.
 	var p=g.players[1];p.protect=0.;p.alive=true;p.role=0;p.primary="a1";p.secondary="pistol";p.slot=0;p.team=0;p.hand=1
 	var a=g.actors[1];a.set_local(true);a.set_team(0)
-	a.position=Vector3(0,.1,g.arena.bounds.y-8.);a.reset_view(0);await physics_frame
+	a.position=Vector3(0,.1,18.);a.reset_view(0);await physics_frame
 	var aim=func(on:bool):a.input_state.ads=on;a.aim_progress=1. if on else 0.;a.ads_blend=1. if on else 0.
 	# [label, role, slot, item, gadget, extra] extra: "aim", "reload:<phase>", "cook"
-	var cases=[["rifle-hip",0,0,"a1",-1,""],["rifle-aim",0,0,"a1",-1,"aim"],["rifle-reload45",0,0,"a1",-1,"reload:.45"],
+	var cases=[["rifle-hip",0,0,"a1",-1,""],["rifle-aim",0,0,"a1",-1,"aim"],["rifle-reload20",0,0,"a1",-1,"reload:.2"],["rifle-reload45",0,0,"a1",-1,"reload:.45"],["rifle-reload70",0,0,"a1",-1,"reload:.7"],["rifle-reload90",0,0,"a1",-1,"reload:.9"],["pistol-reload45",0,1,"pistol",-1,"reload:.45"],["pistol-reload90",0,1,"pistol",-1,"reload:.9"],["shotgun-reload50",3,0,"e1",-1,"reload:.5"],["quad-reload30",2,0,"h5",-1,"reload:.3"],
 		["smg-hip",0,0,"a2",-1,""],["shotgun-hip",3,0,"e1",-1,""],["sniper-hip",1,0,"r1",-1,""],["lmg-hip",2,0,"h1",-1,""],
 		["pistol-hip",0,1,"pistol",-1,""],["pistol-aim",0,1,"pistol",-1,"aim"],["dual-hip",4,1,"dual_pistols",-1,""],
 		["comet-hip",2,0,"h4",-1,""],["comet-reload45",2,0,"h4",-1,"reload:.45"],["comet-reload85",2,0,"h4",-1,"reload:.85"],
@@ -105,6 +105,19 @@ func run():
 				depth=HeroIK.torso_depth(t,e.lerp(w,k/8.))
 				if depth>worst:worst=depth;where=side+" fore"
 		print("TORSO bot%d %s depth=%.2f %s"%[i,str(lineup[i].slice(0,5)),worst,where])
+		# How far each wrist ended up from the marker it should hold.
+		if is_instance_valid(h.held):
+			var fb=h.facing_basis().orthonormalized();var rel=h.held.global_position-h.bone_world(h.skeleton.find_bone("Chest")).origin
+			var line="   HANDS bot%d held=%s two=%s item_local=(%.2f,%.2f,%.2f)"%[i,h.held.name,str(h.state.get("two_hands","")),rel.dot(fb.x),rel.dot(fb.y),rel.dot(fb.z)]
+			for side in ["R","L"]:
+				var marker=h.held.get_node_or_null("RightGrip" if side=="R" else "LeftGrip")
+				if marker:line+=" %s=%.3f"%[side,h.bone_world(h.bone["Wrist."+side]).origin.distance_to(marker.global_position)]
+			var pay=h.held.find_child("Payload",true,false)
+			line+=" visible=%s payload=%s"%[str(h.held.is_visible_in_tree()),str(pay.is_visible_in_tree()) if pay else "none"]
+			if pay:
+				var pr=pay.global_position-h.bone_world(h.bone["Wrist.R"]).origin
+				line+=" payload_from_wristR=%.3f"%pr.length()
+			print(line)
 		if worst>.05:
 			var f=h.facing_basis().orthonormalized();var c=h.bone_world(h.skeleton.find_bone("Chest")).origin
 			for n in ["UpperArm.R","LowerArm.R","Wrist.R","UpperArm.L","LowerArm.L","Wrist.L"]:

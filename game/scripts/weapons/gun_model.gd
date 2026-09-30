@@ -23,7 +23,7 @@ const HANDLES={
 	"Pistol":{"right":Vector3(0,-.047,.001),"tilt":.2,"grip":Vector3(.011,.036,.024),"round":.009,"trigger":Vector3(0,-.03,-.045),"sight":Vector3(0,.055,0)},
 	"Revolver":{"right":Vector3(0,-.055,.003),"tilt":.45,"grip":Vector3(.011,.032,.026),"round":.009,"trigger":Vector3(0,-.035,-.064),"sight":Vector3(0,.07,-.02)},
 	"Revolver_Small":{"right":Vector3(0,-.067,-.008),"tilt":.36,"grip":Vector3(.014,.035,.028),"round":.011,"trigger":Vector3(0,-.042,-.079),"sight":Vector3(0,.07,-.02)},
-	"Shotgun":{"right":Vector3(0,-.04,-.25),"tilt":1.0,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
+	"Shotgun":{"right":Vector3(0,-.062,-.235),"tilt":.62,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
 		"left":Vector3(0,-.045,-.72),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60)},
 	"ShortCannon":{"right":Vector3(0,-.02,-.255),"tilt":.9,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
 		"left":Vector3(0,.0125,-.62),"fore":Vector3(.033,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45)},

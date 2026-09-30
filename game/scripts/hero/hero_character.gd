@@ -126,26 +126,76 @@ func meshes() -> Array:
 	return skeleton.get_children().filter(func(n):return n is MeshInstance3D and n.name!="FPArms")
 # First person: only the arm/hand mesh is drawn.
 var first_person=false
+# Per-pose caches (HeroIK.torso_frame): bumped every drive().
+var drive_serial=0
+var torso_serial=-1
+var torso_cache={}
 func first_person_only():
 	first_person=true
 	for mesh in meshes():mesh.hide()
 	var arms=skeleton.get_node_or_null("FPArms")
-	if arms:arms.show();arms.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if arms:
+		arms.show();arms.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		arms.mesh=slim_arms(arms.mesh,arms.skin)
+# First person scales the whole body up for reach; the upper arms and forearms
+# are drawn slimmer about their bone axes so they do not fill the screen.
+# Hands keep their shape. Built once per arm mesh (shared by every view body).
+const FP_ARM_SLIM=.74
+static var slim_cache={}
+func slim_arms(source:Mesh,skin:Skin) -> Mesh:
+	if source==null or skin==null:return source
+	var key=source.get_instance_id()
+	if slim_cache.has(key):return slim_cache[key]
+	# Bone axes in mesh space: origin and +Y of each bound arm bone.
+	var axes={}
+	for bind in range(skin.get_bind_count()):
+		var name=skin.get_bind_name(bind)
+		if name=="":name=skeleton.get_bone_name(skin.get_bind_bone(bind))
+		if name.begins_with("UpperArm") or name.begins_with("LowerArm"):
+			var bone:Transform3D=skin.get_bind_pose(bind).affine_inverse()
+			axes[bind]=[bone.origin,bone.basis.y.normalized()]
+	var out=ArrayMesh.new()
+	for s in range(source.get_surface_count()):
+		var arrays=source.surface_get_arrays(s)
+		var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS]
+		var per=bones.size()/maxi(1,verts.size())
+		for i in range(verts.size()):
+			# Slim only where arm bones carry (nearly) all of the weight.
+			var arm_weight=0.;var best=-1;var bw=-1.
+			for k in range(per):
+				var b=bones[i*per+k];var wgt=weights[i*per+k]
+				if axes.has(b):arm_weight+=wgt
+				if wgt>bw:bw=wgt;best=b
+			if not axes.has(best) or arm_weight<.6:continue
+			var o:Vector3=axes[best][0];var y:Vector3=axes[best][1]
+			var rel=verts[i]-o;var along=y*rel.dot(y)
+			var factor=lerpf(1.,FP_ARM_SLIM,clampf((arm_weight-.6)/.35,0.,1.))
+			verts[i]=o+along+(rel-along)*factor
+		arrays[Mesh.ARRAY_VERTEX]=verts
+		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays,[],{},source.surface_get_format(s)&Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
+		out.surface_set_material(s,source.surface_get_material(s))
+	slim_cache[key]=out
+	return out
 
 ## Pose update. `s` keys (all optional):
 ##  velocity (world), grounded, crouch, sprint, pitch (rad, + up), reload (-1 or 0..1),
 ##  reload_time (s), shot (seconds since last shot), throw (-1 or 0..1), hit (0..1),
 ##  slide (-1 or 0..1), plant (bool), hold ("rifle"|"pistol"|"item"|"none")
 func drive(dt:float,s:Dictionary):
-	state=s;frame_dt=dt
+	state=s;frame_dt=dt;drive_serial+=1
+	var _t=Prof.now()
 	HeroAnimation.update(self,dt,s)
+	Prof.add("hero_anim_params",_t);_t=Prof.now()
 	tree.advance(dt)
+	Prof.add("hero_tree_advance",_t);_t=Prof.now()
 	apply_hip_yaw(float(s.get("hip_yaw",0.)))
 	pitch=float(s.get("pitch",0.))
 	if hand_size!=1.:
 		for side in ["R","L"]:skeleton.set_bone_pose_scale(bone["Wrist."+side],Vector3.ONE*hand_size)
 	place_weapon_frame(s)
+	Prof.add("hero_frame",_t);_t=Prof.now()
 	solve_hands(s)
+	Prof.add("hero_hands",_t)
 # World size of the hands relative to the rig's own units.
 func hand_scale() -> float:return absf(skeleton.global_transform.basis.get_scale().y)*hand_size
 
@@ -176,10 +226,15 @@ func apply_hip_yaw(yaw:float):
 		var local:Transform3D=root_pose.affine_inverse()*world
 		skeleton.set_bone_pose_position(i,local.origin);skeleton.set_bone_pose_rotation(i,local.basis.get_rotation_quaternion())
 # World transform of a bone composed from current local poses (never stale).
+# Parent chains are fixed per rig: built once instead of an array per call
+# (bone_world runs many times per pose).
+var bone_chains={}
 func bone_world(index:int) -> Transform3D:
-	var chain=[]
-	var i=index
-	while i>=0:chain.push_front(i);i=skeleton.get_bone_parent(i)
+	var chain:PackedInt32Array=bone_chains.get(index,PackedInt32Array())
+	if chain.is_empty():
+		var i=index
+		while i>=0:chain.insert(0,i);i=skeleton.get_bone_parent(i)
+		bone_chains[index]=chain
 	var xf=skeleton.global_transform
 	for b in chain:xf=xf*skeleton.get_bone_pose(b)
 	return xf
@@ -250,8 +305,11 @@ func solve_hands(s:Dictionary):
 		HeroIK.solve_arm(self,"L",side_rest,weight,true);HeroIK.curl(self,"L",weight,"rest")
 # One hand on a handle: wrist placed from the grip shape, arm IK, finger wrap.
 func grip_hand(side:String,handle:Transform3D,style:String,shape:Dictionary,weight:float,point:bool=false):
+	var _t=Prof.now()
 	HeroIK.solve_arm(self,side,HeroIK.wrist_target(handle,side,style,hand_scale(),self,shape),weight,true)
+	Prof.add("hero_arm_ik",_t);_t=Prof.now()
 	if pose_fingers:HeroIK.apply_grip(self,side,handle,style,shape,weight,point)
+	Prof.add("hero_fingers",_t)
 # `mount`: false keeps the item where it is (e.g. a camera-space view model);
 # the hands still follow its grip markers.
 func hold(item:Node3D,mount:bool=true):

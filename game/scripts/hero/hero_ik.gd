@@ -10,6 +10,7 @@ extends RefCounted
 ##    so fingers wrap handles of any size without passing through them. On gun
 ##    grips the index finger reaches for the trigger instead.
 const POLE={"R":Vector3(.55,-.75,.35),"L":Vector3(-.55,-.75,.35)} # hero-local: +x right, -z forward
+const ELBOW_SAMPLES=12
 const TORSO_W=24. # elbow cost per unit of arm depth inside the torso (third person)
 const POLE_FP={"R":Vector3(.3,-1.,.15),"L":Vector3(-.3,-1.,.15)} # first person: elbows hang below the view
 # Human limits: wrist bend (flexion / deviation) and forearm twist.
@@ -64,6 +65,15 @@ static func support_frame(side:String) -> Basis:
 	if side=="L":return left
 	var m=Basis.from_scale(Vector3(-1,1,1))
 	return m*left*m
+# Overhand ("top"): palm down, knuckles forward and across so the forearm comes
+# from the near side (not straight back at the eye in first person).
+static func top_frame(side:String) -> Basis:
+	var y=TOP_KNUCKLES.normalized();var z=Vector3.UP;var x=y.cross(z).normalized()
+	var left=Basis(x,y,z)
+	if side=="L":return left
+	var m=Basis.from_scale(Vector3(-1,1,1))
+	return m*left*m
+const TOP_KNUCKLES=Vector3(.6,0.,-.8)
 const SUPPORT_KNUCKLES=Vector3(.62,.40,-.68) # handle frame: +x far side (left hand), +y up, -z forward
 const SUPPORT_PALM=Vector3(.25,1.,0.)
 static var FRAMES={
@@ -75,7 +85,7 @@ static var FRAMES={
 	"hold":{"R":Basis(Vector3(0,-1,0),Vector3(0,0,-1),Vector3(1,0,0)),"L":Basis(Vector3(0,1,0),Vector3(0,0,-1),Vector3(-1,0,0))},
 	# Overhand on top of the item (charging handle, slide, battery pack): palm
 	# down, fingers forward and hooked over, thumb toward the body's centre.
-	"top":{"R":Basis(Vector3(1,0,0),Vector3(0,0,-1),Vector3(0,1,0)),"L":Basis(Vector3(1,0,0),Vector3(0,0,-1),Vector3(0,1,0))},
+	"top":{"R":top_frame("R"),"L":top_frame("L")},
 	# Overhand on a round body along Z (a rocket being loaded): palm down on
 	# top, knuckles across to the far side, fingers curl down around it, thumb
 	# back along the near side.
@@ -178,25 +188,21 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		var align_w=.5 if fp else 1.;var pole_w=1.2 if fp else .45
 		var torso=torso_frame(hero) if not fp else {}
 		var w_end=a+dir*d
-		var cost_of=func(angle:float) -> float:
-			var u=perp*cos(angle)+side_axis*sin(angle)
-			var e=centre+u*radius
-			var fore=(w_end-e).normalized()
-			var cost=align_w*fore.angle_to(hand_dir)+pole_w*absf(wrapf(angle,-PI,PI))+maxf(0.,(e-a).dot(up)/la-.15)*4.
-			if not torso.is_empty():
-				for p in [e,(a+e)*.5,(e+w_end)*.5,e.lerp(w_end,.25)]:cost+=TORSO_W*torso_depth(torso,p)
-			return cost
+		# 12 samples round the circle, then three halving refinements (18
+		# evaluations; 1.4.1 used 32 through a lambda, the costliest part of a pose).
 		var best_angle=0.;var best_cost=INF
-		for k in range(24):
-			var cost=cost_of.call(k*TAU/24.)
-			if cost<best_cost:best_cost=cost;best_angle=k*TAU/24.
-		# Refine between the neighbouring samples.
-		var step=TAU/48.
-		for k in range(4):
-			for candidate in [best_angle-step,best_angle+step]:
-				var cost=cost_of.call(candidate)
-				if cost<best_cost:best_cost=cost;best_angle=candidate
-			step*=.5
+		var candidates=PackedFloat32Array()
+		for k in range(ELBOW_SAMPLES):candidates.append(k*TAU/ELBOW_SAMPLES)
+		var step=TAU/(ELBOW_SAMPLES*2.)
+		for level in range(4):
+			for angle in candidates:
+				var e=centre+(perp*cos(angle)+side_axis*sin(angle))*radius
+				var cost=align_w*(w_end-e).normalized().angle_to(hand_dir)+pole_w*absf(wrapf(angle,-PI,PI))+maxf(0.,(e-a).dot(up)/la-.15)*4.
+				if not torso.is_empty():
+					cost+=TORSO_W*(torso_depth(torso,e)+torso_depth(torso,(a+e)*.5)+torso_depth(torso,(e+w_end)*.5)+torso_depth(torso,e.lerp(w_end,.25)))
+				if cost<best_cost:best_cost=cost;best_angle=angle
+			if level==3:break
+			candidates=PackedFloat32Array([best_angle-step,best_angle+step]);step*=.5
 		var chosen=perp*cos(best_angle)+side_axis*sin(best_angle)
 		# Ease the elbow between frames (no popping between circle samples).
 		# Remembered in the hero's own frame so turning the body does not lag.
@@ -246,22 +252,28 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	set_world(sk,wrist,lower_world,wrist_world,weight)
 	if hero.has_meta("ik_debug"):
 		print("IKDBG ",side," want ",target.basis.get_rotation_quaternion()," solved ",wrist_world," got ",hero.bone_world(wrist).basis.get_rotation_quaternion()," bend ",bend," twist ",twist.get_angle()," parent_err ",hero.bone_world(shoulder).basis.get_rotation_quaternion().angle_to(parent_world))
-# Torso as an elliptic cylinder between the abdomen and the chest (world).
+# Torso as an elliptic cylinder between the abdomen and the chest (world),
+# built once per pose (both arms share it).
 static func torso_frame(hero:HeroCharacter) -> Dictionary:
+	if hero.torso_serial==hero.drive_serial and not hero.torso_cache.is_empty():return hero.torso_cache
 	var sk=hero.skeleton
 	var ab=sk.find_bone("Abdomen");var ch=sk.find_bone("Chest")
 	if ab<0 or ch<0:return {}
 	var low:Vector3=hero.bone_world(ab).origin;var high:Vector3=hero.bone_world(ch).origin
 	var f:Basis=hero.facing_basis().orthonormalized()
 	var s=low.distance_to(high)/.354 # rig: abdomen to chest 0.354 m at scale 1
-	return {"low":low,"high":high,"x":f.x,"z":f.z,"rx":.115*s,"rz":.10*s,"top":.12*s}
+	var axis=high-low
+	hero.torso_cache={"low":low,"axis":axis.normalized(),"length":axis.length(),"x":f.x/(.115*s),"z":f.z/(.10*s),"top":.12*s}
+	hero.torso_serial=hero.drive_serial
+	return hero.torso_cache
 # 0 outside, up to 1 at the torso axis.
 static func torso_depth(t:Dictionary,p:Vector3) -> float:
-	var axis:Vector3=t.high-t.low;var h=(p-t.low).dot(axis.normalized())
-	if h<0. or h>axis.length()+float(t.top):return 0.
-	var q=p-(t.low+axis.normalized()*h)
-	var r=sqrt(pow(q.dot(t.x)/float(t.rx),2.)+pow(q.dot(t.z)/float(t.rz),2.))
-	return maxf(0.,1.-r)
+	var rel:Vector3=p-t.low;var h=rel.dot(t.axis)
+	if h<0. or h>float(t.length)+float(t.top):return 0.
+	var q:Vector3=rel-t.axis*h
+	var qx=q.dot(t.x);var qz=q.dot(t.z)
+	var r2=qx*qx+qz*qz
+	return 0. if r2>=1. else 1.-sqrt(r2)
 static func set_world(sk:Skeleton3D,index:int,parent_world:Quaternion,world:Quaternion,weight:float):
 	var local=(parent_world.inverse()*world).normalized()
 	sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(local,weight))

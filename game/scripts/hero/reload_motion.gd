@@ -63,7 +63,7 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 	match style:
 		"pistol":
 			var approach=Vector3(-.16,-.22,.10)
-			var slide=Vector3(0,top-.02,grip.z-.03)
+			var slide=Vector3(-(mag_shape.half.x+.014),top-.03,grip.z-.05)
 			if t<.2:return hand(approach.lerp(mag,smoothstep(0.,.2,t)),"pistol",mag_shape)
 			if t<.8:return hand(mag+mag_offset(t),"pistol",mag_shape)
 			if tactical:return hand(mag.lerp(approach,smoothstep(.8,1.,t)),"pistol",mag_shape)
@@ -104,17 +104,21 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			if t<.08:return hand(fore.lerp(mag,smoothstep(0.,.08,t)),"pistol",mag_shape)
 			if t<.8:return hand(mag+mag_offset(t),"pistol",mag_shape)
 			if tactical:return hand(mag.lerp(fore,smoothstep(.8,1.,t)),fore_style,fore_shape,fore_basis)
-			var knob_at=Vector3(0,top-.01,grip.z-.08)
+			var knob_at=Vector3(-(mag_shape.half.x+.02),top-.04,grip.z-.2)
 			return rack(mag,knob_at,fore,t,.08,home,mag_shape,knob)
 static func scaled(shape:Dictionary,factor:float) -> Dictionary:
 	if shape.is_empty():return shape
 	var out=shape.duplicate();out.half=shape.half*factor;out.round=float(shape.round)*factor
 	if shape.has("trigger"):out.trigger=shape.trigger*factor
 	return out
-# Charging handle / slide: reach it overhand, pull it back, let it go, return.
+# Charging handle / slide on the near (support-hand) side, ahead of the grip:
+# the support hand hooks it from the side (palm toward the gun), pulls it back,
+# lets go and returns. A top-rear handle put the whole forearm in front of
+# the first-person eye.
+const SIDE_GRAB=Basis(Vector3(0,0,1),PI/2)
 static func rack(from:Vector3,knob:Vector3,home_position:Vector3,t:float,travel:float,home:Dictionary,from_shape:Dictionary,knob_shape:Dictionary) -> Dictionary:
 	if t<.84:return hand(from,"pistol",from_shape)
-	if t<.87:return hand(from.lerp(knob,smoothstep(.84,.87,t)),"top",knob_shape)
-	if t<.93:return hand(knob+Vector3(0,0,travel*sin(clampf((t-.87)/.06,0.,1.)*PI)),"top",knob_shape)
+	if t<.87:return hand(from.lerp(knob,smoothstep(.84,.87,t)),"top",knob_shape,SIDE_GRAB)
+	if t<.93:return hand(knob+Vector3(0,0,travel*sin(clampf((t-.87)/.06,0.,1.)*PI)),"top",knob_shape,SIDE_GRAB)
 	var back=home.duplicate();back.position=knob.lerp(home_position,smoothstep(.93,1.,t))
 	return back
