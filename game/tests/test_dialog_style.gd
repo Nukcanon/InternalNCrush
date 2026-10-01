@@ -12,7 +12,8 @@ func run():
 		await process_frame;await process_frame
 		var ok=dialog.get_ok_button();var cancel=dialog.get_cancel_button()
 		check(ok.position.x>cancel.position.x,"affirmative is on right")
-		check(absf(ok.size.x-cancel.size.x)<1. and ok.size.y==cancel.size.y,"matching button dimensions ok=%s cancel=%s min=%s/%s custom=%s/%s clip=%s/%s"%[str(ok.size),str(cancel.size),str(ok.get_minimum_size()),str(cancel.get_minimum_size()),str(ok.custom_minimum_size),str(cancel.custom_minimum_size),str(ok.clip_text),str(cancel.clip_text)])
+		# (within 1 px: the box container splits an odd remaining width unevenly)
+		check(absf(ok.size.x-cancel.size.x)<=1. and ok.size.y==cancel.size.y,"matching button dimensions ok=%s cancel=%s min=%s/%s custom=%s/%s clip=%s/%s"%[str(ok.size),str(cancel.size),str(ok.get_minimum_size()),str(cancel.get_minimum_size()),str(ok.custom_minimum_size),str(cancel.custom_minimum_size),str(ok.clip_text),str(cancel.clip_text)])
 		check(ok.get_theme_stylebox("normal").bg_color==(UiSkin.STOP if navigation else UiSkin.GO),"correct affirmative color")
 		# 1.3.3: in navigation prompts "stay" is the safe, green choice; leaving is red.
 		check(cancel.get_theme_stylebox("normal").bg_color==(UiSkin.GO if navigation else UiSkin.STOP),"negative is red, navigation stay is green")
