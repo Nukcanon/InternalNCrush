@@ -36,7 +36,10 @@ static func mag_drop(t:float) -> float:
 ## first-person view, while the magazines are swapped.
 static func mag_offset(t:float) -> Vector3:
 	var drop=mag_drop(t)
-	return Vector3(-.05*drop,-.62*drop,.30*drop)
+	# 1.4.4 round 9: only as far as the bottom of the first-person view (the
+	# hand follows it): dropped .62 m it vanished and the hand seemed to work
+	# on nothing under the well.
+	return Vector3(-.04*drop,-.28*drop,.20*drop)
 static func hand(position:Vector3,style:String,shape:Dictionary={},basis:Basis=Basis.IDENTITY) -> Dictionary:
 	return {"position":position,"style":style,"shape":shape,"basis":basis}
 # Magazine centre (gun space) and grip shape (handle frame, base units).

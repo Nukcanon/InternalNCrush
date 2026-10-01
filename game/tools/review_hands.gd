@@ -175,6 +175,34 @@ func closeups(a,label:String):
 		for i in range(2):await process_frame
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png(out+label+"-hand"+sd+".png")
+	if "thumbprobe" in only and is_instance_valid(vb.held):
+		# Where the support thumb would point (gun space, -z forward) for a sweep
+		# of its base flexion with the pinch joints.
+		var chains:Dictionary=HeroIK.finger_chains(vb,"L");var sk=vb.skeleton
+		var wrist:Transform3D=vb.bone_world(vb.bone["Wrist.L"]);var to_gun:Transform3D=vb.held.global_transform.affine_inverse()
+		var line="THUMBPROBE "+label
+		for a0 in [-1.2,-.9,-.6,-.3,0.,.3,.5]:
+			var frames:Array=HeroIK.finger_frames(sk,chains.Thumb,[a0,HeroIK.THUMB_PINCH[1],HeroIK.THUMB_PINCH[2]])
+			var base:Vector3=to_gun*(wrist*frames[0].origin);var tip:Vector3=to_gun*(wrist*(frames[2]*Vector3(0,HeroIK.TIP.Thumb,0)))
+			line+=" a0=%.1f dir=%s"%[a0,str((tip-base).normalized().snapped(Vector3.ONE*.01))]
+		var ib:Vector3=to_gun*(wrist*HeroIK.finger_frames(sk,chains.Index,[0.,0.,0.,0.])[0].origin);var it:Vector3=to_gun*(wrist*(HeroIK.finger_frames(sk,chains.Index,[0.,0.,0.,0.])[3]*Vector3(0,HeroIK.TIP.Index,0)))
+		line+=" | straight index dir=%s palm_normal(gun)=%s hand_y(gun)=%s"%[str((it-ib).normalized().snapped(Vector3.ONE*.01)),str((to_gun.basis*wrist.basis.z).normalized().snapped(Vector3.ONE*.01)),str((to_gun.basis*wrist.basis.y).normalized().snapped(Vector3.ONE*.01))]
+		print(line)
+	if "loadhand" in only:
+		# The loading (support) hand from above-front and from the left side.
+		var focus:Vector3=vb.bone_world(vb.bone["Wrist.L"]).origin
+		var chains:Dictionary=HeroIK.finger_chains(vb,"L")
+		if chains.has("Index"):focus=focus.lerp(vb.bone_world(chains.Index[2]).origin,.7)
+		var basis:Basis=a.camera.global_basis
+		cam.fov=35.
+		cam.global_position=focus+basis.y*.28-basis.z*.12-basis.x*.10;cam.look_at(focus,-basis.z)
+		for i in range(2):await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(out+label+"-loadtop.png")
+		cam.global_position=focus-basis.x*.30+basis.y*.08-basis.z*.08;cam.look_at(focus,basis.y)
+		for i in range(2):await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(out+label+"-loadleft.png")
 	if is_instance_valid(vb.held):
 		var focus:Vector3=vb.held.global_position
 		if vb.held is GunModel:focus=vb.held.global_transform*(vb.held.right_grip.position*vb.held.base.scale+Vector3(0,0,-.05))

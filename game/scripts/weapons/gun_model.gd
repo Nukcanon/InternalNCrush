@@ -36,9 +36,9 @@ const HANDLES={
 	"ShortCannon":{"right":Vector3(0,-.02,-.28),"tilt":.1,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
 		# 1.4.2: on the pump, not on the barrel tip (the fingers passed the muzzle).
 		"left":Vector3(-.007,-.008,-.485),"fore":Vector3(.034,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45),"breech":Vector3(0,.03,-.56)},
-	"Sniper":{"right":Vector3(0,-.115,-.258),"tilt":.47,"grip":Vector3(.014,.048,.039),"round":.012,"trigger":Vector3(0,-.07,-.346),
+	"Sniper":{"right":Vector3(0,-.115,-.258),"tilt":.33,"grip":Vector3(.014,.048,.039),"round":.012,"trigger":Vector3(0,-.07,-.346),
 		"left":Vector3(0,.004,-.70),"fore":Vector3(.0184,.0326,.05),"fore_round":.016,"sight":Vector3(0,.15,-.45)},
-	"Sniper_2":{"right":Vector3(0,-.11,-.264),"tilt":.40,"grip":Vector3(.0215,.048,.04),"round":.015,"trigger":Vector3(0,-.068,-.359),
+	"Sniper_2":{"right":Vector3(0,-.11,-.264),"tilt":.30,"grip":Vector3(.0215,.048,.04),"round":.015,"trigger":Vector3(0,-.068,-.359),
 		# 1.4.2: the bare barrel ahead of the receiver gets a forend (GunLooks
 		# "handguard", z -.648 to -.80) and the support hand holds that, not the
 		# barrel; the curved magazine is too deep for a hand to close round.
@@ -336,7 +336,9 @@ func show_load_round(t:float):
 		# Along -Z (the way it goes in): shell hull + brass head, or case + bullet.
 		MeshFactory.cylinder(load_round,Vector3(0,0,-length*.1),r,length*.8,Color("c9423a") if shell else Color("d9b04a"),Vector3(PI/2,0,0),-1.,10)
 		MeshFactory.cylinder(load_round,Vector3(0,0,length*.38),r*1.08,length*.24,Color("d6ae55") if shell else Color("c79a3c"),Vector3(PI/2,0,0),-1.,10)
-		if not shell:MeshFactory.cylinder(load_round,Vector3(0,0,-length*.58),r*.72,length*.2,Color("b87333"),Vector3(PI/2,0,0),r*.35,10)
+		# (the tapered top of the cone must face -Z: a +90deg turn about X put the
+		# point backward, so the bullet looked reversed)
+		if not shell:MeshFactory.cylinder(load_round,Vector3(0,0,-length*.58),r*.72,length*.2,Color("b87333"),Vector3(-PI/2,0,0),r*.35,10)
 		MeshFactory.merge_children(load_round)
 		for m in load_round.get_children():
 			if m is MeshInstance3D:m.material_override=HeroStyle.toon_material(outlined,.3);m.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

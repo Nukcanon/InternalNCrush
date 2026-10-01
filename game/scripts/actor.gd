@@ -580,10 +580,14 @@ func visual(dt:float,p:Dictionary,now:float):
 	var rotation_target=Vector3(recoil*lerpf(.34,.12,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
 	# 1.4.4 view-model angle: the muzzle turned a little in toward the centre so
 	# the gun's right side and both hands read at the hip (not in aim).
-	rotation_target.y+=(.0 if throwable else .13 if gadget_up else .10)*(1.-ads_blend)
+	# Round 9: a beam weapon (ARC) keeps its barrel on the aim line - its beam
+	# is drawn from the muzzle to the aim point, so a turned or dipped barrel
+	# visibly pointed away from its own beam.
+	var beam=bool(w.get("laser",false))
+	rotation_target.y+=(.0 if throwable or beam else .13 if gadget_up else .10)*(1.-ads_blend)
 	# ...and the muzzle dipped, so the far end of a long gun (which perspective
 	# pulls toward the centre) also stays in the bottom third at the hip.
-	rotation_target.x-=(.0 if throwable else .03 if kind=="pistol" else .08 if short_gun else .16)*(1.-ads_blend)
+	rotation_target.x-=(.0 if throwable or beam else .03 if kind=="pistol" else .08 if short_gun else .16)*(1.-ads_blend)
 	if sprint:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
 	var reload_style=str(w.get("reload_style",""))
 	# Round-by-round loads (shells, break-action, revolvers) hold one steady
@@ -734,8 +738,17 @@ const FP_FOREARM_MELEE={"R":Vector3(.35,-.35,.87),"L":Vector3(-.35,-.35,.87)}
 # Round 8: a gun hand's forearm continues the hand instead of running along a
 # fixed line; the (hidden) shoulder is placed behind and below the elbow in
 # this direction (elbow -> shoulder, camera space) so the elbow is reachable.
-const FP_UPPER={"R":Vector3(.05,-.35,.94),"L":Vector3(-.05,-.35,.94)}
+const FP_UPPER={"R":Vector3(.05,-.55,.83),"L":Vector3(-.05,-.55,.83)}
 const FOLLOW_LOAD_BEND=.5 # share of the wrist bend allowed back while a gun is held sideways to load
+# Round 9: the forearm is not the straight continuation of the hand but tilts
+# FOLLOW_BEND below it (the elbow lower, as the user drew it), and keeps at
+# least FOLLOW_DROP of slope below the horizon (a raked grip would otherwise
+# send it up through the stock).
+const FOLLOW_BEND=.45
+const FOLLOW_DROP=.20
+const FOLLOW_BEND_DUAL=.22
+const FOLLOW_DROP_DUAL=.08
+const FP_UPPER_DUAL_X=.35 # DUET: shoulders further out, the arms open to both sides
 static func fp_forearms(hand:float,steep:bool=false,melee:bool=false,hold:String="rifle") -> Dictionary:
 	var f:Dictionary=FP_FOREARM_MELEE if melee else FP_FOREARM_STEEP if steep else FP_FOREARM_PISTOL if hold=="pistol" else FP_FOREARM_ITEM if hold=="item" else FP_FOREARM
 	return {"R":Vector3(f.R.x*hand,f.R.y,f.R.z),"L":Vector3(f.L.x*hand,f.L.y,f.L.z)}
@@ -868,8 +881,11 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		# A gun turned sideways to load (revolver gate, shells, break action) keeps a
 		# bent wrist: fully straight, the forearm would cross the view from the side.
 		var w=1.-FOLLOW_LOAD_BEND*smoothstep(0.,1.,load_hold)
-		follow.R={"upper":Vector3(FP_UPPER.R.x*handedness,FP_UPPER.R.y,FP_UPPER.R.z),"weight":w}
-		if state.hold=="pistol" and state.two_hands:follow.L={"upper":Vector3(FP_UPPER.L.x*handedness,FP_UPPER.L.y,FP_UPPER.L.z),"weight":w}
+		var paired=state.hold=="pistol" and state.two_hands
+		# DUET: the arms open out to both sides with the wrists bent less.
+		var bend=FOLLOW_BEND_DUAL if paired else FOLLOW_BEND;var drop=FOLLOW_DROP_DUAL if paired else FOLLOW_DROP;var out=FP_UPPER_DUAL_X if paired else 0.
+		follow.R={"upper":Vector3((FP_UPPER.R.x+out)*handedness,FP_UPPER.R.y,FP_UPPER.R.z),"weight":w,"bend":bend,"drop":drop}
+		if paired:follow.L={"upper":Vector3((FP_UPPER.L.x-out)*handedness,FP_UPPER.L.y,FP_UPPER.L.z),"weight":w,"bend":bend,"drop":drop}
 	view_body.set_meta("fp_follow",follow)
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	if throwing and item_up and throw_start.has("wrist"):

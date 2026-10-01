@@ -159,7 +159,7 @@ func first_person_only():
 const FP_FOREARM_R=.086
 const FP_UPPERARM_R=.09
 const FP_BODY_SCALE=2.0
-const FP_WRIST_TAPER=.62
+const FP_WRIST_TAPER=.88 # 1.4.4 round 9: wrists ~40% thicker than .62 (they read too thin, bare arms most)
 # First person: how far the support hand may slide back along a handguard /
 # off a vertical grip before the shoulder stretches instead.
 const FP_SLIDE=.06

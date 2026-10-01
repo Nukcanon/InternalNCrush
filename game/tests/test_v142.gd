@@ -96,7 +96,7 @@ func run():
 	var chime=Catalog.get_weapon("heavy_pistol");var duet=Catalog.get_weapon("dual_pistols")
 	expect(chime.reload_style=="revolver" and chime.single_load and is_equal_approx(MagazineReload.duration(chime),float(chime.reload)/float(chime.mag)),"revolvers load round by round within the same total time")
 	expect(not MagazineReload.chambered(chime) and not MagazineReload.chambered(duet) and MagazineReload.chambered(Catalog.get_weapon("a1")),"only magazine guns keep a chambered +1")
-	expect(ReloadMotion.mag_offset(.4).y<-.5 and ReloadMotion.mag_offset(0.).length()<.001 and ReloadMotion.mag_offset(.9).length()<.001,"the magazine leaves the view mid-reload and is back when seated")
+	expect(ReloadMotion.mag_offset(.4).y<-.2 and ReloadMotion.mag_offset(.4).y>-.4 and ReloadMotion.mag_offset(0.).length()<.001 and ReloadMotion.mag_offset(.9).length()<.001,"the magazine comes out below the well mid-reload (1.4.4: staying in view in the hand) and is back when seated")
 	# Gun lengths: sniper > DMR > MG > AR > shotgun > SMG, longer with more damage.
 	var length=func(id:String) -> float:
 		var gun=GunModel.new();root.add_child(gun);gun.build(Catalog.get_weapon(id),false)

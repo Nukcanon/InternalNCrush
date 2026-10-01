@@ -353,6 +353,26 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 				# e.g. a revolver turned sideways to load keeps a bent wrist, or its
 				# forearm would cross the view from the side)}
 				var f:Dictionary=follow[side];var line:Vector3=-target.basis.y.normalized()
+				# Round 9: "bend" tilts the forearm below the hand's line (the elbow
+				# lower, the wrist moderately bent as the user drew it: a fully
+				# straight wrist ran the forearm up through a raked grip's stock), and
+				# "drop" is the least slope below the horizon the forearm then keeps.
+				var bend=float(f.get("bend",0.));var down:Vector3=-cam.global_basis.y.normalized()
+				var perp:Vector3=down-line*line.dot(down)
+				if bend>0. and perp.length_squared()>.0001:
+					perp=perp.normalized()
+					var tilted:Vector3=(line*cos(bend)+perp*sin(bend)).normalized()
+					var drop=float(f.get("drop",0.))
+					if drop>0. and tilted.dot(down)<sin(drop):
+						# Tilt further (within the same plane) until the slope is reached.
+						var want=sin(drop);var lo=bend;var hi=PI*.5
+						for _i in range(16):
+							var mid=(lo+hi)*.5
+							var trial:Vector3=(line*cos(mid)+perp*sin(mid)).normalized()
+							if trial.dot(down)<want:lo=mid
+							else:hi=mid
+						tilted=(line*cos(hi)+perp*sin(hi)).normalized()
+					line=tilted
 				var lines:Dictionary=hero.get_meta("fp_forearm",{})
 				if float(f.get("weight",1.))<1. and lines.has(side):
 					line=line.slerp((cam.global_basis*Vector3(lines[side])).normalized(),1.-float(f.weight)).normalized()
@@ -565,6 +585,11 @@ const THUMB_RAISED_BASE=.95 # swung well forward from the base so it lies along 
 # A thumb holding a small round against the index finger: nearly straight,
 # lying along the round beside the index (round 6: it bent over the round).
 const THUMB_PINCH=[0.,.3,.65] # ...with its last joint bent forward onto the round
+# Round 9: the pinching thumb lies forward along the round beside the index
+# finger (base swung toward the fingers; positive flexion swings it back toward
+# the wrist on this rig, so the thumb stood up and back - measured with
+# tools/review_hands.gd thumbprobe: -.7 points it along -Z of the gun).
+const THUMB_PINCH_BASE=-.7
 const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
@@ -608,7 +633,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			# up, bent back away from the palm.
 			var pinch=style=="hold" and maxf(half.x,maxf(half.y,half.z))<.03
 			if pinch:
-				angles[0]=float(THUMB_BASE.get(style,.15))+.3
+				angles[0]=THUMB_PINCH_BASE
 				for i in range(1,bones.size()):angles[i]=THUMB_PINCH[mini(i,THUMB_PINCH.size()-1)]
 			if not raised and not pinch:
 				for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
