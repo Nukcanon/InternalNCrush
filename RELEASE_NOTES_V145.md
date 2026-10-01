@@ -101,6 +101,7 @@
 
 ### 최적화
 - 플레이 중 끊김: 3인칭 캐릭터(봇·다른 플레이어)가 총을 바꾸거나 재장전할 때 손가락 계산이 한 프레임에 50~70ms 걸리던 것을, 캐릭터당 한 프레임에 한 손만 새로 계산하고 재장전 중인 손은 덜 자주·덜 세밀하게 계산하게 했습니다. 20초 봇전 측정에서 손가락 계산이 33ms를 넘지 않습니다.
+- 표식된 적이 무기를 바꾸면 윤곽선 처리가 빠진 부품을 계속 찾느라 오류가 쏟아지던 문제(맵 13·31에서 수백 줄)를 고쳤습니다. 32개 맵 봇전에서 오류 0건.
 
 ## 검증
 - 4차: `tests/test_v145.gd` 54개 검사, `test_v141`·`v142`·`v144`·`native_finish_v124`·`update_v123`·`v113` 통과, `audit_layout_v125` 0건, `audit_overlaps` 0건. 도구: `tools/review_throw.gd`(투척), `tools/review_heal_plus.gd`(치료 +), `tools/review_bipod.gd`, `tools/review_props_v145.gd`(소품), `tools/review_gear_screen.gd`(장비 화면), `tools/probe_muzzle_line.gd`(총구 정렬), `tools/probe_turret_cover.gd`(포탑 엄폐), `tools/probe_hitches.gd`(끊김).
