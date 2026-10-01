@@ -208,10 +208,10 @@ static func grip_offset(hero:HeroCharacter,side:String,style:String,ws:Dictionar
 		if style=="pistol":h.z=fit.half_s
 		else:h.y=fit.half_s
 		shape.half=h;shape.round=minf(float(ws.round),minf(h.x,minf(h.y,h.z)));centre=fit.centre
-	var offset=placed_on_surface(hero,side,style,wrist_offset(hero,side,style,shape,hand_scale)+centre,hand_scale,contact,ws.has("trigger"))
+	var offset=placed_on_surface(hero,side,style,wrist_offset(hero,side,style,shape,hand_scale)+centre,hand_scale,contact,ws.has("trigger"),Vector3(ws.get("trigger",Vector3.INF)),centre.y+float(shape.half.y) if style=="pistol" else INF)
 	offset_cache[key]=offset
 	return offset
-static func placed_on_surface(hero:HeroCharacter,side:String,style:String,offset:Vector3,hand_scale:float,contact:Dictionary,trigger:bool=false) -> Vector3:
+static func placed_on_surface(hero:HeroCharacter,side:String,style:String,offset:Vector3,hand_scale:float,contact:Dictionary,trigger:bool=false,trigger_point:Vector3=Vector3.INF,grip_top:float=INF) -> Vector3:
 	var frame:Basis=FRAMES.get(style,FRAMES.pistol)[side];var normal:Vector3=-frame.z
 	var k_hand:Dictionary=knuckles(hero,side)
 	# Palm surface points (hand space, bone units): under the knuckles and mid palm.
@@ -251,12 +251,26 @@ static func placed_on_surface(hero:HeroCharacter,side:String,style:String,offset
 			probes.append(kn)
 			for along in [.5,1.]:probes.append(kn+Vector3(0,cos(MIDDLE_TUCK[1])*phalanx*along,-sin(MIDDLE_TUCK[1])*phalanx*along))
 		var down=Vector3(0,-1,0) # handle frame: down the grip
+		# Round 4: first by geometry — the middle finger's knuckle (plus its
+		# radius) must sit below the trigger guard's bar, GUARD_DROP under the
+		# trigger point; short grips (DUET) had the middle finger in the guard.
+		# The index finger's knuckle also stays at or below the top of the grip
+		# (the web of the hand sits in the grip's top curve; the finger reaches
+		# up along the frame to the trigger from there).
+		if trigger_point!=Vector3.INF and k_hand.has("Middle"):
+			var knuckle:Vector3=frame*(Vector3(k_hand.Middle)*hand_scale)+offset
+			var need=knuckle.y+FINGER_RADIUS[1]*hand_scale-(trigger_point.y-GUARD_DROP*k)
+			if grip_top<INF and k_hand.has("Index"):
+				var index:Vector3=frame*(Vector3(k_hand.Index)*hand_scale)+offset
+				need=maxf(need,index.y-grip_top)
+			if debug_contact:print("GUARD ",contact.field.id," ",side," knuckle_y ",snappedf(knuckle.y,.001)," trigger_y ",snappedf(trigger_point.y,.001)," grip_top ",snappedf(grip_top,.001)," need ",snappedf(need,.001))
+			if need>0.:offset+=down*minf(need,FIRING_SLIDE*k)
 		var slid=0.
 		for i in range(12):
 			var worst=INF
 			for p in probes:worst=minf(worst,GripField.distance(contact,frame*(p*hand_scale)+offset)-FINGER_RADIUS[2]*hand_scale)
-			if worst>=.002*k or worst>=far or slid>=FIRING_SLIDE*k:break
-			var step=minf(maxf(.003*k,-worst+.001*k),FIRING_SLIDE*k-slid)
+			if worst>=.002*k or worst>=far or slid>=FIRING_PROBE_SLIDE*k:break
+			var step=minf(maxf(.003*k,-worst+.001*k),FIRING_PROBE_SLIDE*k-slid)
 			offset+=down*step;slid+=step
 		return offset
 	# 1.4.4 support fist on a magazine / vertical grip (pistol style, no
@@ -514,8 +528,19 @@ const MIDDLE_TUCK=[0.,1.0,1.1,.8]
 const THUMB_RADIUS=.016
 const WRAP_MARGIN=.0015
 # How far the firing hand may slide down a grip so the middle finger clears the
-# trigger guard (further and the index finger can no longer reach the trigger).
-const FIRING_SLIDE=.014
+# trigger guard. 1.4.4 round 4: far enough for short grips (DUET's small
+# revolver): only the index finger goes in the guard; the middle, ring and
+# little fingers hold the grip, even if the little finger hangs off its end.
+const FIRING_SLIDE=.04
+# ...and how far the surface probes (middle and ring finger bases under the
+# guard) may then slide it on top of that.
+const FIRING_PROBE_SLIDE=.014
+# The trigger guard's bar lies about this far below the trigger point (model metres).
+const GUARD_DROP=.03
+# The firing hand's thumb lies raised along the side of the frame (nearly
+# straight) rather than curling round the back of the grip.
+const THUMB_RAISED=.15
+const THUMB_RAISED_BASE=.6 # swung forward from the base so it lies along the frame, not straight up
 const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
@@ -545,11 +570,20 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 		var tip=float(TIP.get(finger,.03))
 		if finger=="Thumb":
 			angles[0]=float(THUMB_BASE.get(style,.15))
-			for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
+			# Firing hand: the thumb rests raised along the frame's side, straight
+			# but for a slight bend, as a pistol or rifle is held; it only curls
+			# round the grip when a straight thumb would run into the gun.
+			var raised=style=="pistol" and trigger!=null
+			if raised:
+				angles[0]=THUMB_RAISED_BASE
+				for i in range(1,bones.size()):angles[i]=THUMB_RAISED
+				if chain_clearance(sk,bones,angles,tip,dist)<-.004:raised=false
+			if not raised:
+				for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
 			# On the real surface the thumb may run into the receiver / tube above
 			# the grip: swing it further across (round the handle) until it lies
 			# clear, keeping the least swing that works.
-			if not contact.is_empty() and chain_clearance(sk,bones,angles,tip,dist)<-.004:
+			if not raised and not contact.is_empty() and chain_clearance(sk,bones,angles,tip,dist)<-.004:
 				var best=angles.duplicate();var best_clear=chain_clearance(sk,bones,angles,tip,dist)
 				for extra in [.25,.5,.75,1.,-.25]:
 					var trial=angles.duplicate();trial[0]=float(THUMB_BASE.get(style,.15))+extra

@@ -704,19 +704,30 @@ const VIEW_BODY_OFFSET=Vector3(0,-.03,.10)
 # Camera space, right-handed (x mirrors for a left-handed player).
 const FP_SHOULDER={
 	"rifle":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.45,-.82,-.30)},
-	"pistol":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.30,-.80,.10)},
+	# Round 4, pistols: the shoulder sits further back (and less far below) so
+	# the arm extends toward the pistol with the forearm near the barrel line;
+	# from the rifle anchor the forearm had to rise steeply to the grip and the
+	# wrist bent past its limit.
+	"pistol":{"R":Vector3(.45,-.62,.45),"L":Vector3(-.45,-.62,.45)},
 	"item":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.30,-.78,.06)}}
 # 1.4.4 round 3: the support forearm leaves the handguard down and out to the
 # left, so the arm opens away from the gun instead of lying along it (the
 # support shoulder also sits further forward, so that arm is bent rather than
 # straight along the shoulder-hand line); the hand itself stays on its grip.
 const FP_FOREARM={"R":Vector3(.35,-.55,.75),"L":Vector3(-.85,-.30,.45)}
+# Round 4, pistols (one in each hand for DUET): the forearm runs nearly along
+# the barrel, as a pistol is held — the steeper rifle lines asked the wrist
+# for a 75-100 degree bend, past its limit, so the hand turned off its grip
+# (knuckles up at the trigger, the index and middle fingers in the guard).
+const FP_FOREARM_PISTOL={"R":Vector3(.30,-.35,.88),"L":Vector3(-.30,-.35,.88)}
+# Two-handed items (kits, plates) in front of the chest.
+const FP_FOREARM_ITEM={"R":Vector3(.35,-.55,.75),"L":Vector3(-.35,-.50,.78)}
 # Raised fist (melee, throws): the forearm comes up nearly vertically.
 const FP_FOREARM_STEEP={"R":Vector3(.30,-.88,.36),"L":Vector3(-.30,-.88,.36)}
 # Melee: a shallow forearm from the lower right, fist ahead, blade up.
 const FP_FOREARM_MELEE={"R":Vector3(.35,-.35,.87),"L":Vector3(-.35,-.35,.87)}
-static func fp_forearms(hand:float,steep:bool=false,melee:bool=false) -> Dictionary:
-	var f:Dictionary=FP_FOREARM_MELEE if melee else FP_FOREARM_STEEP if steep else FP_FOREARM
+static func fp_forearms(hand:float,steep:bool=false,melee:bool=false,hold:String="rifle") -> Dictionary:
+	var f:Dictionary=FP_FOREARM_MELEE if melee else FP_FOREARM_STEEP if steep else FP_FOREARM_PISTOL if hold=="pistol" else FP_FOREARM_ITEM if hold=="item" else FP_FOREARM
 	return {"R":Vector3(f.R.x*hand,f.R.y,f.R.z),"L":Vector3(f.L.x*hand,f.L.y,f.L.z)}
 # Throwables at rest (view space, right-handed): held at the lower right where
 # the grenade and the hand under it are seen.
@@ -730,7 +741,9 @@ const THROW_RELEASE=.55 # phase at which the grenade leaves the hand
 # across the body before coming back to the hold. Keys are [phase, mount
 # position, mount euler]; the first and last are the pose the throw started
 # from, so there is no jump at either end.
-const THROW_KEYS=[[.0,Vector3.ZERO,Vector3.ZERO],[.26,Vector3(.34,.02,-.36),Vector3(1.05,-.30,-.40)],[.55,Vector3(.06,-.05,-.60),Vector3(-.45,.05,.05)],[.76,Vector3(-.02,-.30,-.50),Vector3(-1.05,.25,.30)],[1.,Vector3.ZERO,Vector3.ZERO]]
+# (Round 4: the hand turns down much less after the release; the wrist stayed
+# bent far below the forearm through the follow-through.)
+const THROW_KEYS=[[.0,Vector3.ZERO,Vector3.ZERO],[.26,Vector3(.34,.02,-.36),Vector3(1.05,-.30,-.40)],[.55,Vector3(.06,-.05,-.60),Vector3(-.20,.05,.05)],[.76,Vector3(-.02,-.30,-.50),Vector3(-.50,.20,.25)],[1.,Vector3.ZERO,Vector3.ZERO]]
 static func throw_path(phase:float,start:Array=[THROW_HOLD,Vector3.ZERO]) -> Array:
 	var keys=[]
 	for k in THROW_KEYS:keys.append([float(k[0]),Vector3(start[0]) if Vector3(k[1])==Vector3.ZERO else Vector3(k[1]),Vector3(start[1]) if Vector3(k[2])==Vector3.ZERO else Vector3(k[2])])
@@ -748,7 +761,7 @@ static func throw_path(phase:float,start:Array=[THROW_HOLD,Vector3.ZERO]) -> Arr
 # space, right-handed): the forearm stands up under the cocked hand, lies back
 # toward the body as the arm extends, and rises to the right (elbow up and
 # out) in the follow-through across the body.
-const THROW_FOREARM=[[.0,Vector3(.35,-.75,.56)],[.26,Vector3(.40,-.88,.25)],[.55,Vector3(.45,-.75,.48)],[.76,Vector3(.60,-.55,.58)],[1.,Vector3(.35,-.75,.56)]]
+const THROW_FOREARM=[[.0,Vector3(.35,-.55,.75)],[.26,Vector3(.40,-.88,.25)],[.55,Vector3(.45,-.75,.48)],[.76,Vector3(.60,-.55,.58)],[1.,Vector3(.35,-.55,.75)]]
 static func throw_forearm(phase:float) -> Vector3:
 	phase=clampf(phase,0.,1.)
 	for i in range(THROW_FOREARM.size()-1):
@@ -827,7 +840,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	state.hands=1.;state.sprint=false
 	view_body.set_meta("fp_shoulders",fp_shoulders(str(state.hold),float(handedness)))
 	# Melee: the arm comes in low from the side; throws: the forearm follows the swing.
-	var lines:Dictionary=fp_forearms(float(handedness),false,melee_up)
+	var lines:Dictionary=fp_forearms(float(handedness),false,melee_up,str(state.hold))
 	if throwing:
 		var line:Vector3=throw_forearm(1.-(float(p.throw_until)-now)/THROW_TIME)
 		lines.R=Vector3(line.x*handedness,line.y,line.z)

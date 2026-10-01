@@ -103,7 +103,19 @@ func audit(h:HeroCharacter,item:Node3D,label:String):
 			var handle=item.right_grip.global_transform;var ws=HeroIK.world_shape(handle,"pistol",shapes.R)
 			var chain:Array=HeroIK.finger_chains(h,"R").Index
 			var tip=h.bone_world(chain[chain.size()-1])*Vector3(0,.02,0)
-			line+=" trigger=%.3f"%(Transform3D(handle.basis.orthonormalized(),handle.origin).affine_inverse()*tip).distance_to(ws.trigger)
+			var to_h=Transform3D(handle.basis.orthonormalized(),handle.origin).affine_inverse()
+			line+=" trigger=%.3f"%(to_h*tip).distance_to(ws.trigger)
+			if "fingers" in only:
+				# Handle frame (y up the grip, -z forward): the trigger and each finger's knuckle / joints / tip.
+				var fl="FINGERS "+label+" trigger=%s"%str(Vector3(ws.trigger).snapped(Vector3.ONE*.001))
+				var chains:Dictionary=HeroIK.finger_chains(h,"R")
+				for f in ["Index","Middle","Ring","Pinky","Thumb"]:
+					if not chains.has(f):continue
+					var pts=[]
+					for b in chains[f]:pts.append((to_h*h.bone_world(b).origin).snapped(Vector3.ONE*.001))
+					pts.append((to_h*(h.bone_world(chains[f][-1])*Vector3(0,HeroIK.TIP.get(f,.028),0))).snapped(Vector3.ONE*.001))
+					fl+=" | %s %s"%[f,str(pts)]
+				print(fl)
 		for side in ["R","L"]:
 			var g=item.grip(side)
 			if g:line+=" %s_wrist_to_grip=%.3f"%[side,h.bone_world(h.bone["Wrist."+side]).origin.distance_to(g.global_position)]
@@ -268,6 +280,7 @@ func run():
 			if not wanted(label):continue
 			if hand<0 and not c[0] in ["rifle-hip","comet-reload45","tether","grenade-cook","pistol-hip","medkit","link","laser-hip","shotgun-hip","knife-cut","throw60","sniper-hip","quad-reload30"]:continue
 			equip(a,p,c[1],c[2],c[3],c[4]);aim.call(false);await settle([a])
+			if "ikdebug" in only and is_instance_valid(a.view_body):a.view_body.set_meta("ik_debug",true);await settle([a],1);a.view_body.remove_meta("ik_debug")
 			var extra:String=c[5]
 			if extra=="aim":aim.call(true);await settle([a])
 			elif extra.begins_with("reload:"):reload_at(p,c[3],float(extra.split(":")[1]));await settle([a],6)

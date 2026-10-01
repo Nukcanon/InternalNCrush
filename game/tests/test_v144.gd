@@ -138,6 +138,14 @@ func run():
 	for i in range(3):a.visual(1./30.,p,g.clock)
 	expect(is_instance_valid(a.view_body) and a.view_body.visible and a.view_body.state.get("two_hands",true)==false,"first-person pistol is held in one hand")
 	expect(a.character.state.get("two_hands",false)==true,"third-person pistol is held in both hands")
+	# --- Round 4: pistol forearm along the barrel, wrist within its limit -----
+	var vb=a.view_body
+	var fore_y:Vector3=vb.bone_world(vb.bone["LowerArm.R"]).basis.y.normalized();var hand_y:Vector3=vb.bone_world(vb.bone["Wrist.R"]).basis.y.normalized()
+	expect(fore_y.angle_to(hand_y)<HeroIK.WRIST_LIMIT-.1,"first-person pistol: the wrist bends %.0f deg, inside its limit (forearm near the barrel line)"%rad_to_deg(fore_y.angle_to(hand_y)))
+	expect(Actor.FP_FOREARM_PISTOL.R.z>.8 and Actor.FP_SHOULDER.pistol.R.z>.3 and Actor.FP_SHOULDER.pistol.L.x<-.3,"pistol forearm line and shoulder anchors (both hands for DUET)")
+	expect(HeroIK.FIRING_SLIDE>=.03 and HeroIK.GUARD_DROP>=.02 and HeroIK.THUMB_RAISED_BASE>.4,"firing hand: middle finger kept under the guard, thumb raised along the frame")
+	expect(is_equal_approx(absf(MeleeVisual.KNIFE_ROLL),PI*.5),"knife rolled a quarter turn: edge forward")
+	expect(Vector3(Actor.THROW_KEYS[3][2]).x>-.6 and Vector3(Actor.THROW_KEYS[2][2]).x>-.3,"throw: the hand no longer turns far down after the release")
 	# --- Round 3: guns to the shooting side, support arm out, throwables -----
 	expect(Actor.FP_FOREARM.L.x<-.6 and Actor.FP_FOREARM.L.z<.55 and Actor.FP_SHOULDER.rifle.L.x<-.35,"support forearm leaves the handguard down and to the left (shoulder out left)")
 	p.slot=0;p.primary="a1";p.mag["a1"]=30

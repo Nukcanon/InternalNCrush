@@ -6,6 +6,7 @@ extends Node3D
 ## handle marker (hammer grip, blade forward); in third person the tool rides the
 ## right hand bone while the hero plays its slash clip.
 var tool=false
+const KNIFE_ROLL=PI*.5 # about the blade: the edge forward in the fist
 var in_hand=false # third person: mounted on the hand bone, no swing pose
 var pivot:Node3D
 var palm:Marker3D
@@ -39,7 +40,9 @@ func build(wrench:bool,_role:int,first_person:bool):
 	in_hand=true
 	# Hand-bone mount (wrist frame: +Y fingers, -Z palm, -X thumb): the handle
 	# sits in the palm and the blade leaves the fist on the thumb side.
-	pivot.rotation=Vector3(0,0,PI*.5);pivot.position=Vector3(0,.085,-.03)
+	# Round 4: the knife is rolled a quarter turn about the blade so its cutting
+	# edge faces forward (away from the player), the spine back toward the eye.
+	pivot.basis=Basis(Vector3(0,0,1),PI*.5)*(Basis(Vector3(0,1,0),KNIFE_ROLL) if not tool else Basis.IDENTITY);pivot.position=Vector3(0,.085,-.03)
 	pose(-1.)
 func grip(_side:String) -> Node3D:return palm
 ## 1.4.4 first-person swing: the wrist's place in camera space (right-handed;
