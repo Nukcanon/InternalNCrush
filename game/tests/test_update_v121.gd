@@ -34,7 +34,7 @@ func run():
 	# 1.4.4: the first-person tool rides the hand; the arm is swung (the wrist
 	# path) from a wind-up beside the head to a low cut across the view.
 	var melee=MeleeVisual.new();root.add_child(melee);melee.build(false,0,true)
-	expect(melee.in_hand and melee.pivot.position.is_equal_approx(Vector3(0,.085,-.03)),"first-person tool is mounted in the fist")
+	expect(melee.in_hand and melee.pivot.position.is_equal_approx(MeleeVisual.FIST_HOLLOW) and MeleeVisual.FIST_HOLLOW.y>.1,"first-person tool is mounted in the hollow of the fist")
 	var high=MeleeVisual.swing_wrist(MeleeCombat.CONTACT_START);var low=MeleeVisual.swing_wrist(MeleeCombat.CONTACT_END)
 	expect(high.x>low.x and high.y>low.y,"cut travels upper-right to lower-left")
 	expect(MeleeVisual.swing_wrist(MeleeCombat.DURATION).is_equal_approx(MeleeVisual.swing_wrist(-1.)),"single swing returns to ready")

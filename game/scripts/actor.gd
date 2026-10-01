@@ -812,7 +812,13 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		if not throw_start.has("wrist"):throw_start.wrist=Transform3D(throw_start.frame).affine_inverse()*view_body.bone_world(view_body.bone["Wrist.R"])
 		var at:Transform3D=gun.global_transform*Transform3D(throw_start.wrist)
 		var open=smoothstep(THROW_RELEASE,THROW_RELEASE+.12,phase)*(1.-smoothstep(.86,1.,phase))
-		view_body.wrist_override={"R":Transform3D(at.basis.orthonormalized(),at.origin),"curl_R":"hold","open_R":open}
+		# Round 5: the wrist stays as it was at the hold (rigid to the forearm, as
+		# in the melee swing) so the hand turns with the arm instead of bending
+		# at the wrist through the swing; the grenade is re-seated on the hand
+		# after the arm is solved (below), so it never parts from the palm.
+		var first=not throw_start.has("rigid")
+		view_body.wrist_override={"R":Transform3D(at.basis.orthonormalized(),at.origin),"curl_R":"hold","open_R":open,"capture_R":first,"rigid_R":not first}
+		throw_start.rigid=true
 	else:view_body.wrist_override={}
 	if carried!=null and view_body.held!=carried:
 		if carried==bomb_view:view_body.hold(carried,false)
@@ -846,6 +852,12 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		lines.R=Vector3(line.x*handedness,line.y,line.z)
 	view_body.set_meta("fp_forearm",lines)
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
+	if throwing and item_up and throw_start.has("wrist"):
+		# The grenade follows the solved hand: the mount (and the weapon frame the
+		# item hangs from) is placed from the wrist by the frame taken at the hold.
+		var hand:Transform3D=view_body.bone_world(view_body.bone["Wrist.R"])
+		gun.global_transform=hand*Transform3D(throw_start.wrist).affine_inverse()
+		if is_instance_valid(view_mount):view_body.weapon_frame.global_transform=view_mount.global_transform
 	view_head_offset=yaw.inverse()*(view_body.head_position()-view_body.global_position)
 func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false

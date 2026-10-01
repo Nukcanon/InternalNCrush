@@ -290,7 +290,13 @@ func run():
 				# (from the cooked hold, as in play: the throw path starts there)
 				var phase=float(extra.split(":")[1])
 				p.cooking=1;p.grenade_started=g.clock-.4;await settle([a])
-				p.cooking=0;p.throw_until=g.clock+(1.-phase)*Actor.THROW_TIME;await settle([a],3)
+				# ...then the throw is played through from its start to the phase, as
+				# in play (the hand's hold on the grenade is taken at the first frame).
+				p.cooking=0;p.throw_until=g.clock+Actor.THROW_TIME
+				var start=g.clock
+				while g.clock<start+phase*Actor.THROW_TIME-.0001:
+					g.clock=minf(g.clock+1./60.,start+phase*Actor.THROW_TIME);a.visual(1./60.,p,g.clock);await process_frame
+				g.clock=start # the clock is shared with the other cases; the pose keeps
 			elif extra.begins_with("melee:"):
 				p.melee_started=g.clock-float(extra.split(":")[1]);await settle([a],3)
 			elif extra=="beam":

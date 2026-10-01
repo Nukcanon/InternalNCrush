@@ -541,6 +541,7 @@ const GUARD_DROP=.03
 # straight) rather than curling round the back of the grip.
 const THUMB_RAISED=.15
 const THUMB_RAISED_BASE=.6 # swung forward from the base so it lies along the frame, not straight up
+const THUMB_PINCH=[0.,.55,.45] # joint bends of a thumb pinching a small round against the index finger
 const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
@@ -578,12 +579,20 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 				angles[0]=THUMB_RAISED_BASE
 				for i in range(1,bones.size()):angles[i]=THUMB_RAISED
 				if chain_clearance(sk,bones,angles,tip,dist)<-.004:raised=false
-			if not raised:
+			# Round 5: a small round held at the fingertips (revolver / shotgun
+			# loading) is pinched — the thumb closes over it toward the index
+			# finger; the wrap search found nothing to wrap and left it standing
+			# up, bent back away from the palm.
+			var pinch=style=="hold" and maxf(half.x,maxf(half.y,half.z))<.03
+			if pinch:
+				angles[0]=float(THUMB_BASE.get(style,.15))+.15
+				for i in range(1,bones.size()):angles[i]=THUMB_PINCH[mini(i,THUMB_PINCH.size()-1)]
+			if not raised and not pinch:
 				for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
 			# On the real surface the thumb may run into the receiver / tube above
 			# the grip: swing it further across (round the handle) until it lies
 			# clear, keeping the least swing that works.
-			if not raised and not contact.is_empty() and chain_clearance(sk,bones,angles,tip,dist)<-.004:
+			if not raised and not pinch and not contact.is_empty() and chain_clearance(sk,bones,angles,tip,dist)<-.004:
 				var best=angles.duplicate();var best_clear=chain_clearance(sk,bones,angles,tip,dist)
 				for extra in [.25,.5,.75,1.,-.25]:
 					var trial=angles.duplicate();trial[0]=float(THUMB_BASE.get(style,.15))+extra
