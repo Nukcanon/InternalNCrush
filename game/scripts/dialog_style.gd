@@ -45,7 +45,9 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	dialog.add_theme_constant_override("buttons_min_width",roundi(caption));dialog.add_theme_constant_override("buttons_min_height",64 if TouchControls.supported() else 48)
 	for button in buttons:
 		button.custom_minimum_size=Vector2(caption,64 if TouchControls.supported() else 48)
-		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button.clip_text=false
+		# clip_text on: the button's minimum is then exactly the shared custom
+		# minimum (wide enough for every caption), so the pair is always equal.
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button.clip_text=true
 		var affirmative=(button!=positive) if navigation else (button==positive)
 		# 1.4 cartoon skin: green = go ahead / stay, coral = cancel / leave.
 		UiSkin.paint(button,"go" if affirmative else "stop")
@@ -83,7 +85,7 @@ static func fitted_size(dialog:AcceptDialog) -> Vector2i:
 		widest=maxf(widest,b.get_theme_font("font").get_string_size(b.text,HORIZONTAL_ALIGNMENT_LEFT,-1,base).x+b.get_theme_stylebox("normal").get_minimum_size().x+18.)
 		b.custom_minimum_size.x=0.;widest=maxf(widest,b.get_minimum_size().x+18.)
 	dialog.add_theme_constant_override("buttons_min_width",roundi(widest))
-	for b in row_buttons:b.custom_minimum_size.x=widest
+	for b in row_buttons:b.custom_minimum_size.x=widest;b.clip_text=true
 	var content=Vector2(dialog.get_contents_minimum_size())
 	return Vector2i(Vector2(maxf(content.x+24.,300.),content.y+12.)*scale_factor(dialog))
 ## Opens the dialog centred at its fitted size (no first-frame resize).
