@@ -117,9 +117,16 @@ func run():
 	expect(w.origin.distance_to(wrist.origin)<.02,"melee fist reaches the swing point (%.3f m)"%w.origin.distance_to(wrist.origin))
 	expect((w.origin-fore.origin).normalized().angle_to(w.basis.y.normalized())<.35,"melee wrist stays nearly straight (%.0f deg)"%rad_to_deg((w.origin-fore.origin).normalized().angle_to(w.basis.y.normalized())))
 	hero.wrist_override={};hero.queue_free();gun.queue_free();cam.queue_free()
-	# Throw path: winds up above and behind the cooking hand, releases ahead and lower.
-	var wind=Actor.throw_path(.3)[0];var release=Actor.throw_path(.8)[0];var cook=Actor.throw_path(0.)[0]
-	expect(wind.y>cook.y+.2 and wind.z>cook.z+.04 and release.z<wind.z-.15 and release.y<wind.y-.1,"overhand throw: up and back, then forward and down")
+	# Throw path (round 3): starts and ends at the hold it was given, cocks up,
+	# right and nearer the eye, releases ahead and lower, follows through lower
+	# still; the forearm line follows (standing under the cocked hand).
+	var hold=[Vector3(.21,-.25,-.46),Vector3(.1,0,0)]
+	var cook=Actor.throw_path(0.,hold);var cocked=Actor.throw_path(.26,hold)[0];var release=Actor.throw_path(Actor.THROW_RELEASE,hold)[0];var follow=Actor.throw_path(.76,hold)[0];var back=Actor.throw_path(1.,hold)
+	expect(cook[0].is_equal_approx(hold[0]) and cook[1].is_equal_approx(hold[1]) and back[0].distance_to(hold[0])<.01,"throw path starts and ends at the hold pose")
+	expect(cocked.y>hold[0].y+.2 and cocked.x>hold[0].x+.08 and cocked.z>hold[0].z+.05,"throw cocks up, out and back beside the head")
+	expect(release.z<cocked.z-.15 and release.y<cocked.y and follow.y<release.y-.15,"throw releases ahead and lower, then follows through down")
+	expect(Actor.throw_forearm(.26).y<-.8 and Actor.throw_forearm(.55).z>.4 and absf(Actor.throw_forearm(0.).angle_to(Actor.throw_forearm(1.)))<.01,"throwing forearm stands up when cocked and lies back at the release")
+	expect(Actor.THROW_RELEASE>.3 and Actor.THROW_RELEASE<.8 and is_equal_approx(Actor.THROW_TIME,.28),"the grenade leaves mid-throw within GrenadeLogic's .28 s")
 	# --- First-person pistols in one hand, third person in two ---------------
 	var g=load("res://scripts/game.gd").new();root.add_child(g)
 	for i in range(3):await process_frame
@@ -131,6 +138,44 @@ func run():
 	for i in range(3):a.visual(1./30.,p,g.clock)
 	expect(is_instance_valid(a.view_body) and a.view_body.visible and a.view_body.state.get("two_hands",true)==false,"first-person pistol is held in one hand")
 	expect(a.character.state.get("two_hands",false)==true,"third-person pistol is held in both hands")
+	# --- Round 3: guns to the shooting side, support arm out, throwables -----
+	expect(Actor.FP_FOREARM.L.x<-.6 and Actor.FP_FOREARM.L.z<.55 and Actor.FP_SHOULDER.rifle.L.x<-.35,"support forearm leaves the handguard down and to the left (shoulder out left)")
+	p.slot=0;p.primary="a1";p.mag["a1"]=30
+	for i in range(40):a.visual(1./30.,p,g.clock)
+	expect(a.gun.position.x>.28 and a.gun.position.y<-.40,"rifle at the hip sits to the right of the centre (x %.2f)"%a.gun.position.x)
+	p.hand=-1;a.handedness=-1
+	for i in range(40):a.visual(1./30.,p,g.clock)
+	expect(a.gun.position.x<-.28,"left-handed: the rifle sits to the left (x %.2f)"%a.gun.position.x)
+	p.hand=1;a.handedness=1
+	# A frag grenade is held up at the lower right, stays in the hand through the
+	# cock and leaves at the release point; the world projectile is hidden from
+	# its thrower until then.
+	p.slot=2;p.gadget=1;p.gadget_count=3;p.owned_gadget=true
+	for i in range(40):a.visual(1./30.,p,g.clock)
+	expect(a.gun.position.distance_to(Actor.THROW_HOLD)<.02 and a.item_model.visible,"frag grenade held at the throw hold (%s)"%str(a.gun.position.snapped(Vector3.ONE*.01)))
+	var cook_wrist:Vector3=a.view_body.bone_world(a.view_body.bone["Wrist.R"]).origin
+	p.cooking=1;p.grenade_started=g.clock-.4
+	for i in range(10):a.visual(1./30.,p,g.clock)
+	p.cooking=0;p.throw_until=g.clock+Actor.THROW_TIME*(1.-.26)
+	for i in range(3):a.visual(1./30.,p,g.clock)
+	var payload=a.cached_child(a.view_item,"Payload")
+	expect(payload!=null and payload.visible and a.item_model.visible,"grenade still in the hand while the arm is cocked")
+	var cocked_wrist:Vector3=a.view_body.bone_world(a.view_body.bone["Wrist.R"]).origin
+	var local:Transform3D=a.gun.global_transform.affine_inverse()*a.view_body.bone_world(a.view_body.bone["Wrist.R"])
+	expect(local.origin.distance_to(Transform3D(a.throw_start.wrist).origin)<.03,"the hand keeps its hold on the mount through the throw (%.3f m)"%local.origin.distance_to(Transform3D(a.throw_start.wrist).origin))
+	expect(a.gun.position.y>Actor.THROW_HOLD.y+.2 and a.camera.to_local(cocked_wrist).x>a.camera.to_local(cook_wrist).x+.08,"cocked grenade is raised and the hand drawn out to the right (cook %s cocked %s gun %s)"%[str(a.camera.to_local(cook_wrist).snapped(Vector3.ONE*.01)),str(a.camera.to_local(cocked_wrist).snapped(Vector3.ONE*.01)),str(a.gun.position.snapped(Vector3.ONE*.01))])
+	p.throw_until=g.clock+Actor.THROW_TIME*(1.-.7)
+	a.visual(1./30.,p,g.clock)
+	expect(not payload.visible,"grenade has left the hand after the release point")
+	g.grenades.append({"id":9,"owner":1,"pos":Vector3(0,1,0),"velocity":Vector3.ZERO,"until":g.clock+2.,"held":false,"released":g.clock-.05,"cluster":false,"kind":"frag","rotation":Vector3.ZERO})
+	g.combat_fx.sync_grenades(g.grenades,g.clock,1)
+	expect(not g.combat_fx.grenade_nodes[9].visible,"thrower does not see the flying grenade before the release point")
+	g.combat_fx.sync_grenades(g.grenades,g.clock+.2,1)
+	expect(g.combat_fx.grenade_nodes[9].visible,"...and sees it after")
+	g.combat_fx.sync_grenades(g.grenades,g.clock,2)
+	expect(g.combat_fx.grenade_nodes[9].visible,"other viewers see the grenade from the throw")
+	g.grenades.clear();g.combat_fx.sync_grenades(g.grenades,g.clock,1)
+	p.erase("throw_until");p.slot=1
 	# Support cup covers the firing hand: wider and deeper than the grip alone.
 	var side=GunModel.new();side.build(Catalog.get_weapon("pistol"),false);root.add_child(side)
 	var shapes:Dictionary=side.get_meta("grip_shapes",{})

@@ -276,7 +276,7 @@ func update_healing(dt:float):
 		if game.actors.has(owner):from=game.actors[owner].visual_muzzle()
 		if game.actors.has(link.target):to=torso(game.actors[link.target])
 		if from.distance_squared_to(to)>.001:link.node.draw_link(from,to,dt,link.repair,aim(game,owner))
-func sync_grenades(items:Array,now:float):
+func sync_grenades(items:Array,now:float,viewer:int=0):
 	var live={}
 	for item in items:
 		live[item.id]=true
@@ -285,6 +285,10 @@ func sync_grenades(items:Array,now:float):
 			GearModels.grenade(node,str(item.get("kind","frag")))
 			grenade_nodes[item.id]=node
 		var node=grenade_nodes[item.id];node.position=item.pos-Vector3.UP*.08;node.rotation=Vector3.ZERO if item.held else Vector3(item.get("rotation",Vector3.ZERO))
+		# 1.4.4: the thrower's own grenade stays in the first-person hand until
+		# the release point of the throw motion (Actor.THROW_RELEASE); the flying
+		# one is hidden from them until then.
+		node.visible=int(item.owner)!=viewer or (not item.held and now-float(item.get("released",-100.))>=Actor.THROW_TIME*Actor.THROW_RELEASE)
 	for id in grenade_nodes.keys():
 		if not live.has(id):grenade_nodes[id].queue_free();grenade_nodes.erase(id)
 func sync_status(game:Node,now:float):

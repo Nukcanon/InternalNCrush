@@ -1657,7 +1657,7 @@ func update_world_visuals(dt:float):
 	for s in arena.supplies:
 		s.node.visible=s.ready<=clock
 	combat_fx.sync_fields(fields,clock)
-	combat_fx.sync_grenades(grenades,clock)
+	combat_fx.sync_grenades(grenades,clock,local_id)
 	combat_fx.sync_rockets(rockets)
 	combat_fx.sync_bomb(self)
 	combat_fx.sync_status(self,clock)

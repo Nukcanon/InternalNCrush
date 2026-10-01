@@ -236,6 +236,7 @@ func run():
 		["duet-reload25",0,1,"dual_pistols",-1,"reload:.25"],["duet-reload75",0,1,"dual_pistols",-1,"reload:.75"],["sniper2-hip",1,0,"r1",-1,""],["atlas-hip",0,0,"a3",-1,""],
 		# 1.4.4: overhand throw phases and melee swing phases (knife, wrench).
 		["throw15",0,2,"",1,"throw:.15"],["throw35",0,2,"",1,"throw:.35"],["throw60",0,2,"",1,"throw:.6"],["throw85",0,2,"",1,"throw:.85"],
+		["throw05",0,2,"",1,"throw:.05"],["throw26",0,2,"",1,"throw:.26"],["throw45",0,2,"",1,"throw:.45"],["throw70",0,2,"",1,"throw:.7"],["throw95",0,2,"",1,"throw:.95"],["smoke-cook",4,2,"",0,"cook"],
 		["knife-rest",0,MeleeCombat.SLOT,"",-1,"melee:-1"],["knife-wind",0,MeleeCombat.SLOT,"",-1,"melee:.03"],["knife-cut",0,MeleeCombat.SLOT,"",-1,"melee:.1"],["knife-through",0,MeleeCombat.SLOT,"",-1,"melee:.3"],
 		["wrench-rest",3,MeleeCombat.SLOT,"",-1,"melee:-1"],["wrench-cut",3,MeleeCombat.SLOT,"",-1,"melee:.1"],["pistol-reload15",0,1,"pistol",-1,"reload:.15"],["laser-reload30",2,0,"h6",-1,"reload:.3"]]
 	# "allguns": every weapon and tool in first person at the hip (right-handed).
@@ -273,8 +274,10 @@ func run():
 			elif extra=="cook":p.cooking=1;p.grenade_started=g.clock-.4;await settle([a])
 			elif extra.begins_with("throw:"):
 				# Mid-throw: throw_until - now = (1 - phase) * .28
+				# (from the cooked hold, as in play: the throw path starts there)
 				var phase=float(extra.split(":")[1])
-				p.cooking=0;p.grenade_started=g.clock-1.;p.throw_until=g.clock+(1.-phase)*.28;await settle([a],3)
+				p.cooking=1;p.grenade_started=g.clock-.4;await settle([a])
+				p.cooking=0;p.throw_until=g.clock+(1.-phase)*Actor.THROW_TIME;await settle([a],3)
 			elif extra.begins_with("melee:"):
 				p.melee_started=g.clock-float(extra.split(":")[1]);await settle([a],3)
 			elif extra=="beam":
@@ -310,7 +313,7 @@ func run():
 				var wx:Vector3=vb.bone_world(vb.bone["Wrist.R"]).basis.x.normalized()
 				print("BLADE ",label," blade_cam=",(cb*a.melee_view.pivot.global_basis.y.normalized()).snapped(Vector3.ONE*.01)," wrist_x_cam=",(cb*wx).snapped(Vector3.ONE*.01)," pivot_rot=",a.melee_view.pivot.rotation," parent=",a.melee_view.get_parent().name," parent_bone=",a.melee_view.get_parent().bone_name if a.melee_view.get_parent() is BoneAttachment3D else "-")
 			if "debug" in only and is_instance_valid(a.view_body):
-				var vb=a.view_body;var line="JOINTS "+label+" vis=%s tree=%s arms=%s held=%s item=%s"%[str(vb.visible),str(vb.is_visible_in_tree()),str(vb.skeleton.get_node("FPArms").is_visible_in_tree()),str(vb.held),str(a.item_model.visible)]
+				var vb=a.view_body;var line="JOINTS "+label+" vis=%s tree=%s arms=%s held=%s item=%s gun=%s ovr=%s"%[str(vb.visible),str(vb.is_visible_in_tree()),str(vb.skeleton.get_node("FPArms").is_visible_in_tree()),str(vb.held),str(a.item_model.visible),str(a.gun.position.snapped(Vector3.ONE*.01)),str(a.camera.to_local(vb.wrist_override.R.origin).snapped(Vector3.ONE*.01)) if vb.wrist_override.has("R") else "-"]
 				for n in ["UpperArm.L","LowerArm.L","Wrist.L","UpperArm.R","LowerArm.R","Wrist.R"]:
 					line+=" %s=%s"%[n,str(a.camera.to_local(vb.bone_world(vb.bone[n]).origin).snapped(Vector3.ONE*.01))]
 				print(line)

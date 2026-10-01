@@ -37,6 +37,15 @@ static func contact(gun:Node3D,handle:Transform3D) -> Dictionary:
 	if entry.is_empty():return {}
 	var g:Transform3D=gun.global_transform
 	var to_gun=g.affine_inverse()*Transform3D(handle.basis.orthonormalized(),handle.origin)
+	# A pair (DUET) was baked at GunModel.PAIR_SPACING; the second pistol may be
+	# held wider or nearer in play, so a handle on it is mapped back by that shift.
+	var pair:Array=gun.get("dual_guns") if gun.get("dual_guns")!=null else []
+	if pair.size()>1 and is_instance_valid(gun.get("left_grip")):
+		var shift:Vector3=Vector3(pair[1].position)-Vector3(-GunModel.PAIR_SPACING,0,.02)
+		if shift.length_squared()>.000001:
+			var left_local:Vector3=g.affine_inverse()*gun.left_grip.global_position
+			var right_local:Vector3=g.affine_inverse()*gun.right_grip.global_position
+			if to_gun.origin.distance_to(left_local)<to_gun.origin.distance_to(right_local):to_gun.origin-=shift
 	# A handle moved away from the baked grips (third-person reach) has no field.
 	var covered=false
 	for box in entry.boxes:
