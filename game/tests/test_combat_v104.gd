@@ -17,7 +17,10 @@ func run():
 		var w=Catalog.weapons[id]
 		if w.kind!="gun":continue
 		var short_burst=recovery(w,3);var long_burst=recovery(w,12)
-		expect(short_burst<.65 and long_burst>short_burst,"burst recovery rewards short bursts: "+id)
+		# 1.4.5 (the user): pistols are less steady - their spread recovers slower
+		# than the long guns' (0.5-0.8 s after three shots instead of 0.2-0.5 s).
+		var limit=.95 if GunLooks.hold_kind(w)=="pistol" else .65
+		expect(short_burst<limit and long_burst>short_burst,"burst recovery rewards short bursts: "+id)
 		var moving=0;var stopped=0
 		for i in range(120):
 			var motion=BotAgent.combat_strafe(w,10.,i*.05,-3,1,true)
