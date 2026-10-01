@@ -37,6 +37,10 @@ static func apply(dialog:AcceptDialog,theme:Theme,navigation=false):
 	var caption=120.
 	for button in buttons:
 		caption=maxf(caption,button.get_theme_font("font").get_string_size(button.text,HORIZONTAL_ALIGNMENT_LEFT,-1,button.get_theme_font_size("font_size")).x+button.get_theme_stylebox("normal").get_minimum_size().x+18.)
+		# (the control's own minimum too: where the theme font lacks the glyphs and
+		# a fallback font draws them, the measured string is narrower than the
+		# button, and the two buttons came out unequal on the Linux runners)
+		caption=maxf(caption,button.get_minimum_size().x+18.)
 	# AcceptDialog applies these constants to every button on theme changes.
 	dialog.add_theme_constant_override("buttons_min_width",roundi(caption));dialog.add_theme_constant_override("buttons_min_height",64 if TouchControls.supported() else 48)
 	for button in buttons:
@@ -77,6 +81,7 @@ static func fitted_size(dialog:AcceptDialog) -> Vector2i:
 		var base=int(b.get_meta("auto_text_base",b.get_theme_font_size("font_size")))
 		b.set_meta("no_text_fit",true);b.clip_text=false;b.remove_theme_font_size_override("font_size")
 		widest=maxf(widest,b.get_theme_font("font").get_string_size(b.text,HORIZONTAL_ALIGNMENT_LEFT,-1,base).x+b.get_theme_stylebox("normal").get_minimum_size().x+18.)
+		b.custom_minimum_size.x=0.;widest=maxf(widest,b.get_minimum_size().x+18.)
 	dialog.add_theme_constant_override("buttons_min_width",roundi(widest))
 	for b in row_buttons:b.custom_minimum_size.x=widest
 	var content=Vector2(dialog.get_contents_minimum_size())
