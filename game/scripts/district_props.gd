@@ -58,6 +58,13 @@ static func tree_for(index:int,ordinal:int) -> String:
 ## Returns the collision box (local AABB) or an empty AABB for none.
 static func build(node:Node3D,kind:String,index:int,ordinal:int) -> AABB:
 	var material=WorldSurface.material("detail",index,true)
+	# 1.4.5: remodelled vehicles, drums, casks, cable drums and the water tank
+	# (PropModels) replace the old generated set.
+	if PropModels.has(kind):
+		var pk=DistrictFacade.Kit.new()
+		var pbox=PropModels.build(pk,kind,ordinal+index*7)
+		var pv=MeshInstance3D.new();pv.mesh=pk.detail.commit();pv.material_override=material;node.add_child(pv)
+		return pbox
 	if kind.begins_with("vehicle_"):
 		# Parked vehicles (original transport set) as hard cover, length along local X.
 		var holder=Node3D.new();node.add_child(holder)
@@ -112,7 +119,9 @@ static func collision(node:Node3D,kind:String,occupied:AABB) -> Array:
 			for i in range(3):out.append(cylinder(Vector3(-.5+i*.5,0,(i%2)*.2),.22,.7))
 			return out
 		"well":return [cylinder(Vector3.ZERO,.9,.82),block(Vector3(-.86,0,-.06),Vector3(-.74,2.,.06)),block(Vector3(.74,0,-.06),Vector3(.86,2.,.06))]
-		"cable_drum":return [cylinder(Vector3(0,.7,-.35),.7,.1,true),cylinder(Vector3(0,.7,.35),.7,.1,true),cylinder(Vector3(0,.7,0),.42,.7,true)]
+		"cable_drum":return [cylinder(Vector3(0,.7,-.35),.7,.1,true),cylinder(Vector3(0,.7,.35),.7,.1,true),cylinder(Vector3(0,.7,0),.5,.7,true)]
+		# 1.4.5 remodel (PropModels.water_tank): the tank on its saddles
+		"watertank_floor":return [cylinder(Vector3(0,1.08,0),.9,4.4,true),block(Vector3(-.75,0,-2.3),Vector3(.75,.55,2.3))]
 		"cafe_table":return [cylinder(Vector3.ZERO,.5,.77),block(Vector3(-1.,0,-.2),Vector3(-.6,.82,.2)),block(Vector3(.6,0,-.2),Vector3(1.,.82,.2)),cylinder(Vector3(0,.77,0),.05,1.7)]
 		"crate_stack":return [block(Vector3(-.9,0,-.45),Vector3(0,.9,.45)),block(Vector3(.05,0,-.3),Vector3(.85,.8,.5)),block(Vector3(-.75,.9,-.4),Vector3(.05,1.7,.4))]
 		"bench":return [block(Vector3(-.95,0,-.25),Vector3(.95,.51,.25)),block(Vector3(-.95,.51,-.25),Vector3(.95,.95,-.19))]

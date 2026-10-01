@@ -42,6 +42,28 @@ func export_all():
 				"basis":[b.x.x,b.x.y,b.x.z,b.y.x,b.y.y,b.y.z,b.z.x,b.z.y,b.z.z]}
 		out[wid]={"tris":tris,"sides":sides}
 		gun.free()
+	# 1.4.5: held gear (GadgetVisual in its holder, as Actor.holder_for builds
+	# it): one entry per role / variant (and the carried turret), keyed by
+	# GadgetVisual.field_key.
+	for role in range(6):
+		for variant in [0,1,2,8,9]:
+			for turret in ([false,true] if role==3 and variant==0 else [false]):
+				var key=GadgetVisual.field_key(role,variant,turret)
+				var holder=Node3D.new();var item=GadgetVisual.new();holder.add_child(item);item.build(role,variant,true,turret)
+				var tris=[]
+				for m in item.find_children("*","MeshInstance3D",true,false):
+					if m.mesh==null or not visible_chain(m,holder):continue
+					var xf=GunModel.relative(m,holder)
+					for f in m.mesh.get_faces():
+						var p=xf*f;tris.append_array([snappedf(p.x,.00001),snappedf(p.y,.00001),snappedf(p.z,.00001)])
+				var sides={"R":item.right_socket}
+				if item.two_handed:sides.L=item.left_socket
+				var exported={}
+				for side in sides:
+					var o:Vector3=sides[side]
+					exported[side]={"scale":1.,"origin":[o.x,o.y,o.z],"basis":[1,0,0,0,1,0,0,0,1]}
+				if not tris.is_empty():out[key]={"tris":tris,"sides":exported}
+				holder.free()
 	var f=FileAccess.open(WORK+"export.json",FileAccess.WRITE);f.store_string(JSON.stringify(out));f.close()
 	print("GRIP_EXPORT ",out.size()," weapons")
 func pack_all():

@@ -33,6 +33,9 @@ static func build(kind:String) -> Node3D:
 			M.box(body,Vector3(0,-.09,-.30),Vector3(.10,.05,.24),DARK,Vector3.ZERO,.5)
 			M.box(body,Vector3(0,-.15,-.44),Vector3(.05,.15,.065),DARK,Vector3(-.22,0,0),.5)
 			M.box(body,Vector3(0,-.13,-.68),Vector3(.045,.12,.05),DARK,Vector3(.18,0,0),.5)
+			# 1.4.5: a mount block joins the foregrip to the tube (it hung just
+			# below it, rounded corners making a visible gap)
+			M.box(body,Vector3(0,-.068,-.68),Vector3(.05,.03,.08),DARK,Vector3.ZERO,.25)
 			M.box(body,Vector3(0,.095,-.55),Vector3(.03,.06,.08),DARK,Vector3.ZERO,.4)
 			M.box(body,Vector3(0,.13,-.55),Vector3(.024,.018,.05),ACCENT,Vector3.ZERO,.3)
 			M.box(body,Vector3(0,.075,-.30),Vector3(.06,.03,.16),STEEL,Vector3.ZERO,.5)
@@ -55,6 +58,7 @@ static func build(kind:String) -> Node3D:
 			M.box(body,Vector3(0,c,-.45),Vector3(.05,.05,.56),DARK,Vector3.ZERO,.3)
 			M.box(body,Vector3(0,c-.165,-.30),Vector3(.05,.15,.065),DARK,Vector3(-.22,0,0),.5)
 			M.box(body,Vector3(0,c-.15,-.55),Vector3(.045,.11,.05),DARK,Vector3(.18,0,0),.5)
+			M.box(body,Vector3(0,c-.098,-.55),Vector3(.05,.05,.08),DARK,Vector3.ZERO,.25) # 1.4.5: mount up to the lower tubes
 			M.box(body,Vector3(0,c-.125,-.13),Vector3(.03,.03,.30),DARK,Vector3.ZERO,.3)
 			M.box(body,Vector3(0,c-.155,.0),Vector3(.05,.11,.035),STEEL,Vector3.ZERO,.5)
 			M.box(body,Vector3(0,c+.115,-.32),Vector3(.03,.06,.08),DARK,Vector3.ZERO,.4)

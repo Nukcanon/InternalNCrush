@@ -118,6 +118,9 @@ static func build(a:Node,plan:Dictionary):
 	for p in plan.get("loose_props",[]):
 		var id=a.props.size();var item=DistrictArt.loose(index,id);var prop=InteractiveProp.new()
 		var height={"barrel":.485,"crate":.29,"cone":.31,"canister":.325,"tire":.365}[item]
+		# 1.4.5 (the user): junk tyres lie flat or stand, picked per prop (the same
+		# on every peer: from the map and the prop's id)
+		if item=="tire" and InteractiveProp.tyre_lying(index,id):height=InteractiveProp.TYRE_FLAT;prop.rotation=Vector3(PI*.5,float((id*37+index*11)%360)*PI/180.,0.)
 		prop.position=Vector3(p[0],height+(float(p[2]) if p.size()>2 else 0.),p[1]);prop.configure(id,item,a.props_authoritative);a.add_child(prop);a.props[id]=prop
 	a.set_meta("wall_fixtures",fixtures)
 	a.set_meta("dressing_count",plan.props.size()+plan.facades.size());a.set_meta("interactive_count",a.props.size())

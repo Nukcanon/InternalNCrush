@@ -396,6 +396,7 @@ func holder_for(item:Node3D,right:Vector3,left:Vector3,two_handed:bool,grip:Dict
 		styles[side]=str(grip[side].get("style",styles.get(side,"pistol")))
 		if grip[side].has("shape"):shapes[side]=grip[side].shape
 	holder.set_meta("grip_styles",styles);holder.set_meta("grip_shapes",shapes)
+	if item is GadgetVisual and item.field_id!="":holder.set_meta("grip_field_id",item.field_id)
 	return holder
 # Named descendants looked up once per item (the view model asks every frame).
 func cached_child(node:Node,child:String) -> Node:
@@ -528,7 +529,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		tag.visible=allied
 		health_tag.visible=allied and int(viewer.get("role",-1))==5
 		AllyHealthLabels.layout(self);health_tag.text="%d HP"%ceili(p.hp);health_tag.modulate=Color("ff3434").lerp(Color("68ef9c"),clampf(float(p.hp)/Rules.max_hp(p),0.,1.))
-		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("??" if p.team==0 else "??")+p.nick
+		tag.modulate=Color("6ccaff") if p.team==0 else Color("ff9b55");tag.text=("◆ " if p.team==0 else "● ")+p.nick
 		return
 	var reloading=p.reload>now
 	var ads=input_state.ads and p.slot<2 and not reloading and not MeleeCombat.shown(p,now)
@@ -629,7 +630,9 @@ func visual(dt:float,p:Dictionary,now:float):
 			var rack=smoothstep(.78,.85,progress)*(1.-smoothstep(.96,1.,progress))
 			base+=Vector3(.10,-.05,-.06)*rack;rotation_target+=Vector3(-.15,-.25,.55)*rack
 	# Cooking (pin pulled): the grenade comes up and in a little, ready to go.
-	if cooking and throwable:base+=Vector3(-.02,.03,.01);rotation_target+=Vector3(.12,.06,-.10)
+	# (1.4.5: in to the middle for the pin, then drawn back low - Actor.cook_pose)
+	if cooking and throwable:
+		var cook=cook_pose(now-float(p.get("grenade_started",now)));base+=cook[0];rotation_target+=cook[1]
 	var throw_phase=-1.
 	if not throwing:throw_start={}
 	else:
@@ -804,6 +807,91 @@ static func throw_forearm(phase:float) -> Vector3:
 			var t=smoothstep(float(THROW_FOREARM[i][0]),float(THROW_FOREARM[i+1][0]),phase)
 			return Vector3(THROW_FOREARM[i][1]).normalized().slerp(Vector3(THROW_FOREARM[i+1][1]).normalized(),t)
 	return Vector3(THROW_FOREARM[-1][1]).normalized()
+# 1.4.5 throw (the user's reference video): the pin comes out first - the two
+# hands meet low in the middle and the free hand pulls the ring - then the free
+# arm reaches out ahead, open, to aim while the throwing hand drops back and
+# low; the release (THROW_KEYS) comes overhand from there while the free arm
+# sweeps down out of view. Times in seconds of cooking; mount offsets from
+# THROW_HOLD (view space, right-handed).
+const PIN_REACH=.16
+const PIN_PULL=.36
+const COCK_TIME=.60
+const PIN_OFFSET=Vector3(-.12,.08,-.02)
+const PIN_ROT=Vector3(.15,.40,-.05)
+const COCK_OFFSET=Vector3(.13,-.12,.17)
+const COCK_ROT=Vector3(.45,-.20,-.35)
+static func cook_pose(age:float) -> Array:
+	var meet=smoothstep(0.,PIN_REACH,age)*(1.-smoothstep(PIN_PULL,COCK_TIME,age))
+	var cock=smoothstep(PIN_PULL,COCK_TIME,age)
+	return [PIN_OFFSET*meet+COCK_OFFSET*cock,PIN_ROT*meet+COCK_ROT*cock]
+# Free (left) hand keys, view space right-handed: [wrist, finger direction,
+# thumb direction, curl].
+const FREE_IDLE=[Vector3(-.20,-.32,-.50),Vector3(.30,.10,-1.),Vector3(-.05,1.,.15),"flat"]
+const FREE_AIM=[Vector3(-.15,-.13,-.60),Vector3(.12,1.,-.30),Vector3(1.,-.05,.1),"flat"]
+const FREE_DOWN=[Vector3(-.30,-.58,-.36),Vector3(.15,-.35,-1.),Vector3(0.,1.,0.),"rest"]
+const PIN_FINGERS=Vector3(.6,.45,-.65)
+const PIN_THUMB=Vector3(0.,1.,.2)
+const PIN_DRAW=Vector3(-.12,-.07,.03)
+static func free_frame(fingers:Vector3,thumb:Vector3) -> Basis:
+	# left hand: x is the thumb side, y the fingers, the palm faces -z
+	var y=fingers.normalized();var x=(thumb-y*y.dot(thumb)).normalized()
+	return Basis(x,y,x.cross(y))
+static func free_key(k:Array) -> Transform3D:return Transform3D(free_frame(k[1],k[2]),k[0])
+static func blend_key(a:Transform3D,b:Transform3D,t:float) -> Transform3D:
+	return Transform3D(Basis(a.basis.get_rotation_quaternion().slerp(b.basis.get_rotation_quaternion(),t)),a.origin.lerp(b.origin,t))
+var held_ring:MeshInstance3D
+func update_throw_hands(p:Dictionary,now:float,active:bool):
+	if not active:
+		view_body.free_hand={}
+		if is_instance_valid(held_ring):held_ring.visible=false
+		return
+	var cooking=p.get("cooking",0)>0;var throwing=float(p.get("throw_until",-100.))>now
+	var age=now-float(p.get("grenade_started",now)) if cooking else -1.
+	var payload=cached_child(view_item,"Payload") if is_instance_valid(view_item) else null
+	var ring:MeshInstance3D=payload.get_node_or_null("Grenade/PullRing") if payload else null
+	var mirror=Basis.from_scale(Vector3(-1,1,1)) if handedness<0 else Basis.IDENTITY
+	var to_world=func(local:Transform3D) -> Transform3D:
+		var m=Transform3D(mirror*local.basis,Vector3(local.origin.x*handedness,local.origin.y,local.origin.z))
+		var at=view_space.global_transform*m;return Transform3D(at.basis.orthonormalized(),at.origin)
+	var idle=free_key(FREE_IDLE);var aim=free_key(FREE_AIM);var down=free_key(FREE_DOWN)
+	var key:Transform3D=idle;var curl="flat";var in_hand=false
+	if cooking and is_instance_valid(ring):
+		# the pinch meets the ring where it is now (the grenade is moving in)
+		var ring_local:Vector3=view_space.global_transform.affine_inverse()*(ring.global_transform*ring.get_aabb().get_center())
+		ring_local.x*=handedness
+		var pin_basis=free_frame(PIN_FINGERS,PIN_THUMB)
+		var pin=Transform3D(pin_basis,ring_local-pin_basis.y*PINCH_REACH)
+		if age<PIN_REACH:key=blend_key(idle,pin,smoothstep(0.,PIN_REACH,age));curl="flat" if age<PIN_REACH*.6 else "pinch"
+		elif age<PIN_PULL:
+			var pulled=pin.translated(PIN_DRAW*smoothstep(PIN_REACH,PIN_PULL,age))
+			key=pulled;curl="pinch";in_hand=true
+		else:
+			key=blend_key(Transform3D(pin.basis,pin.origin+PIN_DRAW),aim,smoothstep(PIN_PULL,COCK_TIME,age));curl="pinch" if age<PIN_PULL+.08 else "flat";in_hand=age<PIN_PULL+.12
+	elif throwing:
+		var phase=1.-(float(p.throw_until)-now)/THROW_TIME
+		key=blend_key(aim,down,smoothstep(.05,.55,phase)) if phase<.6 else blend_key(down,idle,smoothstep(.6,1.,phase))
+		curl="flat" if phase<.3 else "rest"
+	view_body.free_hand={"L":to_world.call(key),"curl_L":curl}
+	if is_instance_valid(ring):ring.visible=not cooking and not throwing or (cooking and age<PIN_REACH)
+	if in_hand:
+		if not is_instance_valid(held_ring) and is_instance_valid(ring):
+			held_ring=MeshInstance3D.new();held_ring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(held_ring)
+	if is_instance_valid(held_ring):
+		held_ring.visible=in_hand
+		if is_instance_valid(ring) and in_hand:
+			# (the thrown kind's own ring: the frag's and the smoke / flash one differ)
+			if held_ring.mesh!=ring.mesh:held_ring.mesh=ring.mesh;held_ring.material_override=ring.get_surface_override_material(0)
+			held_ring.set_meta("size",absf(ring.global_basis.get_scale().x));held_ring.set_meta("centre",ring.get_aabb().get_center())
+# View-space length from the free hand's wrist to its pinch (thumb and index tips).
+const PINCH_REACH=.085
+# The pulled ring hangs from the free hand's pinch (after the hand is solved).
+func place_held_ring():
+	if not is_instance_valid(held_ring) or not held_ring.visible:return
+	var thumb:Array=HeroIK.finger_chains(view_body,"L").Thumb;var index:Array=HeroIK.finger_chains(view_body,"L").Index
+	var a=view_body.bone_world(thumb[thumb.size()-1]).origin;var b=view_body.bone_world(index[index.size()-1]).origin
+	var wrist=view_body.bone_world(view_body.bone["Wrist.L"])
+	var basis=Basis(wrist.basis.get_rotation_quaternion()).scaled(Vector3.ONE*float(held_ring.get_meta("size",1.)))
+	held_ring.global_transform=Transform3D(basis,(a+b)*.5-basis*Vector3(held_ring.get_meta("centre",Vector3.ZERO)))
 static func fp_shoulders(hold:String,hand:float) -> Dictionary:
 	var set:Dictionary=FP_SHOULDER.get(hold,FP_SHOULDER.pistol)
 	return {"R":Vector3(set.R.x*hand,set.R.y,set.R.z),"L":Vector3(set.L.x*hand,set.L.y,set.L.z)}
@@ -827,7 +915,7 @@ static func hip_base_for(w:Dictionary,gadget_up:bool=false) -> Vector3:
 	# 1.4.5 straight stocks (shotguns, FOLD), as other shooters hold them: the
 	# rear of the gun near the bottom centre, the gun rising across to the
 	# crosshair, the firing arm reaching in from the side.
-	elif str(GunLooks.look(w).get("base","")) in GunModel.STRAIGHT_STOCKS:hip_base=STOCK_HIP
+	elif GunModel.straight_look(GunLooks.look(w)):hip_base=STOCK_HIP
 	elif short_gun_kind(w):hip_base.y=-.37
 	# Guns (not gadgets, not the centred pair) sit further to the shooting side
 	# (the user's 1.4.4 round-3 request) so the middle of the screen is clear.
@@ -839,7 +927,7 @@ static func hip_base_for(w:Dictionary,gadget_up:bool=false) -> Vector3:
 const HIP_CONVERGE=4.
 const HIP_BORE=.08
 static func converge_distance(w:Dictionary) -> float:
-	return STOCK_CONVERGE if str(GunLooks.look(w).get("base","")) in GunModel.STRAIGHT_STOCKS else HIP_CONVERGE
+	return STOCK_CONVERGE if GunModel.straight_look(GunLooks.look(w)) else HIP_CONVERGE
 static func hip_converge(hip:Vector3,distance:float=HIP_CONVERGE) -> Vector2:
 	return Vector2(atan2(hip.x,distance),atan2(-(hip.y+HIP_BORE),distance))
 # View-weapon scale: long guns are compact in the view, pistols keep their
@@ -958,7 +1046,9 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		var w=1.-FOLLOW_LOAD_BEND*smoothstep(0.,1.,load_hold)
 		follow=fp_follow_for(str(state.hold),state.hold=="pistol" and state.two_hands,float(handedness),w,view_weapon)
 	view_body.set_meta("fp_follow",follow)
+	update_throw_hands(p,now,item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p) and (p.get("cooking",0)>0 or throwing or p.slot==2))
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
+	place_held_ring()
 	if throwing and item_up and throw_start.has("wrist"):
 		# The grenade follows the solved hand: the mount (and the weapon frame the
 		# item hangs from) is placed from the wrist by the frame taken at the hold.

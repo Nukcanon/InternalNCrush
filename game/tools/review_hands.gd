@@ -92,10 +92,18 @@ func audit(h:HeroCharacter,item:Node3D,label:String):
 		var g=item.grip(side) if item is GunModel else null
 		var c=GripField.contact(item,g.global_transform) if g else {}
 		var to_g=Transform3D(g.global_transform.basis.orthonormalized(),g.global_transform.origin).affine_inverse() if g else Transform3D()
+		# held gear: its own baked field, in the holder's space (1.4.5)
+		var gear_field=GripField.lookup(str(item.get_meta("grip_field_id",""))) if not item is GunModel else {}
+		if side=="R" and not item is GunModel:line+=" field=%s(%s)"%["yes" if not gear_field.is_empty() else "no",str(item.get_meta("grip_field_id","-"))]
 		for pt in hand_points(h,side):
 			if inside(sets,pt[1]):
 				var fd=GripField.distance(c,to_g*pt[1]) if not c.is_empty() else -1.
+				if not gear_field.is_empty():fd=GripField.sample(gear_field,item.global_transform.affine_inverse()*pt[1])*absf(item.global_transform.basis.get_scale().y)
 				if fd>0.:continue
+				if not gear_field.is_empty():
+					worst=maxf(worst,-fd)
+					if -fd>.004:bad.append("%s:%.0fmm"%[pt[0],-fd*1000.])
+					continue
 				var dd=depth(sets,pt[1]);worst=maxf(worst,dd)
 				if dd>.004:bad.append("%s:%.0fmm"%[pt[0],dd*1000.])
 		line+=" %s_deep=%d(max %.1fmm)%s"%[side,bad.size(),worst*1000.,str(bad) if not bad.is_empty() else ""]
@@ -202,7 +210,7 @@ func posed_profile(h:HeroCharacter,sd:String) -> String:
 # the trigger point of GunModel.handles / the gun's own grip shape).
 func trigger_report(vb:HeroCharacter,label:String):
 	if not is_instance_valid(vb.held) or not vb.held is GunModel:return
-	var gm:GunModel=vb.held;var hd:Dictionary=GunModel.handles(str(gm.look.get("base","")))
+	var gm:GunModel=vb.held;var hd:Dictionary=GunModel.hand_set(gm.look)
 	if not hd.has("trigger"):return
 	var ch:Dictionary=HeroIK.finger_chains(vb,"R");var ib:Array=ch.Index
 	var tipw:Vector3=vb.bone_world(ib[-1])*Vector3(0,HeroIK.TIP.Index,0)
@@ -385,6 +393,29 @@ func run():
 		# Round 8: the revolver reload as a sequence.
 		["revolver-reload10",1,1,"heavy_pistol",-1,"reload:.1"],["revolver-reload20",1,1,"heavy_pistol",-1,"reload:.2"],["revolver-reload40",1,1,"heavy_pistol",-1,"reload:.4"],["revolver-reload50",1,1,"heavy_pistol",-1,"reload:.5"],
 		["revolver-reload75",1,1,"heavy_pistol",-1,"reload:.75"],["quad-reload15",2,0,"h5",-1,"reload:.15"],["quad-reload45",2,0,"h5",-1,"reload:.45"],["quad-reload75",2,0,"h5",-1,"reload:.75"],["quad-reload90",2,0,"h5",-1,"reload:.9"],["pistol-reload30",0,1,"pistol",-1,"reload:.3"],["pistol-reload60",0,1,"pistol",-1,"reload:.6"],["revolver-reload85",1,1,"heavy_pistol",-1,"reload:.85"],["revolver-reload95",1,1,"heavy_pistol",-1,"reload:.95"]]
+	# 1.4.5 "gearaudit": every held gadget / tool / melee item: how deep each
+	# hand's points sink into it (AUDIT lines) plus a close-up of both hands.
+	if "gearaudit" in only:
+		var gear=[["grenade",0,2,"",1],["smoke",4,2,"",0],["flash",4,2,"",1],["medkit",5,2,"",0],["plate",0,2,"",0],["tablet",1,2,"",0],["cover",3,2,"",0],["marker",1,2,"",1],["tether",3,0,"remote",-1],["fix",3,1,"repair",-1],["link",5,0,"m1",-1]]
+		for c in gear:
+			equip(a,p,c[1],c[2],c[3],c[4]);aim.call(false);await settle([a])
+			var item=null
+			if is_instance_valid(a.view_body.held):item=a.view_body.held
+			elif is_instance_valid(a.view_item):item=a.view_item
+			if is_instance_valid(item):audit(a.view_body,item,"gear-"+c[0])
+			else:print("AUDIT gear-",c[0]," (no held item)")
+			await shot("fp-gear-"+c[0]);await closeups(a,"fp-gear-"+c[0])
+		reset(p);p.role=3;p.placing="turret";await settle([a])
+		var placing=null
+		if is_instance_valid(a.view_body.held):placing=a.view_body.held
+		elif is_instance_valid(a.view_item):placing=a.view_item
+		if is_instance_valid(placing):audit(a.view_body,placing,"gear-turret")
+		await shot("fp-gear-turret");await closeups(a,"fp-gear-turret");reset(p)
+		for c in [["knife",0],["wrench",3]]:
+			reset(p);p.role=c[1];p.slot=MeleeCombat.SLOT;a.shown_weapon="";await settle([a])
+			if is_instance_valid(a.melee_view):audit(a.view_body,a.melee_view,"gear-"+c[0])
+			await shot("fp-gear-"+c[0]);await closeups(a,"fp-gear-"+c[0])
+		print("HANDS_REVIEW_OK");quit();return
 	# 1.4.5 "triggerfit": per gun base, search the firing handle's offset (up /
 	# forward, base metres) so the index fingertip is on the trigger and the
 	# middle finger stays below the trigger guard's bar (GUARD_DROP under the

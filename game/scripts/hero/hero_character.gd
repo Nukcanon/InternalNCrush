@@ -670,7 +670,7 @@ func solve_hands(s:Dictionary):
 				var wrist=bone["Wrist."+side];var key="rigid_wrist_"+side
 				if bool(wrist_override.get("capture_"+side,false)) or not has_meta(key):set_meta(key,skeleton.get_bone_pose_rotation(wrist))
 				elif bool(wrist_override.get("rigid_"+side,false)):skeleton.set_bone_pose_rotation(wrist,Quaternion(get_meta(key)))
-			else:hang_arm(side,weight)
+			else:free_or_hang(side,weight)
 		return
 	if not is_instance_valid(held) or not held.visible:return
 	if weight<=.001:return
@@ -691,7 +691,11 @@ func solve_hands(s:Dictionary):
 		var work:Dictionary=ReloadMotion.support(held,s)
 		if not work.is_empty():
 			var handle=held.global_transform*Transform3D(work.get("basis",Basis.IDENTITY),work.position)
+			# (1.4.5: a third-person reloading hand moves every frame - its finger
+			# solves are budgeted, HeroIK.grip_pose)
+			reload_hand=not first_person
 			grip_hand("L",handle,str(work.style),work.get("shape",{}),weight)
+			reload_hand=false
 			return
 	if bool(s.get("two_hands",true)):
 		if left==null:return
@@ -724,7 +728,19 @@ func solve_hands(s:Dictionary):
 		else:HeroIK.solve_arm(self,"L",left.global_transform,lw);HeroIK.curl(self,"L",lw)
 	elif styles.has("R"):
 		# One-handed: the free arm hangs at the side (off screen in first person).
-		hang_arm("L",weight)
+		free_or_hang("L",weight)
+# 1.4.5 throwables (first person, the user's video): the free hand has its own
+# work - open in front at rest, pulling the pin, reaching out to aim - as a
+# wrist transform (world) and a curl: {"L": Transform3D, "curl_L": style}.
+var free_hand={}
+var reload_hand=false
+# Third-person finger budget (HeroIK.grip_pose): the drive (drive_serial) and
+# the new grips solved in it.
+var grip_serial=-1
+var grip_solves=0
+func free_or_hang(side:String,weight:float):
+	if not free_hand.has(side):hang_arm(side,weight);return
+	HeroIK.solve_arm(self,side,free_hand[side],weight,true);HeroIK.curl(self,side,weight,str(free_hand.get("curl_"+side,"rest")))
 # The free arm hanging at the side: fingers down, palm toward the body. In first
 # person it hangs from its fixed shoulder anchor (well below the view).
 func hang_arm(side:String,weight:float):

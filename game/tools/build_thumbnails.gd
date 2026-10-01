@@ -25,8 +25,14 @@ func run():
 		if not missing and "--v119" in OS.get_cmdline_user_args() and FileAccess.file_exists("res://assets/thumbnails/"+str(job[0])+".png") and not (job[0] in ["repair","remote","h4","gadget2_0"] or (Catalog.weapons.has(job[0]) and Catalog.get_weapon(job[0]).slot==1 and Catalog.get_weapon(job[0]).kind=="gun")):continue
 		if not missing and "--v118" in OS.get_cmdline_user_args() and not (job[0] in ["m1","m3","h4","gadget4_0","gadget4_1"] or str(job[0]).ends_with("_8")):continue
 		if "--only-new" in OS.get_cmdline_user_args() and FileAccess.file_exists("res://assets/thumbnails/"+job[0]+".png"):continue
+		# 1.4.5: gadgets again (the plate card showed the old plate; throwables
+		# were small in their cards - the preview now frames items close)
+		if not missing and "--v145" in OS.get_cmdline_user_args() and not str(job[0]).begins_with("gadget"):continue
+		# 1.4.5 round 4: the new bipod (gadget and the guns carrying one), grenades with the pull ring
+		if not missing and "--v145b" in OS.get_cmdline_user_args() and not job[0] in ["h1","h2","gadget2_0","gadget0_1","gadget4_0","gadget4_1"] and not str(job[0]).ends_with("_8"):continue
 		preview.display(job[1],job[2],0,job[3],job[4])
-		if job[1]==1:preview.camera.size*=.65
+		# (1.4.5: the preview frames items close itself - 1.18x, about the old 1.85x * .65)
+		if job[1]==1 and not "--v145b" in OS.get_cmdline_user_args():preview.camera.size*=.65
 		if job[1]==0:preview.camera.position=Vector3(.2,1.40,-4);preview.camera.look_at(Vector3(0,1.25,0));preview.camera.size=1.15
 		await process_frame;await process_frame;await RenderingServer.frame_post_draw
 		generated+=1

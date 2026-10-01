@@ -42,8 +42,26 @@ static func visible_point(game:Node,d:Dictionary,id:int,exclude:Array) -> Vector
 		var point=actor.position+Vector3.UP*(actor.eye().y-actor.position.y)*fraction
 		var flat=Vector2(point.x-from.x,point.z-from.z)
 		if flat.length()>range_for(game,d.level) or not in_arc(d,point):continue
-		if not game.in_smoke_line(from,point) and game.clear_line(from,point,exclude+[actor.get_rid()]):return point
+		if not game.in_smoke_line(from,point) and game.clear_line(from,point,exclude+[actor.get_rid()]) and not behind_cover(game,from,point,exclude+[actor.get_rid()],actor.position.y):return point
 	return Vector3.INF
+# 1.4.5 (the user): turrets of levels 1 and 2 cannot attack over cover; 3 and
+# 4 can. Levels 1 / 2 fire from .85 / 1.1 m, under a deployed cover's 1.25 m,
+# levels 3 / 4 from 1.39 / 1.7 m, over it - but a low turret aiming up still
+# reached a standing enemy's head over the cover. So: looking level at its own
+# firing height toward the target, a turret that meets cover rising above
+# that height does not attack over it.
+static func behind_cover(game:Node,from:Vector3,point:Vector3,exclude:Array,feet:float=-INF) -> bool:
+	var flat=Vector2(point.x-from.x,point.z-from.z);var distance=flat.length()
+	if distance<.6:return false
+	var level_target=Vector3(point.x,from.y,point.z)
+	var hit=game.ray(from,level_target,exclude,1|4|8)
+	if hit.is_empty():return false
+	# the obstacle's top, just inside its face
+	var inside:Vector3=hit.position-Vector3(hit.normal.x,0.,hit.normal.z).normalized()*.05
+	var down=game.ray(Vector3(inside.x,from.y+2.5,inside.z),Vector3(inside.x,from.y-.5,inside.z),exclude,1|4|8)
+	var top=float(down.position.y) if not down.is_empty() else from.y+2.5
+	# (and it covers the body: a stair step under the target's feet is not cover)
+	return top>from.y and top<point.y+.5 and top>feet+.5
 static func upgrade(game:Node,id:int,did:int):
 	if not TurretSelection.eligible(game,id,did):return
 	var p=game.players[id];var d=game.devices[did]

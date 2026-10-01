@@ -1132,7 +1132,7 @@ func fire(id:int):
 	var spray=AimModel.current_spray(w,p,a.aim_progress,bool(a.input_state.crouch))
 	if GadgetLoadout.mounted(p,bool(a.input_state.crouch)):spray*=.4
 	p.shot_time=clock;p.spray_phase=float(p.get("spray_phase",0))+1.;p.spray_index=int(p.spray_phase);p.bloom=minf(float(w.get("bloom_max",1.2)),float(p.get("bloom",0))+float(w.get("shot_bloom",.12)))
-	var origin=a.muzzle_world();var eye=a.eye();var last_end=origin+a.direction()*float(w.get("max_range",300.));var pattern_rotation=randf();var pellet_ends=[];var marks=[];var healed_targets={}
+	var origin=a.muzzle_world();var eye=a.eye();var last_end=origin+a.direction()*float(w.get("max_range",300.));var pattern_rotation=randf();var pellet_ends=[];var marks=[];var healed_targets={};var heal_marks=[]
 	# A visible camera above cover does not permit firing a barrel embedded in that cover.
 	var blocked_barrel=ray(eye,a.desired_muzzle(),[a.get_rid()],1|4|8)
 	for pellet in range(int(w.pellets)):
@@ -1158,7 +1158,13 @@ func fire(id:int):
 			if float(w.get("heal_per_pellet",0.))>0. and not enemies(p,q):
 				var spent=float(healed_targets.get(collider.pid,0.));var cap=float(w.get("heal_cap",100.))
 				var amount=minf(maxf(0.,cap-spent),float(w.heal_per_pellet)*CombatBalance.range_factor(w,dist))
-				healed_targets[collider.pid]=spent+amount;heal_target(id,collider.pid,amount,true);continue
+				# 1.4.5 (PIPER, MENDER): no LINK beam; a green "+" where each pellet
+				# landed on the ally (heal_plus, sent once per shot below).
+				healed_targets[collider.pid]=spent+amount;heal_target(id,collider.pid,amount,true,false)
+				# (at most four per shot, apart: a MENDER volley made one green blob)
+				if amount>0. and heal_marks.size()<4 and heal_marks.all(func(m):return m.distance_to(hit.position)>.12):heal_marks.append(hit.position)
+				continue
+				continue
 			var zone=str(hit.get("zone",CombatBalance.hit_zone(hit.position.y-collider.position.y,collider.body_height,bool(collider.input_state.crouch))))
 			var head=zone=="head";dmg=CombatBalance.damage_at(w,dist,zone)
 			dmg*=R.damage_water(arena.submerged(hit.position),arena.wading(a.position),not arena.wading(collider.position))
@@ -1169,6 +1175,7 @@ func fire(id:int):
 			var surface=mark_surface(hit,origin)
 			if not surface.is_empty():marks.append(surface)
 	if not marks.is_empty():wall_marks_batch.rpc(marks)
+	if not heal_marks.is_empty():effect.rpc("heal_plus",origin,origin,id,-100.,{"points":heal_marks})
 	if has_meta("probe_pellets"):get_meta("probe_pellets").append_array(pellet_ends) # tools/probe_shotgun.gd
 	effect.rpc("shot",origin,last_end,id,clock,{"weapon":wid,"bloom":p.bloom,"spray_phase":p.spray_phase,"pellets":pellet_ends})
 	if int(p.mag[wid])==0:begin_reload(id)
@@ -1737,6 +1744,9 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	if kind=="laser_vent":play_sound("laser_vent",from,owner!=local_id);return
 	if kind=="heal_area":
 		combat_fx.heal_area(from);play_sound("heal",from,owner!=local_id);return
+	if kind=="heal_plus":
+		for point in shot_state.get("points",[]):combat_fx.heal_plus(point)
+		return
 	if kind=="rocket_launch":
 		if actors.has(owner):actors[owner].show_shot(shot_at)
 		play_sound("gun_"+str(shot_state.get("weapon","h4")),from,owner!=local_id);return

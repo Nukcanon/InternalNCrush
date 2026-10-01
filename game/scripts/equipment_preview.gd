@@ -10,7 +10,9 @@ var frame_width=1.3
 var frame_height=1.3
 var preview_kind=0
 func _ready():
-	stretch=true;size_flags_horizontal=Control.SIZE_EXPAND_FILL;size_flags_vertical=Control.SIZE_EXPAND_FILL;custom_minimum_size=Vector2(330,160)
+	# (vertical: as tall as the item needs, not the whole free height - the
+	# description below gets the room)
+	stretch=true;size_flags_horizontal=Control.SIZE_EXPAND_FILL;size_flags_vertical=Control.SIZE_SHRINK_BEGIN;custom_minimum_size=Vector2(330,160)
 	viewport=SubViewport.new();viewport.size=Vector2i(440,330);viewport.transparent_bg=true;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_WHEN_VISIBLE;viewport.msaa_3d=Viewport.MSAA_2X;add_child(viewport)
 	GraphicsOptions.apply_viewport(viewport)
 	stage=Node3D.new();viewport.add_child(stage)
@@ -49,6 +51,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 		# 1.4.2: the armour as this hero wears it (fitted per hero and tier).
 		var c=HeroCharacter.new();model.add_child(c);c.build(role,team,true);c.play("Idle",.4);c.set_armor(clampi(gadget,0,2))
 		model.rotation.y=-.55;camera.position=Vector3(0,1.2,-4);camera.look_at(Vector3(0,1.17,0));camera.size=1.3
+		at_ease(c)
 	elif kind==4:
 		if not is_instance_valid(skill_symbol):skill_symbol=SkillIcon.new();add_child(skill_symbol);skill_symbol.size=Vector2(76,76)
 		skill_symbol.role=role;skill_symbol.show();skill_symbol.queue_redraw()
@@ -70,10 +73,13 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 			if child is Node3D:child.position-=center
 		var diameter=Vector2(bounds.size.x,bounds.size.z).length()
 		var compact=kind==3 or (kind==2 and (gadget==8 or (role==0 and gadget==1) or (role==4 and gadget in [0,1])))
-		var margin=(1.25 if weapon=="remote" else 1.85) if kind==1 else 2.5 if compact else 1.25
-		frame_width=maxf(.3,diameter)*margin
-		frame_height=maxf(.22,bounds.size.y+diameter*.13)*margin
-		custom_minimum_size.y=clampf(440.*frame_height/frame_width,130.,280.)
+		# 1.4.5: framed close (1.85x / 2.5x left the item small in a big empty
+		# box and pushed the description below out of view); the box is only as
+		# tall as the item needs, so the text under it shows.
+		var margin=(1.15 if weapon=="remote" else 1.18) if kind==1 else 1.3 if compact else 1.15
+		frame_width=maxf(.12 if compact else .3,diameter)*margin
+		frame_height=maxf(.12 if compact else .22,bounds.size.y+diameter*.13)*margin
+		custom_minimum_size.y=clampf(330.*frame_height/frame_width,110.,210.)
 		camera.position=Vector3(0,.35,-3);camera.look_at(Vector3.ZERO)
 		# 1.4.5: the TETHER remote is a pad, not a gun: shown from the front and
 		# above, turned a little, so its screen, grips and antenna all read.
@@ -83,6 +89,17 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 	else:
 		custom_minimum_size.y=230.;frame_height=camera.size;frame_width=camera.size*1.35
 	fit_frame()
+# 1.4.5: the armour preview stands at ease (parade rest): both hands behind
+# the small of the back, so the vest is seen whole and no splayed idle hands.
+static func at_ease(c:HeroCharacter):
+	for i in range(3):c.drive(.05,{"hold":"none","pitch":0.})
+	var hips:Vector3=c.bone_world(c.bone["Hips"]).origin;var xf:Basis=c.global_basis.orthonormalized()
+	var scale=c.HEIGHTS[c.role]/1.8
+	# character space: +X its right, -Z ahead; palms back, knuckles across the back
+	var right_at=hips+xf*Vector3(.07,.03,.16)*scale;var left_at=hips+xf*Vector3(-.07,.01,.17)*scale
+	var rb=Basis(Vector3(0,-1,0),Vector3(-1,0,0),Vector3(0,0,-1));var lb=Basis(Vector3(0,1,0),Vector3(1,0,0),Vector3(0,0,-1))
+	c.wrist_override={"R":Transform3D(xf*rb,right_at),"L":Transform3D(xf*lb,left_at),"curl_R":"rest","curl_L":"rest"}
+	for i in range(4):c.drive(.05,{"hold":"none","pitch":0.})
 func _gui_input(event):
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:dragging=event.pressed
 	if event is InputEventMouseMotion and dragging and model:model.rotation.y+=event.relative.x*.013

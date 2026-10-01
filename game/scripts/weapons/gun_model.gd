@@ -16,18 +16,20 @@ static var bases={}
 #  sight: rear-sight point the camera lines up with when aiming without optics.
 # Straight stocks (no pistol grip): shotguns and FOLD.
 const STRAIGHT_STOCKS=["Shotgun","ShortCannon"]
-func straight_wrist() -> bool:return str(look.get("base","")) in STRAIGHT_STOCKS
+func straight_wrist() -> bool:return straight_look(look)
+# (a look with its own pistol grip, e.g. MENDER, is held by that grip)
+static func straight_look(l:Dictionary) -> bool:return str(l.get("base","")) in STRAIGHT_STOCKS and not l.get("attach",[]).has("pistolgrip")
 const HANDLES={
-	"AK":{"right":Vector3(0,-.125,-.231),"tilt":.05,"grip":Vector3(.0215,.058,.04),"round":.015,"trigger":Vector3(0,-.054,-.298),
+	"AK":{"right":Vector3(0,-.14,-.231),"tilt":.05,"index":[.12,.025],"grip":Vector3(.0215,.058,.04),"round":.015,"trigger":Vector3(0,-.054,-.298),
 		# 1.4.2: no handguard on this base (only a bare barrel ahead of the
 		# receiver), so the support hand closes round the upper magazine, which
 		# leans forward 25 degrees. "front": where attachments hang (old grip).
 		"left":Vector3(-.0025,-.17,-.452),"left_style":"pistol","left_tilt":-.43,"fore":Vector3(.0245,.05,.036),"fore_round":.012,
 		"front":Vector3(0,.02,-.67),"sight":Vector3(0,.12,-.36)},
 	# No stock: held forward so the rear grip sits where a rifle's grip would.
-	"SMG":{"frame_offset":Vector3(0,0,-.2),"right":Vector3(0,-.108,-.056),"tilt":.18,"grip":Vector3(.016,.058,.036),"round":.013,"trigger":Vector3(0,-.078,-.135),
+	"SMG":{"frame_offset":Vector3(0,0,-.2),"right":Vector3(0,-.123,-.056),"tilt":.18,"grip":Vector3(.016,.058,.036),"round":.013,"trigger":Vector3(0,-.078,-.135),
 		"left":Vector3(0,-.16,-.292),"left_style":"pistol","left_tilt":-.23,"fore":Vector3(.0195,.05,.05),"fore_round":.016,"sight":Vector3(0,.085,-.30)},
-	"Pistol":{"right":Vector3(0,-.047,.001),"tilt":.2,"grip":Vector3(.011,.036,.024),"round":.009,"trigger":Vector3(0,-.03,-.045),"sight":Vector3(0,.055,0)},
+	"Pistol":{"right":Vector3(0,-.062,.001),"tilt":.2,"grip":Vector3(.011,.036,.024),"round":.009,"trigger":Vector3(0,-.03,-.045),"sight":Vector3(0,.055,0)},
 	"Revolver":{"right":Vector3(0,-.055,.003),"tilt":.45,"grip":Vector3(.011,.032,.026),"round":.009,"trigger":Vector3(0,-.035,-.064),"sight":Vector3(0,.07,-.02),"gate":Vector3(-.024,.018,-.018)},
 	"Revolver_Small":{"right":Vector3(0,-.067,-.008),"tilt":.36,"grip":Vector3(.014,.035,.028),"round":.011,"trigger":Vector3(0,-.042,-.079),"sight":Vector3(0,.07,-.02),"gate":Vector3(-.024,.016,-.015)},
 	# 1.4.2: the firing hand at the front of the stock wrist (the web against the
@@ -36,7 +38,7 @@ const HANDLES={
 	# closes round the stock wrist leaning back with it (tilt .5; laid fully
 	# along the stock the index finger could not reach the trigger), the arm
 	# coming in from the side (Actor.fp_follow_for, STRAIGHT_STOCKS).
-	"Shotgun":{"right":Vector3(0,-.02,-.25),"tilt":.5,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
+	"Shotgun":{"right":Vector3(0,-.02,-.27),"tilt":.5,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
 		# "port": the loading port under the receiver just ahead of the trigger
 		# guard (shells went into the guard before).
 		"left":Vector3(0,-.045,-.84),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60),"port":Vector3(0,-.085,-.50)},
@@ -237,13 +239,20 @@ func batteries():
 # DUET: distance between the two pistols (base-local x), centred on the gun
 # node's origin line of the right pistol.
 const PAIR_SPACING=.26
+const PAIR_CONVERGE=4. # = Actor.HIP_CONVERGE
 func set_pair_spacing(width:float):
 	if dual_guns.size()<2:return
 	dual_rest=[Vector3.ZERO,Vector3(-width,0,.02)]
-	if dual_guns[1].rotation==Vector3.ZERO:dual_guns[1].position=dual_rest[1]+pair_swing_offset(1)
+	if dual_guns[1].rotation.x==0.:dual_guns[1].position=dual_rest[1]+pair_swing_offset(1)
+	# 1.4.5: each pistol turned in so its barrel line crosses the aim line at the
+	# hip's convergence distance (Actor.HIP_CONVERGE, in the guns' own units)
+	pair_toe=atan2(width*.5,PAIR_CONVERGE/maxf(.01,base.scale.x*scale.x))
+	for i in range(dual_guns.size()):
+		if dual_guns[i].rotation.x==0.:dual_guns[i].rotation.y=pair_toe*(1. if i==0 else -1.)
 # 1.4.5 DUET sprint: the pistols swing like running arms, one forward and a
 # little up while the other goes back and down (`amount` metres, +/-).
 var pair_swing_amount=0.
+var pair_toe=0.
 func pair_swing_offset(i:int) -> Vector3:
 	var s=pair_swing_amount*(1. if i==0 else -1.)
 	return Vector3(0,s*.35,-s)
@@ -251,14 +260,22 @@ func set_pair_swing(amount:float):
 	pair_swing_amount=amount
 	if dual_guns.size()<2 or dual_rest.size()<2:return
 	for i in range(dual_guns.size()):
-		if dual_guns[i].rotation==Vector3.ZERO:dual_guns[i].position=dual_rest[i]+pair_swing_offset(i)
+		if dual_guns[i].rotation.x==0.:dual_guns[i].position=dual_rest[i]+pair_swing_offset(i)
 # Moves a base's grip markers onto the measured handles and returns the grip
 # shapes per hand (handle frame, base units): half extents, rounding and the
 # trigger point. Code-built bases (launchers, tools) carry their own shapes.
+# A weapon's hand set-up: its base's handles with the look's own "hand" values.
+static func hand_set(l:Dictionary) -> Dictionary:
+	var h:Dictionary=handles(str(l.get("base",""))).duplicate()
+	for k in l.get("hand",{}):h[k]=l.hand[k]
+	return h
 static func place_handles(node:Node3D,l:Dictionary) -> Dictionary:
 	var right:Marker3D=node.get_node("RightGrip");var left:Marker3D=node.get_node("LeftGrip")
 	var shapes={}
-	var h:Dictionary=handles(str(l.get("base","")))
+	# 1.4.5: every weapon may carry its own hand set-up (GunLooks "hand":
+	# right / tilt / trigger / grip / index ...) over its base's, so tuning one
+	# gun's grip never moves another gun built on the same base.
+	var h:Dictionary=hand_set(l)
 	if node.has_meta("grip_shapes"):
 		for side in node.get_meta("grip_shapes"):
 			var shape:Dictionary=node.get_meta("grip_shapes")[side].duplicate()
@@ -270,6 +287,9 @@ static func place_handles(node:Node3D,l:Dictionary) -> Dictionary:
 		right.position=h.right;right.rotation=Vector3(-float(h.get("tilt",0.)),0,0)
 		shapes.R={"half":h.get("grip",Vector3(.016,.05,.03)),"round":float(h.get("round",.012))}
 		if h.has("trigger"):shapes.R.trigger=right.transform.affine_inverse()*h.trigger
+		# 1.4.5 per base: how far the index may swing up toward the trigger and
+		# how far under the trigger point it aims (HeroIK defaults otherwise)
+		if h.has("index"):shapes.R.index_lift=float(h.index[0]);shapes.R.aim_drop=float(h.index[1])
 	if h.has("left"):
 		left.position=h.left;left.rotation=Vector3(-float(h.get("left_tilt",0.)),0,0)
 		shapes.L={"half":h.get("fore",Vector3(.024,.024,.05)),"round":float(h.get("fore_round",.02))}
@@ -385,4 +405,4 @@ func animate_pair(t:float):
 		var phase=0. if t<0. else clampf((t-.5*i)/.5,0.,1.) if (t>=.5*i and t<.5*(i+1)) else 0.
 		var away=sin(phase*PI)
 		dual_guns[i].position=dual_rest[i]+Vector3(0,-.7,.22)*smoothstep(0.,1.,away)+pair_swing_offset(i)*(1.-away)
-		dual_guns[i].rotation=Vector3(.6*away,0,0)
+		dual_guns[i].rotation=Vector3(.6*away,pair_toe*(1. if i==0 else -1.)*(1.-away),0)

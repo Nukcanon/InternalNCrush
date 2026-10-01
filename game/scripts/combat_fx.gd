@@ -374,6 +374,30 @@ func sync_bomb(game:Node):
 		bomb_defuse_at=game.clock+.38;game.play_sound("bomb_defuse",game.bomb.position,true)
 
 
+# 1.4.5 PIPER / MENDER: a bold green "+" where a healing round lands on an
+# ally, a little random in size and opacity, popping in, rising and fading.
+func heal_plus(pos:Vector3):
+	var node=group(pos+Vector3(randf_range(-.04,.04),randf_range(-.04,.04),randf_range(-.04,.04)))
+	# (the user: each "+" turns slowly at its own speed, either way round, while
+	# it rises and fades; size, rise speed and spin all random within bounds)
+	var size=randf_range(.15,.22);var alpha=randf_range(.6,.95)
+	var mat=StandardMaterial3D.new();mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test=true;mat.albedo_color=Color(.28,1.,.42,alpha);mat.render_priority=2
+	for bar in [Vector2(size,size*.32),Vector2(size*.32,size)]:
+		var quad=MeshInstance3D.new();var mesh=QuadMesh.new();mesh.size=bar;quad.mesh=mesh;quad.material_override=mat;quad.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.add_child(quad)
+	var life=randf_range(.85,1.15);var start=node.position
+	var rise=Vector3(randf_range(-.06,.06),randf_range(.32,.5),randf_range(-.06,.06))
+	var spin=randf_range(1.,2.2)*(1. if randf()<.5 else -1.);var roll0=randf()*TAU
+	var drive=func(t:float):
+		if not is_instance_valid(node):return
+		var camera=node.get_viewport().get_camera_3d() if node.is_inside_tree() else null
+		var facing=camera.global_basis.orthonormalized() if camera else Basis.IDENTITY
+		var grow=minf(1.,t*life/.12);var pop=.3+.7*(1.+.25*sin(PI*grow))*grow if grow<1. else 1.
+		node.position=start+rise*t*life
+		node.global_basis=facing*Basis(Vector3(0,0,1),roll0+spin*t*life).scaled(Vector3.ONE*pop)
+		mat.albedo_color.a=alpha*(1. if t<.4 else 1.-(t-.4)/.6)
+	drive.call(0.)
+	var tween=node.create_tween();tween.tween_method(drive,0.,1.,life);tween.tween_callback(node.queue_free)
 func heal_area(pos:Vector3):
 	var node=group(pos)
 	var ring=MeshInstance3D.new();var mesh=TorusMesh.new();mesh.inner_radius=3.92;mesh.outer_radius=4.;mesh.rings=24;mesh.ring_segments=6;ring.mesh=mesh;ring.material_override=glow(Color(.25,1.,.65,.6));ring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.add_child(ring)

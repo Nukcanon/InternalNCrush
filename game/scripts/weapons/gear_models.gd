@@ -139,7 +139,7 @@ static func turret(parent:Node3D,team:int):
 # --- Held gadgets ----------------------------------------------------------
 ## Returns {"node":Node3D,"right":Vector3,"left":Vector3,"two_handed":bool} in
 ## the node's space. Items sit in front of the chest; grips are wrist targets.
-static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> Dictionary:
+static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false,pull_ring:bool=false) -> Dictionary:
 	var node=Node3D.new();node.name="Payload";parent.add_child(node)
 	var right=Vector3(.03,-.02,.03);var left=Vector3(-.05,-.04,.04);var two=false;var grip={}
 	var accent:Color=HeroStyle.ROLE_ACCENT[clampi(role,0,5)]
@@ -148,7 +148,7 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> 
 		# Carried by its mast (radius .034 at this scale), one fist above the other.
 		return {"node":node,"right":Vector3(0,.0,-.12),"left":Vector3(0,-.13,-.12),"two_handed":true,"grip":sides("pistol",Vector3(.034,.05,.034))}
 	if variant==8 or (role==0 and variant==1):
-		grenade(node,"frag");return {"node":node,"right":GRENADE_GRIP,"left":left,"two_handed":false,"grip":ball()}
+		grenade(node,"frag",pull_ring);return {"node":node,"right":GRENADE_GRIP,"left":left,"two_handed":false,"grip":ball()}
 	if variant==9:
 		M.box(node,Vector3(0,0,-.05),Vector3(.3,.16,.2),Color("6f7d4a"),Vector3.ZERO,.5)
 		M.box(node,Vector3(0,.09,-.05),Vector3(.2,.03,.12),Color("f2c03e"),Vector3.ZERO,.4)
@@ -186,17 +186,15 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> 
 			M.sphere(node,Vector3(.08,.16,-.07),Vector3(.025,.025,.025),accent)
 			right=Vector3(.1,.02,-.08);left=Vector3(-.1,.02,-.08);two=true;grip=sides("pistol",Vector3(.01,.06,.02))
 		2:
-			# Folding bipod: clamp block and two splayed legs.
-			M.box(node,Vector3(0,.02,-.1),Vector3(.1,.05,.08),INK,Vector3.ZERO,.5)
-			for side in [-1,1]:
-				M.box(node,Vector3(side*.05,-.08,-.1),Vector3(.025,.2,.025),STEEL,Vector3(0,0,side*.3),.4)
-				M.sphere(node,Vector3(side*.09,-.18,-.1),Vector3(.04,.03,.04),INK)
+			# 1.4.5 (the user: a cooler bipod): rail clamp with a QD lever, hinge
+			# yoke, two-stage telescoping legs with lock collars, rubber feet.
+			bipod(node,Vector3(0,.045,-.1),1.15,INK,STEEL,accent,false)
 			right=Vector3(0,.02,-.1);grip={"R":{"style":"hold","shape":{"half":Vector3(.05,.025,.04),"round":.02}}}
 		3:
 			var mini=Node3D.new();node.add_child(mini);cover(mini,0,clampi(variant,0,2));mini.scale=Vector3.ONE*.18;mini.position=Vector3(0,-.12,-.18)
 			return {"node":node,"right":Vector3(.28,-.04,-.14),"left":Vector3(-.28,-.04,-.14),"two_handed":true,"grip":sides("pistol",Vector3(.015,.05,.04))}
 		4:
-			grenade(node,"flash" if variant==1 else "smoke");return {"node":node,"right":GRENADE_GRIP,"left":left,"two_handed":false,"grip":ball()}
+			grenade(node,"flash" if variant==1 else "smoke",pull_ring);return {"node":node,"right":GRENADE_GRIP,"left":left,"two_handed":false,"grip":ball()}
 		5:
 			# Medkit: white rounded case with a green cross and handle, carried low
 			# in front of the belly with both hands on its sides.
@@ -223,6 +221,31 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false) -> 
 			right=low+Vector3(.13,0,-.08);left=low+Vector3(-.13,0,-.08);two=true;grip=sides("pistol",Vector3(.012,.07,.045))
 	finish(node)
 	return {"node":node,"right":right,"left":left,"two_handed":two,"grip":grip,"view_lift":MEDKIT_DROP if role==5 else 0.}
+# Bipod (1.4.5): the clamp's top centre at `at`, k = size. Deployed: legs down
+# and splayed with a little forward rake; folded: legs forward along the barrel
+# (the guns that carry one, GunLooks "bipod").
+static func bipod(parent:Node3D,at:Vector3,k:float,dark:Color,steel:Color,accent:Color,folded:bool):
+	# clamp on the rail: block, jaw lip, QD lever on the right, tension knob on the left
+	M.box(parent,at+Vector3(0,-.018,0)*k,Vector3(.058,.03,.068)*k,dark,Vector3.ZERO,.45)
+	M.box(parent,at+Vector3(0,-.004,0)*k,Vector3(.066,.008,.072)*k,steel,Vector3.ZERO,.3)
+	M.box(parent,at+Vector3(.036,-.02,.006)*k,Vector3(.008,.014,.056)*k,accent,Vector3(.18,0,0),.4)
+	M.cylinder(parent,at+Vector3(-.036,-.02,0)*k,.012*k,.012*k,accent,Vector3(0,0,PI/2),-1.,10)
+	# hinge yoke and barrel across
+	var pivot=at+Vector3(0,-.045,0)*k
+	M.box(parent,pivot+Vector3(0,.006,0)*k,Vector3(.07,.02,.04)*k,steel,Vector3.ZERO,.4)
+	M.cylinder(parent,pivot,.011*k,.088*k,dark,Vector3(0,0,PI/2),-1.,10)
+	for side in [-1.,1.]:
+		var rot=Vector3(PI/2-.12,0,side*.07) if folded else Vector3(-.16,0,side*.42)
+		var d=Basis.from_euler(rot)*Vector3.DOWN
+		var root=pivot+Vector3(side*.03,0,0)*k
+		# outer tube, lock collar, inner leg with notches, rubber foot
+		M.cylinder(parent,root+d*.055*k,.0095*k,.11*k,dark,rot,-1.,8)
+		M.cylinder(parent,root+d*.112*k,.0125*k,.014*k,accent,rot,-1.,8)
+		M.cylinder(parent,root+d*.16*k,.0068*k,.09*k,steel,rot,-1.,8)
+		for n in [.135,.155,.175]:M.cylinder(parent,root+d*n*k,.0078*k,.004*k,dark,rot,-1.,8)
+		M.sphere(parent,root+d*.208*k,Vector3(.026,.02,.026)*k,dark.darkened(.25))
+	# return spring between the legs
+	M.cylinder(parent,pivot+Vector3(0,-.012,.0)*k,.0035*k,.05*k,steel,Vector3(0,0,PI/2),-1.,6)
 # Grip styles and shapes (handle frame) for held gear: a fist on each side
 # edge, or a small ball cupped in the palm.
 static func sides(style:String,half:Vector3) -> Dictionary:
@@ -234,12 +257,18 @@ static func ball() -> Dictionary:return {"R":{"style":"hold","shape":{"half":Vec
 const GRENADE_GRIP=Vector3(0,.018,-.02)
 const MEDKIT_DROP=.16
 # Throwables reuse the Toon Shooter (CC0) grenade shapes, repainted.
-static func grenade(parent:Node3D,kind:String):
+static func grenade(parent:Node3D,kind:String,pull_ring:bool=false):
 	# Copy the meshes only: a nested scene instance would not survive template packing.
 	var source:Node3D=GunModel.base_scene("FireGrenade" if kind!="frag" else "Grenade").instantiate()
 	var base=Node3D.new();base.name="Grenade";parent.add_child(base)
+	var ring:MeshInstance3D
 	for original in source.find_children("*","MeshInstance3D",true,false):
 		var copy=MeshInstance3D.new();copy.mesh=original.mesh;copy.transform=original.transform;base.add_child(copy)
+		# 1.4.5: the pull ring is its own piece, pulled off by the free hand
+		# before the throw (Actor.update_throw_hands).
+		var parts=split_ring(original.mesh,"frag" if kind=="frag" else "fire") if pull_ring else []
+		if not parts.is_empty():
+			copy.mesh=parts[0];ring=MeshInstance3D.new();ring.name="PullRing";ring.mesh=parts[1];ring.transform=original.transform;base.add_child(ring)
 	source.free()
 	var palette={"frag":{"Green":Color("6f8a4a"),"DarkGreen":Color("40552c"),"DarkGrey":INK},
 		"smoke":{"Red":Color("8fa7ad"),"DarkRed":Color("56707a"),"Black":INK,"Grey":LIGHT},
@@ -250,6 +279,59 @@ static func grenade(parent:Node3D,kind:String):
 			var color:Color=palette.get(authored.resource_name if authored else "",authored.albedo_color if authored is BaseMaterial3D else Color.GRAY)
 			mesh.set_surface_override_material(s,HeroStyle.tinted(color,false,.2))
 	base.position=Vector3(0,.02,-.02)
+# The ring is the small connected piece at the top of the lever's surface
+# (tools/probe_grenade_parts.gd: 96 triangles about 4 cm across). Returns
+# [body mesh without it, ring mesh] or [] when there is none.
+static var ring_cache={}
+static func split_ring(mesh:Mesh,kind:String) -> Array:
+	var key=kind+str(mesh.get_rid().get_id())
+	if ring_cache.has(key):return ring_cache[key]
+	var result=[]
+	var target=-1
+	for s in range(mesh.get_surface_count()):
+		var mat=mesh.surface_get_material(s)
+		if mat and mat.resource_name==("DarkGrey" if kind=="frag" else "Black"):target=s
+	if target>=0:
+		var arr=mesh.surface_get_arrays(target);var v:PackedVector3Array=arr[Mesh.ARRAY_VERTEX];var idx=arr[Mesh.ARRAY_INDEX]
+		if idx==null or idx.is_empty():
+			idx=PackedInt32Array();for i in range(v.size()):idx.append(i)
+		var parent={};var keys=[]
+		for i in range(v.size()):
+			var k=v[i].snapped(Vector3.ONE*.0005);keys.append(k);parent[k]=k
+		var root_of=func(x):
+			while parent[x]!=x:x=parent[x]
+			return x
+		for t in range(0,idx.size(),3):
+			var a=root_of.call(keys[idx[t]])
+			for j in [1,2]:
+				var b=root_of.call(keys[idx[t+j]])
+				if a!=b:parent[b]=a
+		var boxes={};var tris={}
+		for t in range(0,idx.size(),3):
+			var r=root_of.call(keys[idx[t]])
+			if not boxes.has(r):boxes[r]=AABB(v[idx[t]],Vector3.ZERO);tris[r]=[]
+			tris[r].append(t)
+			for j in range(3):boxes[r]=boxes[r].expand(v[idx[t+j]])
+		var ring_root=null
+		for r in boxes:
+			var box:AABB=boxes[r]
+			if tris[r].size()>=60 and box.get_center().y>.02 and box.size.x<.05 and box.size.y<.05:ring_root=r
+		if ring_root!=null:
+			var keep=PackedInt32Array();var ring_idx=PackedInt32Array()
+			for r in tris:
+				for t in tris[r]:
+					var into=ring_idx if r==ring_root else keep
+					into.append(idx[t]);into.append(idx[t+1]);into.append(idx[t+2])
+			var body=ArrayMesh.new();var ring_mesh=ArrayMesh.new()
+			for s in range(mesh.get_surface_count()):
+				var sa=mesh.surface_get_arrays(s)
+				if s==target:sa[Mesh.ARRAY_INDEX]=keep
+				body.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,sa);body.surface_set_material(s,mesh.surface_get_material(s))
+			var ra=mesh.surface_get_arrays(target);ra[Mesh.ARRAY_INDEX]=ring_idx
+			ring_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,ra);ring_mesh.surface_set_material(0,mesh.surface_get_material(target))
+			result=[body,ring_mesh]
+	ring_cache[key]=result
+	return result
 # --- Armour vest -----------------------------------------------------------
 ## Fitted to the outfit's chest volume (hitboxes.json, Chest bone frame: +Y up
 ## the spine, +Z forward). Tier 1: front/back plates and straps; tier 2 adds

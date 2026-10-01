@@ -7,6 +7,7 @@ const DARK=Color("2e333d")
 const LIGHT=Color("b8c2cc")
 const WOOD=Color("b0763c")
 const MEDIC_WHITE=Color("e9eef2")
+const PISTOL_GRIP_AT=Vector3(0,-.15,-.30) # MENDER's pistol grip centre (Shotgun base units, behind the guard)
 const MEDIC_GREEN=Color("3fcf8e")
 const REMOTE_GRIP_TILT=-.35 # TETHER grips rake back like pistol grips
 static func palette(main:Color,dark:Color,light:Color,wood:Color=WOOD) -> Dictionary:
@@ -40,7 +41,10 @@ static var LOOKS={
 	"TRIO":{"base":"Pistol","scale":1.02,"palette":palette(Color("6a4f63"),DARK,Color("f08fb8"),DARK)},
 	"FEATHER":{"base":"Pistol","scale":.98,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
 	"DUET":{"base":"Revolver_Small","scale":.95,"palette":palette(Color("7a808a"),DARK,Color("ffcf6b"),DARK)},
-	"MENDER":{"base":"Shotgun","scale":.786,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
+	# 1.4.5: remodelled with a pistol grip (the medic's hand went through the
+	# wide stock wrist) and its own hand set-up on that grip.
+	"MENDER":{"base":"Shotgun","scale":.786,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a")),"attach":["pistolgrip"],
+		"hand":{"right":PISTOL_GRIP_AT+Vector3(0,.01,.004),"tilt":.28,"grip":Vector3(.018,.058,.025),"round":.012}},
 	# 1.4.1: launchers are built in code (LauncherModels) so the tubes show the rockets they hold.
 	"COMET":{"launcher":"comet","scale":.9,"palette":{},"shoulder":true},
 	"QUAD":{"launcher":"quad","scale":1.,"palette":{}},
@@ -96,7 +100,8 @@ static func attach(gun:GunModel,l:Dictionary):
 			"drum":
 				MeshFactory.cylinder(part,Vector3(0,top-.13,left_z+.05),.06,.06,accent.darkened(.2),Vector3(0,0,PI/2),-1.,14)
 			"bipod":
-				for side in [-1,1]:MeshFactory.box(part,Vector3(side*.03,top-.1,left_z-.12),Vector3(.014,.16,.014),dark,Vector3(0,0,side*.35),.3)
+				# 1.4.5: the gadget's bipod (GearModels.bipod), folded forward under the barrel
+				GearModels.bipod(part,Vector3(0,top+.014,left_z+.04),1.,dark,dark.lightened(.25),accent,true)
 			"shotmag":
 				# 1.4.2 TIDAL: a box magazine ahead of the trigger guard (base units,
 				# under the scaled base so it reloads like the other magazines).
@@ -109,6 +114,18 @@ static func attach(gun:GunModel,l:Dictionary):
 				for mesh in mag.get_children():
 					if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				gun.magazine=mag;gun.mag_rest=mag.transform
+				continue
+			"pistolgrip":
+				# 1.4.5 MENDER: a pistol grip behind the trigger guard (base units,
+				# under the scaled base), so the medic's smaller hand holds a grip
+				# rather than closing round the wide stock wrist.
+				part.queue_free()
+				var g=Node3D.new();g.name="PistolGrip";gun.base.add_child(g)
+				MeshFactory.box(g,PISTOL_GRIP_AT,Vector3(.036,.13,.05),dark,Vector3(-.28,0,0),.45)
+				MeshFactory.box(g,PISTOL_GRIP_AT+Vector3(0,-.066,.018),Vector3(.04,.012,.056),accent.darkened(.2),Vector3(-.28,0,0),.3)
+				MeshFactory.merge_children(g)
+				for mesh in g.get_children():
+					if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				continue
 			"coils":
 				for i in range(3):
@@ -169,9 +186,13 @@ static func build_tool(kind:String) -> Node3D:
 				for z in [-.14,-.34]:m.cylinder(body,Vector3(side*.058,.02,z),.03,.02,deep,Vector3(PI/2,0,0),-1.,14)
 			# Pistol grip (leaning back), trigger guard, handguard and barrel.
 			m.box(body,Vector3(0,-.085,-.05),Vector3(.04,.11,.046),deep,Vector3(-.25,0,0),.5)
-			m.box(body,Vector3(0,-.045,-.095),Vector3(.01,.03,.01),deep,Vector3(.3,0,0),.3)
-			m.box(body,Vector3(0,-.065,-.095),Vector3(.014,.006,.06),deep,Vector3.ZERO,.3)
-			m.box(body,Vector3(0,-.02,-.47),Vector3(.062,.05,.16),main,Vector3.ZERO,.4)
+			# 1.4.5: a full trigger guard (bottom bar and front post, closed to the
+			# receiver) and a larger, lighter trigger blade, so both read in view.
+			m.box(body,Vector3(0,-.046,-.096),Vector3(.012,.036,.012),Color("8a7fb0"),Vector3(.3,0,0),.3)
+			m.box(body,Vector3(0,-.073,-.104),Vector3(.016,.009,.084),deep,Vector3.ZERO,.3)
+			m.box(body,Vector3(0,-.05,-.142),Vector3(.016,.05,.009),deep,Vector3(-.15,0,0),.3)
+			# (1.4.5: taller, up round the barrel - it hung below it)
+			m.box(body,Vector3(0,-.008,-.47),Vector3(.062,.074,.16),main,Vector3.ZERO,.4)
 			for side in [-1.,1.]:
 				for k in range(3):m.box(body,Vector3(side*.031,-.02,-.42-k*.04),Vector3(.004,.02,.02),deep,Vector3.ZERO,.3)
 			m.cylinder(body,Vector3(0,.03,-.56),.024,.34,deep,Vector3(PI/2,0,0),-1.,14)

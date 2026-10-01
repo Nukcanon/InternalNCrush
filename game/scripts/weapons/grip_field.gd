@@ -32,8 +32,12 @@ static func lookup(wid:String) -> Dictionary:
 ## metres, orthonormal, at the handle) into GunModel space, and world metres per
 ## GunModel metre.
 static func contact(gun:Node3D,handle:Transform3D) -> Dictionary:
-	if not gun is GunModel:return {}
-	var entry=lookup(str(gun.get_meta("wid","")))
+	if not is_instance_valid(gun):return {}
+	# 1.4.5: held gear too (Actor.holder_for: "grip_field_id", baked in the
+	# holder's own space like a gun in GunModel space).
+	var id=str(gun.get_meta("wid","")) if gun is GunModel else str(gun.get_meta("grip_field_id",""))
+	if id=="":return {}
+	var entry=lookup(id)
 	if entry.is_empty():return {}
 	var g:Transform3D=gun.global_transform
 	var to_gun=g.affine_inverse()*Transform3D(handle.basis.orthonormalized(),handle.origin)

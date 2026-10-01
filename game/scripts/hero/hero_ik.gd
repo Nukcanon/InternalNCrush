@@ -139,7 +139,11 @@ const CURLS={"rest":{"index":.35,"fingers":[.4,.35,.2],"thumb":.2},
 	"fist":{"index":1.,"fingers":[1.25,1.4,1.0],"thumb":.9},
 	# Cupped round a grenade, and the open hand after the throw.
 	"hold":{"index":.9,"fingers":[.9,1.0,.7],"thumb":.6},
-	"open":{"index":.6,"fingers":[.25,.2,.1],"thumb":.2}}
+	"open":{"index":.6,"fingers":[.25,.2,.1],"thumb":.2},
+	# The free hand before a throw: flat and open (at rest in front, aiming),
+	# and the pinch that pulls the pin.
+	"flat":{"index":.25,"fingers":[.12,.1,.06],"thumb":.15},
+	"pinch":{"index":.8,"fingers":[1.0,1.05,.8],"thumb":.7}}
 # Hand geometry of the Quaternius rig in bone units (tools/probe_hand_mesh.gd):
 # palm skin below the metacarpals, finger radius per joint, fingertip length.
 const PALM_SKIN=.026
@@ -158,6 +162,8 @@ static func world_shape(handle:Transform3D,style:String,shape:Dictionary) -> Dic
 	var out={"half":half,"round":minf(float(shape.get("round",base.round))*scale,minf(half.x,minf(half.y,half.z)))}
 	if shape.has("trigger"):out.trigger=shape.trigger*scale
 	if shape.get("thumb_over",false):out.thumb_over=true
+	for k in ["index_lift","aim_drop"]:
+		if shape.has(k):out[k]=shape[k]
 	return out
 # Knuckle (proximal finger joint) positions in the wrist frame, per hero rig.
 static var knuckle_cache={}
@@ -574,9 +580,9 @@ static func flexed(sk:Skeleton3D,bone:int,amount:float,spread:float=0.) -> Trans
 # (wrap, trigger) sees it. The firing index reaches up into the trigger
 # guard; middle, ring and little fingers spread a little down the grip.
 static var frame_spread=0.
-const FIRING_SPREAD={"Middle":0.,"Ring":.12,"Pinky":.25} # ring and little finger closed up to the middle
-const FIRING_SQUEEZE=0. # (no pressing into the grip: the user preferred fingers just touching)
-const INDEX_SPREADS=[0.,.08,.16,.24,.32,.4,-.08]
+const FIRING_SPREAD={"Middle":0.,"Ring":0.,"Pinky":0.} # (the user preferred the gripping fingers as they fall)
+const FIRING_SQUEEZE=0. # (the user preferred fingers just touching the grip)
+const INDEX_SPREADS=[0.,.06,.12,.18,.24,.32,.4,-.06] # (capped per gun base by "index_lift", GunModel.HANDLES "index")
 # Joint frames of one finger for the given flexion angles (hand space).
 static func finger_frames(sk:Skeleton3D,bones:Array,angles:Array) -> Array:
 	var frames=[];var t=Transform3D.IDENTITY
@@ -620,6 +626,9 @@ const THUMB_PINCH_BASE=-.7
 # screenshots) - [base, middle] - and only its tip joint bends forward
 # (THUMB_LOAD_TIP, toward the gun); the pinch above hid the whole thumb.
 const THUMB_OVER=[-.3,1.2,.5]
+const THUMB_STRAIGHT_BASES=[.3,.2,.1,0.,-.1,-.2,-.3,-.4,-.5,-.6,-.7]
+const TRIGGER_AIM_DROP=.012 # metres (default; per base: GunModel.HANDLES "index")
+const THUMB_OVER_OPEN=[[0.,.15,.1],[-.1,.25,.1],[-.2,.35,.1],[-.3,.5,.15],[-.45,.6,.15],[-.6,.7,.2],[-.75,.6,.2],[-.9,.4,.1],[-1.05,.2,0.]] # thumb laid forward along the stock first (the user: straight, pointing ahead)
 const THUMB_LOAD=[.2,.1]
 # (thumbprobe, gun space: -.6 turns the last segment from up-and-aside to
 # straight ahead along the gun; positive bends it out to the side)
@@ -627,14 +636,32 @@ const THUMB_LOAD_TIP=-.8
 const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
-static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3,shape:Dictionary,pointing:bool,contact:Dictionary={},hand_scale:float=1.) -> Dictionary:
+const TP_SOLVES_PER_FRAME=1 # new grips per third-person hero per drive
+const TP_SOLVE_GAP=5 # drives between a reloading hand's solves
+static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3,shape:Dictionary,pointing:bool,contact:Dictionary={},hand_scale:float=1.,budget:int=0) -> Dictionary:
 	var trigger=shape.get("trigger",null)
 	var where=""
+	# (third person - budget - shares poses over coarser steps: a moving hand
+	# reuses them instead of solving anew every frame)
+	var snap_step=.012 if budget>1 else .002;var turn=.06 if budget>1 else .01
 	if not contact.is_empty():
 		var tg:Transform3D=contact.to_gun
-		where=str([contact.field.id,tg.origin.snapped(Vector3.ONE*.002),tg.basis.x.snapped(Vector3.ONE*.01),tg.basis.y.snapped(Vector3.ONE*.01),snappedf(float(contact.k)/hand_scale,.001),Vector3(contact.get("box",{}).get("half",Vector3.ZERO)).snapped(Vector3.ONE*.001)])
-	var key=str([hero.role,side,style,offset.snapped(Vector3.ONE*.002),shape.half.snapped(Vector3.ONE*.002),snappedf(shape.round,.002),trigger.snapped(Vector3.ONE*.002) if trigger!=null else null,pointing,where,shape.get("thumb_over",false)])
+		where=str([contact.field.id,tg.origin.snapped(Vector3.ONE*snap_step),tg.basis.x.snapped(Vector3.ONE*turn),tg.basis.y.snapped(Vector3.ONE*turn),snappedf(float(contact.k)/hand_scale,.001),Vector3(contact.get("box",{}).get("half",Vector3.ZERO)).snapped(Vector3.ONE*.001)])
+	var key=str([hero.role,side,style,offset.snapped(Vector3.ONE*snap_step),shape.half.snapped(Vector3.ONE*.002),snappedf(shape.round,.002),trigger.snapped(Vector3.ONE*.002) if trigger!=null else null,pointing,where,shape.get("thumb_over",false),shape.get("index_lift",-1.),shape.get("aim_drop",-1.)])
 	if grip_cache.has(key):return grip_cache[key]
+	# 1.4.5 hitches (tools/probe_hitches.gd): a third-person hand moving over a
+	# gun (a bot reloading) missed this cache every frame, 50-70 ms a frame.
+	# Others' hands solve at most TP_SOLVES_PER_FRAME new grips a frame (budget
+	# 1; a new gun's two hands were solved together, ~60 ms) and a reloading
+	# hand (budget 2) at most every TP_SOLVE_GAP ms; meanwhile the fingers keep
+	# their pose.
+	if budget>0:
+		# (counted in the hero's own drives - one frame each in play)
+		var serial=hero.drive_serial
+		if serial!=hero.grip_serial:hero.grip_serial=serial;hero.grip_solves=0
+		var gap_key="grip_solved_"+side
+		if hero.grip_solves>=TP_SOLVES_PER_FRAME or (budget>1 and hero.has_meta(gap_key) and serial-int(hero.get_meta(gap_key))<TP_SOLVE_GAP):return {}
+		hero.grip_solves+=1;hero.set_meta(gap_key,serial)
 	if grip_cache.size()>512:grip_cache.clear()
 	var sk=hero.skeleton
 	# Hand space (bone units) -> handle space (hand units).
@@ -679,7 +706,21 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			# the right side).
 			var over=shape.get("thumb_over",false) and not pinch
 			if over:
-				for i in range(bones.size()):angles[i]=THUMB_OVER[mini(i,THUMB_OVER.size()-1)]
+				# ...laid straight forward along the stock and swung at its base onto
+				# it: the straight pose closest to the surface without sinking in
+				# (the user: straight, and against the gun). Curled poses only when
+				# no straight one clears it.
+				var chosen:Array=THUMB_OVER_OPEN[-1];var best_gap=INF
+				for a0 in THUMB_STRAIGHT_BASES:
+					var option=[a0,.12,.08]
+					for i in range(bones.size()):angles[i]=option[mini(i,option.size()-1)]
+					var gap=chain_clearance(sk,bones,angles,tip,dist) if not contact.is_empty() else 0.
+					if gap>=-.001 and gap<best_gap:best_gap=gap;chosen=option
+				if best_gap==INF:
+					for option in THUMB_OVER_OPEN:
+						for i in range(bones.size()):angles[i]=option[mini(i,option.size()-1)]
+						if contact.is_empty() or chain_clearance(sk,bones,angles,tip,dist)>=-.002:chosen=option;break
+				for i in range(bones.size()):angles[i]=chosen[mini(i,chosen.size()-1)]
 			if not raised and not pinch and not over:
 				for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
 			# On the real surface the thumb may run into the receiver / tube above
@@ -706,11 +747,18 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 				# (INDEX_SPREADS) so the finger goes into the guard onto the trigger.
 				var best_angles=angles;var best_cost=INF;var best_spread=0.
 				for s in INDEX_SPREADS:
+					if s>float(shape.get("index_lift",.4))+.001:continue
+					if budget>0 and not s in [0.,.12,.24,.4]:continue # (third person: a coarser search)
 					frame_spread=s
-					var trial=trigger_finger(sk,bones,angles.duplicate(),tip,box_dist,to_handle.affine_inverse()*trigger,dist if not contact.is_empty() else Callable())
+					# (aimed at the middle of the trigger blade, TRIGGER_AIM_DROP under
+					# the trigger point: aimed at its top the index rode up onto the
+					# guard's upper corner)
+					var aim:Vector3=trigger+Vector3(0,-float(shape.get("aim_drop",TRIGGER_AIM_DROP))/maxf(.01,hand_scale),0)
+					var trial=trigger_finger(sk,bones,angles.duplicate(),tip,box_dist,to_handle.affine_inverse()*aim,dist if not contact.is_empty() else Callable())
 					var c=float(trigger_cost)+absf(s)*.01
 					if c<best_cost:best_cost=c;best_angles=trial;best_spread=s
 				angles=best_angles;frame_spread=best_spread
+				if debug_contact:print("INDEXSPREAD ",best_spread," cost ",snappedf(best_cost,.0001)," angles ",best_angles)
 			else:
 				# 1.4.5: on the firing hand the middle, ring and little fingers squeeze
 				# the grip, a few millimetres into the model, so they hold it tight
@@ -853,8 +901,19 @@ static func apply_grip(hero:HeroCharacter,side:String,handle:Transform3D,style:S
 	var hand={"half":ws.half/hand_scale,"round":float(ws.round)/hand_scale}
 	if ws.has("trigger") and not pointing:hand.trigger=ws.trigger/hand_scale
 	if ws.get("thumb_over",false):hand.thumb_over=true
-	var pose=grip_pose(hero,side,style,offset/hand_scale,hand,pointing,contact,hand_scale)
+	for k in ["index_lift","aim_drop"]:
+		if ws.has(k):hand[k]=ws[k]
+	# (third person: one new grip a frame; a reloading hand also coarser and at most every TP_SOLVE_GAP ms)
+	var _gt=Time.get_ticks_usec()
+	var pose=grip_pose(hero,side,style,offset/hand_scale,hand,pointing,contact,hand_scale,0 if hero.first_person else 2 if hero.reload_hand else 1)
+	if OS.has_environment("INC_GRIPDEBUG") and Time.get_ticks_usec()-_gt>15000:print("GRIPSLOW ",(Time.get_ticks_usec()-_gt)/1000," ms ",side," ",style," field=",contact.get("field",{}).get("id","-")," fp=",hero.first_person," reload=",hero.reload_hand," role=",hero.role," thumb_over=",hand.get("thumb_over",false)," trigger=",hand.has("trigger"))
 	var sk=hero.skeleton;var blend=1.-exp(-hero.frame_dt*24.) if hero.frame_dt>0. else 1.
+	if pose.is_empty():
+		# (over the third-person budget: the fingers hold their last grip)
+		for entry in fingers_of(hero,side):
+			var b:int=entry[0]
+			if hero.finger_memory.has(b):sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).normalized().slerp(Quaternion(hero.finger_memory[b]).normalized(),weight))
+		return
 	for b in pose:
 		var target:Quaternion=pose[b]
 		if hero.finger_memory.has(b) and blend<1.:target=Quaternion(hero.finger_memory[b]).normalized().slerp(target.normalized(),blend)

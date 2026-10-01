@@ -44,7 +44,10 @@ static func build(arena:Node):
 		if moving:
 			var kind=KINDS[moving_count%KINDS.size()];var body=InteractiveProp.new()
 			var half={"barrel":.46,"crate":.265,"cone":.285,"canister":.30,"tire":.34}[kind]
-			body.position=pos+Vector3.UP*(half+.025);body.rotation.y=rng.randf_range(-PI,PI);body.configure(moving_count,kind,arena.props_authoritative)
+			body.position=pos+Vector3.UP*(half+.025);body.rotation.y=rng.randf_range(-PI,PI)
+			# 1.4.5: junk tyres lie flat or stand (InteractiveProp.tyre_lying)
+			if kind=="tire" and InteractiveProp.tyre_lying(arena.map_index,moving_count):body.position=pos+Vector3.UP*(InteractiveProp.TYRE_FLAT+.025);body.rotation.x=PI*.5
+			body.configure(moving_count,kind,arena.props_authoritative)
 			arena.add_child(body);arena.props[moving_count]=body;moving_count+=1
 		else:
 			var type=fixed_count%12;fixed_count+=1

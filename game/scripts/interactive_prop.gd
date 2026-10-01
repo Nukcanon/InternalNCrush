@@ -8,6 +8,9 @@ var home=Transform3D.IDENTITY
 var target=Transform3D.IDENTITY
 var radius=.55
 var received=false
+# Junk tyres lie flat (centre this high, half the tyre's width) about half the time.
+const TYRE_FLAT=.1
+static func tyre_lying(map_index:int,id:int) -> bool:return (id*7+map_index*3)%5<2 or (id+map_index)%7==0
 func configure(id:int,type:String,authority:bool):
 	prop_id=id;kind=type;authoritative=authority
 	collision_layer=8;collision_mask=1|8;freeze_mode=RigidBody3D.FREEZE_MODE_KINEMATIC;freeze=not authority
@@ -33,10 +36,7 @@ func configure(id:int,type:String,authority:bool):
 			mass=3.;radius=.34;collider.queue_free()
 			for i in range(16):
 				var a=i*TAU/16.;add_box_shape(Vector3(sin(a)*.245,cos(a)*.245,0),Vector3(.100,.180,.17),Vector3(0,0,-a))
-			var mesh=TorusMesh.new();mesh.inner_radius=.15;mesh.outer_radius=.34;mesh.rings=20;mesh.ring_segments=12
-			M.instance(self,mesh,Vector3.ZERO,Color("414845"),Vector3(PI/2,0,0))
-			for i in range(16):
-				var angle=i*TAU/16.;M.box(self,Vector3(sin(angle)*.323,cos(angle)*.323,0),Vector3(.052,.024,.16),Color("333b3b"),Vector3(0,0,-angle),.45)
+			# (1.4.5: drawn by cartoon_visual - a 12-sided low tyre, no tread blocks)
 		"table":
 			mass=12.;radius=.95;collider.queue_free();WorldDressing.furniture(self,6,false)
 			for mesh in get_children():
@@ -89,10 +89,11 @@ func cartoon_visual():
 		var visual=MeshInstance3D.new();visual.mesh=mesh;visual.material_override=material;visual.position=offset;visual.scale=scale;add_child(visual)
 	match kind:
 		"barrel":
-			var kit=DistrictFacade.Kit.new();var color=[Color("3f7fbf"),Color("e0a83a"),Color("c9503a")][prop_id%3]
-			kit.prism(Vector3(0,-.46,0),.35,.92,color,12)
-			for y in [-.3,.0,.3]:kit.prism(Vector3(0,y-.02,0),.362,.05,color.darkened(.3),12,false)
-			kit.prism(Vector3(.15,.46,.05),.05,.03,Color("3a4046"),6)
+			# 1.4.5 remodel: a real 200 l steel drum (PropModels.drum)
+			var kit=DistrictFacade.Kit.new();PropModels.loose_drum(kit,prop_id)
+			add.call(kit.detail.commit(),Vector3.ZERO,Vector3.ONE)
+		"tire":
+			var kit=DistrictFacade.Kit.new();PropModels.tyre(kit)
 			add.call(kit.detail.commit(),Vector3.ZERO,Vector3.ONE)
 		"crate":add.call(DistrictProps.baked("crate"),Vector3(0,-.265,0),Vector3(.69,.53,.58)/.9)
 		"cone":add.call(DistrictProps.baked("trafficcone"),Vector3(0,-.287,0),Vector3.ONE*.77)
