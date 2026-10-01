@@ -443,8 +443,13 @@ func solve_hands(s:Dictionary):
 		for side in ["R","L"]:
 			if wrist_override.has(side):
 				HeroIK.solve_arm(self,side,wrist_override[side],weight,true)
-				# Fingers: a fist (tools), or the cupped throwing hand opening on release.
-				HeroIK.curl(self,side,weight,str(wrist_override.get("curl_"+side,"fist")))
+				# Fingers: closed round the tool's handle when its shape is given
+				# ("tool_<side>": centre in the wrist bone's space, half, round), else
+				# a fist, or the cupped throwing hand opening on release.
+				if wrist_override.has("tool_"+side):
+					var tool:Dictionary=wrist_override["tool_"+side]
+					HeroIK.fingers_round(self,side,Vector3(tool.centre),tool,weight)
+				else:HeroIK.curl(self,side,weight,str(wrist_override.get("curl_"+side,"fist")))
 				var open=float(wrist_override.get("open_"+side,0.))
 				if open>0.:HeroIK.curl(self,side,weight*open,"open")
 				# A rigid wrist over a swing: at rest ("capture") the solved wrist

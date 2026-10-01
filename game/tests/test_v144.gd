@@ -54,7 +54,8 @@ func run():
 	# --- First-person arms: fixed shoulders behind the eye, thick, to the shoulder
 	for hold in ["rifle","pistol","item"]:
 		var s=Actor.fp_shoulders(hold,1.)
-		expect(s.R.x>s.L.x and s.R.y<-.6 and s.L.y<-.6,"fp shoulders %s: fixed well below the view"%hold)
+		# (round 7: the firing shoulder sits behind the hand at -.45..-.52, still off screen)
+		expect(s.R.x>s.L.x and s.R.y<-.4 and s.L.y<-.4,"fp shoulders %s: fixed well below the view"%hold)
 		var m=Actor.fp_shoulders(hold,-1.)
 		expect(is_equal_approx(m.R.x,-s.R.x) and is_equal_approx(m.L.x,-s.L.x),"fp shoulders %s mirror for left-handed players"%hold)
 	var lines=Actor.fp_forearms(1.);var mirrored=Actor.fp_forearms(-1.)
@@ -144,14 +145,25 @@ func run():
 	expect(fore_y.angle_to(hand_y)<HeroIK.WRIST_LIMIT-.1,"first-person pistol: the wrist bends %.0f deg, inside its limit (forearm near the barrel line)"%rad_to_deg(fore_y.angle_to(hand_y)))
 	expect(Actor.FP_FOREARM_PISTOL.R.z>.8 and Actor.FP_SHOULDER.pistol.R.z>.3 and Actor.FP_SHOULDER.pistol.L.x<-.3,"pistol forearm line and shoulder anchors (both hands for DUET)")
 	expect(HeroIK.FIRING_SLIDE>=.03 and HeroIK.GUARD_DROP>=.02 and HeroIK.THUMB_RAISED_BASE>.4,"firing hand: middle finger kept under the guard, thumb raised along the frame")
-	expect(is_equal_approx(MeleeVisual.KNIFE_ROLL,-PI*.5),"knife rolled a quarter turn: edge forward, spine to the eye")
-	expect(HeroIK.THUMB_PINCH.size()==3 and HeroIK.THUMB_PINCH[1]>.4,"a small round is pinched: the thumb closes over it")
+	expect(absf(MeleeVisual.KNIFE_ROLL-2.67)<.01,"knife rolled about the blade so its edge (-X of the model) faces ahead in the rest pose")
+	expect(HeroIK.THUMB_PINCH.size()==3 and HeroIK.THUMB_PINCH[1]<.4 and HeroIK.THUMB_PINCH[2]>.5,"a small round is held with the thumb along it, its last joint bent forward onto the round")
+	# Round 6: grips stretched in the bake, handles mapped through the same deformation.
+	var d=GunModel.deform_of("Pistol")
+	expect(not d.is_empty() and float(d.grip)>1.2 and float(d.y_top)<INF,"baked pistol carries its grip stretch (x%.2f)"%float(d.get("grip",1.)))
+	var raw:Vector3=GunModel.HANDLES.Pistol.right;var mapped:Vector3=GunModel.handles("Pistol").right
+	expect(mapped.y<raw.y-.005 and GunModel.handles("Pistol").grip.y>GunModel.HANDLES.Pistol.grip.y*1.2,"pistol handle moved down to the stretched grip and its half height grew")
+	expect(GunModel.deform_of("Shotgun").get("grip",1.)==1.,"stock-wrist shotguns keep their shape")
+	expect(GunModel.handles("Shotgun").right.z<-.27 and float(GunModel.handles("Shotgun").tilt)<.2,"shotgun firing hand sits just behind the trigger guard")
 	expect(Vector3(Actor.THROW_KEYS[3][2]).x>-.6 and Vector3(Actor.THROW_KEYS[2][2]).x>-.3,"throw: the hand no longer turns far down after the release")
 	# --- Round 3: guns to the shooting side, support arm out, throwables -----
 	expect(Actor.FP_FOREARM.L.x<-.6 and Actor.FP_FOREARM.L.z<.55 and Actor.FP_SHOULDER.rifle.L.x<-.35,"support forearm leaves the handguard down and to the left (shoulder out left)")
 	p.slot=0;p.primary="a1";p.mag["a1"]=30
 	for i in range(40):a.visual(1./30.,p,g.clock)
 	expect(a.gun.position.x>.28 and a.gun.position.y<-.40,"rifle at the hip sits to the right of the centre (x %.2f)"%a.gun.position.x)
+	# Round 7: the firing forearm runs straight back from the grip; the wrist is nearly straight.
+	var rf:Vector3=a.view_body.bone_world(a.view_body.bone["LowerArm.R"]).basis.y.normalized();var rh:Vector3=a.view_body.bone_world(a.view_body.bone["Wrist.R"]).basis.y.normalized()
+	expect(rf.angle_to(rh)<deg_to_rad(40.),"first-person rifle: the firing wrist bends %.0f deg (forearm straight behind the grip)"%rad_to_deg(rf.angle_to(rh)))
+	expect(Actor.FP_FOREARM.R.z>.9 and Actor.FP_SHOULDER.rifle.R.z>.4,"firing forearm line runs back along the barrel from a shoulder behind the hand")
 	p.hand=-1;a.handedness=-1
 	for i in range(40):a.visual(1./30.,p,g.clock)
 	expect(a.gun.position.x<-.28,"left-handed: the rifle sits to the left (x %.2f)"%a.gun.position.x)

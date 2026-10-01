@@ -63,7 +63,7 @@ static func attach(gun:GunModel,l:Dictionary):
 	var accent:Color=l.get("palette",{}).get("Grey2",LIGHT)
 	var dark:Color=l.get("palette",{}).get("DarkGrey",DARK)
 	var top=gun.muzzle.position.y*gun.base.scale.y
-	var handles:Dictionary=GunModel.HANDLES.get(str(l.get("base","")),{})
+	var handles:Dictionary=GunModel.handles(str(l.get("base","")))
 	# Attachments hang from the front of the gun ("front"), not from wherever
 	# the support hand holds (the AK base's hand is on the magazine).
 	var grip_z=gun.right_grip.position.z*gun.base.scale.z;var left_z=Vector3(handles.get("front",gun.left_grip.position)).z*gun.base.scale.z

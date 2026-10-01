@@ -283,7 +283,7 @@ func run():
 			if "ikdebug" in only and is_instance_valid(a.view_body):a.view_body.set_meta("ik_debug",true);await settle([a],1);a.view_body.remove_meta("ik_debug")
 			var extra:String=c[5]
 			if extra=="aim":aim.call(true);await settle([a])
-			elif extra.begins_with("reload:"):reload_at(p,c[3],float(extra.split(":")[1]));await settle([a],6)
+			elif extra.begins_with("reload:"):reload_at(p,c[3],float(extra.split(":")[1]));await settle([a],14)
 			elif extra=="cook":p.cooking=1;p.grenade_started=g.clock-.4;await settle([a])
 			elif extra.begins_with("throw:"):
 				# Mid-throw: throw_until - now = (1 - phase) * .28
@@ -325,12 +325,12 @@ func run():
 						if a.camera.is_position_behind(pt):continue
 						top=minf(top,a.camera.unproject_position(pt).y/size.y)
 				print("GUNTOP ",label," top=%.2f"%top)
-				if "closeup" in only:await closeups(a,label)
-				if "audit" in only and is_instance_valid(a.view_body.held):audit(a.view_body,a.view_body.held,label)
+			if "closeup" in only and is_instance_valid(a.view_body) and a.view_body.visible:await closeups(a,label)
+			if "audit" in only and is_instance_valid(a.view_body) and is_instance_valid(a.view_body.held):audit(a.view_body,a.view_body.held,label)
 			if "debug" in only and is_instance_valid(a.melee_view) and a.melee_view.visible:
 				var cb:Basis=a.camera.global_basis.inverse();var vb=a.view_body
 				var wx:Vector3=vb.bone_world(vb.bone["Wrist.R"]).basis.x.normalized()
-				print("BLADE ",label," blade_cam=",(cb*a.melee_view.pivot.global_basis.y.normalized()).snapped(Vector3.ONE*.01)," wrist_x_cam=",(cb*wx).snapped(Vector3.ONE*.01)," pivot_rot=",a.melee_view.pivot.rotation," parent=",a.melee_view.get_parent().name," parent_bone=",a.melee_view.get_parent().bone_name if a.melee_view.get_parent() is BoneAttachment3D else "-")
+				print("BLADE ",label," blade_cam=",(cb*a.melee_view.pivot.global_basis.y.normalized()).snapped(Vector3.ONE*.01)," edge_cam=",(cb*(-a.melee_view.pivot.global_basis.x).normalized()).snapped(Vector3.ONE*.01)," wrist_x_cam=",(cb*wx).snapped(Vector3.ONE*.01)," pivot_rot=",a.melee_view.pivot.rotation," parent=",a.melee_view.get_parent().name," parent_bone=",a.melee_view.get_parent().bone_name if a.melee_view.get_parent() is BoneAttachment3D else "-")
 			if "debug" in only and is_instance_valid(a.view_body):
 				var vb=a.view_body;var line="JOINTS "+label+" vis=%s tree=%s arms=%s held=%s item=%s gun=%s ovr=%s"%[str(vb.visible),str(vb.is_visible_in_tree()),str(vb.skeleton.get_node("FPArms").is_visible_in_tree()),str(vb.held),str(a.item_model.visible),str(a.gun.position.snapped(Vector3.ONE*.01)),str(a.camera.to_local(vb.wrist_override.R.origin).snapped(Vector3.ONE*.01)) if vb.wrist_override.has("R") else "-"]
 				for n in ["UpperArm.L","LowerArm.L","Wrist.L","UpperArm.R","LowerArm.R","Wrist.R"]:

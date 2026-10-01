@@ -6,7 +6,13 @@ extends Node3D
 ## handle marker (hammer grip, blade forward); in third person the tool rides the
 ## right hand bone while the hero plays its slash clip.
 var tool=false
-const KNIFE_ROLL=-PI*.5 # about the blade: the edge forward (away from the player), spine toward the eye
+# Roll about the blade so the edge faces forward in the first-person rest
+# pose. Knife_1's edge is its -X side (the blade is 4 cm wide in x, 1 mm thick
+# there and 8 mm at the serrated +x spine); in the wrist frame the edge then
+# points (0,-cos roll, sin roll), and with the rest pose's wrist basis
+# (Actor: fist along -FP_FOREARM_MELEE, blade on the thumb side, up and
+# forward) a roll of 2.67 rad puts the edge within 15 degrees of straight ahead.
+const KNIFE_ROLL=2.67
 # Hand-bone frame (+Y fingers, -Z palm): the hollow of the closed fist, where the
 # handle sits inside the curled fingers (HeroIK fist curl: knuckles at y .15,
 # curled tips back at y .10, middle joints at z -.04).
@@ -49,6 +55,11 @@ func build(wrench:bool,_role:int,first_person:bool):
 	pivot.basis=Basis(Vector3(0,0,1),PI*.5)*(Basis(Vector3(0,1,0),KNIFE_ROLL) if not tool else Basis.IDENTITY);pivot.position=FIST_HOLLOW
 	pose(-1.)
 func grip(_side:String) -> Node3D:return palm
+## The handle as the fist closes on it (HeroIK.fingers_round): its centre in
+## the wrist bone's space and half extents (radius, half length, radius) in
+## the same units.
+func handle_shape() -> Dictionary:
+	return {"centre":FIST_HOLLOW,"half":Vector3(.02,.11,.015) if tool else Vector3(.012,.055,.011),"round":.012 if tool else .011}
 ## 1.4.4 first-person swing: the wrist's place in camera space (right-handed;
 ## x mirrors for a left-handed player) over the swing. The hand keeps its
 ## orientation from the arm (HeroCharacter solves the arm straight to it), so

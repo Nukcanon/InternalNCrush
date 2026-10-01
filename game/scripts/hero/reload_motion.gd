@@ -58,7 +58,7 @@ static func magazine(gun:GunModel,scale:Vector3,fallback:Vector3) -> Array:
 ## shell, break and revolver cycles; the hand holds it there.
 static func round_point(gun:GunModel,t:float) -> Array:
 	var style=str(gun.spec.get("reload_style",""));var s:Vector3=gun.base.scale
-	var h:Dictionary=GunModel.HANDLES.get(str(gun.look.get("base","")),{})
+	var h:Dictionary=GunModel.handles(str(gun.look.get("base","")))
 	match style:
 		"shell":
 			var port:Vector3=Vector3(h.get("port",Vector3(0,-.085,-.50)))*s

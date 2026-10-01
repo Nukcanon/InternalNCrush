@@ -703,25 +703,27 @@ const VIEW_DEPTH=1.4
 const VIEW_BODY_OFFSET=Vector3(0,-.03,.10)
 # Camera space, right-handed (x mirrors for a left-handed player).
 const FP_SHOULDER={
-	"rifle":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.45,-.82,-.30)},
+	"rifle":{"R":Vector3(.45,-.52,.50),"L":Vector3(-.45,-.82,-.30)},
 	# Round 4, pistols: the shoulder sits further back (and less far below) so
 	# the arm extends toward the pistol with the forearm near the barrel line;
 	# from the rifle anchor the forearm had to rise steeply to the grip and the
 	# wrist bent past its limit.
-	"pistol":{"R":Vector3(.45,-.62,.45),"L":Vector3(-.45,-.62,.45)},
-	"item":{"R":Vector3(.40,-.74,.16),"L":Vector3(-.30,-.78,.06)}}
+	"pistol":{"R":Vector3(.45,-.45,.55),"L":Vector3(-.45,-.45,.55)},
+	"item":{"R":Vector3(.42,-.62,.35),"L":Vector3(-.30,-.78,.06)}}
 # 1.4.4 round 3: the support forearm leaves the handguard down and out to the
 # left, so the arm opens away from the gun instead of lying along it (the
 # support shoulder also sits further forward, so that arm is bent rather than
 # straight along the shoulder-hand line); the hand itself stays on its grip.
-const FP_FOREARM={"R":Vector3(.35,-.55,.75),"L":Vector3(-.85,-.30,.45)}
+# Round 7: the firing forearm runs straight back from the grip (the wrist
+# nearly straight, as the user drew it), not up from the lower right.
+const FP_FOREARM={"R":Vector3(.14,-.26,.95),"L":Vector3(-.85,-.30,.45)}
 # Round 4, pistols (one in each hand for DUET): the forearm runs nearly along
 # the barrel, as a pistol is held — the steeper rifle lines asked the wrist
 # for a 75-100 degree bend, past its limit, so the hand turned off its grip
 # (knuckles up at the trigger, the index and middle fingers in the guard).
-const FP_FOREARM_PISTOL={"R":Vector3(.30,-.35,.88),"L":Vector3(-.30,-.35,.88)}
+const FP_FOREARM_PISTOL={"R":Vector3(.12,-.22,.97),"L":Vector3(-.12,-.22,.97)}
 # Two-handed items (kits, plates) in front of the chest.
-const FP_FOREARM_ITEM={"R":Vector3(.35,-.55,.75),"L":Vector3(-.35,-.50,.78)}
+const FP_FOREARM_ITEM={"R":Vector3(.25,-.45,.86),"L":Vector3(-.35,-.50,.78)}
 # Raised fist (melee, throws): the forearm comes up nearly vertically.
 const FP_FOREARM_STEEP={"R":Vector3(.30,-.88,.36),"L":Vector3(-.30,-.88,.36)}
 # Melee: a shallow forearm from the lower right, fist ahead, blade up.
@@ -799,7 +801,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		var at:Transform3D=view_space.global_transform*Transform3D(basis,wrist)
 		var age=now-float(p.get("melee_started",-100.))
 		var swinging=age>=0. and age<MeleeCombat.DURATION
-		view_body.wrist_override={"R":Transform3D(at.basis.orthonormalized(),at.origin),"capture_R":not swinging,"rigid_R":swinging}
+		view_body.wrist_override={"R":Transform3D(at.basis.orthonormalized(),at.origin),"capture_R":not swinging,"rigid_R":swinging,"tool_R":melee_view.handle_shape()}
 		if is_instance_valid(view_body.held):view_body.hold(null)
 	elif item_up and throwing:
 		# 1.4.4 throw: the hand keeps its hold on the grenade (its wrist frame in

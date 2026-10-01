@@ -540,8 +540,10 @@ const GUARD_DROP=.03
 # The firing hand's thumb lies raised along the side of the frame (nearly
 # straight) rather than curling round the back of the grip.
 const THUMB_RAISED=.15
-const THUMB_RAISED_BASE=.6 # swung forward from the base so it lies along the frame, not straight up
-const THUMB_PINCH=[0.,.55,.45] # joint bends of a thumb pinching a small round against the index finger
+const THUMB_RAISED_BASE=.95 # swung well forward from the base so it lies along the frame pointing ahead, never back
+# A thumb holding a small round against the index finger: nearly straight,
+# lying along the round beside the index (round 6: it bent over the round).
+const THUMB_PINCH=[0.,.3,.65] # ...with its last joint bent forward onto the round
 const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
@@ -585,7 +587,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			# up, bent back away from the palm.
 			var pinch=style=="hold" and maxf(half.x,maxf(half.y,half.z))<.03
 			if pinch:
-				angles[0]=float(THUMB_BASE.get(style,.15))+.15
+				angles[0]=float(THUMB_BASE.get(style,.15))+.3
 				for i in range(1,bones.size()):angles[i]=THUMB_PINCH[mini(i,THUMB_PINCH.size()-1)]
 			if not raised and not pinch:
 				for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
@@ -685,6 +687,17 @@ static func wrap_joint(sk:Skeleton3D,bones:Array,angles:Array,i:int,tip:float,di
 static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist:Callable,trigger:Vector3,field:Callable=Callable()) -> Array:
 	var n=bones.size()
 	if n<4:return angles.duplicate()
+	# Round 6: a trigger point measured inside the model's surface (shotgun
+	# stocks, the FOLD) pulled the finger into the receiver. It is moved out
+	# along the field's gradient until a finger pad fits there.
+	if field.is_valid():
+		var want=FINGER_RADIUS[4]*.8
+		for step in range(8):
+			var f=float(field.call(trigger))
+			if f>=want:break
+			var e=.004;var g=Vector3(float(field.call(trigger+Vector3(e,0,0)))-float(field.call(trigger-Vector3(e,0,0))),float(field.call(trigger+Vector3(0,e,0)))-float(field.call(trigger-Vector3(0,e,0))),float(field.call(trigger+Vector3(0,0,e)))-float(field.call(trigger-Vector3(0,0,e))))
+			if g.length_squared()<1e-10:break
+			trigger+=g.normalized()*minf(want-f+.001,.006)
 	var cost_of=func(trial:Array) -> float:
 		var frames=finger_frames(sk,bones,trial)
 		var cost=0.
@@ -693,6 +706,12 @@ static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist
 			# 1.4.4: the first bone also keeps out of the real receiver / guard.
 			if i<=2 and field.is_valid():d=minf(d,field.call(segment_end(sk,bones,frames,i,tip))-FINGER_RADIUS[mini(i+1,4)])
 			if d<0.:cost+=-d*40.
+			# Round 6: the last bone and the tip may touch the guard (the field
+			# cannot tell the thin guard from the trigger) but not go deep into
+			# the receiver behind it (shotgun stocks: the tip sank 11-18 mm).
+			if i>2 and field.is_valid():
+				var deep=field.call(segment_end(sk,bones,frames,i,tip))-FINGER_RADIUS[mini(i+1,4)]+.003
+				if deep<0.:cost+=-deep*160.
 		var pad:Vector3=frames[n-1]*Vector3(0,tip*.6,-FINGER_RADIUS[4]*.8)
 		return cost+pad.distance_to(trigger)+float(trial[3])*.004
 	# Coarse grid over the three joints, then a finer one around the best.
@@ -727,6 +746,25 @@ static func apply_grip(hero:HeroCharacter,side:String,handle:Transform3D,style:S
 		if hero.finger_memory.has(b) and blend<1.:target=Quaternion(hero.finger_memory[b]).slerp(target,blend)
 		hero.finger_memory[b]=target
 		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).slerp(target,weight))
+# 1.4.4 round 6: fingers closed round a handle that rides the hand itself (the
+# melee tools): the handle lies along the fist's thumb axis through `centre`
+# (wrist-bone space), with the given half extents (metres: radius, half
+# length, radius). The wrist is not moved; the fingers wrap the handle's box
+# as they wrap a pistol grip, so they neither float nor sink into it.
+static func fingers_round(hero:HeroCharacter,side:String,centre:Vector3,shape:Dictionary,weight:float):
+	var wrist:Transform3D=hero.bone_world(hero.bone["Wrist."+side])
+	var frame:Basis=FRAMES.pistol[side]
+	var hb:Basis=wrist.basis.orthonormalized()*frame.inverse()
+	var handle_origin:Vector3=wrist*centre
+	# Tool-local units are the hand bone's units (the tool rides that bone).
+	var hand_scale=hero.hand_scale()
+	var offset:Vector3=(hb.inverse()*(wrist.origin-handle_origin))/hand_scale
+	var hand={"half":Vector3(shape.half),"round":float(shape.round)}
+	var pose=grip_pose(hero,side,"pistol",offset,hand,false,{},hand_scale)
+	var sk=hero.skeleton
+	for b in pose:
+		hero.finger_memory.erase(b)
+		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).slerp(pose[b],weight))
 # Fixed curl (the shapeless "rest" hand). `pointing` keeps the index finger straight.
 static func curl(hero:HeroCharacter,side:String,weight:float,style:String="rest",pointing:bool=false):
 	var c:Dictionary=CURLS.get(style,CURLS.rest)

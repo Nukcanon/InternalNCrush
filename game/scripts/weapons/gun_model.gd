@@ -29,11 +29,11 @@ const HANDLES={
 	"Revolver_Small":{"right":Vector3(0,-.067,-.008),"tilt":.36,"grip":Vector3(.014,.035,.028),"round":.011,"trigger":Vector3(0,-.042,-.079),"sight":Vector3(0,.07,-.02),"gate":Vector3(-.024,.016,-.015)},
 	# 1.4.2: the firing hand at the front of the stock wrist (the web against the
 	# receiver) and the support hand on the pump itself (measured on the model).
-	"Shotgun":{"right":Vector3(0,-.05,-.262),"tilt":.36,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
+	"Shotgun":{"right":Vector3(0,-.05,-.29),"tilt":.1,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
 		# "port": the loading port under the receiver just ahead of the trigger
 		# guard (shells went into the guard before).
 		"left":Vector3(0,-.045,-.84),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60),"port":Vector3(0,-.085,-.50)},
-	"ShortCannon":{"right":Vector3(0,-.02,-.255),"tilt":.45,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
+	"ShortCannon":{"right":Vector3(0,-.02,-.28),"tilt":.1,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
 		# 1.4.2: on the pump, not on the barrel tip (the fingers passed the muzzle).
 		"left":Vector3(-.007,-.008,-.485),"fore":Vector3(.034,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45),"breech":Vector3(0,.03,-.56)},
 	"Sniper":{"right":Vector3(0,-.115,-.258),"tilt":.47,"grip":Vector3(.014,.048,.039),"round":.012,"trigger":Vector3(0,-.07,-.346),
@@ -73,6 +73,45 @@ var fire_side=0:
 static func base_scene(name:String) -> PackedScene:
 	if not bases.has(name):bases[name]=load("res://assets/weapons/"+name.to_lower()+".scn")
 	return bases[name]
+# 1.4.4 round 6: the baked bases carry a deformation (tools/bake_weapons.gd:
+# the pistol grip stretched down from its top, everything ahead of it drawn
+# out a little), stored as the scene root's "deform" meta. HANDLES and SCOPES
+# were measured on the undeformed bake, so every coordinate taken from them
+# goes through the same mapping.
+static var deforms={}
+static func deform_of(name:String) -> Dictionary:
+	if not deforms.has(name):
+		var d={}
+		if ResourceLoader.exists("res://assets/weapons/"+name.to_lower()+".scn"):
+			var node:Node=base_scene(name).instantiate()
+			if node.has_meta("deform"):d=node.get_meta("deform")
+			node.free()
+		deforms[name]=d
+	return deforms[name]
+static func deform_point(d:Dictionary,p:Vector3) -> Vector3:
+	if d.is_empty():return p
+	if float(d.grip)!=1. and p.y<float(d.y_top) and p.z>=float(d.z0) and p.z<=float(d.z1):p.y=float(d.y_top)+(p.y-float(d.y_top))*float(d.grip)
+	if float(d.barrel)!=1. and p.z<float(d.z_grip):p.z=float(d.z_grip)+(p.z-float(d.z_grip))*float(d.barrel)
+	return p
+static var handle_cache={}
+static func handles(name:String) -> Dictionary:
+	if handle_cache.has(name):return handle_cache[name]
+	var h:Dictionary=HANDLES.get(name,{}).duplicate(true)
+	var d=deform_of(name)
+	if not d.is_empty() and not h.is_empty():
+		for key in ["right","left","trigger","sight","port","breech","gate","front"]:
+			if h.has(key):h[key]=deform_point(d,Vector3(h[key]))
+		if h.has("grip"):h.grip=Vector3(h.grip)*Vector3(1.,float(d.grip) if float(d.y_top)<INF else 1.,1.)
+		if h.has("handguard"):
+			var hg:Array=h.handguard.duplicate()
+			for i in range(2):hg[i]=deform_point(d,Vector3(0,0,float(hg[i]))).z
+			h.handguard=hg
+	handle_cache[name]=h
+	return h
+static func scopes(name:String) -> Array:
+	var faces:Array=SCOPES.get(name,[]).duplicate(true);var d=deform_of(name)
+	for f in faces:f[0]=deform_point(d,Vector3(f[0]))
+	return faces
 func build(w:Dictionary,ink:bool=false):
 	spec=w;outlined=ink;look=GunLooks.look(w)
 	set_meta("wid",GripField.id_of(w))
@@ -103,7 +142,7 @@ func build(w:Dictionary,ink:bool=false):
 	muzzles=[muzzle];dual_guns=[base]
 	# Launchers have vertical foregrips (both hands make a fist), as does the
 	# SMG whose support hand holds the magazine.
-	var h:Dictionary=HANDLES.get(str(look.get("base","")),{})
+	var h:Dictionary=handles(str(look.get("base","")))
 	set_meta("grip_styles",{"R":"pistol","L":str(h.get("left_style","pistol" if launcher else "support"))})
 	# Code-built tools may name their own hand styles (the TETHER pad).
 	if base.has_meta("grip_styles"):set_meta("grip_styles",base.get_meta("grip_styles"))
@@ -187,7 +226,7 @@ func set_pair_spacing(width:float):
 static func place_handles(node:Node3D,l:Dictionary) -> Dictionary:
 	var right:Marker3D=node.get_node("RightGrip");var left:Marker3D=node.get_node("LeftGrip")
 	var shapes={}
-	var h:Dictionary=HANDLES.get(str(l.get("base","")),{})
+	var h:Dictionary=handles(str(l.get("base","")))
 	if node.has_meta("grip_shapes"):
 		for side in node.get_meta("grip_shapes"):
 			var shape:Dictionary=node.get_meta("grip_shapes")[side].duplicate()
@@ -247,7 +286,7 @@ func loading_grip(count:int,t:float) -> Vector3:
 	return point*base.scale
 # Blue glass on both ends of a baked scope.
 static func glaze(node:Node3D,l:Dictionary):
-	var faces:Array=SCOPES.get(str(l.get("base","")),[])
+	var faces:Array=scopes(str(l.get("base","")))
 	for i in range(faces.size()):
 		ScopeVisual.lens_disc(node,faces[i][0],faces[i][1],faces[i][2],"OcularGlass" if i==0 else "ObjectiveGlass")
 func paint(mesh:MeshInstance3D):

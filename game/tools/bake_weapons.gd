@@ -15,8 +15,8 @@ const BASES={
 	"Pistol":{"length":.24,"muzzle":.80,"right":Vector3(.86,.62,.05),"left":Vector3(.80,.40,-.06),"mag":Vector2(.72,1.),"origin":"grip"},
 	"Revolver":{"length":.32,"muzzle":.72,"right":Vector3(.86,.58,.05),"left":Vector3(.80,.38,-.06),"mag":Vector2(-1.,-1.),"origin":"grip"},
 	"Revolver_Small":{"length":.25,"muzzle":.72,"right":Vector3(.86,.60,.05),"left":Vector3(.80,.40,-.06),"mag":Vector2(-1.,-1.),"origin":"grip"},
-	"Shotgun":{"length":.98,"muzzle":.70,"right":Vector3(.60,.55,.06),"left":Vector3(.22,.40,-.05),"mag":Vector2(-1.,-1.),"origin":"butt"},
-	"ShortCannon":{"length":.72,"muzzle":.62,"right":Vector3(.50,.55,.06),"left":Vector3(.22,.40,-.05),"mag":Vector2(-1.,-1.),"origin":"butt"},
+	"Shotgun":{"length":.98,"muzzle":.70,"right":Vector3(.60,.55,.06),"left":Vector3(.22,.40,-.05),"mag":Vector2(-1.,-1.),"origin":"butt","grip_stretch":1.},
+	"ShortCannon":{"length":.72,"muzzle":.62,"right":Vector3(.50,.55,.06),"left":Vector3(.22,.40,-.05),"mag":Vector2(-1.,-1.),"origin":"butt","grip_stretch":1.},
 	"Sniper":{"length":1.18,"muzzle":.66,"right":Vector3(.64,.50,.06),"left":Vector3(.38,.60,-.05),"mag":Vector2(.44,.62),"origin":"butt"},
 	"Sniper_2":{"length":1.04,"muzzle":.62,"right":Vector3(.58,.50,.06),"left":Vector3(.30,.56,-.05),"mag":Vector2(.34,.62),"origin":"butt"},
 	"RocketLauncher":{"length":1.05,"muzzle":.60,"right":Vector3(.36,.20,.06),"left":Vector3(.62,.30,-.08),"mag":Vector2(-1.,-1.),"origin":"butt"},
@@ -75,6 +75,21 @@ static func add_box(mesh:ArrayMesh,frame:Transform3D,half:Vector3,mat:Material):
 				var seq=order if winding else [order[0],order[2],order[1]]
 				for i in seq:st.set_normal(wn if winding else -wn);st.add_vertex(frame*corners[i])
 	st.set_material(mat);st.commit(mesh)
+const GRIP_STRETCH=1.3
+const BARREL_STRETCH=1.05
+# The deformation {y_top, z0, z1, z_grip, grip, barrel} of a base from the
+# grip handle measured on the undeformed bake (GunModel.HANDLES: "right" is
+# the grip's centre, "grip" its half extents, baked metres): the grip is
+# stretched down from its top over its own depth; everything ahead of its
+# centre is drawn out by the barrel factor.
+static func grip_deform(base:String,spec:Dictionary,vertical:bool) -> Dictionary:
+	var out={"y_top":INF,"z0":0.,"z1":0.,"z_grip":0.,"grip":1.,"barrel":1.}
+	var h:Dictionary=GunModel.HANDLES.get(base,{})
+	if vertical or float(spec.get("grip_stretch",GRIP_STRETCH))<=1. or not h.has("right") or not h.has("grip"):return out
+	var right:Vector3=h.right;var half:Vector3=h.grip
+	out.y_top=right.y+half.y;out.z0=right.z-half.z*1.15;out.z1=right.z+half.z*1.5;out.z_grip=right.z
+	out.grip=float(spec.get("grip_stretch",GRIP_STRETCH));out.barrel=float(spec.get("barrel_stretch",BARREL_STRETCH))
+	return out
 func run():
 	DirAccess.make_dir_recursive_absolute("res://assets/weapons")
 	for base in BASES:bake(base,BASES[base])
@@ -112,8 +127,15 @@ func bake(base:String,spec:Dictionary):
 		"butt":origin=Vector3(lerpf(lo.x,hi.x,.5),lerpf(lo.y,hi.y,float(spec.muzzle)),hi.z)
 		"grip":origin=point.call(spec.right.x,spec.right.y,0.)
 		_:origin=(lo+hi)*.5
-	var place=func(p:Vector3) -> Vector3:return (turn*p-origin)*scale
-	var place_turned=func(q:Vector3) -> Vector3:return (q-origin)*scale
+	var place_raw=func(p:Vector3) -> Vector3:return (turn*p-origin)*scale
+	# 1.4.4 round 6: the kit's pistol grips are about a third shorter than a
+	# hand is wide (the little finger hung off them). The grip (its measured
+	# handle, GunModel.HANDLES) is stretched down from its top by GRIP_STRETCH;
+	# everything ahead of it is drawn out a little (BARREL_STRETCH) so the
+	# proportions hold. Stock wrists (shotguns) and hand-held items are left.
+	var deform=grip_deform(base,spec,vertical)
+	var place=func(p:Vector3) -> Vector3:return GunModel.deform_point(deform,place_raw.call(p))
+	var place_turned=func(q:Vector3) -> Vector3:return GunModel.deform_point(deform,(q-origin)*scale)
 	# Magazine split (1.4.4): whole connected pieces of the model (welded by
 	# position) whose centre lies in the magazine u-range and below the
 	# receiver, plus the small pieces sitting inside that group's bounds
@@ -211,7 +233,8 @@ func bake(base:String,spec:Dictionary):
 	if mag_range.x>=0.:
 		var anchor=Marker3D.new();anchor.name="MagazineAnchor";root_node.add_child(anchor);anchor.owner=root_node
 		anchor.position=place_turned.call(point.call((mag_range.x+mag_range.y)*.5,.45,0.))
+	root_node.set_meta("deform",deform)
 	var packed=PackedScene.new();packed.pack(root_node)
 	ResourceSaver.save(packed,"res://assets/weapons/"+base.to_lower()+".scn",ResourceSaver.FLAG_COMPRESS)
-	print(base,": length ",spec.length," scale ",snappedf(scale,.001)," surfaces ",body_mesh.get_surface_count()," mag ",mag_array.get_surface_count())
+	print(base,": length ",spec.length," scale ",snappedf(scale,.001)," surfaces ",body_mesh.get_surface_count()," mag ",mag_array.get_surface_count()," deform y_top=%.3f z0=%.3f z1=%.3f grip x%.2f barrel x%.2f"%[deform.y_top,deform.z0,deform.z1,deform.grip,deform.barrel])
 	root_node.free()
