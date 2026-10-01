@@ -39,6 +39,8 @@ RAISE = 2.0
 SINK = -2.0
 ROOM_CEILING = 3.6
 PARAPET = 0.95
+PILLAR_SIDE = 0.42   # 1.4.5: square pillars under the building mass over covered-room openings
+PILLAR_INSET = 0.21  # flush in the opening's corner (deeper, it closed 4 m passages for bots)
 PARAPET_T = 0.25
 WATER_Y = -0.7
 WATER_BED = -2.2
@@ -418,6 +420,16 @@ def build(index):
     # --- edges: retaining walls, parapets, building walls, fronts -------------------------
     fronts = []
     units = {}
+    openings = []
+    solid_points = set()  # corners touched by a building wall (they carry the mass above)
+    rail_push = {}  # corner -> push (x, z) off the parapets inside the cell at that corner
+
+    def rail_edge(u, v, d):
+        n = (-d[1], -d[0])  # into the walkable cell, where the parapet's thickness lies
+        for p in (u, v):
+            key = (round(p[0], 3), round(p[1], 3))
+            push = rail_push.setdefault(key, set())
+            push.add(n)
 
     def edge_points(r, c, d):
         # Cell edge in direction d, as (u, v) with the cell (walkable side) on the left.
@@ -450,11 +462,13 @@ def build(index):
                     wall(v, u, ov, ou, hv + (PARAPET if rail else 0), hu + (PARAPET if rail else 0), 'wall')
                     if rail:
                         parapet(emit, wall, u, v, d, hu, hv)
+                        rail_edge(u, v, d)
                     # Covered room ceilings end at walls; an indoor edge to open ground
                     # under a ceiling carries the building above its opening.
                     continue
                 if other == '~':
                     wall(v, u, WATER_BED, WATER_BED, hv + PARAPET, hu + PARAPET, 'wall')
+                    rail_edge(u, v, d)
                     parapet(emit, wall, u, v, d, hu, hv)
                     continue
                 if other in 'R#H' or other in INDOOR:
@@ -464,6 +478,8 @@ def build(index):
                     if other in INDOOR:
                         continue  # the covered room draws its own opening
                     wall(u, v, hu, hv, top, top, 'wall')
+                    solid_points.add((round(u[0], 3), round(u[1], 3)))
+                    solid_points.add((round(v[0], 3), round(v[1], 3)))
                     flags = 1 if m.g[r][c] in INDOOR else 0
                     front_top = ROOM_CEILING if m.g[r][c] in INDOOR else top
                     units.setdefault((m.lot.get((nr, nc), 0), d, round(hu, 3) if (r, c) not in m.stairs else None, front_top, flags, m.lot_style.get((nr, nc))), []).append((u, v, hu, hv, r, c))
@@ -479,6 +495,47 @@ def build(index):
                         wall(v, u, ROOM_CEILING, ROOM_CEILING, top, top, 'wall')
                         wall(u, v, ROOM_CEILING - .25, ROOM_CEILING - .25, ROOM_CEILING, ROOM_CEILING, 'trim')
                         fronts.append(front(m, v, u, 0., 0., ROOM_CEILING, top, m.lot.get((r, c), 0), 2, m.lot_style.get((r, c))))
+                        # 1.4.5: the mass above an opening stands on pillars at
+                        # both ends of the opening (one per cell corner, just
+                        # inside the room), not in the air (DistrictDressing
+                        # draws `supports`).
+                        openings.append((u, v, (-d[1], -d[0]), m.level.get((r, c), 0.)))  # room side (x, z)
+
+    # 1.4.5: the building mass over covered-room openings never hangs in the
+    # air. Where an opening ends at a wall, that wall carries it; a pillar
+    # stands only at corners with no wall beneath (between two openings of a
+    # long front, or at a room corner open on two sides), inside the room
+    # under the mass, so it never meets a wall.
+    pillars = []
+    ends = {}
+    for u, v, inward, level in openings:
+        for p in (u, v):
+            key = (round(p[0], 3), round(p[1], 3))
+            ends.setdefault(key, []).append((inward, level))
+    for (px, pz), uses in ends.items():
+        if (px, pz) in solid_points:
+            continue
+        inward_x = sum(i[0] for i, _ in uses)
+        inward_z = sum(i[1] for i, _ in uses)
+        sx = PILLAR_INSET * (1 if inward_x > 0 else -1 if inward_x < 0 else 0)
+        sz = PILLAR_INSET * (1 if inward_z > 0 else -1 if inward_z < 0 else 0)
+        x, z = px + sx, pz + sz
+        # clear of any parapet meeting this corner (its thickness lies inside the cell)
+        for n in rail_push.get((px, pz), ()):
+            along = sx * n[0] + sz * n[1]
+            if along < 0:
+                continue  # that parapet is in a neighbouring cell, not under this pillar
+            if along == 0:
+                # centred on the parapet's line: step wholly off it
+                x += n[0] * (PARAPET_T + PILLAR_SIDE / 2 + .02)
+                z += n[1] * (PARAPET_T + PILLAR_SIDE / 2 + .02)
+                continue
+            x += n[0] * (PARAPET_T + .02)
+            z += n[1] * (PARAPET_T + .02)
+        level = uses[0][1]
+        entry = [round(x - ox, 4), round(z - oz, 4), ROOM_CEILING - .02, round(level, 4), PILLAR_SIDE]
+        if not any(math.dist(entry[:2], q[:2]) < .3 for q in pillars):  # a room's outer corner: one pillar
+            pillars.append(entry)
 
     # Fronts: merge collinear unit edges of one lot into pieces of up to 12 m.
     for key, pieces in units.items():
@@ -646,7 +703,7 @@ def build(index):
             'border': [border], 'spawns': [centred(p) for p in spawns], 'targets': [centred(p) for p in targets],
             'goals': goals, 'corridor_m': CELL, 'capacity': bp['capacity'],
             'props': props, 'trees': trees, 'ceiling_height': m.hall if m.indoor else 0., 'loose_props': loose,
-            'facades': [], 'fronts': fronts, 'street_height': 7.2, 'storey': STOREY, 'supports': [],
+            'facades': [], 'fronts': fronts, 'street_height': 7.2, 'storey': STOREY, 'supports': pillars,
             'terrain': None, 'elevated_crossing': bool(m.cells('^')),
             'spawn_heights': [level_at(p) for p in spawns], 'target_heights': [level_at(p) for p in targets],
             'water': [[centred(p) for p in q.exterior.coords] for q in polys(water)] if water_cells else [],
@@ -701,7 +758,7 @@ CLUSTERS = {
     'barrier_single': (-.45, [(1.4, 0., 0., 'gastank')]),
     'low_wall': (-.25, [(1.35, 0., 0., 'pillar')]),
     'sacktrench': (-.2, [(1.35, .7, math.pi / 2, 'sacktrench_small')]),
-    'container_small': (-.3, [(1.55, .7, .3, 'crate')]),
+    'container_small': (-.3, [(2.05, .7, .3, 'crate')]),  # 1.4.5: clear of the container (1.55 sank into it)
     'pallet_load': (-.7, [(.7, 0., 0., 'cardboardboxes_3')]),
     'fruit_crates': (-.6, [(1.3, 0., 0., 'cask_pair')]),
     'fish_crates': (-.6, [(1.3, 0., 0., 'cask_pair')]),

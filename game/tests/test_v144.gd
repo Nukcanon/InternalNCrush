@@ -73,16 +73,22 @@ func run():
 				if name=="":name=hero.skeleton.get_bone_name(skin.get_bind_bone(bind))
 				if name.begins_with("Shoulder"):shoulder_binds[bind]=true
 				if name=="LowerArm.R":fore_binds[bind]=[skin.get_bind_pose(bind).affine_inverse()]
+			# 1.4.5: the forearm's weight is shared with its twist bones (same axis).
+			var lower_axis:Transform3D=fore_binds.values()[0][0] if not fore_binds.is_empty() else Transform3D()
+			for bind in range(skin.get_bind_count()):
+				var name=skin.get_bind_name(bind)
+				if name.begins_with("ForeTwist") and name.ends_with(".R"):fore_binds[bind]=[lower_axis]
 			var shoulder_verts=0;var radii=[]
 			for s in range(arms.mesh.get_surface_count()):
 				var arrays=arms.mesh.surface_get_arrays(s);var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS]
 				var per=bones.size()/maxi(1,verts.size())
 				for i in range(verts.size()):
-					var best=-1;var bw=-1.
+					var best=-1;var bw=-1.;var fore_w=0.
 					for k in range(per):
 						if weights[i*per+k]>bw:bw=weights[i*per+k];best=bones[i*per+k]
+						if fore_binds.has(bones[i*per+k]):fore_w+=weights[i*per+k]
 					if shoulder_binds.has(best):shoulder_verts+=1
-					if fore_binds.has(best) and bw>.8:
+					if fore_binds.has(best) and fore_w>.8:
 						var bone:Transform3D=fore_binds[best][0];var rel=verts[i]-bone.origin;var y=bone.basis.y.normalized()
 						radii.append((rel-y*rel.dot(y)).length())
 			expect(shoulder_verts>0,"hero %d: arm mesh reaches the shoulder (%d shoulder vertices)"%[role,shoulder_verts])

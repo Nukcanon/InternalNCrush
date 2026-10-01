@@ -23,8 +23,8 @@ func run():
 	expect(MedicLink.valid(g,1,2),"link retains 99 degree yaw")
 	g.clock+=.1;MedicLink.tick(g,1,.1);expect(q.hp>30.,"off-crosshair link still heals")
 	a.aim_yaw=deg_to_rad(101.);expect(not MedicLink.valid(g,1,2),"101 degree yaw breaks link")
-	a.aim_yaw=0.;a.input_state.yaw=0.;b.position.z=-17.;expect(MedicLink.valid(g,1,2) and MedicLink.RANGE==18. and Catalog.get_weapon("m1").reach==18,"1.4.2: LINK reaches 3 m further (18 m)")
-	b.position.z=-18.1;expect(not MedicLink.valid(g,1,2),"range over 18 breaks link");b.position.z=-12
+	a.aim_yaw=0.;a.input_state.yaw=0.;b.position.z=-15.;expect(MedicLink.valid(g,1,2) and MedicLink.RANGE==16. and Catalog.get_weapon("m1").reach==16,"1.4.5: LINK reaches 16 m again")
+	b.position.z=-16.1;expect(not MedicLink.valid(g,1,2),"range over 16 breaks link");b.position.z=-12
 	a.input_state.fire=false;MedicLink.tick(g,1,.1);expect(p.link_target==0,"release click clears link")
 	TouchControls.supported_cache=1;g.profile.touch_auto_fire=true
 	expect(TouchAim.can_auto_fire(g,a),"mobile auto starts LINK on ally")

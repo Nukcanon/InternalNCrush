@@ -164,6 +164,38 @@ func arm_metrics(h:HeroCharacter) -> String:
 				var cb:Basis=cam.global_basis.inverse()
 				out+=" [%s fore=%s hand_y=%s hand_z=%s]"%[sd,str((cb*(w.origin-l.origin).normalized()).snapped(Vector3.ONE*.01)),str((cb*w.basis.y.normalized()).snapped(Vector3.ONE*.01)),str((cb*w.basis.z.normalized()).snapped(Vector3.ONE*.01))]
 	return out
+# 1.4.5: girth of the posed first-person arm (skinned on the CPU) along
+# upper-arm joint -> elbow -> wrist, 12 bins, metres (world).
+func posed_profile(h:HeroCharacter,sd:String) -> String:
+	var arms:MeshInstance3D=h.skeleton.get_node_or_null("FPArms")
+	if arms==null or arms.mesh==null or arms.skin==null:return "-"
+	var sk=h.skeleton;var skin:Skin=arms.skin;var mats=[];var names=[]
+	for b in range(skin.get_bind_count()):
+		var bone=skin.get_bind_bone(b)
+		if skin.get_bind_name(b)!="":bone=sk.find_bone(skin.get_bind_name(b))
+		mats.append(sk.global_transform*sk.get_bone_global_pose(bone)*skin.get_bind_pose(b));names.append(sk.get_bone_name(bone))
+	var a:Vector3=h.bone_world(h.bone["UpperArm."+sd]).origin;var e:Vector3=h.bone_world(h.bone["LowerArm."+sd]).origin;var w:Vector3=h.bone_world(h.bone["Wrist."+sd]).origin
+	var la=a.distance_to(e);var lb=e.distance_to(w);var bins=[];for i in range(12):bins.append([0.,0])
+	for s in range(arms.mesh.get_surface_count()):
+		var arr=arms.mesh.surface_get_arrays(s);var verts:PackedVector3Array=arr[Mesh.ARRAY_VERTEX];var bones=arr[Mesh.ARRAY_BONES];var weights=arr[Mesh.ARRAY_WEIGHTS]
+		var per=bones.size()/maxi(1,verts.size())
+		for i in range(verts.size()):
+			var aw=0.;var p=Vector3.ZERO
+			for k in range(per):
+				var wgt=weights[i*per+k]
+				if wgt<=0.:continue
+				p+=(mats[bones[i*per+k]]*verts[i])*wgt
+				var bn=str(names[bones[i*per+k]])
+				if bn in ["UpperArm."+sd,"LowerArm."+sd] or (bn.begins_with("ForeTwist") and bn.ends_with("."+sd)):aw+=wgt
+			if aw<.5:continue
+			var t1=clampf((p-a).dot(e-a)/(la*la),0.,1.);var t2=clampf((p-e).dot(w-e)/(lb*lb),0.,1.)
+			var p1=a+(e-a)*t1;var p2=e+(w-e)*t2;var d1=p.distance_to(p1);var d2=p.distance_to(p2)
+			var u=(t1*la if d1<d2 else la+t2*lb)/(la+lb)
+			var bi=clampi(int(u*12.),0,11);bins[bi][0]+=minf(d1,d2);bins[bi][1]+=1
+	var scale=absf(h.global_basis.get_scale().y)
+	var out="%s elbow@%.0f%%:"%[sd,la/(la+lb)*100.]
+	for x in bins:out+=" %.3f"%(x[0]/x[1]/scale*HeroCharacter.FP_BODY_SCALE/HeroCharacter.FP_BODY_SCALE if x[1]>0 else -1.)
+	return out
 # Close-ups of each hand from the eye (narrow lens) and the whole view model
 # from the right side.
 func closeups(a,label:String):
@@ -187,6 +219,14 @@ func closeups(a,label:String):
 			var frames:Array=HeroIK.finger_frames(sk,chains.Thumb,[a0,HeroIK.THUMB_PINCH[1],HeroIK.THUMB_PINCH[2]])
 			var base:Vector3=to_gun*(wrist*frames[0].origin);var tip:Vector3=to_gun*(wrist*(frames[2]*Vector3(0,HeroIK.TIP.Thumb,0)))
 			line+=" a0=%.1f dir=%s"%[a0,str((tip-base).normalized().snapped(Vector3.ONE*.01))]
+		# Last thumb segment direction (gun space) for a sweep of the tip joint,
+		# the base and middle joints as in the loading pose.
+		line+=" | tip joint:"
+		for a2 in [-1.2,-.6,0.,.6,1.2]:
+			var fr:Array=HeroIK.finger_frames(sk,chains.Thumb,[HeroIK.THUMB_LOAD[0],HeroIK.THUMB_LOAD[1],a2])
+			line+=" a2=%.1f seg=%s"%[a2,str((to_gun.basis*(wrist.basis*fr[2].basis.y)).normalized().snapped(Vector3.ONE*.01))]
+		var mid:Array=HeroIK.finger_frames(sk,chains.Thumb,[HeroIK.THUMB_LOAD[0],HeroIK.THUMB_LOAD[1],0.])
+		line+=" | thumb (straight) dir=%s"%str((to_gun.basis*(wrist.basis*mid[1].basis.y)).normalized().snapped(Vector3.ONE*.01))
 		var ib:Vector3=to_gun*(wrist*HeroIK.finger_frames(sk,chains.Index,[0.,0.,0.,0.])[0].origin);var it:Vector3=to_gun*(wrist*(HeroIK.finger_frames(sk,chains.Index,[0.,0.,0.,0.])[3]*Vector3(0,HeroIK.TIP.Index,0)))
 		line+=" | straight index dir=%s palm_normal(gun)=%s hand_y(gun)=%s"%[str((it-ib).normalized().snapped(Vector3.ONE*.01)),str((to_gun.basis*wrist.basis.z).normalized().snapped(Vector3.ONE*.01)),str((to_gun.basis*wrist.basis.y).normalized().snapped(Vector3.ONE*.01))]
 		print(line)
@@ -299,6 +339,7 @@ func run():
 			for sd in ["L","R"]:
 				if HeroIK.on_screen(a.camera,a.view_body.bone_world(a.view_body.bone["UpperArm."+sd]).origin):cut.append(sd)
 			print("ELBOWS fp-gun-",wid," on_screen=",cut)
+			if "armprofile" in only:print("ARMPROFILE fp-gun-",wid," ",posed_profile(a.view_body,"R")," | ",posed_profile(a.view_body,"L"))
 			if "fpside" in only:await side_shot(a,"fp-side-"+str(wid))
 		for c in [["knife",0,MeleeCombat.SLOT,""],["wrench",3,MeleeCombat.SLOT,""]]:
 			reset(p);p.role=c[1];p.slot=c[2];a.shown_weapon="";await settle([a]);await shot("fp-gun-"+c[0])
@@ -347,6 +388,26 @@ func run():
 				for sd in ["L","R"]:
 					if HeroIK.on_screen(a.camera,a.view_body.bone_world(a.view_body.bone["UpperArm."+sd]).origin):cut.append(sd)
 				print("ELBOWS ",label," on_screen=",cut," ",arm_metrics(a.view_body))
+				if "thumbspot" in only:
+					# screen points (fraction of the view) of each thumb's base and tip
+					var vb2=a.view_body;var line="THUMBSPOT "+label;var size=a.camera.get_viewport().get_visible_rect().size
+					for sd in ["L","R"]:
+						var ch:Dictionary=HeroIK.finger_chains(vb2,sd)
+						if not ch.has("Thumb"):continue
+						var tb:Array=ch.Thumb;var base:Vector3=vb2.bone_world(tb[0]).origin;var tipx:Transform3D=vb2.bone_world(tb[-1])
+						var tip:Vector3=tipx*Vector3(0,HeroIK.TIP.Thumb,0)
+						var pb=a.camera.unproject_position(base)/size;var pt=a.camera.unproject_position(tip)/size
+						line+=" %s base=(%.3f,%.3f) tip=(%.3f,%.3f) flex="%[sd,pb.x,pb.y,pt.x,pt.y]
+						for b in tb:
+							var q:Quaternion=(vb2.skeleton.get_bone_rest(b).basis.get_rotation_quaternion().inverse()*vb2.skeleton.get_bone_pose_rotation(b)).normalized()
+							line+="%.2f/%s "%[-2.*atan2(q.x,q.w),str(Vector3(q.x,q.y,q.z).snapped(Vector3.ONE*.01))]
+						line+=" style=%s"%str(vb2.get_meta("grip_style_"+sd,"?"))
+						# the gap between thumb tip and index finger, against the load round (gun space)
+						if is_instance_valid(a.view_weapon) and is_instance_valid(a.view_weapon.load_round) and a.view_weapon.load_round.visible and ch.has("Index"):
+							var gap:Vector3=(tip+vb2.bone_world(ch.Index[2]).origin)*.5
+							var to_gun:Transform3D=a.view_weapon.global_transform.affine_inverse()
+							line+=" gap-round(gun)=%s"%str((to_gun*gap-to_gun*a.view_weapon.load_round.global_position).snapped(Vector3.ONE*.001))
+					print(line)
 			# Highest screen point of the view weapon (fraction of the height from the top).
 			if is_instance_valid(a.view_weapon) and a.view_weapon.visible:
 				var top=1.;var size=a.camera.get_viewport().get_visible_rect().size

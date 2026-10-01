@@ -25,6 +25,10 @@ var first_person_guns={}
 var ghost_props={}
 var ghost_devices={}
 var gun:Node3D # first-person replay mount; meta "model" is its GunModel
+# 1.4.5: the replay's first-person view is built like live play (Actor): the
+# gun mounts live in a view space VIEW_DEPTH times larger and farther, at the
+# weapon's own hip anchor, and the arms follow the hands the same way.
+var view_space:Node3D
 # 1.4.2: the killer's first-person arms (the replay showed a floating gun).
 var fp_body:HeroCharacter
 var fp_head=Vector3(0,1.62,0)
@@ -73,6 +77,7 @@ func prepare():
 	stage=Node3D.new();stage.name="ReplayActors";game.add_child(stage);stage.visible=false;stage.process_mode=Node.PROCESS_MODE_DISABLED
 	fx=CombatFX.new();stage.add_child(fx)
 	camera=Camera3D.new();camera.fov=82.;camera.near=.04;camera.far=300.;stage.add_child(camera)
+	view_space=Node3D.new();view_space.name="ViewSpace";view_space.scale=Vector3.ONE*Actor.VIEW_DEPTH;camera.add_child(view_space)
 	bullet=ReplayProjectile.make(stage)
 	var material=StandardMaterial3D.new();material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;material.albedo_color=Color("ffcc69");material.emission_enabled=true;material.emission=Color("ffba50");material.emission_energy_multiplier=2.
 	bullet_trail=MeshInstance3D.new();var mesh=CylinderMesh.new();mesh.top_radius=.012;mesh.bottom_radius=.028;mesh.height=1.;mesh.radial_segments=8;bullet_trail.mesh=mesh;bullet_trail.material_override=material;stage.add_child(bullet_trail)
@@ -115,7 +120,14 @@ func warm_one():
 			signatures[id]=signature
 			return
 		if not first_person_guns.has(wid):
-			var mount=Node3D.new();camera.add_child(mount);var weapon=GunModel.new();mount.add_child(weapon);weapon.build(Catalog.get_weapon(wid));weapon.position=-weapon.right_grip.position*weapon.base.scale;mount.set_meta("model",weapon);mount.hide();first_person_guns[wid]=mount;return
+			var spec=Catalog.get_weapon(wid)
+			var mount=Node3D.new();view_space.add_child(mount);var weapon=GunModel.new();mount.add_child(weapon);weapon.build(spec,false)
+			# As the live view weapon: compact long guns, the right handle (a pair's
+			# centre, held at the hip spacing) at the mount origin.
+			weapon.scale=Vector3.ONE*Actor.view_weapon_scale(spec)
+			if weapon.dual_guns.size()>1:weapon.set_pair_spacing(Actor.PAIR_HIP/weapon.base.scale.x)
+			weapon.position=Actor.hip_weapon_offset(weapon,Actor.PAIR_HIP)
+			mount.set_meta("model",weapon);mount.set_meta("spec",spec);mount.hide();first_person_guns[wid]=mount;return
 	for id in game.arena.props:
 		if not ghost_props.has(id):
 			var prop=game.arena.props[id];var node=Node3D.new();stage.add_child(node);ghost_props[id]=node
@@ -203,7 +215,14 @@ func _process(dt):
 		# Whole transform at once: flipping scale.x on a node whose transform was
 		# decomposed turned the mirrored gun round (muzzle backward).
 		var hand=float(state.get("hand",1))
-		gun.transform=Transform3D(Basis(Vector3.RIGHT,kick*.24)*Basis.from_scale(Vector3(hand,1.,1.)),Vector3(.255*hand,-.255,-.46+kick*.11))
+		# The live hip pose (Actor.visual): the right handle at the weapon's hip
+		# anchor, the barrel on the aim line, a one-handed pistol canted a little;
+		# the kick pitches it up and pushes it back as in play.
+		var spec:Dictionary=gun.get_meta("spec",{})
+		var single_pistol=GunLooks.hold_kind(spec)=="pistol" and not bool(spec.get("dual",false))
+		var hip:Vector3=Actor.hip_base_for(spec)+Vector3(0,.025*kick,.155*kick)
+		var tilt=Basis.from_euler(Vector3(kick*.34,0.,(.10 if single_pistol else 0.)*hand))
+		gun.transform=Transform3D(tilt*Basis.from_scale(Vector3(hand,1.,1.)),Vector3(hip.x*hand,hip.y,hip.z))
 		var model:GunModel=gun.get_meta("model",null)
 		if is_instance_valid(model):model.animate_reload(-1.,kick,0. if kick>.75 else 10.)
 		drive_arms(dt,state,hand)
@@ -316,7 +335,7 @@ func arms_for(role:int,team:int):
 	if is_instance_valid(fp_body):fp_body.held=null;fp_body.queue_free()
 	fp_body=HeroCharacter.new();fp_body.name="ReplayArms";stage.add_child(fp_body);fp_body.build(role,team,false)
 	fp_body.first_person_only();fp_body.hand_size=Actor.VIEW_HAND/Actor.VIEW_BODY_SCALE
-	fp_body.set_meta("fp_camera",camera);fp_body.set_meta("key",key)
+	fp_body.set_meta("fp_camera",camera);fp_body.set_meta("fp_space",view_space);fp_body.set_meta("key",key)
 	for mesh in fp_body.meshes():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	fp_head=Vector3(0,1.62,0)
 func drive_arms(dt:float,_state:Dictionary,hand:float):
@@ -325,11 +344,17 @@ func drive_arms(dt:float,_state:Dictionary,hand:float):
 	fp_body.visible=gun.visible and is_instance_valid(model)
 	if not fp_body.visible:return
 	if fp_body.held!=model:fp_body.hold(model,false)
+	fp_body.frame_override=gun
 	var forward=-camera.global_basis.z;var yaw=Basis(Vector3.UP,atan2(-forward.x,-forward.z))
-	fp_body.global_basis=yaw*Basis.from_scale(Vector3(hand,1.,1.)*Actor.VIEW_BODY_SCALE)
+	# Exactly the live view body (Actor.update_view_body): the view-model scale
+	# and depth, the hold's shoulders and forearm lines, the arm follow.
+	fp_body.global_basis=yaw*Basis.from_scale(Vector3(hand,1.,1.)*Actor.VIEW_BODY_SCALE*Actor.VIEW_DEPTH)
 	fp_body.global_position=camera.global_position-yaw*fp_head+yaw*Actor.VIEW_BODY_OFFSET
-	var kind=GunLooks.hold_kind(model.spec)
-	fp_body.set_meta("fp_shoulders",Actor.fp_shoulders("rifle" if kind=="shoulder" else kind,hand))
-	fp_body.set_meta("fp_forearm",Actor.fp_forearms(hand))
-	fp_body.drive(dt,{"hold":"rifle" if kind=="shoulder" else kind,"two_hands":kind!="pistol" or bool(model.spec.get("dual",false)),"hands":1.,"sprint":false,"velocity":Vector3.ZERO,"grounded":true,"crouch":false,"pitch":asin(clampf(forward.y,-1.,1.)),"reload":-1.})
+	var hold=GunLooks.hold_kind(model.spec)
+	if hold=="shoulder":hold="rifle"
+	var two_hands=hold!="pistol" or bool(model.spec.get("dual",false))
+	fp_body.set_meta("fp_shoulders",Actor.fp_shoulders(hold,hand))
+	fp_body.set_meta("fp_forearm",Actor.fp_forearms(hand,false,false,hold))
+	fp_body.set_meta("fp_follow",Actor.fp_follow_for(hold,hold=="pistol" and two_hands,hand))
+	fp_body.drive(dt,{"hold":hold,"two_hands":two_hands,"hands":1.,"sprint":false,"velocity":Vector3.ZERO,"grounded":true,"crouch":false,"pitch":asin(clampf(forward.y,-1.,1.)),"reload":-1.,"shot":0. if kick>.75 else 10.,"melee":100.})
 	fp_head=yaw.inverse()*(fp_body.head_position()-fp_body.global_position)

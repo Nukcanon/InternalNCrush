@@ -173,12 +173,15 @@ static func band_hulls(mesh:Mesh,bands:int) -> Array:
 		var shape=ConvexPolygonShape3D.new();shape.points=PackedVector3Array(unique.keys())
 		out.append(shape)
 	return out
+# 1.4.5: how deep a placed prop may sink into a wall or another prop before it
+# is moved or removed (8 cm left visible clipping: crates inside containers).
+const SINK_LIMIT=.02
 const JOINTS=[["low_wall","pillar"],["sacktrench","sacktrench_small"],["sacktrench","sacktrench"],["sacktrench_small","sacktrench_small"]]
 static func joint(a:String,b:String) -> bool:
 	var pair=[a,b];pair.sort();return pair in JOINTS
 ## Map bake pass (after a physics step, so the space holds every wall): props
-## sunk more than 8 cm into walls move to a nearby spot on the same floor, or
-## are removed. Returns [moved, removed].
+## sunk more than SINK_LIMIT into walls or other props move to a nearby spot on the same floor, or
+## are removed (SINK_LIMIT). Returns [moved, removed].
 static func settle_props(a:Node3D) -> Array:
 	var bodies=[]
 	for node in a.architecture.get_children():
@@ -209,20 +212,22 @@ static func settle_props(a:Node3D) -> Array:
 	for i in indices:a.navigation_blocks.remove_at(i)
 	for n in dropped:n.free()
 	return [moved,dropped.size()]
-## Moves a freshly placed prop sideways out of walls it sinks into (more than
-## 8 cm), at most `limit` metres; false when it still overlaps. Only static
-## world geometry counts (other props and cover are allowed to touch).
+## Moves a freshly placed prop sideways out of walls and props it sinks into
+## (more than SINK_LIMIT), at most `limit` metres; false when it still
+## overlaps. Designed joints (JOINTS) may overlap; touching is fine.
 static func clear_of_walls(a:Node3D,node:Node3D,body:StaticBody3D,limit:float,others:Array,fits:Callable) -> bool:
 	var space=a.get_world_3d().direct_space_state
 	var depth=func() -> float:
 		var deepest=0.
 		for cs in body.get_children():
 			if not cs is CollisionShape3D:continue
-			var q=PhysicsShapeQueryParameters3D.new();q.shape=cs.shape;q.transform=node.global_transform*cs.transform;q.collision_mask=1;q.exclude=[body.get_rid()]+others
+			# (lifted a few centimetres: resting on - or a little into - the ground,
+			# sloped or not, is not sinking into a wall or another prop)
+			var q=PhysicsShapeQueryParameters3D.new();q.shape=cs.shape;q.transform=(node.global_transform*cs.transform).translated(Vector3.UP*.06);q.collision_mask=1;q.exclude=[body.get_rid()]+others
 			var pairs=space.collide_shape(q,32)
 			for i in range(0,pairs.size(),2):deepest=maxf(deepest,pairs[i].distance_to(pairs[i+1]))
 		return deepest
-	if depth.call()<=.08:return true
+	if depth.call()<=SINK_LIMIT:return true
 	# Nearby spots on the same floor, nearest first (8 directions per ring).
 	var start=node.position
 	for r in [.25,.5,.75,1.]:
@@ -230,7 +235,7 @@ static func clear_of_walls(a:Node3D,node:Node3D,body:StaticBody3D,limit:float,ot
 		for k in range(8):
 			var dir=Vector3(cos(k*TAU/8.),0,sin(k*TAU/8.))
 			node.position=start+dir*r
-			if fits.call() and depth.call()<=.08:return true
+			if fits.call() and depth.call()<=SINK_LIMIT:return true
 	node.position=start
 	return false
 static func c(hex:String) -> Color:return Color(hex)

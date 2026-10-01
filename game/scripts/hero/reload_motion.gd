@@ -140,12 +140,16 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			# A revolver round is small and goes in at the fingertips: the palm stays
 			# behind and below it (on a rod reaching forward to the round) instead
 			# of closing over the whole revolver.
+			# 1.4.5: the round stays on its path into the gun; the hand is placed
+			# so the round lies between the thumb tip and the index finger
+			# (measured with tools/review_hands.gd thumbspot: the gap sat 3.7 cm,
+			# for shells 5.9 cm, above the round).
 			if style=="revolver":
-				at+=Vector3(-.03,-.018,.05);cartridge={"half":Vector3(.009,.009,.055),"round":.009}
+				at+=Vector3(-.013,-.055,.046);cartridge={"half":Vector3(.009,.009,.055),"round":.009}
 			# 1.4.5: shells likewise ride ahead of the fingertips (held in the fist
 			# they were hidden inside the hand).
 			elif style in ["shell","break"]:
-				at+=Vector3(-.025,-.014,.045);cartridge={"half":Vector3(.0095,.0095,.06),"round":.0095}
+				at+=Vector3(.003,-.073,.058);cartridge={"half":Vector3(.0095,.0095,.06),"round":.0095}
 			if t<lead:return hand(start.lerp(at,smoothstep(0.,lead,t)),"hold",cartridge)
 			var done=.78 if style=="shell" else .76 if style=="break" else .8
 			if t<done:return hand(at,"hold",cartridge)

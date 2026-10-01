@@ -55,6 +55,13 @@ def main():
             settings = imported.read_text(encoding='utf-8')
             settings = settings.replace('compress/mode=0', 'compress/mode=1').replace('compress/lossy_quality=0.7', 'compress/lossy_quality=0.85')
             imported.write_text(settings, encoding='utf-8')
+    # 1.4.5: the twelve full-HD menu photographs imported lossless (1.3-1.6 MB
+    # each in the pack, 16 MB of the 89 MB Web pack); lossy WebP at 0.85 is
+    # a third of that and looks the same as a menu backdrop.
+    for imported in (STAGE / 'assets/menu_slides').glob('*.jpg.import'):
+        settings = imported.read_text(encoding='utf-8')
+        settings = settings.replace('compress/mode=0', 'compress/mode=1').replace('compress/lossy_quality=0.7', 'compress/lossy_quality=0.85')
+        imported.write_text(settings, encoding='utf-8')
     for p in (STAGE / 'scripts').glob('*.gd'):
         text = p.read_text(encoding='utf-8').replace('res://assets/Korean.ttf', 'res://assets/fonts/DoHyeon-Regular.ttf')
         if p.name=='surface_finish.gd':

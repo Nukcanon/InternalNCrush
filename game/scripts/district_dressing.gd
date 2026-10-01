@@ -7,12 +7,19 @@ static func build(a:Node,plan:Dictionary):
 		var base=float(support[3]) if support.size()>3 else 0.
 		var height=float(support[2])-base
 		if height<.75:continue
-		var pos=Vector3(support[0],base+height*.5,support[1]);var size=Vector3(.28,height,.28)
+		# 1.4.5: a fifth value is the pillar's side (building-mass pillars under
+		# covered-room openings are thicker than deck supports).
+		var side=float(support[4]) if support.size()>4 else .28
+		var pos=Vector3(support[0],base+height*.5,support[1]);var size=Vector3(side,height,side)
+		var listed=a.obstacles.size()
 		var body=a.box(pos,size,Color("798795"))
+		# Pillars at covered-room openings: bots keep a capsule's width from them
+		# (the general .6 m margin closed 4 m passages between two pillars).
+		if support.size()>4 and a.obstacles.size()>listed:a.obstacles[-1]=Rect2(Vector2(pos.x-side*.5,pos.z-side*.5),Vector2(side,side)).grow(.3)
 		for mesh in body.get_children():
 			if mesh is MeshInstance3D:mesh.material_override=WorldSurface.material("trim",index)
-		M.box(a.architecture,Vector3(pos.x,base+.10,pos.z),Vector3(.48,.20,.48),Color("8c9696"))
-		M.box(a.architecture,Vector3(pos.x,support[2]-.13,pos.z),Vector3(.65,.25,.5),Color("687982"))
+		M.box(a.architecture,Vector3(pos.x,base+.10,pos.z),Vector3(side+.2,.20,side+.2),Color("8c9696"))
+		M.box(a.architecture,Vector3(pos.x,support[2]-.13,pos.z),Vector3(side+.37,.25,side+.22),Color("687982"))
 	# Decorative fa챌ades are separate from tactical collision/cover. Their
 	# visibility can change with quality without revealing players behind walls.
 	var fixtures=[]

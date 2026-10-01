@@ -330,6 +330,27 @@ func start_bot_match(selection:Dictionary):
 	_ph=Prof.now()
 	if phase=="lobby":start_match()
 	Prof.add("start_match_call",_ph)
+# 1.4.5: the first drawn frame of a match built the first-person arms, solved
+# every hand from scratch and posed every hero (0.39 s on a desktop, 1-2 s on
+# phones and in browsers: the freeze just after the start). That work is done
+# here, while the start is still loading, so play begins on a ready frame.
+func prime_first_frame():
+	if dedicated or demo_mode or not render_actors:return
+	var _pf=Prof.now()
+	render_update(1./60.)
+	Prof.add("start_prime_frame",_pf)
+	# The engine's own first draw of the map, heroes and weapons (shaders and
+	# meshes on first use, 0.25 s here) happens behind a short cover, so the
+	# stall reads as the end of loading instead of a freeze in play.
+	if DisplayServer.get_name()=="headless":return
+	if is_instance_valid(start_cover):start_cover.queue_free()
+	start_cover=CanvasLayer.new();start_cover.layer=60;add_child(start_cover)
+	var shade=ColorRect.new();shade.color=Color("101820");shade.set_anchors_preset(Control.PRESET_FULL_RECT);shade.mouse_filter=Control.MOUSE_FILTER_IGNORE;start_cover.add_child(shade)
+	var label=Label.new();label.text="전투 준비 중…";label.theme=ui.theme;label.set_anchors_preset(Control.PRESET_FULL_RECT);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.add_theme_font_size_override("font_size",28);shade.add_child(label)
+	start_cover_frames=START_COVER_FRAMES
+var start_cover:CanvasLayer
+var start_cover_frames=0
+const START_COVER_FRAMES=4
 func host_game(transport:MultiplayerPeer=null):
 	if phase!="menu" or connection_busy:return
 	R.sanitize_room(options)
@@ -772,6 +793,9 @@ func _process(dt:float):
 	# Rendering work runs once per drawn frame. Catch-up physics steps after a
 	# slow frame then only simulate, instead of re-posing every character and
 	# rebuilding the HUD several times before the next image is shown.
+	if start_cover_frames>0:
+		start_cover_frames-=1
+		if start_cover_frames==0 and is_instance_valid(start_cover):start_cover.queue_free()
 	if phase=="menu" or not render_actors or not is_physics_processing():return
 	render_update(dt)
 func render_update(dt:float):
@@ -1145,6 +1169,7 @@ func fire(id:int):
 			var surface=mark_surface(hit,origin)
 			if not surface.is_empty():marks.append(surface)
 	if not marks.is_empty():wall_marks_batch.rpc(marks)
+	if has_meta("probe_pellets"):get_meta("probe_pellets").append_array(pellet_ends) # tools/probe_shotgun.gd
 	effect.rpc("shot",origin,last_end,id,clock,{"weapon":wid,"bloom":p.bloom,"spray_phase":p.spray_phase,"pellets":pellet_ends})
 	if int(p.mag[wid])==0:begin_reload(id)
 @rpc("authority","call_local","reliable",0)

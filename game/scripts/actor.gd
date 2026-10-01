@@ -61,6 +61,9 @@ const SPRINT_OUT=.15
 var load_hold=0. # 0..1 steady loading pose of round-by-round reloads
 var pair_swing=0. # 1.4.5: DUET sprint arm swing blend
 const PAIR_SWING=.05 # metres each way
+const HIP_YAW_GEAR=.13 # held gear (not guns) still turns in a little at the hip
+const PAIR_HIP=.54 # DUET: the pair's spacing at the hip (drawn together to PAIR_AIM when aiming); 1.4.5: wider (was .40)
+const PAIR_AIM=.36
 var sprint_fov=0. # 0..1 blend toward the sprint field of view
 var last_sprint=false
 var target_pos=Vector3.ZERO
@@ -128,7 +131,7 @@ func build_gun(wid:String):
 	if local:
 		ensure_view_body()
 		# Long guns are compact in the view; pistols keep their size next to the big cartoon hand.
-		view_weapon=GunModel.new();view_weapon.build(w,false);view_mount.add_child(view_weapon);view_weapon.scale=Vector3.ONE*(1.18 if GunLooks.hold_kind(w)=="pistol" else .9)
+		view_weapon=GunModel.new();view_weapon.build(w,false);view_mount.add_child(view_weapon);view_weapon.scale=Vector3.ONE*view_weapon_scale(w)
 	world_weapon=GunModel.new();world_weapon.build(w,HeroStyle.outlines_enabled())
 	if is_instance_valid(character):character.hold(world_weapon)
 	else:render_root.add_child(world_weapon)
@@ -546,7 +549,6 @@ func visual(dt:float,p:Dictionary,now:float):
 	# their forearms out from the grips, HeroIK.fp_forearm).
 	# 1.4.4: at the hip every weapon stays in the bottom third of the screen
 	# (the user's rule); aiming brings it up to the sight line.
-	var hip_base=Vector3(.235,-.44,-.56)
 	var cooking=p.get("cooking",0)>0
 	var throwing=float(p.get("throw_until",-100.))>now
 	var gadget_up=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
@@ -554,26 +556,14 @@ func visual(dt:float,p:Dictionary,now:float):
 	# lower right of the view with the hand under them, not down at the gun's
 	# hip height (the grenade was at the bottom edge, behind the HUD).
 	var throwable=gadget_up and (cooking or throwing or p.slot==2) and GrenadeLogic.equipped(p)
-	# Short guns (pistols, shotguns, the break-action FOLD) sit higher than the
-	# rifles: their tops were down at the bottom edge (round 3).
-	var short_gun=kind=="pistol" or str(GunLooks.look(w).get("base","")) in ["Shotgun","ShortCannon"]
-	if throwable:hip_base=THROW_HOLD
-	elif dual:hip_base=Vector3(0,-.36,-.50)
-	elif kind=="pistol":hip_base=Vector3(.15,-.33,-.50)
-	# Hand-held launchers (QUAD) sit lower and further right: the tube cluster
-	# is wide and would cover the middle of the screen.
-	elif rocket and not shoulder:hip_base=Vector3(.34,-.42,-.46)
-	elif short_gun:hip_base.y=-.37
-	# Guns (not gadgets, not the centred pair) sit further to the shooting side
-	# (the user's 1.4.4 round-3 request) so the middle of the screen is clear.
-	if not gadget_up and not dual:hip_base.x+=.06
+	var hip_base:Vector3=THROW_HOLD if throwable else hip_base_for(w,gadget_up)
 	var ads_base=(Vector3(.25,-.21,-.50) if shoulder else Vector3(.29,-.27,-.50)) if rocket else hip_base+Vector3(0,.07,-.03) if dual else Vector3.ZERO
 	var base=hip_base.lerp(ads_base,ads_blend)
 	# Rear loading: the gun node moves to where the launcher's rear opening is
 	# shown (low, just right of centre); the launcher itself tips forward below.
 	var load_tip=smoothstep(0.,1.,launcher_tilt) if rocket else 0.
 	base=base.lerp(Vector3(.13,-.25,-.64),load_tip)
-	if kind=="pistol" and not dual:rotation_target_extra=Vector3(0,-.03,.10)
+	if kind=="pistol" and not dual:rotation_target_extra=Vector3(0,0,.10) # roll only: the barrel stays on the aim line
 	else:rotation_target_extra=Vector3.ZERO
 	base+=Vector3(-.025,.095,-.025)*crouch_blend*(1.-ads_blend)
 	var motion=move_blend*(1.-ads_blend*.93)*(1.-crouch_blend*.35)
@@ -584,16 +574,10 @@ func visual(dt:float,p:Dictionary,now:float):
 	# it back and a little down, so the sight line stays clear while firing.
 	var rotation_target=Vector3(recoil*lerpf(.34,ADS_KICK_PITCH,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
 	base+=Vector3(0,-ADS_KICK_DROP,ADS_KICK_BACK)*recoil*ads_blend
-	# 1.4.4 view-model angle: the muzzle turned a little in toward the centre so
-	# the gun's right side and both hands read at the hip (not in aim).
-	# Round 9: a beam weapon (ARC) keeps its barrel on the aim line - its beam
-	# is drawn from the muzzle to the aim point, so a turned or dipped barrel
-	# visibly pointed away from its own beam.
-	var beam=bool(w.get("laser",false))
-	rotation_target.y+=(.0 if throwable or beam else .13 if gadget_up else .10)*(1.-ads_blend)
-	# ...and the muzzle dipped, so the far end of a long gun (which perspective
-	# pulls toward the centre) also stays in the bottom third at the hip.
-	rotation_target.x-=(.0 if throwable or beam else .03 if kind=="pistol" else .08 if short_gun else .16)*(1.-ads_blend)
+	# 1.4.5: every gun keeps its barrel parallel to the aim line at the hip (the
+	# 1.4.4 turned-in, dipped hip angle made the muzzle visibly point below and
+	# left of the crosshair); only held gear still turns in a little.
+	rotation_target.y+=(HIP_YAW_GEAR if gadget_up else 0.)*(1.-ads_blend)
 	# 1.4.5 DUET: no sprint tilt; the two pistols swing like running arms instead
 	# (one forward and up while the other goes back and down, 5 cm each way).
 	pair_swing=lerpf(pair_swing,1. if sprint and dual else 0.,1.-exp(-dt*8.))
@@ -672,16 +656,15 @@ func visual(dt:float,p:Dictionary,now:float):
 		# that only the gun from the sight forward is in view; a pair only
 		# rises slightly toward the centre.
 		var s=view_weapon.base.scale*view_weapon.scale.x
-		var grip:Vector3=view_weapon.right_grip.position*s
 		var sight:Vector3=view_weapon.aim_point.position*s
 		# DUET: the pair is held wide at the hip and drawn a little together when aiming.
 		# 1.4.4: near the baked spacing (GunModel.PAIR_SPACING) so the left hand
 		# keeps its grip field on the second pistol.
 		# Round 3: held wider apart (40 cm) at the hip; GripField maps the left
 		# hand's contact back to the baked spacing, so any width keeps its grip.
-		var pair=lerpf(.40,.30,ads_blend)
+		var pair=lerpf(PAIR_HIP,PAIR_AIM,ads_blend)
 		if dual:view_weapon.set_pair_spacing(pair/view_weapon.base.scale.x)
-		var hip=-grip+(Vector3(pair*.5*view_weapon.scale.x,0,0) if dual else Vector3.ZERO)
+		var hip=hip_weapon_offset(view_weapon,pair)
 		var aimed=hip if dual else Vector3(0,-.04 if kind=="rifle" else -.045,-(.27 if kind=="rifle" else .34))-sight
 		if shoulder:
 			# Shoulder launchers: the tube rests over the right shoulder, rear end just ahead of the eye.
@@ -810,6 +793,47 @@ static func throw_forearm(phase:float) -> Vector3:
 static func fp_shoulders(hold:String,hand:float) -> Dictionary:
 	var set:Dictionary=FP_SHOULDER.get(hold,FP_SHOULDER.pistol)
 	return {"R":Vector3(set.R.x*hand,set.R.y,set.R.z),"L":Vector3(set.L.x*hand,set.L.y,set.L.z)}
+# Short guns (pistols, shotguns, the break-action FOLD) sit higher than the
+# rifles: their tops were down at the bottom edge (round 3).
+static func short_gun_kind(w:Dictionary) -> bool:
+	return GunLooks.hold_kind(w)=="pistol" or str(GunLooks.look(w).get("base","")) in ["Shotgun","ShortCannon"]
+# Hip anchor of the view weapon's right handle (view space, right-handed).
+# 1.4.4: at the hip every weapon stays in the bottom third of the screen (the
+# user's rule); aiming brings it up to the sight line. Shared with the kill
+# replay (1.4.5), whose first-person view is built the same way as live play.
+static func hip_base_for(w:Dictionary,gadget_up:bool=false) -> Vector3:
+	var kind=GunLooks.hold_kind(w);var dual=bool(w.get("dual",false))
+	var rocket=bool(w.get("rocket",false));var shoulder=bool(GunLooks.look(w).get("shoulder",false))
+	var hip_base=Vector3(.235,-.44,-.56)
+	if dual:hip_base=Vector3(0,-.36,-.50)
+	elif kind=="pistol":hip_base=Vector3(.15,-.33,-.50)
+	# Hand-held launchers (QUAD) sit lower and further right: the tube cluster
+	# is wide and would cover the middle of the screen.
+	elif rocket and not shoulder:hip_base=Vector3(.34,-.42,-.46)
+	elif short_gun_kind(w):hip_base.y=-.37
+	# Guns (not gadgets, not the centred pair) sit further to the shooting side
+	# (the user's 1.4.4 round-3 request) so the middle of the screen is clear.
+	if not gadget_up and not dual:hip_base.x+=.06
+	return hip_base
+# View-weapon scale: long guns are compact in the view, pistols keep their
+# size next to the big cartoon hand.
+static func view_weapon_scale(w:Dictionary) -> float:return 1.18 if GunLooks.hold_kind(w)=="pistol" else .9
+# The weapon's offset inside its mount so the right handle (a pair: its
+# centre) sits at the mount origin at the hip.
+static func hip_weapon_offset(model:GunModel,pair:float) -> Vector3:
+	var s=model.base.scale*model.scale.x
+	var grip:Vector3=model.right_grip.position*s
+	return -grip+(Vector3(pair*.5*model.scale.x,0,0) if model.dual_guns.size()>1 else Vector3.ZERO)
+# The arm-follow settings of a gun hold (meta "fp_follow", HeroIK.solve_arm):
+# the firing forearm continues the hand with the hidden shoulder following.
+static func fp_follow_for(hold:String,paired:bool,hand:float,weight:float=1.) -> Dictionary:
+	var follow={}
+	if hold=="item":return follow
+	# DUET: the arms open out to both sides with the wrists bent less.
+	var bend=FOLLOW_BEND_DUAL if paired else FOLLOW_BEND;var drop=FOLLOW_DROP_DUAL if paired else FOLLOW_DROP;var out=FP_UPPER_DUAL_X if paired else 0.
+	follow.R={"upper":Vector3((FP_UPPER.R.x+out)*hand,FP_UPPER.R.y,FP_UPPER.R.z),"weight":weight,"bend":bend,"drop":drop}
+	if paired:follow.L={"upper":Vector3((FP_UPPER.L.x-out)*hand,FP_UPPER.L.y,FP_UPPER.L.z),"weight":weight,"bend":bend,"drop":drop}
+	return follow
 func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if not is_instance_valid(view_body):return
 	var item_up=is_instance_valid(view_item) and item_model.visible
@@ -897,11 +921,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		# A gun turned sideways to load (revolver gate, shells, break action) keeps a
 		# bent wrist: fully straight, the forearm would cross the view from the side.
 		var w=1.-FOLLOW_LOAD_BEND*smoothstep(0.,1.,load_hold)
-		var paired=state.hold=="pistol" and state.two_hands
-		# DUET: the arms open out to both sides with the wrists bent less.
-		var bend=FOLLOW_BEND_DUAL if paired else FOLLOW_BEND;var drop=FOLLOW_DROP_DUAL if paired else FOLLOW_DROP;var out=FP_UPPER_DUAL_X if paired else 0.
-		follow.R={"upper":Vector3((FP_UPPER.R.x+out)*handedness,FP_UPPER.R.y,FP_UPPER.R.z),"weight":w,"bend":bend,"drop":drop}
-		if paired:follow.L={"upper":Vector3((FP_UPPER.L.x-out)*handedness,FP_UPPER.L.y,FP_UPPER.L.z),"weight":w,"bend":bend,"drop":drop}
+		follow=fp_follow_for(str(state.hold),state.hold=="pistol" and state.two_hands,float(handedness),w)
 	view_body.set_meta("fp_follow",follow)
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	if throwing and item_up and throw_start.has("wrist"):

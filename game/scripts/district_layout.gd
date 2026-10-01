@@ -68,6 +68,33 @@ static func lane_extent(plan:Dictionary,at:Vector2,right:Vector2) -> Array:
 				if s<0.:lo=maxf(lo,s)
 				elif s>0.:hi=minf(hi,s)
 	return [lo,hi]
+# One screen across the street at `at`: [at, s0, s1, lo, hi] (offsets along
+# `right`), or [] where the street is too narrow for a screen and its gap.
+static func screen_span(plan:Dictionary,at:Vector2,dir:Vector2,right:Vector2,k:int) -> Array:
+	var span=lane_extent(plan,at,right)
+	if span.is_empty():return []
+	var lo=float(span[0]);var hi=float(span[1])
+	# The gap must stay open a few metres before and after the screen too
+	# (a corridor edge stepping in just past it made the gap a dead end).
+	for ahead in [-2.5,2.5]:
+		var other=lane_extent(plan,at+dir*ahead,right)
+		if other.is_empty():continue
+		lo=maxf(lo,float(other[0]));hi=minf(hi,float(other[1]))
+	var width=hi-lo
+	if width<3.:return []
+	# Each screen covers 62% of the street from one side; the two leave
+	# their gaps on opposite sides, so there is no straight view through.
+	# (never narrower than a 3.4 m gap: on the narrow indoor streets the
+	# bot grid lost the route through)
+	var cover=minf(width*.62,width-3.4)
+	if cover<1.5:return []
+	return [at,lo if k==0 else hi-cover,lo+cover if k==0 else hi,lo,hi]
+static func screen_hits_support(plan:Dictionary,at:Vector2,right:Vector2,dir:Vector2,s0:float,s1:float) -> bool:
+	for support in plan.get("supports",[]):
+		var d=Vector2(float(support[0]),float(support[1]))-at
+		var half=float(support[4])*.5 if support.size()>4 else .14
+		if absf(d.dot(dir))<.3+half+.1 and d.dot(right)>s0-half-.1 and d.dot(right)<s1+half+.1:return true
+	return false
 static func spawn_screens(a:Node,plan:Dictionary,index:int):
 	if not index in SPAWN_SCREENS or plan.spawns.size()<2:return
 	for team in range(2):
@@ -76,25 +103,15 @@ static func spawn_screens(a:Node,plan:Dictionary,index:int):
 		var ground_y=float(plan.get("spawn_heights",[0,0])[team])
 		var lane=[Vector3(here.x+dir.x*(SCREEN_DISTANCE-4.),ground_y,here.y+dir.y*(SCREEN_DISTANCE-4.))]
 		for k in range(2):
-			var at=here+dir*(SCREEN_DISTANCE+k*5.)
-			var span=lane_extent(plan,at,right)
-			if span.is_empty():continue
-			var lo=float(span[0]);var hi=float(span[1])
-			# The gap must stay open a few metres before and after the screen too
-			# (a corridor edge stepping in just past it made the gap a dead end).
-			for ahead in [-2.5,2.5]:
-				var other=lane_extent(plan,at+dir*ahead,right)
-				if other.is_empty():continue
-				lo=maxf(lo,float(other[0]));hi=minf(hi,float(other[1]))
-			var width=hi-lo
-			if width<3.:continue
-			# Each screen covers 62% of the street from one side; the two leave
-			# their gaps on opposite sides, so there is no straight view through.
-			# (never narrower than a 3.4 m gap: on the narrow indoor streets the
-			# bot grid lost the route through)
-			var cover=minf(width*.62,width-3.4)
-			if cover<1.5:continue
-			var s0=lo if k==0 else hi-cover;var s1=lo+cover if k==0 else hi
+			# 1.4.5: moved a little along the street when the spot would cut through
+			# a pillar of a covered-room opening (objects never overlap).
+			var placed=[]
+			for shift in [0.,1.,-1.,2.,-2.]:
+				placed=screen_span(plan,here+dir*(SCREEN_DISTANCE+k*5.+shift),dir,right,k)
+				if not placed.is_empty() and not screen_hits_support(plan,placed[0],right,dir,float(placed[1]),float(placed[2])):break
+				placed=[]
+			if placed.is_empty():continue
+			var at:Vector2=placed[0];var s0=float(placed[1]);var s1=float(placed[2]);var lo=float(placed[3]);var hi=float(placed[4])
 			# The gap beside this screen, for the bots' lane through (below).
 			var gap_s=(s1+hi)*.5 if k==0 else (lo+s0)*.5
 			lane.append(Vector3(at.x+right.x*gap_s,ground_y,at.y+right.y*gap_s))

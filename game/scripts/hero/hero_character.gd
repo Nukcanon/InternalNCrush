@@ -146,7 +146,8 @@ func first_person_only():
 			if str(mesh.name).ends_with("_Body") and mesh.skin:body=mesh;break
 		if body:
 			var built=fp_arms(body.mesh,body.skin)
-			arms.mesh=built[0];arms.skin=body.skin
+			add_twist_bones()
+			arms.mesh=built[0];arms.skin=built[2] if built.size()>2 else body.skin
 			for i in range(built[1].size()):arms.set_surface_override_material(i,body.get_surface_override_material(built[1][i]))
 # First person (1.4.4): the arms are the outfit's own arm triangles from the
 # shoulder down, thickened about the upper-arm and forearm bone axes to the
@@ -169,7 +170,34 @@ const FP_HAND=1.15 # first-person hand scale (Actor.VIEW_HAND); hand_size = FP_H
 # off a vertical grip before the shoulder stretches instead.
 const FP_SLIDE=.06
 const FP_SLIDE_GRIP=0.
-const FP_ELBOW_FILL=.3
+const FP_ELBOW_FILL=.25 # elbow zone up to 1.25x (1.2x where the weights are 80/20)
+# 1.4.5 bare arms: the girth line (first-person metres) from the shoulder
+# through the elbow to the hand; the elbow is as full as the forearm below it
+# (no knob, no pinch) and the forearm tapers into the hand's own wrist.
+# (the dent above the elbow was the forearm's roll collapsing the elbow rings,
+# fixed by the twist bones below, not by a fuller elbow)
+const FP_ELBOW_R=.088
+const FP_WRIST_MIN=.034
+const ARM_BINS=100
+static func bare_arm_radius(u:float,e:float,wrist:float) -> float:
+	var keys=[[0.,FP_UPPERARM_R],[e*.45,FP_UPPERARM_R],[e,FP_ELBOW_R],[e+(1.-e)*.32,FP_FOREARM_R*1.02],[1.,wrist]]
+	for i in range(keys.size()-1):
+		if u<=float(keys[i+1][0]):
+			var t=smoothstep(float(keys[i][0]),float(keys[i+1][0]),u)
+			return lerpf(float(keys[i][1]),float(keys[i+1][1]),t)
+	return wrist
+# Place along the arm (0 at the upper-arm joint, 1 at the wrist) and the
+# nearest point on the bone line of a vertex (mesh space).
+static func chain_point(v:Vector3,ch:Array) -> Array:
+	var a:Vector3=ch[0];var b:Vector3=ch[1];var c:Vector3=ch[2]
+	var la=maxf(.0001,a.distance_to(b));var lb=maxf(.0001,b.distance_to(c))
+	var t1=clampf((v-a).dot(b-a)/(la*la),0.,1.);var t2=clampf((v-b).dot(c-b)/(lb*lb),0.,1.)
+	var p1=a+(b-a)*t1;var p2=b+(c-b)*t2
+	if v.distance_squared_to(p1)<v.distance_squared_to(p2):return [t1*la/(la+lb),p1]
+	return [(la+t2*lb)/(la+lb),p2]
+func bind_name(skin:Skin,bind:int) -> String:
+	var nm=skin.get_bind_name(bind)
+	return nm if nm!="" else skeleton.get_bone_name(skin.get_bind_bone(bind))
 static var slim_cache={}
 # Bones whose triangles make up the first-person arm mesh.
 const FP_ARM_BONES=["Shoulder","UpperArm","LowerArm","Wrist","Index","Middle","Ring","Pinky","Thumb"]
@@ -288,7 +316,7 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 		if axes[b][2]:continue
 		var nm=skin.get_bind_name(b) if skin.get_bind_name(b)!="" else skeleton.get_bone_name(skin.get_bind_bone(b))
 		fore_of[nm.substr(nm.length()-1)]=b
-	var wrist_girth={};var fore_end={}
+	var wrist_girth={};var fore_end={};var wrist_target={}
 	for s in range(source.get_surface_count()):
 		var arrays=source.surface_get_arrays(s)
 		var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS]
@@ -317,7 +345,60 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 		var end_r=fore_end[b][0]/fore_end[b][1] if fore_end.has(b) and fore_end[b][1]>3 else (girth[b][0]/girth[b][1] if girth.has(b) and girth[b][1]>0 else .05)
 		var hand_r=wrist_girth[b][0]/wrist_girth[b][1]*FP_HAND/FP_BODY_SCALE
 		ends[b]=clampf(hand_r*FP_WRIST_MATCH/maxf(.001,end_r),.5,float(factors[b]))
+		wrist_target[b]=hand_r*FP_WRIST_MATCH
 		if OS.is_stdout_verbose():print("fp_arms wrist match: forearm end r %.4f hand wrist r %.4f -> end factor %.2f (elbow factor %.2f)"%[end_r,hand_r,ends[b],factors[b]])
+	# 1.4.5 bare arms (skin around the elbow): the per-bone factors gave the
+	# sparse forearm rings a bigger scale than the upper arm, so the first ring
+	# below the elbow stood out as a knob and the arm pinched in above it. On
+	# these outfits both arms are rebuilt to one smooth girth line from the
+	# shoulder through the elbow to the hand (bare_arm_radius): each ring keeps
+	# its shape but is scaled to the line at its place along the arm.
+	var chain={} # side -> [upper-arm joint, elbow, wrist] (mesh space)
+	for b in axes:
+		var nm=bind_name(skin,b);var sd=nm.substr(nm.length()-1)
+		if not chain.has(sd):chain[sd]=[Vector3.ZERO,Vector3.ZERO,Vector3.ZERO]
+		chain[sd][0 if axes[b][2] else 1]=axes[b][0]
+	for b in wrists:
+		if chain.has(wrists[b]):chain[wrists[b]][2]=skin.get_bind_pose(b).affine_inverse().origin
+	var sums={};var counts={};var skin_lo={}
+	for sd in chain:
+		var s0=PackedFloat32Array();s0.resize(ARM_BINS);var c0=PackedFloat32Array();c0.resize(ARM_BINS);sums[sd]=s0;counts[sd]=c0;skin_lo[sd]=2.
+	for s in range(source.get_surface_count()):
+		var arrays=source.surface_get_arrays(s)
+		var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS]
+		if bones==null or weights==null:continue
+		var mat=source.surface_get_material(s);var is_skin=mat!=null and mat.resource_name.to_lower().contains("skin")
+		var per=bones.size()/maxi(1,verts.size())
+		for i in range(verts.size()):
+			var aw=0.;var best=-1;var bw=-1.
+			for k in range(per):
+				var b=bones[i*per+k];var wgt=weights[i*per+k]
+				if axes.has(b):aw+=wgt
+				if wgt>bw:bw=wgt;best=b
+			if not axes.has(best) or aw<.6:continue
+			var nm=bind_name(skin,best);var sd=nm.substr(nm.length()-1)
+			if not chain.has(sd):continue
+			var cp=chain_point(verts[i],chain[sd]);var bin=clampi(int(float(cp[0])*ARM_BINS),0,ARM_BINS-1)
+			sums[sd][bin]+=verts[i].distance_to(cp[1]);counts[sd][bin]+=1.
+			if is_skin:skin_lo[sd]=minf(skin_lo[sd],float(cp[0]))
+	var bare={} # side -> [smoothed source radius per bin, elbow fraction, wrist radius (mesh)]
+	for sd in chain:
+		var ch:Array=chain[sd];var la=ch[0].distance_to(ch[1]);var lb=ch[1].distance_to(ch[2])
+		if la+lb<.0001:continue
+		var e=la/(la+lb)
+		if float(skin_lo[sd])>e+.04:continue # the elbow is in a sleeve: keep the per-bone shape
+		var mean=PackedFloat32Array();mean.resize(ARM_BINS)
+		for i in range(ARM_BINS):
+			var num=0.;var den=0.
+			# (narrow: the rings lie 4-6% apart, so each ring is fitted to the line)
+			for j in range(maxi(0,i-2),mini(ARM_BINS,i+3)):
+				var g=exp(-pow(float(i-j),2.)*.5);num+=g*sums[sd][j];den+=g*counts[sd][j]
+			mean[i]=num/den if den>.05 else -1.
+		var fb=fore_of.get(sd,-1)
+		var wrist=clampf(float(wrist_target.get(fb,FP_FOREARM_R*.6/unit))*unit,FP_WRIST_MIN,FP_FOREARM_R)
+		bare[sd]=[mean,e,wrist]
+		if OS.is_stdout_verbose():print("fp_arms bare arm %s: elbow at %.2f, skin from %.2f, wrist r %.3f m"%[sd,e,skin_lo[sd],wrist])
+	var twist_base=skin.get_bind_count() # first twist-bone bind (fp_skin below)
 	var out=ArrayMesh.new();var sources=[]
 	for s in range(source.get_surface_count()):
 		var arrays=source.surface_get_arrays(s)
@@ -338,6 +419,7 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 		if kept.is_empty():continue
 		var welded=[]
 		for i in range(verts.size()):welded.append(verts[i].snapped(Vector3.ONE*.0005))
+		var twisted=twist_weights(verts,bones,weights,per,fore_of,chain,twist_base)
 		for i in range(verts.size()):
 			# Thicken only where arm bones carry (nearly) all of the weight, so the
 			# wrist and the shoulder taper into the hand and the chest.
@@ -350,6 +432,15 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 					else:fore+=wgt
 				if wgt>bw:bw=wgt;best=b
 			if not axes.has(best) or arm_weight<.6:continue
+			var nm=bind_name(skin,best);var sd=nm.substr(nm.length()-1)
+			if bare.has(sd):
+				var cp=chain_point(verts[i],chain[sd]);var u=float(cp[0])
+				var m:float=bare[sd][0][clampi(int(u*ARM_BINS),0,ARM_BINS-1)]
+				if m>0.:
+					var want=bare_arm_radius(u,float(bare[sd][1]),float(bare[sd][2]))/unit
+					var f=lerpf(1.,clampf(want/m,.4,3.),clampf((arm_weight-.6)/.35,0.,1.))
+					var foot:Vector3=cp[1];verts[i]=foot+(verts[i]-foot)*f
+				continue
 			var o:Vector3=axes[best][0];var y:Vector3=axes[best][1]
 			var rel=verts[i]-o;var along=y*rel.dot(y)
 			var factor=lerpf(1.,float(factors[best]),clampf((arm_weight-.6)/.35,0.,1.))
@@ -360,18 +451,93 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 				factor=lerpf(factor,float(ends.get(best,maxf(.7,factor*FP_WRIST_TAPER))),smoothstep(.1,1.,t))
 			# The elbow (weights shared by upper arm and forearm) collapses into a
 			# thin twist when the arm bends; it is filled out a little.
-			factor*=1.+FP_ELBOW_FILL*clampf(4.*upper*fore,0.,1.)
+			# 1.4.5: the fill spreads over the whole joint zone (sqrt shape: an
+			# 80/20 vertex is already at 1.2x), so forearm and upper arm meet
+			# through a rounded elbow instead of a pinch (the user's 1.2x request).
+			factor*=1.+FP_ELBOW_FILL*clampf(2.*sqrt(maxf(0.,upper*fore)),0.,1.)
 			verts[i]=o+along+(rel-along)*factor
 		arrays[Mesh.ARRAY_VERTEX]=verts
+		arrays[Mesh.ARRAY_BONES]=twisted[0];arrays[Mesh.ARRAY_WEIGHTS]=twisted[1]
 		# The cut at the chest is closed (a kept triangle's edge shared with a
 		# dropped one): the arm never shows as a hollow tube.
 		cap_cut(arrays,indices,keep,kept,welded,per,true)
 		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays,[],{},source.surface_get_format(s)&Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
 		out.surface_set_material(out.get_surface_count()-1,source.surface_get_material(s))
 		sources.append(s)
-	slim_cache[key]=[out,sources]
+	# The arms' own skin: the outfit's binds plus the twist bones' (named, so
+	# every view body's skeleton resolves them; add_twist_bones makes them).
+	var fp_skin:Skin=skin.duplicate()
+	for sd in ["R","L"]:
+		for k in range(TWIST_LEVELS):
+			var bind=Transform3D()
+			if fore_of.has(sd) and bone.has("Wrist."+sd):
+				var lower_bind:Transform3D=skin.get_bind_pose(fore_of[sd])
+				var offset=skeleton.get_bone_rest(bone["Wrist."+sd]).origin*float(k)/TWIST_LEVELS
+				bind=(lower_bind.affine_inverse()*Transform3D(Basis(),offset)).affine_inverse()
+			fp_skin.add_named_bind(twist_name(k,sd),bind)
+	slim_cache[key]=[out,sources,fp_skin]
 	return slim_cache[key]
+# Shares each vertex's forearm weight between the two twist levels around its
+# place on the forearm (0 at the elbow, TWIST_LEVELS = the forearm bone itself
+# at the wrist). Returns [bones, weights] (copies).
+static func twist_weights(verts:PackedVector3Array,bones:PackedInt32Array,weights:PackedFloat32Array,per:int,fore_of:Dictionary,chain:Dictionary,base:int) -> Array:
+	var out_b=PackedInt32Array(bones);var out_w=PackedFloat32Array(weights)
+	var side_of={}
+	for sd in fore_of:side_of[fore_of[sd]]=sd
+	for i in range(verts.size()):
+		var share={};var touched=false
+		for k in range(per):
+			var b=bones[i*per+k];var wgt=weights[i*per+k]
+			if wgt<=0.:continue
+			var sd=str(side_of.get(b,""))
+			if sd=="" or not chain.has(sd):share[b]=float(share.get(b,0.))+wgt;continue
+			touched=true
+			var ch:Array=chain[sd];var la=ch[0].distance_to(ch[1]);var lb=ch[1].distance_to(ch[2])
+			var e=la/maxf(.0001,la+lb)
+			var f=clampf((float(chain_point(verts[i],ch)[0])-e)/maxf(.0001,1.-e),0.,1.)
+			var x=minf(f*TWIST_LEVELS,TWIST_LEVELS-.0001);var lo=int(x);var t=x-lo
+			var b0=b if lo>=TWIST_LEVELS else base+(0 if sd=="R" else TWIST_LEVELS)+lo
+			var b1=b if lo+1>=TWIST_LEVELS else base+(0 if sd=="R" else TWIST_LEVELS)+lo+1
+			share[b0]=float(share.get(b0,0.))+wgt*(1.-t);share[b1]=float(share.get(b1,0.))+wgt*t
+		if not touched:continue
+		var order=share.keys();order.sort_custom(func(p,q):return share[p]>share[q])
+		var total=0.
+		for k in range(mini(per,order.size())):total+=share[order[k]]
+		for k in range(per):
+			out_b[i*per+k]=order[k] if k<order.size() else 0
+			out_w[i*per+k]=share[order[k]]/maxf(.0001,total) if k<order.size() else 0.
+	return [out_b,out_w]
 
+# 1.4.5 forearm twist bones (first person). The hand's roll was carried by the
+# forearm bone alone, so the elbow rings - half upper arm, half forearm in
+# their weights - turned half way and collapsed inward (the dent above the
+# elbow, and the candy twist at up to 75 degrees of roll). TWIST_LEVELS bones
+# along the forearm (children of LowerArm, at 0, 1/3, 2/3 of its length) take
+# back the roll by 100%, 67%, 33%; the forearm's weights are shared out among
+# them by place (fp_arms), so the roll grows smoothly from the elbow (none) to
+# the wrist (all of it) and nothing collapses.
+const TWIST_LEVELS=3
+var twist_bones={} # side -> [bone indices, level 0..TWIST_LEVELS-1]
+static func twist_name(level:int,side:String) -> String:return "ForeTwist%d.%s"%[level,side]
+func add_twist_bones():
+	for side in ["R","L"]:
+		var lower=bone.get("LowerArm."+side,-1);var wrist=bone.get("Wrist."+side,-1)
+		if lower<0 or wrist<0:continue
+		var list=[]
+		for k in range(TWIST_LEVELS):
+			var name=twist_name(k,side);var i=skeleton.find_bone(name)
+			if i<0:
+				i=skeleton.get_bone_count();skeleton.add_bone(name);skeleton.set_bone_parent(i,lower)
+				skeleton.set_bone_rest(i,Transform3D(Basis(),skeleton.get_bone_rest(wrist).origin*float(k)/TWIST_LEVELS));skeleton.reset_bone_pose(i)
+			bone[name]=i;list.append(i)
+		twist_bones[side]=list
+func update_twist_bones():
+	for side in twist_bones:
+		var lower=bone["LowerArm."+side]
+		var q:Quaternion=(skeleton.get_bone_rest(lower).basis.get_rotation_quaternion().inverse()*skeleton.get_bone_pose_rotation(lower)).normalized()
+		var roll=wrapf(2.*atan2(q.y,q.w),-PI,PI)
+		var list:Array=twist_bones[side]
+		for k in range(list.size()):skeleton.set_bone_pose_rotation(list[k],Quaternion(Vector3.UP,-roll*(1.-float(k)/TWIST_LEVELS)))
 ## Pose update. `s` keys (all optional):
 ##  velocity (world), grounded, crouch, sprint, pitch (rad, + up), reload (-1 or 0..1),
 ##  reload_time (s), shot (seconds since last shot), throw (-1 or 0..1), hit (0..1),
@@ -398,6 +564,7 @@ func drive(dt:float,s:Dictionary):
 	for side in straight_wrist:
 		var wrist=bone["Wrist."+side]
 		skeleton.set_bone_pose_rotation(wrist,skeleton.get_bone_pose_rotation(wrist).slerp(HeroIK.straight(self,wrist),float(straight_wrist[side])))
+	if not twist_bones.is_empty():update_twist_bones()
 	Prof.add("hero_hands",_t)
 # World size of the hands relative to the rig's own units.
 func hand_scale() -> float:return absf(skeleton.global_transform.basis.get_scale().y)*hand_size

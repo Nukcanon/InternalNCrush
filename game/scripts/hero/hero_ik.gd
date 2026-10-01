@@ -496,6 +496,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	if bend>WRIST_LIMIT:swing=Quaternion.IDENTITY.slerp(swing,WRIST_LIMIT/bend)
 	lower_world=(lower_world*twist).normalized()
 	wrist_world=(lower_world*excess*swing).normalized()
+	if fp:hero.set_meta("fp_twist_"+side,twist.get_angle()) # review tools: forearm roll taken (rad)
 	var parent_world=hero.bone_world(shoulder).basis.get_rotation_quaternion()
 	set_world(sk,upper,parent_world,upper_world,weight)
 	set_world(sk,lower,upper_world,lower_world,weight)
@@ -600,6 +601,13 @@ const THUMB_PINCH=[0.,.3,.65] # ...with its last joint bent forward onto the rou
 # the wrist on this rig, so the thumb stood up and back - measured with
 # tools/review_hands.gd thumbprobe: -.7 points it along -Z of the gun).
 const THUMB_PINCH_BASE=-.7
+# 1.4.5 round 3: the loading hand's thumb stands where it stood (the user's
+# screenshots) - [base, middle] - and only its tip joint bends forward
+# (THUMB_LOAD_TIP, toward the gun); the pinch above hid the whole thumb.
+const THUMB_LOAD=[.2,.1]
+# (thumbprobe, gun space: -.6 turns the last segment from up-and-aside to
+# straight ahead along the gun; positive bends it out to the side)
+const THUMB_LOAD_TIP=-.8
 const THUMB_BASE={"pistol":.2,"support":.1,"knife":.25,"hold":.2,"top":.1,"over":.15}
 ## `contact` (GripField.contact) / `hand_scale`: fingers wrap the model's real
 ## surface instead of the grip box.
@@ -641,10 +649,13 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			# loading) is pinched — the thumb closes over it toward the index
 			# finger; the wrap search found nothing to wrap and left it standing
 			# up, bent back away from the palm.
-			var pinch=style=="hold" and maxf(half.x,maxf(half.y,half.z))<.03
+			# 1.4.5: thin, whatever its length (the longer, more visible rounds of
+			# 1.4.5 failed a size test on all three axes, so the thumb fell back to
+			# the wrap search and stood up and back again).
+			var pinch=style=="hold" and maxf(half.x,half.y)<.03
 			if pinch:
-				angles[0]=THUMB_PINCH_BASE
-				for i in range(1,bones.size()):angles[i]=THUMB_PINCH[mini(i,THUMB_PINCH.size()-1)]
+				angles[0]=THUMB_LOAD[0]
+				for i in range(1,bones.size()):angles[i]=THUMB_LOAD_TIP if i==bones.size()-1 else THUMB_LOAD[mini(i,THUMB_LOAD.size()-1)]
 			if not raised and not pinch:
 				for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
 			# On the real surface the thumb may run into the receiver / tube above

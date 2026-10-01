@@ -821,7 +821,7 @@ func refresh_gear_detail():
 	gear_detail.text="머리 ×%.2f · 몸통 ×1 · 다리 ×%.2f\n조준 이동 %.2f m/s · 비조준 %.1f° / 조준 %.1f°"%[w.zone_multipliers.head,w.zone_multipliers.legs,float(w.get("ads_speed",4.4))*.5,w.spread,w.ads_spread]
 	if w.name=="MONOLITH":gear_detail.text="머리 300 · 몸통 120 · 팔/다리 90 · 손/발 80 피해\n방어구 및 120m 이후 거리 감소 적용\n4발 · 사격 간격 2.35초 · 재장전 3.8초"
 	if float(w.get("structure_damage_scale",1.))<1.:gear_detail.text+="\n포탑·엄폐물 피해 %d%%"%roundi(float(w.structure_damage_scale)*100.)
-	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 20/초\n유효 거리 18 m · 에너지 180\n클릭 유지: 연결한 아군 지속 치료 · 조준 이탈 ±100° 허용.\n벽·사거리 이탈 시 연결 해제 · 여러 LINK 중첩 불가."
+	if w.kind=="heal":gear_detail.text="LINK · 피해 없음 · 회복 20/초\n유효 거리 16 m · 에너지 180\n클릭 유지: 연결한 아군 지속 치료 · 조준 이탈 ±100° 허용.\n벽·사거리 이탈 시 연결 해제 · 여러 LINK 중첩 불가."
 	if float(w.get("heal_per_pellet",0.))>0:gear_detail.text=str(w.get("description",""))+"\n아군은 치료, 적군은 피해 · 모바일 자동 사격 지원"
 	if w.get("rocket",false):gear_detail.text=str(w.description)+"\n속도 36m/s · 완만한 낙하 · 직격 시 강한 밀림"
 	if w.get("laser",false):gear_detail.text=str(w.description)+"\n100m까지 동일 피해 · 150m에서 30% · 머리 ×1.5 / 다리 ×0.5"
@@ -884,6 +884,9 @@ func show_hud():
 	var _ps=Prof.now();build_hud();Prof.add("ui_show_hud",_ps)
 func build_hud():
 	clear_panel()
+	# The first HUD of a match from the menu (bots, LAN, internet alike): the
+	# first frame is prepared behind a short cover (Game.prime_first_frame).
+	if not play_fullscreen_done:game.call_deferred("prime_first_frame")
 	enter_play_fullscreen()
 	if hud:hud.queue_free()
 	hud=Control.new();hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(hud)
