@@ -159,7 +159,12 @@ func first_person_only():
 const FP_FOREARM_R=.086
 const FP_UPPERARM_R=.09
 const FP_BODY_SCALE=2.0
-const FP_WRIST_TAPER=.88 # 1.4.4 round 9: wrists ~40% thicker than .62 (they read too thin, bare arms most)
+const FP_WRIST_TAPER=.62 # fallback taper when the hand mesh cannot be measured
+# 1.4.5: the forearm tapers to the hand's own wrist girth (times this margin),
+# so the arm runs into the hand without a step (a fixed thick wrist next to
+# the small hand looked wrong on bare-armed heroes).
+const FP_WRIST_MATCH=1.12
+const FP_HAND=1.15 # first-person hand scale (Actor.VIEW_HAND); hand_size = FP_HAND/FP_BODY_SCALE
 # First person: how far the support hand may slide back along a handguard /
 # off a vertical grip before the shoulder stretches instead.
 const FP_SLIDE=.06
@@ -234,13 +239,14 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 	var key=source.get_instance_id()
 	if slim_cache.has(key):return slim_cache[key]
 	# Bone axes in mesh space: origin and +Y of each bound arm bone.
-	var axes={};var arm={}
+	var axes={};var arm={};var wrists={}
 	for bind in range(skin.get_bind_count()):
 		var name=skin.get_bind_name(bind)
 		if name=="":name=skeleton.get_bone_name(skin.get_bind_bone(bind))
 		if name.begins_with("UpperArm") or name.begins_with("LowerArm"):
 			var bone:Transform3D=skin.get_bind_pose(bind).affine_inverse()
 			axes[bind]=[bone.origin,bone.basis.y.normalized(),name.begins_with("UpperArm")]
+		if name.begins_with("Wrist."):wrists[bind]=name.substr(name.length()-1)
 		for prefix in FP_ARM_BONES:
 			if name.begins_with(prefix):arm[bind]=true;break
 	# Mean radius of each arm bone's own vertices, for the girth factors.
@@ -273,6 +279,45 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 			var name=skin.get_bind_name(other)
 			if name=="":name=skeleton.get_bone_name(skin.get_bind_bone(other))
 			if name==child_prefix+"."+side:lengths[b]=maxf(.05,(skin.get_bind_pose(other).affine_inverse().origin-axes[b][0]).length())
+	# 1.4.5: the forearm's end factor matches the hand's own girth just past
+	# the wrist joint (hand vertices, measured about the forearm axis), scaled
+	# as the hand is in first person, so the arm runs into the hand without a
+	# step. `ends`: forearm bind -> factor at the wrist.
+	var ends={};var fore_of={}
+	for b in axes:
+		if axes[b][2]:continue
+		var nm=skin.get_bind_name(b) if skin.get_bind_name(b)!="" else skeleton.get_bone_name(skin.get_bind_bone(b))
+		fore_of[nm.substr(nm.length()-1)]=b
+	var wrist_girth={};var fore_end={}
+	for s in range(source.get_surface_count()):
+		var arrays=source.surface_get_arrays(s)
+		var verts:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX];var bones=arrays[Mesh.ARRAY_BONES];var weights=arrays[Mesh.ARRAY_WEIGHTS]
+		if bones==null or weights==null:continue
+		var per=bones.size()/maxi(1,verts.size())
+		for i in range(verts.size()):
+			var best=-1;var bw=-1.
+			for k in range(per):
+				if weights[i*per+k]>bw:bw=weights[i*per+k];best=bones[i*per+k]
+			if bw<.8:continue
+			if axes.has(best) and not axes[best][2]:
+				# ...and the forearm mesh's own girth near its wrist end.
+				var r=verts[i]-axes[best][0];var ay:Vector3=axes[best][1]
+				if r.dot(ay)>.8*float(lengths[best]):
+					if not fore_end.has(best):fore_end[best]=[0.,0]
+					fore_end[best][0]+=(r-ay*r.dot(ay)).length();fore_end[best][1]+=1
+				continue
+			if not wrists.has(best) or not fore_of.has(wrists[best]):continue
+			var fb=fore_of[wrists[best]];var frel=verts[i]-axes[fb][0];var fy:Vector3=axes[fb][1]
+			var past=frel.dot(fy)-float(lengths[fb])
+			if past<-.02*float(lengths[fb]) or past>.22*float(lengths[fb]):continue
+			if not wrist_girth.has(fb):wrist_girth[fb]=[0.,0]
+			wrist_girth[fb][0]+=(frel-fy*frel.dot(fy)).length();wrist_girth[fb][1]+=1
+	for b in wrist_girth:
+		if wrist_girth[b][1]<4:continue
+		var end_r=fore_end[b][0]/fore_end[b][1] if fore_end.has(b) and fore_end[b][1]>3 else (girth[b][0]/girth[b][1] if girth.has(b) and girth[b][1]>0 else .05)
+		var hand_r=wrist_girth[b][0]/wrist_girth[b][1]*FP_HAND/FP_BODY_SCALE
+		ends[b]=clampf(hand_r*FP_WRIST_MATCH/maxf(.001,end_r),.5,float(factors[b]))
+		if OS.is_stdout_verbose():print("fp_arms wrist match: forearm end r %.4f hand wrist r %.4f -> end factor %.2f (elbow factor %.2f)"%[end_r,hand_r,ends[b],factors[b]])
 	var out=ArrayMesh.new();var sources=[]
 	for s in range(source.get_surface_count()):
 		var arrays=source.surface_get_arrays(s)
@@ -312,7 +357,7 @@ func fp_arms(source:Mesh,skin:Skin) -> Array:
 			# 60% of its girth at the elbow); the hand keeps its size.
 			if not axes[best][2]:
 				var t=clampf(rel.dot(y)/float(lengths[best]),0.,1.)
-				factor=lerpf(factor,maxf(.7,factor*FP_WRIST_TAPER),smoothstep(.25,1.,t))
+				factor=lerpf(factor,float(ends.get(best,maxf(.7,factor*FP_WRIST_TAPER))),smoothstep(.1,1.,t))
 			# The elbow (weights shared by upper arm and forearm) collapses into a
 			# thin twist when the arm bends; it is filled out a little.
 			factor*=1.+FP_ELBOW_FILL*clampf(4.*upper*fore,0.,1.)

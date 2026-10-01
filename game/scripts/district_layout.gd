@@ -22,6 +22,68 @@ static func read_plan(index:int) -> Dictionary:
 	var path="res://assets/arenas/districts/map_%02d.json"%index
 	if FileAccess.file_exists(path):return JSON.parse_string(FileAccess.get_file_as_string(path))
 	return JSON.parse_string(FileAccess.get_file_as_bytes(path+".gz").decompress_dynamic(32*1024*1024,FileAccess.COMPRESSION_GZIP).get_string_from_utf8())
+# 1.4.5: maps whose main street ran straight from spawn to spawn (the enemy
+# base in view from the first second; tools/audit_spawn_los.gd). A staggered
+# pair of screen walls across the street in front of each spawn breaks the
+# line of sight while leaving a path round either end.
+const SPAWN_SCREENS=[0,1,2,3,5,6,7,8,10,12,13,14,15,16,17,18,25,26,27,28,29]
+const SCREEN_DISTANCE=11.
+const SCREEN_HEIGHT=3.2
+static func lane_extent(plan:Dictionary,at:Vector2,right:Vector2) -> Array:
+	# The walkable street across `at` along `right`: contiguous ground around 0.
+	var grounds=[]
+	for source in plan.surfaces:
+		if source.layer!="ground":continue
+		var polys=[]
+		for points in source.rings:polys.append(ring(points))
+		grounds.append(polys)
+	var inside=func(p:Vector2) -> bool:
+		for polys in grounds:
+			if Geometry2D.is_point_in_polygon(p,polys[0]):
+				var hole=false
+				for k in range(1,polys.size()):
+					if Geometry2D.is_point_in_polygon(p,polys[k]):hole=true;break
+				if not hole:return true
+		return false
+	if not inside.call(at):return []
+	var lo=0.;var hi=0.
+	while lo>-14. and inside.call(at+right*(lo-.25)):lo-=.25
+	while hi<14. and inside.call(at+right*(hi+.25)):hi+=.25
+	return [lo,hi]
+static func spawn_screens(a:Node,plan:Dictionary,index:int):
+	if not index in SPAWN_SCREENS or plan.spawns.size()<2:return
+	for team in range(2):
+		var here=Vector2(plan.spawns[team][0],plan.spawns[team][1]);var there=Vector2(plan.spawns[1-team][0],plan.spawns[1-team][1])
+		var dir=(there-here).normalized();var right=Vector2(-dir.y,dir.x)
+		var ground_y=float(plan.get("spawn_heights",[0,0])[team])
+		for k in range(2):
+			var at=here+dir*(SCREEN_DISTANCE+k*5.)
+			var span=lane_extent(plan,at,right)
+			if span.is_empty():continue
+			var lo=float(span[0]);var hi=float(span[1]);var width=hi-lo
+			if width<3.:continue
+			# Each screen covers 62% of the street from one side; the two leave
+			# their gaps on opposite sides, so there is no straight view through.
+			var cover=width*.62
+			var s0=lo if k==0 else hi-cover;var s1=lo+cover if k==0 else hi
+			var centre=at+right*((s0+s1)*.5)
+			var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;a.architecture.add_child(body)
+			# Local +x along `right`: Basis(UP,t)*(1,0,0) = (cos t,0,-sin t).
+			body.position=Vector3(centre.x,ground_y+SCREEN_HEIGHT*.5,centre.y);body.rotation.y=atan2(-right.y,right.x)
+			var size=Vector3(s1-s0,SCREEN_HEIGHT,.6)
+			var mesh=MeshInstance3D.new();var box=BoxMesh.new();box.size=size;mesh.mesh=box
+			mesh.material_override=WorldSurface.material("wall",index,false,team);body.add_child(mesh)
+			var cap=MeshInstance3D.new();var cap_box=BoxMesh.new();cap_box.size=Vector3(size.x+.2,.16,.8);cap.mesh=cap_box;cap.position.y=SCREEN_HEIGHT*.5;cap.material_override=WorldSurface.material("trim",index);body.add_child(cap)
+			var shape=CollisionShape3D.new();var bs=BoxShape3D.new();bs.size=size;shape.shape=bs;body.add_child(shape)
+			# Bot navigation: district maps block cells by navigation_blocks (AABB,
+			# see Arena.navigation_clear); the footprint's bounding box, grown by
+			# half a capsule as Arena.box does for obstacles.
+			var r=Rect2(centre,Vector2.ZERO)
+			for sx in [-1.,1.]:
+				for sz in [-1.,1.]:r=r.expand(centre+right*(sx*size.x*.5)+dir*(sz*size.z*.5))
+			r=r.grow(.6)
+			a.obstacles.append(r)
+			a.navigation_blocks.append(AABB(Vector3(r.position.x,ground_y-.1,r.position.y),Vector3(r.size.x,SCREEN_HEIGHT+.2,r.size.y)))
 static func build(a:Node,index:int):
 	var plan=read_plan(index)
 	a.bounds=Vector2(plan.dimensions[0],plan.dimensions[1])*.5;a.vertical_map=true;a.has_water=false;a.indoors=index in CombatLayout.INDOOR
@@ -80,6 +142,7 @@ static func build(a:Node,index:int):
 			if not floor_candidates.is_empty():pos.y=float(floor_candidates[0])+.04
 			if a.point_clear(pos):a.spawn_points[team].append(pos);a.ffa_spawns.append(pos)
 		if a.spawn_points[team].is_empty():a.spawn_points[team].append(Vector3(p[0],float(plan.get("spawn_heights",[0,0])[team])+.15,p[1]))
+	spawn_screens(a,plan,index)
 	a.sites=[];a.zones=[]
 	for i in range(plan.targets.size()):
 		var point=plan.targets[i];a.zones.append(Vector3(point[0],float(plan.get("target_heights",[0,0,0])[i]),point[1]))

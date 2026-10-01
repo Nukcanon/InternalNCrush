@@ -362,8 +362,11 @@ static func window(kit:Kit,style:Dictionary,cx:float,y:float,hs:int,near_deck:bo
 	var pane=glass
 	if kind=="glow":pane=Color("ffb347")
 	kit.quad(Vector3(cx-ww*.5,yb,.085),Vector3(ww,0,0),Vector3(0,wh,0),pane)
-	if kind=="broken":
-		kit.quad(Vector3(cx-ww*.1,yb+wh*.35,.087),Vector3(ww*.55,0,0),Vector3(0,wh*.45,0),Color("15181b"))
+	# 1.4.5: a broken pane only on every third window, and as a dark hole in
+	# the glass tone (every window had the same black square, which read as
+	# a drawing error rather than damage).
+	if kind=="broken" and hs%3==0:
+		kit.quad(Vector3(cx+ww*.05,yb+wh*.42,.087),Vector3(ww*.38,0,0),Vector3(0,wh*.36,0),glass.darkened(.65))
 	if kind=="arch":
 		kit.arch(cx,yb+wh,.085,ww*.5,pane)
 		kit.arch_ring(cx,yb+wh,.09,ww*.5,.1,frame)
@@ -670,6 +673,10 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 				for s in range(1,floors+1):kit.slab(x0,x1,low+s*storey-.2 if not indoor else low+top-.5,low+s*storey if not indoor else low+top-.3,.1,Color("5a6570"))
 			"pipes":
 				var py=low+(2.6 if not indoor else 3.8)
+				# 1.4.5: pipes run above the window heads, never across the glass.
+				if str(style.win[0]) not in ["none","band","grid"]:
+					var head=level+float(style.win[3])+float(style.win[2])+.35
+					if py<head and head+.9<low+top:py=head
 				kit.slab(x0,x1,py,py+.22,.2,Color("8a6a4a") if style.has("indoor") else Color("9aa4a8"),.02)
 				if hs%2==0:kit.slab(x1-.8,x1-.58,low+.3,low+top-.3,.2,Color("b05a3a"),.02)
 				if indoor:kit.slab(x0,x1,py+.5,py+.66,.18,Color("4f7a8a"),.02)

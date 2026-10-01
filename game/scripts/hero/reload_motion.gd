@@ -39,7 +39,17 @@ static func mag_offset(t:float) -> Vector3:
 	# 1.4.4 round 9: only as far as the bottom of the first-person view (the
 	# hand follows it): dropped .62 m it vanished and the hand seemed to work
 	# on nothing under the well.
-	return Vector3(-.04*drop,-.28*drop,.20*drop)
+	# 1.4.5: .28 left the magazine's top in the well (it did not read as pulled
+	# out); .45 clears the well on every rifle and stays in the frame.
+	return Vector3(-.04*drop,-.45*drop,.22*drop)
+## The magazine's travel for this gun (gun-node space): proportional to its
+## own height, so a pistol's short magazine comes just clear of the grip (and
+## stays in view) while a rifle's long one travels further (1.4.5: the fixed
+## offset put a pistol's magazine 80 cm below the eye, out of the view).
+static func mag_travel(gun:GunModel,t:float) -> Vector3:
+	var drop=mag_drop(t);var h=float(gun.mag_height)
+	return Vector3(-.15*h*drop,-MAG_CLEAR*h*drop,.8*h*drop)
+const MAG_CLEAR=1.35
 static func hand(position:Vector3,style:String,shape:Dictionary={},basis:Basis=Basis.IDENTITY) -> Dictionary:
 	return {"position":position,"style":style,"shape":shape,"basis":basis}
 # Magazine centre (gun space) and grip shape (handle frame, base units).
@@ -117,7 +127,7 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			var approach=Vector3(-.16,-.22,.10)
 			var slide=Vector3(-(mag_shape.half.x+.014),top-.03,grip.z-.05)
 			if t<.16:return hand(approach.lerp(mag,smoothstep(0.,.16,t)),"pistol",mag_shape)
-			if t<RACK:return hand(mag+mag_offset(t),"pistol",mag_shape)
+			if t<RACK:return hand(mag+mag_travel(gun,t),"pistol",mag_shape)
 			if tactical:return hand(mag.lerp(approach,smoothstep(RACK,1.,t)),"pistol",mag_shape)
 			return rack(mag,slide,approach,t,.06,hand(approach,"pistol",mag_shape),mag_shape,knob)
 		"shell","break","revolver":
@@ -132,6 +142,10 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			# of closing over the whole revolver.
 			if style=="revolver":
 				at+=Vector3(-.03,-.018,.05);cartridge={"half":Vector3(.009,.009,.055),"round":.009}
+			# 1.4.5: shells likewise ride ahead of the fingertips (held in the fist
+			# they were hidden inside the hand).
+			elif style in ["shell","break"]:
+				at+=Vector3(-.025,-.014,.045);cartridge={"half":Vector3(.0095,.0095,.06),"round":.0095}
 			if t<lead:return hand(start.lerp(at,smoothstep(0.,lead,t)),"hold",cartridge)
 			var done=.78 if style=="shell" else .76 if style=="break" else .8
 			if t<done:return hand(at,"hold",cartridge)
@@ -156,18 +170,23 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 				var from=fore.lerp(below,smoothstep(0.,show*.6,t))
 				return hand(from.lerp(tail_at.call(show),smoothstep(show*.6,show,t)),"pistol",body,ROCKET_FIST)
 			if t<push+.04:return hand(tail_at.call(t),"pistol",body,ROCKET_FIST)
-			return hand(tail_at.call(push).lerp(fore,smoothstep(push+.04,1.,t)),fore_style,fore_shape,fore_basis)
+			# 1.4.5: back to the front grip round the outside of the launcher (the
+			# straight line from behind the tubes ran through the tube cluster).
+			var rear_out:Vector3=tail_at.call(push)+Vector3(-.14,-.10,.04)
+			var leg=smoothstep(push+.04,1.,t)
+			if leg<.45:return hand(tail_at.call(push).lerp(rear_out,leg/.45),fore_style,fore_shape,fore_basis)
+			return hand(rear_out.lerp(fore,(leg-.45)/.55),fore_style,fore_shape,fore_basis)
 		"battery":
 			# Laser rifle: two D-size cells under the receiver. A fist closes on
 			# the pair, takes it down and out of view with the magazine, seats a
 			# fresh pair and returns; there is no bolt to work.
 			if t<GRAB:return hand(fore.lerp(mag,smoothstep(0.,GRAB,t)),"pistol",mag_shape)
-			if t<RACK:return hand(mag+mag_offset(t),"pistol",mag_shape)
+			if t<RACK:return hand(mag+mag_travel(gun,t),"pistol",mag_shape)
 			return hand(mag.lerp(fore,smoothstep(RACK,1.,t)),fore_style,fore_shape,fore_basis)
 		_:
 			# Box magazines under the receiver (rifles, SMGs, machine guns, tools).
 			if t<GRAB:return hand(fore.lerp(mag,smoothstep(0.,GRAB,t)),"pistol",mag_shape)
-			if t<RACK:return hand(mag+mag_offset(t),"pistol",mag_shape)
+			if t<RACK:return hand(mag+mag_travel(gun,t),"pistol",mag_shape)
 			if tactical:return hand(mag.lerp(fore,smoothstep(RACK,1.,t)),fore_style,fore_shape,fore_basis)
 			var knob_at=Vector3(-(mag_shape.half.x+.02),top-.04,grip.z-.2)
 			return rack(mag,knob_at,fore,t,.08,home,mag_shape,knob)

@@ -22,7 +22,7 @@ func run():
 	p.invulnerable=0.;p.protect=g.clock+4.;g.actors[1].visual(.016,p,g.clock);expect(g.actors[1].protected_visual.visible,"respawn uses same shell")
 	p.protect=0.;g.actors[1].visual(.016,p,g.clock);expect(not g.actors[1].protected_visual.visible,"expired protection shell removed")
 	expect(not g.has_node("Web3D") and not root.disable_3d,"native rendering remains enabled")
-	expect(MarkerTracker.DWELL_SECONDS==1.5,"mark takes 1.5 seconds")
+	expect(is_equal_approx(MarkerTracker.DWELL_SECONDS,1.8),"mark takes 1.8 seconds (1.4.5)")
 	g.free();await process_frame
 	var arena=Node3D.new();root.add_child(arena);var props={}
 	for i in range(6):

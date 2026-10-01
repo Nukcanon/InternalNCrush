@@ -7,7 +7,9 @@ func _ready():
 	# (the whole view model is mirrored for left-handed ones, putting it right).
 	# 1.4.4: a small display flush on the receiver's side (the old 9 cm panel
 	# hung out beside the gun and read as a magazine).
-	position=Vector3(-.03,.105,-.14);rotation_degrees=Vector3(-30,0,0)
+	# 1.4.5: on top of the receiver just behind the rail, tilted up toward the
+	# eye (on the receiver's side it sat under the capacitor tube).
+	position=Vector3(0,.012,0);rotation_degrees=Vector3(-50,0,0)
 	MeshFactory.box(self,Vector3(0,0,0),Vector3(.05,.05,.008),Color("15252d"))
 	for i in range(10):
 		var mesh=MeshFactory.box(self,Vector3(0,-.0195+i*.0042,.005),Vector3(.036,.003,.003),Color("53e57d"))

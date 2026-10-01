@@ -78,10 +78,12 @@ func hand_points(h:HeroCharacter,side:String) -> Array:
 			for k in [0.,.5]:pts.append([finger+str(i+1),o.lerp(nxt,k)])
 		pts.append([finger+"tip",h.bone_world(bones[bones.size()-1])*Vector3(0,HeroIK.TIP.get(finger,.028)*.8,0)])
 	return pts
+func a_cam_local(p:Vector3) -> Vector3:return g.actors[1].camera.to_local(p).snapped(Vector3.ONE*.01)
 func audit(h:HeroCharacter,item:Node3D,label:String):
 	var sets=item_triangles(item);var line="AUDIT "+label
 	if item is GunModel:
 		var g=item.right_grip.global_position
+		print("MAG ",label," node=",item.magazine," visible=",item.magazine.is_visible_in_tree() if item.magazine else false," local=",item.magazine.position if item.magazine else null," rest=",item.mag_rest.origin," aabb=",(item.magazine.get_aabb() if item.magazine is MeshInstance3D else "-") if item.magazine else "-"," cam=",(a_cam_local(item.magazine.global_position) if item.magazine else "-"))
 		line+=" sanity(grip_in=%s far_out=%s)"%[str(inside(sets,g)),str(inside(sets,g+Vector3(0,3,0)))]
 	for side in ["R","L"]:
 		var bad=[];var worst=0.
@@ -281,7 +283,7 @@ func run():
 		["wrench-rest",3,MeleeCombat.SLOT,"",-1,"melee:-1"],["wrench-cut",3,MeleeCombat.SLOT,"",-1,"melee:.1"],["pistol-reload15",0,1,"pistol",-1,"reload:.15"],["laser-reload30",2,0,"h6",-1,"reload:.3"],
 		# Round 8: the revolver reload as a sequence.
 		["revolver-reload10",1,1,"heavy_pistol",-1,"reload:.1"],["revolver-reload20",1,1,"heavy_pistol",-1,"reload:.2"],["revolver-reload40",1,1,"heavy_pistol",-1,"reload:.4"],["revolver-reload50",1,1,"heavy_pistol",-1,"reload:.5"],
-		["revolver-reload75",1,1,"heavy_pistol",-1,"reload:.75"],["revolver-reload85",1,1,"heavy_pistol",-1,"reload:.85"],["revolver-reload95",1,1,"heavy_pistol",-1,"reload:.95"]]
+		["revolver-reload75",1,1,"heavy_pistol",-1,"reload:.75"],["quad-reload15",2,0,"h5",-1,"reload:.15"],["quad-reload45",2,0,"h5",-1,"reload:.45"],["quad-reload75",2,0,"h5",-1,"reload:.75"],["quad-reload90",2,0,"h5",-1,"reload:.9"],["pistol-reload30",0,1,"pistol",-1,"reload:.3"],["pistol-reload60",0,1,"pistol",-1,"reload:.6"],["revolver-reload85",1,1,"heavy_pistol",-1,"reload:.85"],["revolver-reload95",1,1,"heavy_pistol",-1,"reload:.95"]]
 	# "allguns": every weapon and tool in first person at the hip (right-handed).
 	if "allguns" in only:
 		var chosen=only.filter(func(x):return Catalog.weapons.has(x))

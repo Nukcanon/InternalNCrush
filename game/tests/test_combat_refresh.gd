@@ -33,7 +33,9 @@ func run():
 	g.actors[3].position.z=-20
 	for i in range(7):MarkerTracker.tick(g,1,.1)
 	expect(p.marker_target==2 and q.mark==0.,"closer entrant cannot steal partial lock")
-	MarkerTracker.tick(g,1,.1);expect(q.mark==106.,"mark at 1.5 seconds")
+	for i in range(3):MarkerTracker.tick(g,1,.1)
+	expect(q.mark==0.,"not yet marked at 1.7 seconds (1.4.5: 1.8 s dwell)")
+	MarkerTracker.tick(g,1,.1);expect(q.mark==106.,"mark at 1.8 seconds")
 	MarkerTracker.tick(g,1,.1);expect(p.marker_target==3,"marked target excluded and next selected")
 	a.aim_yaw=.4;MarkerTracker.tick(g,1,.1);expect(p.marker_progress==0. and p.marker_target==0,"cone exit resets timer")
 	a.aim_yaw=0.;g.clock=107.;expect(MarkerTracker.select_target(g,1)==3,"expired marks eligible again by distance")

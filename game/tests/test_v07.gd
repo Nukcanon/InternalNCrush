@@ -9,7 +9,7 @@ func expect(ok:bool,message:String):
 func run():
 	Catalog.load_all()
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"V07","v07_test_identity")
-	var a=g.actors[1];a.position=Vector3(0,.1,18);a.reset_view(0);a.velocity=Vector3.ZERO
+	var a=g.actors[1];a.position=Vector3(0,.1,23);a.reset_view(0);a.velocity=Vector3.ZERO # 1.4.5: starts behind the spawn screen (z 14.5) so the run never reaches it
 	await physics_frame;await physics_frame
 	a.input_state.z=-1;a.simulate(.016,0.,true)
 	expect(absf(a.velocity.z)>0 and absf(a.velocity.z)<7.4,"movement accelerates instead of snapping to maximum speed")

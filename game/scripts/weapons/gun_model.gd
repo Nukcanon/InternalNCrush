@@ -61,6 +61,7 @@ var launcher=false # rocket launcher built by LauncherModels (visible rounds)
 var rounds:Array=[] # Round<i> nodes of a launcher, front to back order of loading
 var magazine:Node3D
 var mag_rest=Transform3D.IDENTITY
+var mag_height=.2 # gun-node space (see build)
 var flash:Node3D
 var outlined=false
 # DUET: a second pistol in the left hand; shots alternate between the muzzles.
@@ -129,7 +130,17 @@ func build(w:Dictionary,ink:bool=false):
 	if launcher:
 		for i in range(int(base.get_meta("rounds",0))):rounds.append(base.get_node("Round%d"%i))
 	magazine=base.get_node_or_null("Magazine")
-	if magazine:mag_rest=magazine.transform
+	if magazine:
+		mag_rest=magazine.transform
+		# Height of the magazine (gun-node space): the reload pulls it out by
+		# its own length, so a pistol's short magazine clears its grip while a
+		# rifle's long one travels further (1.4.5).
+		var box=AABB()
+		for m in magazine.find_children("*","MeshInstance3D",true,false)+([magazine] if magazine is MeshInstance3D else []):
+			if m.mesh==null:continue
+			var local:AABB=relative(m,magazine)*m.get_aabb()
+			box=local if box.size==Vector3.ZERO else box.merge(local)
+		mag_height=maxf(.03,box.size.y*base.scale.y)
 	for mesh in base.find_children("*","MeshInstance3D",true,false):paint(mesh)
 	double_sided_magazine()
 	if w.get("laser",false) and is_instance_valid(magazine) and not look.has("tool"):batteries()
@@ -174,7 +185,7 @@ func build(w:Dictionary,ink:bool=false):
 	flash=muzzle.get_node("MuzzleFlash")
 	if w.get("laser",false):
 		# Heat gauge sits on the right side above the grip (LaserGauge lays itself out from there).
-		var mount=Node3D.new();mount.name="GaugeMount";mount.position=right_grip.position*base.scale+Vector3(-.03,.02,.06);add_child(mount)
+		var mount=Node3D.new();mount.name="GaugeMount";mount.position=right_grip.position*base.scale+Vector3(0,.178,.02);add_child(mount) # 1.4.5: top of the receiver behind the rail
 		var gauge=LaserGauge.new();gauge.name="HeatGauge";mount.add_child(gauge)
 	name="Gun_"+str(w.get("name","?"))
 func grip(side:String) -> Node3D:return right_grip if side=="R" else left_grip
@@ -246,7 +257,7 @@ static func place_handles(node:Node3D,l:Dictionary) -> Dictionary:
 ## Launchers: show `count` loaded rockets; while reloading (`loading` 0..1) the
 ## support hand brings the next rocket up behind the tube and pushes it, nose
 ## first, into the open rear end.
-const LOAD_SHOW=.30 # the rocket appears in the hand
+const LOAD_SHOW=.12 # the rocket appears in the hand (1.4.5: early, so the hand is never seen moving empty)
 const LOAD_ALIGN=.52 # nose at the rear opening
 const LOAD_PUSH=.80 # pushed home
 func set_rounds(count:int,loading:float=-1.):
@@ -282,7 +293,7 @@ func loading_grip(count:int,t:float) -> Vector3:
 	var index=clampi(count,0,rounds.size()-1)
 	var round:Node3D=rounds[index];var rear=float(base.get_meta("rear",0.))
 	var point=loading_round_local(index,minf(t,LOAD_PUSH-.001))+Vector3(0,0,float(round.get_meta("back"))*.55)
-	point.z=maxf(point.z,rear+.06)
+	point.z=maxf(point.z,rear+.09) # 1.4.5: a hand's width and a half (the fist's fingers reached into the tube rim at .06)
 	return point*base.scale
 # Blue glass on both ends of a baked scope.
 static func glaze(node:Node3D,l:Dictionary):
@@ -314,7 +325,7 @@ func animate_reload(t:float,recoil:float=0.,_shot_age:float=10.):
 	if t<0.:magazine.transform=mag_rest;magazine.visible=true;return
 	var drop=ReloadMotion.mag_drop(t)
 	# Gun space -> the magazine's parent (the scaled base).
-	var offset=ReloadMotion.mag_offset(t)/maxf(.01,base.scale.x)
+	var offset=ReloadMotion.mag_travel(self,t)/maxf(.01,base.scale.x)
 	magazine.transform=Transform3D(Basis(Vector3.RIGHT,.55*drop)*mag_rest.basis,mag_rest.origin+offset)
 	# The magazine stays in the support hand through the swap (old one out, new one in).
 	magazine.visible=true
@@ -332,7 +343,8 @@ func show_load_round(t:float):
 	if not is_instance_valid(load_round):
 		load_round=Node3D.new();load_round.name="LoadRound";add_child(load_round)
 		var shell=str(spec.get("reload_style",""))!="revolver"
-		var r=.0095 if shell else .0058;var length=.062 if shell else .034
+		# 1.4.5: a little larger than scale (the round was lost in the hand).
+		var r=.0105 if shell else .0075;var length=.066 if shell else .042
 		# Along -Z (the way it goes in): shell hull + brass head, or case + bullet.
 		MeshFactory.cylinder(load_round,Vector3(0,0,-length*.1),r,length*.8,Color("c9423a") if shell else Color("d9b04a"),Vector3(PI/2,0,0),-1.,10)
 		MeshFactory.cylinder(load_round,Vector3(0,0,length*.38),r*1.08,length*.24,Color("d6ae55") if shell else Color("c79a3c"),Vector3(PI/2,0,0),-1.,10)

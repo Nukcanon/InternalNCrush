@@ -149,7 +149,7 @@ func run():
 	expect(Actor.FP_FOREARM_PISTOL.R.z>.8 and Actor.FP_SHOULDER.pistol.R.z>.3 and Actor.FP_SHOULDER.pistol.L.x<-.3,"pistol forearm line and shoulder anchors (both hands for DUET)")
 	expect(HeroIK.FIRING_SLIDE>=.03 and HeroIK.GUARD_DROP>=.02 and HeroIK.THUMB_RAISED_BASE>.4,"firing hand: middle finger kept under the guard, thumb raised along the frame")
 	expect(absf(MeleeVisual.KNIFE_ROLL-2.67)<.01,"knife rolled about the blade so its edge (-X of the model) faces ahead in the rest pose")
-	expect(HeroIK.THUMB_PINCH.size()==3 and HeroIK.THUMB_PINCH[1]<.4 and HeroIK.THUMB_PINCH[2]>.5 and HeroIK.THUMB_PINCH_BASE<-.4 and HeroCharacter.FP_WRIST_TAPER>=.7,"a small round is held with the thumb along it, its last joint bent forward onto the round")
+	expect(HeroIK.THUMB_PINCH.size()==3 and HeroIK.THUMB_PINCH[1]<.4 and HeroIK.THUMB_PINCH[2]>.5 and HeroIK.THUMB_PINCH_BASE<-.4 and HeroCharacter.FP_WRIST_MATCH>1.,"a small round is held with the thumb along it, its last joint bent forward onto the round")
 	# Round 6: grips stretched in the bake, handles mapped through the same deformation.
 	var d=GunModel.deform_of("Pistol")
 	expect(not d.is_empty() and float(d.grip)>1.2 and float(d.y_top)<INF,"baked pistol carries its grip stretch (x%.2f)"%float(d.get("grip",1.)))

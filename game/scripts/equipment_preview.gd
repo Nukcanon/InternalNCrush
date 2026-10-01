@@ -70,11 +70,17 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 			if child is Node3D:child.position-=center
 		var diameter=Vector2(bounds.size.x,bounds.size.z).length()
 		var compact=kind==3 or (kind==2 and (gadget==8 or (role==0 and gadget==1) or (role==4 and gadget in [0,1])))
-		var margin=1.85 if kind==1 else 2.5 if compact else 1.25
+		var margin=(1.25 if weapon=="remote" else 1.85) if kind==1 else 2.5 if compact else 1.25
 		frame_width=maxf(.3,diameter)*margin
 		frame_height=maxf(.22,bounds.size.y+diameter*.13)*margin
 		custom_minimum_size.y=clampf(440.*frame_height/frame_width,130.,280.)
 		camera.position=Vector3(0,.35,-3);camera.look_at(Vector3.ZERO)
+		# 1.4.5: the TETHER remote is a pad, not a gun: shown from the front and
+		# above, turned a little, so its screen, grips and antenna all read.
+		if kind==1 and weapon=="remote":
+			for child in model.get_children():
+				if child is Node3D:child.rotation.y+=.55
+			camera.position=Vector3(.2,1.9,-2.5);camera.look_at(Vector3(0,-.02,0))
 	elif kind==4:
 		custom_minimum_size.y=100.;frame_height=1.;frame_width=1.
 	else:

@@ -57,8 +57,10 @@ static func contact(g:Node,id:int,hit:Dictionary,origin:Vector3,direction:Vector
 		if tool and d.kind=="turret" and int(d.team)==int(p.team) and int(g.options.mode)!=1:
 			var gain=minf(WRENCH_REPAIR,maxf(0.,float(d.max_hp)-float(d.hp)))
 			d.hp+=gain
-			if gain>0.:
-				g.feedback(id,"","포탑 수리 +%d"%roundi(gain));g.effect.rpc("melee_repair",origin,hit.position,id)
+			# 1.4.5: the wrench always clangs on a friendly turret (the sound was
+			# skipped when there was nothing to repair).
+			g.effect.rpc("melee_repair",origin,hit.position,id)
+			if gain>0.:g.feedback(id,"","포탑 수리 +%d"%roundi(gain))
 		else:
 			g.damage_device(did,base,id)
 			g.effect.rpc("melee_wall",hit.position,Vector3.ZERO,id,-100.,{"wrench":tool})

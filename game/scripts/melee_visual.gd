@@ -24,13 +24,27 @@ func build(wrench:bool,_role:int,first_person:bool):
 	tool=wrench;in_hand=not first_person;pivot=Node3D.new();pivot.name="Pivot";add_child(pivot)
 	var model=Node3D.new();model.name="Model";pivot.add_child(model)
 	if tool:
-		var M=MeshFactory;var red=Color("d9483b");var steel=Color("9aa6b3");var ink=Color("2a303a")
-		M.box(model,Vector3(0,-.02,0),Vector3(.04,.22,.03),red,Vector3.ZERO,.6)
-		M.box(model,Vector3(0,.13,0),Vector3(.1,.07,.04),steel,Vector3.ZERO,.5)
-		M.box(model,Vector3(-.035,.19,0),Vector3(.03,.1,.035),steel,Vector3.ZERO,.4)
-		M.box(model,Vector3(.03,.18,0),Vector3(.03,.07,.035),steel,Vector3.ZERO,.4)
-		M.cylinder(model,Vector3(0,.11,.0),.022,.05,ink,Vector3(PI/2,0,0),-1.,10)
-		M.box(model,Vector3(0,-.13,0),Vector3(.05,.03,.035),ink,Vector3.ZERO,.5)
+		# 1.4.5: a pipe wrench. Red I-section handle, a steel shank rising from
+		# it with the knurled adjusting nut, the heel jaw on the shank and the
+		# tall hook jaw whose overhang closes the C toward the -X side; both
+		# jaws carry teeth.
+		var M=MeshFactory;var red=Color("d9483b");var steel=Color("9aa6b3");var ink=Color("2a303a");var dark_steel=Color("6c7681")
+		M.box(model,Vector3(0,-.03,0),Vector3(.034,.24,.026),red,Vector3.ZERO,.5)
+		for z in [-.014,.014]:M.box(model,Vector3(0,-.03,z),Vector3(.04,.22,.006),red,Vector3.ZERO,.4)
+		M.box(model,Vector3(0,-.155,0),Vector3(.044,.02,.032),ink,Vector3.ZERO,.5)
+		# Shank and adjusting nut.
+		M.box(model,Vector3(.01,.125,0),Vector3(.026,.09,.02),steel,Vector3.ZERO,.3)
+		M.cylinder(model,Vector3(.01,.105,0),.03,.028,ink,Vector3.ZERO,-1.,12)
+		for k in range(8):
+			var a=k*PI/4.
+			M.box(model,Vector3(.01+cos(a)*.03,.105,sin(a)*.03),Vector3(.006,.022,.006),dark_steel,Vector3(0,-a,0),.2)
+		# Heel jaw (on the shank, teeth on top).
+		M.box(model,Vector3(-.012,.175,0),Vector3(.05,.034,.03),steel,Vector3.ZERO,.3)
+		for k in range(4):M.box(model,Vector3(-.03+k*.01,.195,0),Vector3(.006,.008,.028),dark_steel,Vector3.ZERO,.2)
+		# Hook jaw: tall bar on the +X side, its overhang reaching over to -X.
+		M.box(model,Vector3(.028,.22,0),Vector3(.026,.12,.03),steel,Vector3.ZERO,.3)
+		M.box(model,Vector3(-.005,.272,0),Vector3(.092,.03,.03),steel,Vector3.ZERO,.35)
+		for k in range(5):M.box(model,Vector3(-.045+k*.011,.254,0),Vector3(.006,.008,.028),dark_steel,Vector3.ZERO,.2)
 		MeshFactory.merge_children(model)
 		for mesh in model.get_children():
 			if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(false,.3)

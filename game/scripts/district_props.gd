@@ -296,9 +296,16 @@ static func procedural(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 				k.prism(p,.2+.04*(i%2),.4,c("b5634a"),8);k.box(p+Vector3(0,.55,0),Vector3(.38,.3,.38),c("5f9f4a"),true)
 			return AABB(Vector3(-.75,0,-.25),Vector3(1.5,.75,.7))
 		"laundry":
-			for x in [-1.3,1.3]:k.prism(Vector3(x,0,0),.05,2.2,dark_wood,4)
-			k.box(Vector3(0,2.1,0),Vector3(2.6,.02,.02),c("e8e4da"),true)
-			for i in range(4):k.box(Vector3(-.9+i*.6,1.75,0),Vector3(.45,.6,.02),c(["e8523f","5a88b8","f0c24f","f4f1e8"][(hs+i)%4]),true)
+			# 1.4.5: sturdier posts and a visible line with the cloths hung from it
+			# (thin posts and a 2 cm line vanished at a distance, leaving the
+			# cloths floating in the air).
+			for x in [-1.3,1.3]:
+				k.prism(Vector3(x,0,0),.09,2.25,dark_wood,6)
+				k.box(Vector3(x,2.15,0),Vector3(.26,.1,.26),dark_wood,true)
+			k.box(Vector3(0,2.12,0),Vector3(2.6,.06,.06),c("d8d2c4"),true)
+			for i in range(4):
+				k.box(Vector3(-.9+i*.6,1.8,0),Vector3(.45,.6,.03),c(["e8523f","5a88b8","f0c24f","f4f1e8"][(hs+i)%4]),true)
+				k.box(Vector3(-.9+i*.6,2.1,0),Vector3(.47,.06,.07),c("8a6a4a"),true) # pegs
 			return AABB(Vector3(-1.35,0,-.1),Vector3(2.7,.4,.2))
 		"bike_rack":
 			for i in range(4):k.arch_ring(-.9+i*.6,.35,0.,.3,.05,dark)

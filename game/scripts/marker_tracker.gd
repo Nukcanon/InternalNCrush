@@ -1,7 +1,11 @@
 class_name MarkerTracker
 extends RefCounted
-const DWELL_SECONDS=1.5
-const HALF_ANGLE_DEGREES=1.25
+const DWELL_SECONDS=1.8 # 1.4.5: 1.8 s (was 1.5)
+const HALF_ANGLE_DEGREES=1.25 # base cone; see half_angle()
+# 1.4.5: the cone is 1.5x the base on the 4/8/16x sniper scopes and 2x on the
+# designated marksman rifles.
+static func half_angle(w:Dictionary) -> float:
+	return HALF_ANGLE_DEGREES*(2. if str(w.get("category",""))=="지정사수소총" else 1.5)
 static func equipped(p:Dictionary) -> bool:return int(p.role)==1 and int(p.gadget)==0 and GadgetLoadout.has_item(p)
 static func eligible(game:Node,id:int,other:int) -> bool:
 	if other==id or not game.players.has(other) or not game.actors.has(other):return false
@@ -9,7 +13,7 @@ static func eligible(game:Node,id:int,other:int) -> bool:
 	if not q.alive or not game.enemies(p,q) or q.get("cleanse",0)>game.clock or TargetReveal.visible_to(game,other,id):return false
 	var a=game.actors[id];var actor=game.actors[other];var point=actor.eye()-Vector3.UP*.25;var delta=point-a.eye()
 	if delta.length()>160. or delta.length_squared()<.001:return false
-	return a.direction().dot(delta.normalized())>=cos(deg_to_rad(HALF_ANGLE_DEGREES)) and not game.in_smoke_line(a.eye(),point) and game.clear_line(a.eye(),point,[a.get_rid(),actor.get_rid()])
+	return a.direction().dot(delta.normalized())>=cos(deg_to_rad(half_angle(game.current_weapon(p)))) and not game.in_smoke_line(a.eye(),point) and game.clear_line(a.eye(),point,[a.get_rid(),actor.get_rid()])
 static func select_target(game:Node,id:int) -> int:
 	var locked=int(game.players[id].get("marker_target",0))
 	if eligible(game,id,locked):return locked

@@ -51,13 +51,14 @@ func _draw():
 			draw_rect(bar,Color("233c37"));draw_rect(Rect2(bar.position,Vector2(bar.size.x*heat,bar.size.y)),heat_color)
 			if float(p.get("laser_lock",0.))>game.clock:draw_string(get_theme_default_font(),bar.position+Vector2(0,-7),"⚠ 과열",HORIZONTAL_ALIGNMENT_CENTER,bar.size.x,18,Color("ff534a"))
 		if MarkerTracker.equipped(p) and game.current_weapon(p).get("category","") in ["저격소총","지정사수소총"]:
-			var marking_radius=AimModel.pixel_radius(MarkerTracker.HALF_ANGLE_DEGREES,a.camera.fov,size.y)
+			var marking_radius=AimModel.pixel_radius(MarkerTracker.half_angle(game.current_weapon(p)),a.camera.fov,size.y)
 			draw_arc(center,marking_radius,0,TAU,96,Color(1.,.86,.36,.28),3.,true)
 			var target=int(p.get("marker_target",0))
 			if target!=0 and game.actors.has(target):
 				var pos=marker_position(game.actors[target],a.camera)
 				if pos.is_finite():
-					var text="%.1f"%maxf(0.,MarkerTracker.DWELL_SECONDS-float(p.get("marker_progress",0.)))
+					# 1.4.5: progress as a percentage over the target (not seconds left).
+					var text="%d%%"%int(clampf(float(p.get("marker_progress",0.))/MarkerTracker.DWELL_SECONDS,0.,1.)*100.)
 					draw_string_outline(get_theme_default_font(),pos+Vector2(-35,-12),text,HORIZONTAL_ALIGNMENT_CENTER,70,18,3,Color.BLACK)
 					draw_string(get_theme_default_font(),pos+Vector2(-35,-12),text,HORIZONTAL_ALIGNMENT_CENTER,70,18,Color("ffe79d"))
 	else:

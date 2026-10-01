@@ -577,7 +577,11 @@ func visual(dt:float,p:Dictionary,now:float):
 	var motion=move_blend*(1.-ads_blend*.93)*(1.-crouch_blend*.35)
 	base.y+=sin(now*1.9)*.002*(1.-move_blend)*(1.-ads_blend)
 	base+=Vector3(cos(bob)*.022,cos(bob*2)*.017,0)*motion
-	var rotation_target=Vector3(recoil*lerpf(.34,.12,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
+	# 1.4.5: in aim the kick pitches the gun much less (at .12 rad per unit the
+	# top of the gun rose over the sight and hid the target) and instead drives
+	# it back and a little down, so the sight line stays clear while firing.
+	var rotation_target=Vector3(recoil*lerpf(.34,ADS_KICK_PITCH,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
+	base+=Vector3(0,-ADS_KICK_DROP,ADS_KICK_BACK)*recoil*ads_blend
 	# 1.4.4 view-model angle: the muzzle turned a little in toward the centre so
 	# the gun's right side and both hands read at the hip (not in aim).
 	# Round 9: a beam weapon (ARC) keeps its barrel on the aim line - its beam
@@ -705,7 +709,7 @@ var view_head_offset=Vector3(0,1.62,0)
 # its own side (FP_FOREARM: wrist -> elbow direction); the elbows and upper
 # arms stay below the frame. Hands keep their first-person size (VIEW_HAND).
 const VIEW_BODY_SCALE=HeroCharacter.FP_BODY_SCALE
-const VIEW_HAND=1.15
+const VIEW_HAND=HeroCharacter.FP_HAND
 const VIEW_DEPTH=1.4
 const VIEW_BODY_OFFSET=Vector3(0,-.03,.10)
 # Camera space, right-handed (x mirrors for a left-handed player).
@@ -749,6 +753,10 @@ const FOLLOW_DROP=.20
 const FOLLOW_BEND_DUAL=.22
 const FOLLOW_DROP_DUAL=.08
 const FP_UPPER_DUAL_X=.35 # DUET: shoulders further out, the arms open to both sides
+# Aimed recoil: pitch (rad per recoil unit), drop and push-back (m per unit).
+const ADS_KICK_PITCH=.035
+const ADS_KICK_DROP=.006
+const ADS_KICK_BACK=.025
 static func fp_forearms(hand:float,steep:bool=false,melee:bool=false,hold:String="rifle") -> Dictionary:
 	var f:Dictionary=FP_FOREARM_MELEE if melee else FP_FOREARM_STEEP if steep else FP_FOREARM_PISTOL if hold=="pistol" else FP_FOREARM_ITEM if hold=="item" else FP_FOREARM
 	return {"R":Vector3(f.R.x*hand,f.R.y,f.R.z),"L":Vector3(f.L.x*hand,f.L.y,f.L.z)}
@@ -815,7 +823,8 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		# blade up, as in most shooters' knife poses).
 		var dir:Vector3=-Vector3(FP_FOREARM_MELEE.R).normalized()
 		# Left-handed: the frame is mirrored like a gun's handles (a reflected basis).
-		var thumb:Vector3=Vector3(0,.9,-.44).normalized()
+		# 1.4.5: the wrench is carried with its head tilted further forward.
+		var thumb:Vector3=(Vector3(0,.70,-.71) if melee_view.tool else Vector3(0,.9,-.44)).normalized()
 		var x:Vector3=-(thumb-dir*dir.dot(thumb)).normalized()
 		var basis=Basis(x,dir,x.cross(dir).normalized())
 		if handedness<0:basis=Basis.from_scale(Vector3(-1,1,1))*basis;wrist.x=-wrist.x

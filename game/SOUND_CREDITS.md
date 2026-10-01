@@ -16,6 +16,12 @@ Non-Q009-derived mixed audio is offered under CC0 1.0 unless a different license
 
 0.7.0: `hurt` and `armor_hurt` use deterministic low-mid synthesis plus the credited CC0 impact/cloth sources. `kill_sting` is original deterministic synthesis (CC0-1.0). See tools/build_audio.py for reproducible recipes.
 
+## 1.4.5 reload and wrench foley
+
+- zer0_sol — Handgun Reload Sound Effect, `reload.wav`, https://opengameart.org/content/handgun-reload-sound-effect, CC0 1.0. Excerpts at 0.06–0.42 s (magazine catch and drop) and 0.54–0.92 s (fresh magazine seated), stereo folded to mono 44.1 kHz PCM and normalized: `tools/foley/mag_release_z.wav`, `mag_insert_z.wav` → `assets/audio/reload.wav` (magazine out) and `magazine.wav` (seated), with a faint lowpassed metal layer.
+- BMacZero (Brian MacIntosh) — Gun Reload Sound Effects, `clipload1.wav`, https://opengameart.org/content/gun-reload-sound-effects, CC0 1.0. Kept as `tools/foley/clipload1_b.wav` (not yet mixed).
+- rubberduck — 100 CC0 Metal and Wood SFX, https://opengameart.org/content/100-cc0-metal-and-wood-sfx, CC0 1.0. `misc_03`, `metal_slam_01`, `metal_hit_03`, `metal_sheet_06`, `metal_close_01` resampled from 48 kHz to mono 44.1 kHz PCM (`tools/foley/rd_*.wav`): the rocket sliding down its tube and seating (`rocket_insert.wav`), and the wrench clang on a turret (`wrench_repair.wav`).
+
 ## Bomb announcements (1.1.1)
 
 Three short English announcements were synthesized locally using Windows SAPI / Microsoft Zira Desktop. The generated WAV recordings are stored in `tools/announcer` for reproducible builds; no voice engine or voice model is redistributed. They are not recordings from another game. Defusing uses the existing credited CC0 metal/tool samples.

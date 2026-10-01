@@ -47,6 +47,16 @@ const WRIST_LIMIT=1.25
 const TWIST_LIMIT=1.3
 static var calibration={}
 static func rot(hero:HeroCharacter,index:int) -> Quaternion:return hero.bone_world(index).basis.get_rotation_quaternion()
+# Rotation taking unit vector `from` to `to`. Quaternion(from,to) is numerically
+# poor for nearly opposite vectors (a pose flipping between frames gave an
+# unnormalized quaternion and engine errors downstream): those turn PI about
+# a perpendicular axis instead.
+static func arc(from:Vector3,to:Vector3) -> Quaternion:
+	var d=from.dot(to)
+	if d<-.9995:
+		var axis=from.cross(Vector3.UP if absf(from.y)<.9 else Vector3.RIGHT).normalized()
+		return Quaternion(axis,PI)
+	return Quaternion(from,to).normalized()
 # Wrist orientation relative to the facing frame in the two-handed aim clip
 # (legacy markers without grip styles: the bomb keypad).
 static func calibrate(hero:HeroCharacter) -> Dictionary:
@@ -427,8 +437,8 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 				var cost=align_w*(w_end-e).normalized().angle_to(hand_dir)+pole_w*absf(wrapf(angle,-PI,PI))+(0. if following else maxf(0.,(e-a).dot(up)/la-.15)*4.)
 				# 1.4.4: the forearm roll this elbow forces (the wrist cannot twist;
 				# a large roll wrings the forearm mesh).
-				var cq1=Quaternion(from_b,(e-a).normalized())
-				var cq2=Quaternion((e+cq1*(c-b)-e).normalized(),(w_end-e).normalized())
+				var cq1=arc(from_b,(e-a).normalized())
+				var cq2=arc((e+cq1*(c-b)-e).normalized(),(w_end-e).normalized())
 				var cl=((cq2*cq1*wl_rot).normalized().inverse()*want).normalized()
 				if cl.w<0.:cl=-cl
 				var roll=absf(wrapf(2.*atan2(cl.y,cl.w),-PI,PI))
@@ -452,10 +462,10 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		hero.set_meta(key,facing.inverse()*chosen)
 		perp=chosen
 	var elbow=centre+perp*radius
-	var q1=Quaternion((b-a).normalized(),(elbow-a).normalized())
+	var q1=arc((b-a).normalized(),(elbow-a).normalized())
 	var upper_world=(q1*wu.basis.get_rotation_quaternion()).normalized()
 	var c1=elbow+q1*(c-b)
-	var q2=Quaternion((c1-elbow).normalized(),(a+dir*d-elbow).normalized())
+	var q2=arc((c1-elbow).normalized(),(a+dir*d-elbow).normalized())
 	var lower_world=(q2*q1*wl.basis.get_rotation_quaternion()).normalized()
 	var wrist_world:Quaternion
 	if wrist_basis:wrist_world=target.basis.get_rotation_quaternion()

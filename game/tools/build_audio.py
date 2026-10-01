@@ -153,6 +153,20 @@ write('wrench_flesh',mix(.25,(body,.92,0),(thud,1.,0),(cloth,.22,.006)),gain=1)
 write('knife_flesh',mix(.20,(lowpass(body,600),.55,0),(sample('impactSoft_medium_000',.72,.19),1.,0),(cloth,.42,.009)),gain=2)
 write('wrench_repair',mix(.40,(highpass(sample('impactPlate_light_1',1.15,.38),500),.92,0),(highpass(sample('impactMetal_heavy_000',1.2,.24),850),.35,.004)),gain=-1)
 exec((root/'tools/combat_audio_refresh.py').read_text(encoding='utf-8'))
+# 1.4.5 (after the refresh, so these win): real reload foley and metal from CC0
+# OpenGameArt recordings (see SOUND_CREDITS.md).
+# Magazine out: the catch and the magazine dropping free (zer0_sol); seated: the
+# fresh magazine pushed home.
+write('reload',mix(.36,(sample('mag_release_z',1.,.36),.95,0),(lowpass(sample('rd_metal_hit03',.8,.2),900),.12,.11)),gain=-1)
+write('magazine',mix(.38,(sample('mag_insert_z',1.,.38),.95,0),(lowpass(sample('rd_metal_slam01',1.1,.2),700),.10,.05)),gain=-1)
+# A rocket sliding snugly down the tube (a long metal drag, lowpassed) and
+# seating with a dull closed-tube thump.
+drag=lowpass(highpass(sample('rd_misc03',.72,.55),180),2600)
+drag=[v*min(1,i/2200)*(1.-.35*i/max(1,len(drag))) for i,v in enumerate(drag)]
+seat_r=lowpass(sample('rd_metal_slam01',.82,.45),1100)
+write('rocket_insert',mix(.72,(drag,.70,0),(seat_r,.80,.40),(lowpass(sample('rd_metal_close01',.9,.3),600),.25,.42)),gain=0)
+# A proper clang (metal hit with a ringing sheet tail) for wrench hits on a turret.
+write('wrench_repair',mix(.62,(sample('rd_metal_hit03',1.05,.40),.95,0),(highpass(sample('rd_metal_sheet06',1.15,.6),700),.45,.01)),gain=0)
 (root/'assets/audio_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print('AUDIO_BUILT',len(manifest),'sample-based clips;',sum(k.startswith('gun_') for k in manifest),'distinct weapon mixes')
 

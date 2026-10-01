@@ -1,6 +1,6 @@
 class_name ArenaCache
 extends RefCounted
-const REVISION=158 # 1.4.2: prop collision follows the model (DistrictProps.collision) # 1.4.2: deeper ambient shade in the cached environment
+const REVISION=159 # 1.4.5: spawn screens, pipes above window heads, broken panes rarer, laundry posts
 const FIELDS=["district_surfaces","water_rect","has_water","spawn_points","ffa_spawns","sites","zones","obstacles","map_index","indoors","bounds","playable_polygon","walk_surfaces","floor_holes","navigation_goals","navigation_blocks","vertical_map","chunk_count"]
 static func restore(arena:Node,index:int) -> bool:
 	var path="res://assets/arenas/complete/map_%02d.scn"%index
