@@ -313,19 +313,23 @@ func setup_input():
 	for pair in [["left",KEY_LEFT],["right",KEY_RIGHT],["forward",KEY_UP],["back",KEY_DOWN]]:
 		var ev=InputEventKey.new();ev.physical_keycode=pair[1];InputMap.action_add_event(pair[0],ev)
 func build_world():
+	var _pd=Prof.now()
 	if render_actors and not dedicated:CombatFX.prepare_devices();Construction.prepare(self)
+	Prof.add("world_prepare_devices",_pd)
 	if is_instance_valid(kill_replay):kill_replay.reset()
 	if arena:remove_child(arena);arena.queue_free()
-	arena=W.new();arena.props_authoritative=server or demo_mode;add_child(arena);arena.build(int(options.map))
+	var _pa=Prof.now();arena=W.new();arena.props_authoritative=server or demo_mode;add_child(arena);arena.build(int(options.map));Prof.add("world_arena_build",_pa);_pa=Prof.now()
 	var markers=ObjectiveMarkers.new();arena.add_child(markers);markers.setup(self)
-	bot_navigation=BotNavigation.new();bot_navigation.build(arena);bot_agents.clear()
+	bot_navigation=BotNavigation.new();bot_navigation.build(arena);bot_agents.clear();Prof.add("world_navigation",_pa)
 	if not is_instance_valid(spectator_camera):
 		spectator_camera=Camera3D.new();spectator_camera.near=.1;spectator_camera.far=350;add_child(spectator_camera)
 func start_bot_match(selection:Dictionary):
 	bot_start_loadout=selection.duplicate(true)
-	host_game(OfflineMultiplayerPeer.new())
+	var _ph=Prof.now();host_game(OfflineMultiplayerPeer.new());Prof.add("start_host_game",_ph)
 	bot_start_loadout.clear()
+	_ph=Prof.now()
 	if phase=="lobby":start_match()
+	Prof.add("start_match_call",_ph)
 func host_game(transport:MultiplayerPeer=null):
 	if phase!="menu" or connection_busy:return
 	R.sanitize_room(options)
@@ -338,16 +342,19 @@ func host_game(transport:MultiplayerPeer=null):
 		port=int(public_room.config.port);peer=WebSocketMultiplayerPeer.new();peer.handshake_timeout=5.;peer.max_queued_packets=256;err=peer.create_server(port)
 	else:peer=ENetMultiplayerPeer.new();err=peer.create_server(port,32,4)
 	if err!=OK:ui.notice("방을 만들 수 없습니다. 다른 서버가 실행 중인지 확인하세요. 코드 "+str(err));return
-	multiplayer.multiplayer_peer=peer;multiplayer.server_relay=false;server=true;local_id=1;phase="lobby";public_serial=0;banned_tokens.clear();vote.clear();vote_cooldowns.clear();build_world()
+	multiplayer.multiplayer_peer=peer;multiplayer.server_relay=false;server=true;local_id=1;phase="lobby";public_serial=0;banned_tokens.clear();vote.clear();vote_cooldowns.clear()
+	var _pw=Prof.now();build_world();Prof.add("start_build_world",_pw)
 	if transport==null and not OS.has_feature("web") and not (is_instance_valid(public_room) and public_room.enabled):
 		discovery=PacketPeerUDP.new();discovery.set_broadcast_enabled(true)
 		if discovery.bind(R.DISCOVERY)!=OK:discovery=null
 	if not dedicated:
-		add_player(1,profile.nick,profile.token)
+		var _p1=Prof.now();add_player(1,profile.nick,profile.token);Prof.add("start_add_local",_p1)
 		if not bot_start_loadout.is_empty():commit_loadout(1,bot_start_loadout)
+	var _pp=Prof.now()
 	for i in range(mini(int(options.bots),int(options.max_players)-(0 if dedicated else 1))):add_player(-i-1,"BOT %02d"%(i+1),"bot"+str(i))
-	TeamBalance.reconcile(self)
-	ui.lobby();broadcast_state(true);print("SERVER_READY port=",port)
+	Prof.add("start_add_bots",_pp);_pp=Prof.now()
+	TeamBalance.reconcile(self);Prof.add("start_reconcile",_pp)
+	var _pl=Prof.now();ui.lobby();Prof.add("start_ui_lobby",_pl);broadcast_state(true);print("SERVER_READY port=",port)
 func reset_transport_state():
 	received_sequence=-1;snapshot_sequence=0;snapshot_buffers.clear();received_parts.clear();expected_parts=0;incoming_at.clear();peer_activity.clear();pending_peers.clear();snapshot_timer=0.;input_timer=0.;ping_timer=0.;ping_ms=0;full_sync_timer=0.;connection_busy=false;connection_notice=false;last_snapshot_ms=Time.get_ticks_msec();session_started=last_snapshot_ms
 func peer_opened(id:int):
@@ -851,7 +858,8 @@ func server_tick(dt:float):
 		elif phase=="result" and remaining<=0:next_match()
 		elif phase=="combat":check_objectives(dt)
 func bot_input(id:int,dt:float):
-	if bot_agents.has(id):bot_agents[id].tick(dt)
+	if bot_agents.has(id):
+		var _pb=Prof.now();bot_agents[id].tick(dt);Prof.add("bot_tick",_pb)
 func enemies(p:Dictionary,q:Dictionary) -> bool:return int(options.mode)==1 or p.team!=q.team
 func medic_count(team:int) -> int:
 	var n=0
@@ -1105,13 +1113,10 @@ func fire(id:int):
 	var blocked_barrel=ray(eye,a.desired_muzzle(),[a.get_rid()],1|4|8)
 	for pellet in range(int(w.pellets)):
 		var forward=Basis(Vector3.UP,a.aim_yaw-deg_to_rad(spray.x))*Basis(Vector3.RIGHT,a.aim_pitch+deg_to_rad(spray.y))*Vector3.FORWARD
-		var sample=CombatBalance.pellet_sample(pellet,int(w.pellets),pattern_rotation) if int(w.pellets)>1 else Vector2(randf(),randf())
-		if w.has("pellet_core_angle"):
-			var core_count=ceili(int(w.pellets)*float(w.get("pellet_core_fraction",.6)))
-			if pellet<core_count:
-				# Tighter central pellets, without aim assistance; movement still broadens the core.
-				var core=float(w.pellet_core_angle)*maxf(1.,spread/maxf(.01,float(w.get("ads_spread",w.spread))))
-				sample.x=(float(pellet)+.5)/core_count*pow(minf(1.,core/maxf(.001,spread)),2.)
+		# 1.4.5: every pellet lands at a random point of the cone (uniform over
+		# its area). The stratified spiral with 60% of the pellets in a 0.18
+		# degree core put six of ten pellets in one hole with four around it.
+		var sample=Vector2(randf(),randf())
 		var dir=AimModel.cone_direction(forward,spread,sample.x,sample.y)
 		var reach=float(w.get("max_range",300.));var aim_hit=ray(eye,eye+dir*reach,[a.get_rid()]);var aim_point=aim_hit.get("position",eye+dir*reach)
 		# Keep close-range muzzle convergence, then trace the full range with mild
@@ -1136,7 +1141,9 @@ func fire(id:int):
 			damage(collider.pid,dmg,id,head,wid,origin,hit.position)
 		elif collider is InteractiveProp:collider.hit(hit.position,(hit.position-origin).normalized(),dmg)
 		elif collider.has_meta("device"):damage_device(int(collider.get_meta("device")),CombatBalance.structure_damage(w,dist),id)
-		else:marks.append({"pos":hit.position,"normal":hit.normal})
+		else:
+			var surface=mark_surface(hit,origin)
+			if not surface.is_empty():marks.append(surface)
 	if not marks.is_empty():wall_marks_batch.rpc(marks)
 	effect.rpc("shot",origin,last_end,id,clock,{"weapon":wid,"bloom":p.bloom,"spray_phase":p.spray_phase,"pellets":pellet_ends})
 	if int(p.mag[wid])==0:begin_reload(id)
@@ -1843,6 +1850,48 @@ func trim_wall_marks():
 		var first=wall_marks.pop_front()
 		if is_instance_valid(first):first.queue_free()
 
+# 1.4.5: where a bullet mark goes. A prop's collider is a box or a hull round
+# its visible mesh (trees, vehicles, columns), so a mark on the collider hung
+# in the air beside the model: the ray is re-cast against the visible faces of
+# the collider (and its prop parent) and the mark lands on the nearest face.
+# Where no face is hit the mark is skipped. Large meshes (the architecture)
+# keep the physics point, with the normal turned toward the shooter (a wall
+# whose normal faced away hid its marks inside the wall).
+const MARK_REFINE_FACES=6000
+var mark_face_cache={}
+func mark_surface(hit:Dictionary,origin:Vector3) -> Dictionary:
+	var pos:Vector3=hit.position;var normal:Vector3=hit.normal;var dir:Vector3=(pos-origin).normalized()
+	var collider=hit.collider
+	if normal.length_squared()<.5:normal=-dir
+	if collider is Node:
+		var roots=[collider]
+		if collider.get_parent() is Node3D and not collider.get_parent() is Arena:roots.append(collider.get_parent())
+		var meshes=[]
+		for r in roots:
+			for m in r.find_children("*","MeshInstance3D",true,false):
+				if m.mesh!=null and m.is_visible_in_tree() and not m in meshes:meshes.append(m)
+		var total=0;var fine=true
+		for m in meshes:
+			var key=m.mesh.get_instance_id()
+			if not mark_face_cache.has(key):mark_face_cache[key]=m.mesh.get_faces()
+			total+=mark_face_cache[key].size()/3
+			if total>MARK_REFINE_FACES:fine=false;break
+		if fine and not meshes.is_empty():
+			var from:Vector3=origin;var to:Vector3=pos+dir*2.5;var best=INF;var found={}
+			for m in meshes:
+				var faces:PackedVector3Array=mark_face_cache[m.mesh.get_instance_id()];var xf:Transform3D=m.global_transform
+				var local_from:Vector3=xf.affine_inverse()*from;var local_dir:Vector3=(xf.affine_inverse()*to-local_from).normalized()
+				for i in range(0,faces.size(),3):
+					var point=Geometry3D.ray_intersects_triangle(local_from,local_dir,faces[i],faces[i+1],faces[i+2])
+					if point==null:continue
+					var world:Vector3=xf*Vector3(point);var d=from.distance_to(world)
+					if d<best and d>.05:
+						best=d;var n:Vector3=(xf.basis*(faces[i+1]-faces[i]).cross(faces[i+2]-faces[i])).normalized()
+						found={"pos":world,"normal":n if n.dot(dir)<0. else -n}
+			if found.is_empty() or found.pos.distance_to(pos)>1.5:return {}
+			return found
+	if normal.dot(dir)>0.:normal=-normal
+	return {"pos":pos,"normal":normal}
 @rpc("authority","call_local","unreliable",2)
 func wall_mark(pos:Vector3,normal:Vector3,scorch:bool=false):
 	if dedicated or arena==null:return

@@ -16,7 +16,7 @@ def audit(data, index):
     for g in data['groups']:
         if g['kind'] not in ['wall', 'perimeter', 'tunnel', 'quay_edge']: continue
         o = g.get('origin', [0, 0, 0])
-        v = np.array(g['vertices'], dtype=float).reshape(-1, 3, 3) + np.array([o[0], 0, o[2]])
+        v = np.array(g['vertices'], dtype=float).reshape(-1, 3, 3)
         walls.append(v)
     if not walls: return []
     tris = np.concatenate(walls)
@@ -32,7 +32,7 @@ def audit(data, index):
     for g in data['groups']:
         if g['kind'] in ['ground', 'floor', 'street', 'terrain', 'upper', 'lower', 'stair_ramp', 'plaza', 'indoor', 'roof', 'trim']:
             o = g.get('origin', [0, 0, 0])
-            v = np.array(g['vertices'], dtype=float).reshape(-1, 3, 3) + np.array([o[0], 0, o[2]])
+            v = np.array(g['vertices'], dtype=float).reshape(-1, 3, 3)
             for t in v:
                 c = t.mean(axis=0); key = (math.floor(c[0] / cell), math.floor(c[2] / cell))
                 ground.setdefault(key, []).append(float(t[:, 1].mean()))

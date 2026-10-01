@@ -205,6 +205,12 @@ func make_panel(title:String,width=640,compact=false):
 	var bar=scroll.get_v_scroll_bar()
 	bar.visibility_changed.connect(func():inset.add_theme_constant_override("margin_right",18 if bar.visible else 0))
 	stack=VBoxContainer.new();stack.size_flags_horizontal=Control.SIZE_EXPAND_FILL;stack.add_theme_constant_override("separation",12);inset.add_child(stack)
+	# 1.4.5: the scroll area grows with its content up to the height the 720-line
+	# design space allows (the in-game menu needed a scrollbar at 560 even on a
+	# FHD screen); shorter pages keep the 560 minimum.
+	var page_ceiling=floorf(720./MENU_SCALE_NOW)-128.
+	stack.minimum_size_changed.connect(func():
+		if is_instance_valid(scroll) and is_instance_valid(stack):scroll.custom_minimum_size.y=clampf(stack.get_combined_minimum_size().y+10.,560.,page_ceiling))
 	var eyebrow=Label.new();eyebrow.text="NUKCANON  /  INTERNAL N CRUSH";eyebrow.add_theme_color_override("font_color",UiSkin.ACCENT);eyebrow.add_theme_font_size_override("font_size",14);stack.add_child(eyebrow)
 	label(title,32)
 func pin_actions(node:Control):
@@ -277,6 +283,7 @@ func check(title:String,value:bool,callback:Callable) -> CheckBox:
 func edit(title:String,value:String,callback:Callable,secret=false) -> LineEdit:
 	var row=HBoxContainer.new();stack.add_child(row);var l=Label.new();l.text=title;l.custom_minimum_size.x=155;row.add_child(l);var e=LineEdit.new();e.text=value;e.secret=secret;e.size_flags_horizontal=Control.SIZE_EXPAND_FILL;e.text_changed.connect(callback);row.add_child(e);return e
 func menu():
+	play_fullscreen_done=false
 	if not root or game.demo_mode:return
 	game.stop_room_search()
 	if hud:hud.queue_free();hud=null
@@ -861,9 +868,23 @@ func hud_plate(pos:Vector2,size:Vector2) -> Panel:
 func hud_bar(pos:Vector2,color:Color) -> ColorRect:
 	var bg=ColorRect.new();bg.color=Color("344752");bg.position=pos;bg.size=Vector2(220,5);bg.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(bg)
 	var bar=ColorRect.new();bar.color=color;bar.position=pos;bar.size=Vector2(220,5);bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(bar);return bar
+var play_fullscreen_done=false
+# 1.4.5: entering play goes full screen by itself. Desktop: the window switches
+# to borderless full screen for this session when it was windowed (the
+# display-mode setting is left as it is). Web: the page requests full screen
+# and, on a touch device, a landscape orientation lock (same as the page's
+# own 전체 화면 button, which stays). Once per visit to the HUD from the menu.
+func enter_play_fullscreen():
+	if play_fullscreen_done:return
+	play_fullscreen_done=true
+	if OS.has_feature("web"):JavaScriptBridge.eval("window.incEnterFullscreen && window.incEnterFullscreen()")
+	elif DisplayServer.window_get_mode()==DisplayServer.WINDOW_MODE_WINDOWED and not OS.has_feature("headless") and DisplayServer.get_name()!="headless":DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 func show_hud():
 	if game.demo_mode:return
+	var _ps=Prof.now();build_hud();Prof.add("ui_show_hud",_ps)
+func build_hud():
 	clear_panel()
+	enter_play_fullscreen()
 	if hud:hud.queue_free()
 	hud=Control.new();hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(hud)
 	var capture_display=ControlCaptureHud.new();capture_display.game=game;hud.add_child(capture_display)

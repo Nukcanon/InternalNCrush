@@ -230,7 +230,18 @@ const PAIR_SPACING=.26
 func set_pair_spacing(width:float):
 	if dual_guns.size()<2:return
 	dual_rest=[Vector3.ZERO,Vector3(-width,0,.02)]
-	if dual_guns[1].rotation==Vector3.ZERO:dual_guns[1].position=dual_rest[1]
+	if dual_guns[1].rotation==Vector3.ZERO:dual_guns[1].position=dual_rest[1]+pair_swing_offset(1)
+# 1.4.5 DUET sprint: the pistols swing like running arms, one forward and a
+# little up while the other goes back and down (`amount` metres, +/-).
+var pair_swing_amount=0.
+func pair_swing_offset(i:int) -> Vector3:
+	var s=pair_swing_amount*(1. if i==0 else -1.)
+	return Vector3(0,s*.35,-s)
+func set_pair_swing(amount:float):
+	pair_swing_amount=amount
+	if dual_guns.size()<2 or dual_rest.size()<2:return
+	for i in range(dual_guns.size()):
+		if dual_guns[i].rotation==Vector3.ZERO:dual_guns[i].position=dual_rest[i]+pair_swing_offset(i)
 # Moves a base's grip markers onto the measured handles and returns the grip
 # shapes per hand (handle frame, base units): half extents, rounding and the
 # trigger point. Code-built bases (launchers, tools) carry their own shapes.
@@ -363,5 +374,5 @@ func animate_pair(t:float):
 	for i in range(dual_guns.size()):
 		var phase=0. if t<0. else clampf((t-.5*i)/.5,0.,1.) if (t>=.5*i and t<.5*(i+1)) else 0.
 		var away=sin(phase*PI)
-		dual_guns[i].position=dual_rest[i]+Vector3(0,-.7,.22)*smoothstep(0.,1.,away)
+		dual_guns[i].position=dual_rest[i]+Vector3(0,-.7,.22)*smoothstep(0.,1.,away)+pair_swing_offset(i)*(1.-away)
 		dual_guns[i].rotation=Vector3(.6*away,0,0)

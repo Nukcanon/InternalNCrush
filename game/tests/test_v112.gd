@@ -167,10 +167,10 @@ func run():
 	game.players[-3].alive=true;game.players[-3].team=1;game.players[-3].cleanse=0.;game.actors[-3].position=Vector3(2,60.25,-30)
 	await physics_frame
 	expect(MarkerTracker.select_target(game,1)==-1,"passive marker selects closest enemy to scope center")
-	for i in range(14):MarkerTracker.tick(game,1,.1)
-	expect(game.players[-1].mark==0.,"less than 1.5 seconds never marks")
+	for i in range(17):MarkerTracker.tick(game,1,.1)
+	expect(game.players[-1].mark==0.,"less than 1.8 seconds never marks")
 	MarkerTracker.tick(game,1,.1)
-	expect(game.players[-1].mark==game.clock+6. and game.players[-3].mark==0.,"1.5-second scope dwell marks exactly one enemy for six seconds")
+	expect(game.players[-1].mark==game.clock+6. and game.players[-3].mark==0.,"1.8-second scope dwell marks exactly one enemy for six seconds")
 	MarkerTracker.tick(game,1,.1);game.actors[1].input_state.ads=false;MarkerTracker.tick(game,1,.1)
 	expect(game.players[1].marker_progress==0.,"leaving scope clears partial lock")
 	game.players[1].gadget=9

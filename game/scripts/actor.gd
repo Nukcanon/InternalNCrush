@@ -59,6 +59,8 @@ var aim_pitch=0.0
 var sprint_release=0.0
 const SPRINT_OUT=.15
 var load_hold=0. # 0..1 steady loading pose of round-by-round reloads
+var pair_swing=0. # 1.4.5: DUET sprint arm swing blend
+const PAIR_SWING=.05 # metres each way
 var sprint_fov=0. # 0..1 blend toward the sprint field of view
 var last_sprint=false
 var target_pos=Vector3.ZERO
@@ -159,8 +161,8 @@ func ensure_character():
 func ensure_view_body():
 	if is_instance_valid(view_body):return
 	if not is_instance_valid(view_mount):view_mount=Node3D.new();view_mount.name="ViewMount";gun.add_child(view_mount)
-	view_body=HeroCharacter.new();view_body.name="ViewBody";camera.add_child(view_body);view_body.build(maxi(0,shown_role),maxi(0,shown_team),false)
-	view_body.first_person_only();view_body.frame_override=view_mount;view_body.hand_size=VIEW_HAND/VIEW_BODY_SCALE
+	var _pv=Prof.now();view_body=HeroCharacter.new();view_body.name="ViewBody";camera.add_child(view_body);view_body.build(maxi(0,shown_role),maxi(0,shown_team),false);Prof.add("view_body_build",_pv);_pv=Prof.now()
+	view_body.first_person_only();Prof.add("view_body_fp_only",_pv);view_body.frame_override=view_mount;view_body.hand_size=VIEW_HAND/VIEW_BODY_SCALE
 	view_body.set_meta("fp_camera",camera);view_body.set_meta("fp_space",view_space)
 	for mesh in view_body.meshes():mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 func ensure_hit_pose():
@@ -592,7 +594,12 @@ func visual(dt:float,p:Dictionary,now:float):
 	# ...and the muzzle dipped, so the far end of a long gun (which perspective
 	# pulls toward the centre) also stays in the bottom third at the hip.
 	rotation_target.x-=(.0 if throwable or beam else .03 if kind=="pistol" else .08 if short_gun else .16)*(1.-ads_blend)
-	if sprint:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
+	# 1.4.5 DUET: no sprint tilt; the two pistols swing like running arms instead
+	# (one forward and up while the other goes back and down, 5 cm each way).
+	pair_swing=lerpf(pair_swing,1. if sprint and dual else 0.,1.-exp(-dt*8.))
+	if is_instance_valid(view_weapon) and view_weapon.dual_guns.size()>1 and (pair_swing>.001 or view_weapon.pair_swing_amount!=0.):view_weapon.set_pair_swing(sin(bob)*PAIR_SWING*pair_swing*(1.-ads_blend))
+	# (nor for held gear: a cover plate or kit drawn while sprinting sat skewed)
+	if sprint and not dual and not gadget_up:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
 	var reload_style=str(w.get("reload_style",""))
 	# Round-by-round loads (shells, break-action, revolvers) hold one steady
 	# loading pose across their cycles instead of bobbing with each round.

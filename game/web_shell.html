@@ -257,6 +257,9 @@ if(requestLock)canvasElement.requestPointerLock=function(...args){
 			setStatusMode('hidden');
 		}, displayFailureNotice);};
 	}
+	// 1.4.5: the game calls this when play begins (after the start click, within
+	// the browser's user-activation window); the button below stays as before.
+	window.incEnterFullscreen=async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();}if(navigator.maxTouchPoints>0&&screen.orientation?.lock)await screen.orientation.lock('landscape').catch(()=>{});}catch(error){console.warn('Fullscreen unavailable:',error.message);}};
 	document.getElementById('fullscreen').onclick=async()=>{try{if(document.fullscreenElement){await document.exitFullscreen();}else{await document.documentElement.requestFullscreen();if(navigator.maxTouchPoints>0&&screen.orientation?.lock)await screen.orientation.lock('landscape').catch(()=>{});}}catch(error){console.warn('Fullscreen unavailable:',error.message);}};
 }());
 		</script>

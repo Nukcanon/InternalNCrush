@@ -49,6 +49,24 @@ static func lane_extent(plan:Dictionary,at:Vector2,right:Vector2) -> Array:
 	var lo=0.;var hi=0.
 	while lo>-14. and inside.call(at+right*(lo-.25)):lo-=.25
 	while hi<14. and inside.call(at+right*(hi+.25)):hi+=.25
+	# ...clipped by the nearest walls crossing the line at chest height (the
+	# ground polygon can run on under rooms beside the street).
+	var a2=at+right*lo;var b2=at+right*hi
+	for group in plan.groups:
+		if str(group.kind) not in ["wall","perimeter","quay_edge","tunnel"]:continue
+		var v:Array=group.vertices
+		for i in range(0,v.size(),3):
+			var ys=[float(v[i][1]),float(v[i+1][1]),float(v[i+2][1])]
+			if ys.min()>1.5 or ys.max()<1.5:continue
+			var pts=[Vector2(float(v[i][0]),float(v[i][2])),Vector2(float(v[i+1][0]),float(v[i+1][2])),Vector2(float(v[i+2][0]),float(v[i+2][2]))] # plan vertices are world coordinates
+			for e in range(3):
+				var p=pts[e];var q=pts[(e+1)%3]
+				if p.distance_to(q)<.05:continue
+				var x=Geometry2D.segment_intersects_segment(a2,b2,p,q)
+				if x==null:continue
+				var s=(Vector2(x)-at).dot(right)
+				if s<0.:lo=maxf(lo,s)
+				elif s>0.:hi=minf(hi,s)
 	return [lo,hi]
 static func spawn_screens(a:Node,plan:Dictionary,index:int):
 	if not index in SPAWN_SCREENS or plan.spawns.size()<2:return
@@ -56,16 +74,30 @@ static func spawn_screens(a:Node,plan:Dictionary,index:int):
 		var here=Vector2(plan.spawns[team][0],plan.spawns[team][1]);var there=Vector2(plan.spawns[1-team][0],plan.spawns[1-team][1])
 		var dir=(there-here).normalized();var right=Vector2(-dir.y,dir.x)
 		var ground_y=float(plan.get("spawn_heights",[0,0])[team])
+		var lane=[Vector3(here.x+dir.x*(SCREEN_DISTANCE-4.),ground_y,here.y+dir.y*(SCREEN_DISTANCE-4.))]
 		for k in range(2):
 			var at=here+dir*(SCREEN_DISTANCE+k*5.)
 			var span=lane_extent(plan,at,right)
 			if span.is_empty():continue
-			var lo=float(span[0]);var hi=float(span[1]);var width=hi-lo
+			var lo=float(span[0]);var hi=float(span[1])
+			# The gap must stay open a few metres before and after the screen too
+			# (a corridor edge stepping in just past it made the gap a dead end).
+			for ahead in [-2.5,2.5]:
+				var other=lane_extent(plan,at+dir*ahead,right)
+				if other.is_empty():continue
+				lo=maxf(lo,float(other[0]));hi=minf(hi,float(other[1]))
+			var width=hi-lo
 			if width<3.:continue
 			# Each screen covers 62% of the street from one side; the two leave
 			# their gaps on opposite sides, so there is no straight view through.
-			var cover=width*.62
+			# (never narrower than a 3.4 m gap: on the narrow indoor streets the
+			# bot grid lost the route through)
+			var cover=minf(width*.62,width-3.4)
+			if cover<1.5:continue
 			var s0=lo if k==0 else hi-cover;var s1=lo+cover if k==0 else hi
+			# The gap beside this screen, for the bots' lane through (below).
+			var gap_s=(s1+hi)*.5 if k==0 else (lo+s0)*.5
+			lane.append(Vector3(at.x+right.x*gap_s,ground_y,at.y+right.y*gap_s))
 			var centre=at+right*((s0+s1)*.5)
 			var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;a.architecture.add_child(body)
 			# Local +x along `right`: Basis(UP,t)*(1,0,0) = (cos t,0,-sin t).
@@ -81,9 +113,13 @@ static func spawn_screens(a:Node,plan:Dictionary,index:int):
 			var r=Rect2(centre,Vector2.ZERO)
 			for sx in [-1.,1.]:
 				for sz in [-1.,1.]:r=r.expand(centre+right*(sx*size.x*.5)+dir*(sz*size.z*.5))
-			r=r.grow(.6)
-			a.obstacles.append(r)
+			a.obstacles.append(r.grow(.6))
+			# (ungrown: navigation_clear adds its own half-metre margin, and the
+			# 2 m grid must keep a cell centre inside the gap beside the screen)
 			a.navigation_blocks.append(AABB(Vector3(r.position.x,ground_y-.1,r.position.y),Vector3(r.size.x,SCREEN_HEIGHT+.2,r.size.y)))
+		if lane.size()>1:
+			lane.append(Vector3(here.x+dir.x*(SCREEN_DISTANCE+9.),ground_y,here.y+dir.y*(SCREEN_DISTANCE+9.)))
+			var lanes:Array=a.get_meta("screen_lanes",[]);lanes.append(lane);a.set_meta("screen_lanes",lanes)
 static func build(a:Node,index:int):
 	var plan=read_plan(index)
 	a.bounds=Vector2(plan.dimensions[0],plan.dimensions[1])*.5;a.vertical_map=true;a.has_water=false;a.indoors=index in CombatLayout.INDOOR

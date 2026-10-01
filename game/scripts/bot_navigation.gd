@@ -66,6 +66,9 @@ func build_layers():
 				layer_cells[cell_id].append(id)
 				if absf(height)<.1:layer_ground[id]=cell_id;layers.set_point_disabled(id,grid.is_point_solid(cell_id))
 	if arena.has_meta("district"):add_authored_lanes()
+	# 1.4.5: a lane through the gaps beside the spawn screens (the 2 m grid
+	# and the authored centre line both run into the screens).
+	for lane in arena.get_meta("screen_lanes",[]):add_lane(lane)
 	for cell_id in layer_cells:
 		for offset in [Vector2i(1,0),Vector2i(0,1)]:
 			var other=cell_id+offset
@@ -108,6 +111,27 @@ func add_authored_lanes():
 				if previous>=0 and connects_surface(layers.get_point_position(previous),pos):layers.connect_points(previous,id)
 				previous=id
 			travelled+=length
+## Ground-level waypoints every .8 m along a polyline (world x/z), linked to
+## each other and to the layer points sharing their cell.
+func add_lane(points:Array):
+	var previous=-1
+	for i in range(points.size()-1):
+		var a=Vector3(points[i]);var b=Vector3(points[i+1]);var count=maxi(1,ceili(a.distance_to(b)/.8))
+		for k in range(count+1):
+			if i>0 and k==0:continue
+			var pos=a.lerp(b,float(k)/count)
+			var snapped=INF
+			for y in arena.navigation_heights(pos):
+				if absf(y-pos.y)<absf(snapped-pos.y):snapped=y
+			if is_finite(snapped):pos.y=snapped
+			if not arena.navigation_clear(pos):previous=-1;continue
+			var id=layers.get_available_point_id();layers.add_point(id,pos);var bucket=cell(pos)
+			if not layer_cells.has(bucket):layer_cells[bucket]=[]
+			for other in layer_cells[bucket]:
+				if not layers.is_point_disabled(other) and connects_surface(pos,layers.get_point_position(other)):layers.connect_points(id,other)
+			layer_cells[bucket].append(id)
+			if previous>=0 and connects_surface(layers.get_point_position(previous),pos):layers.connect_points(previous,id)
+			previous=id
 func connects_surface(from:Vector3,to:Vector3) -> bool:
 	if absf(from.y-to.y)>1.1:return false
 	# Authored stairs slope along Z. Their sides are vertical slab edges, not
