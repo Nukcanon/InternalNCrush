@@ -599,7 +599,7 @@ func visual(dt:float,p:Dictionary,now:float):
 			# and the support hand reached out too far at the hip distance).
 			# Round 3: raised like the magazine reloads so the cylinder and both
 			# hands are in the frame.
-			base+=Vector3(-.07,.16,.16)*hold;rotation_target+=Vector3(.18,.85,.1)*hold
+			base+=Vector3(-.07,.16,.16)*hold;rotation_target+=Vector3(.15,.70,.25)*hold # round 8: turned less, rolled more (the straighter forearm crossed the view when the gun was turned 49 deg)
 		else:base+=Vector3(-.06,.14,.14)*hold;rotation_target+=Vector3(.12,-.2,-.28)*hold
 		# Break action: brought to the lower centre, muzzle down, so the open
 		# breech and the loading hand are in the middle of the view.
@@ -610,7 +610,10 @@ func visual(dt:float,p:Dictionary,now:float):
 		# Round 3: raised further (y +.24) and a little toward the centre, so the
 		# magazine well and the hand on it are in the frame (nearer the eye, the
 		# same height sat below the bottom edge).
-		base+=Vector3(-.05,.24,.22)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
+		# Round 8 pistols: lifted less far in (the straight-wristed forearm behind
+		# a hand 30 cm from the eye filled the lower right of the view).
+		if reload_style=="pistol":base+=Vector3(-.02,.20,.08)*sin(progress*PI);rotation_target+=Vector3(.10,-.05,-.20)*sin(progress*PI)
+		else:base+=Vector3(-.05,.24,.22)*sin(progress*PI);rotation_target+=Vector3(.10,-.15,-.31)*sin(progress*PI)
 		# 1.4.4 pistols: while the slide is racked the gun moves right, down and
 		# turns its left side up, so the slide and the hand on it are both seen
 		# instead of the hand covering the gun.
@@ -728,6 +731,11 @@ const FP_FOREARM_ITEM={"R":Vector3(.25,-.45,.86),"L":Vector3(-.35,-.50,.78)}
 const FP_FOREARM_STEEP={"R":Vector3(.30,-.88,.36),"L":Vector3(-.30,-.88,.36)}
 # Melee: a shallow forearm from the lower right, fist ahead, blade up.
 const FP_FOREARM_MELEE={"R":Vector3(.35,-.35,.87),"L":Vector3(-.35,-.35,.87)}
+# Round 8: a gun hand's forearm continues the hand instead of running along a
+# fixed line; the (hidden) shoulder is placed behind and below the elbow in
+# this direction (elbow -> shoulder, camera space) so the elbow is reachable.
+const FP_UPPER={"R":Vector3(.05,-.35,.94),"L":Vector3(-.05,-.35,.94)}
+const FOLLOW_LOAD_BEND=.5 # share of the wrist bend allowed back while a gun is held sideways to load
 static func fp_forearms(hand:float,steep:bool=false,melee:bool=false,hold:String="rifle") -> Dictionary:
 	var f:Dictionary=FP_FOREARM_MELEE if melee else FP_FOREARM_STEEP if steep else FP_FOREARM_PISTOL if hold=="pistol" else FP_FOREARM_ITEM if hold=="item" else FP_FOREARM
 	return {"R":Vector3(f.R.x*hand,f.R.y,f.R.z),"L":Vector3(f.L.x*hand,f.L.y,f.L.z)}
@@ -853,6 +861,16 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		var line:Vector3=throw_forearm(1.-(float(p.throw_until)-now)/THROW_TIME)
 		lines.R=Vector3(line.x*handedness,line.y,line.z)
 	view_body.set_meta("fp_forearm",lines)
+	# Round 8: a gun hand's forearm continues the hand (wrist straight); the
+	# hidden shoulder follows (HeroIK solve_arm, meta "fp_follow").
+	var follow={}
+	if weapon_up and not throwing and not melee_up and not bomb_up and not item_up:
+		# A gun turned sideways to load (revolver gate, shells, break action) keeps a
+		# bent wrist: fully straight, the forearm would cross the view from the side.
+		var w=1.-FOLLOW_LOAD_BEND*smoothstep(0.,1.,load_hold)
+		follow.R={"upper":Vector3(FP_UPPER.R.x*handedness,FP_UPPER.R.y,FP_UPPER.R.z),"weight":w}
+		if state.hold=="pistol" and state.two_hands:follow.L={"upper":Vector3(FP_UPPER.L.x*handedness,FP_UPPER.L.y,FP_UPPER.L.z),"weight":w}
+	view_body.set_meta("fp_follow",follow)
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	if throwing and item_up and throw_start.has("wrist"):
 		# The grenade follows the solved hand: the mount (and the weapon frame the

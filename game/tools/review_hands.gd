@@ -250,7 +250,10 @@ func run():
 		["throw15",0,2,"",1,"throw:.15"],["throw35",0,2,"",1,"throw:.35"],["throw60",0,2,"",1,"throw:.6"],["throw85",0,2,"",1,"throw:.85"],
 		["throw05",0,2,"",1,"throw:.05"],["throw26",0,2,"",1,"throw:.26"],["throw45",0,2,"",1,"throw:.45"],["throw70",0,2,"",1,"throw:.7"],["throw95",0,2,"",1,"throw:.95"],["smoke-cook",4,2,"",0,"cook"],
 		["knife-rest",0,MeleeCombat.SLOT,"",-1,"melee:-1"],["knife-wind",0,MeleeCombat.SLOT,"",-1,"melee:.03"],["knife-cut",0,MeleeCombat.SLOT,"",-1,"melee:.1"],["knife-through",0,MeleeCombat.SLOT,"",-1,"melee:.3"],
-		["wrench-rest",3,MeleeCombat.SLOT,"",-1,"melee:-1"],["wrench-cut",3,MeleeCombat.SLOT,"",-1,"melee:.1"],["pistol-reload15",0,1,"pistol",-1,"reload:.15"],["laser-reload30",2,0,"h6",-1,"reload:.3"]]
+		["wrench-rest",3,MeleeCombat.SLOT,"",-1,"melee:-1"],["wrench-cut",3,MeleeCombat.SLOT,"",-1,"melee:.1"],["pistol-reload15",0,1,"pistol",-1,"reload:.15"],["laser-reload30",2,0,"h6",-1,"reload:.3"],
+		# Round 8: the revolver reload as a sequence.
+		["revolver-reload10",1,1,"heavy_pistol",-1,"reload:.1"],["revolver-reload20",1,1,"heavy_pistol",-1,"reload:.2"],["revolver-reload40",1,1,"heavy_pistol",-1,"reload:.4"],["revolver-reload50",1,1,"heavy_pistol",-1,"reload:.5"],
+		["revolver-reload75",1,1,"heavy_pistol",-1,"reload:.75"],["revolver-reload85",1,1,"heavy_pistol",-1,"reload:.85"],["revolver-reload95",1,1,"heavy_pistol",-1,"reload:.95"]]
 	# "allguns": every weapon and tool in first person at the hip (right-handed).
 	if "allguns" in only:
 		var chosen=only.filter(func(x):return Catalog.weapons.has(x))

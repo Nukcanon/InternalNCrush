@@ -332,11 +332,32 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var la=a.distance_to(b);var lb=b.distance_to(c)
 	var t:Vector3=target.origin
 	var fp=hero.first_person
+	# 1.4.4 round 8: a gun hand's forearm continues the hand (the wrist straight,
+	# as the user drew it); the hidden shoulder is then placed so that elbow is
+	# reachable (meta "fp_follow": side -> elbow-to-shoulder direction, camera
+	# space). With a fixed shoulder beyond reach the arm was pulled straight and
+	# the forearm had to run from shoulder to wrist, bending the wrist 28-50deg.
+	var follow:Dictionary=hero.get_meta("fp_follow",{}) if fp else {}
+	var following=fp and wrist_basis and follow.has(side)
+	var elbow_goal=Vector3.INF
 	if fp:
 		# First person: the arm hangs from its fixed shoulder anchor (the shoulder
 		# bone is moved so the upper arm starts there), stretched toward the hand
 		# only when the hand is out of reach.
 		var anchor=fp_anchor(hero,side)
+		if following:
+			var cam=hero.get_meta("fp_camera",null)
+			if cam is Camera3D and is_instance_valid(cam):
+				# follow[side]: {"upper": elbow -> shoulder direction, "weight": 0..1
+				# (below 1 the forearm turns part way toward the fixed line instead;
+				# e.g. a revolver turned sideways to load keeps a bent wrist, or its
+				# forearm would cross the view from the side)}
+				var f:Dictionary=follow[side];var line:Vector3=-target.basis.y.normalized()
+				var lines:Dictionary=hero.get_meta("fp_forearm",{})
+				if float(f.get("weight",1.))<1. and lines.has(side):
+					line=line.slerp((cam.global_basis*Vector3(lines[side])).normalized(),1.-float(f.weight)).normalized()
+				elbow_goal=t+line*lb
+				anchor=elbow_goal+(cam.global_basis*Vector3(f.upper)).normalized()*la
 		if anchor!=Vector3.INF:
 			var over=anchor.distance_to(t)-(la+lb)*FP_REACH
 			if over>0.:anchor+=(t-anchor).normalized()*over
@@ -350,11 +371,11 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var pole:Vector3=a+hero.facing_basis()*(POLE_FP if fp else POLE)[side]
 	# First person: where the forearm line from the wrist ends (the elbow the
 	# view model wants); also the reference direction round the circle.
-	var elbow_goal=Vector3.INF
-	if fp:
+	if fp and elbow_goal==Vector3.INF:
 		var cam=hero.get_meta("fp_camera",null);var lines:Dictionary=hero.get_meta("fp_forearm",{})
 		if cam is Camera3D and is_instance_valid(cam) and lines.has(side):
-			elbow_goal=t+(cam.global_basis*Vector3(lines[side])).normalized()*lb;pole=elbow_goal
+			elbow_goal=t+(cam.global_basis*Vector3(lines[side])).normalized()*lb
+	if elbow_goal!=Vector3.INF:pole=elbow_goal
 	var perp=((pole-a)-dir*(pole-a).dot(dir))
 	if perp.length_squared()<.000001:perp=hero.facing_basis()*Vector3.DOWN
 	perp=perp.normalized()
@@ -383,12 +404,12 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		for level in range(4):
 			for angle in candidates:
 				var e=centre+(perp*cos(angle)+side_axis*sin(angle))*radius
-				var cost=align_w*(w_end-e).normalized().angle_to(hand_dir)+pole_w*absf(wrapf(angle,-PI,PI))+maxf(0.,(e-a).dot(up)/la-.15)*4.
+				var cost=align_w*(w_end-e).normalized().angle_to(hand_dir)+pole_w*absf(wrapf(angle,-PI,PI))+(0. if following else maxf(0.,(e-a).dot(up)/la-.15)*4.)
 				# 1.4.4: the forearm roll this elbow forces (the wrist cannot twist;
 				# a large roll wrings the forearm mesh).
 				var cq1=Quaternion(from_b,(e-a).normalized())
 				var cq2=Quaternion((e+cq1*(c-b)-e).normalized(),(w_end-e).normalized())
-				var cl=((cq2*cq1*wl_rot).inverse()*want).normalized()
+				var cl=((cq2*cq1*wl_rot).normalized().inverse()*want).normalized()
 				if cl.w<0.:cl=-cl
 				var roll=absf(wrapf(2.*atan2(cl.y,cl.w),-PI,PI))
 				cost+=TWIST_W*maxf(0.,roll-TWIST_FREE)
@@ -475,7 +496,7 @@ static func torso_depth(t:Dictionary,p:Vector3) -> float:
 	return 0. if r2>=1. else 1.-sqrt(r2)
 static func set_world(sk:Skeleton3D,index:int,parent_world:Quaternion,world:Quaternion,weight:float):
 	var local=(parent_world.inverse()*world).normalized()
-	sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(local,weight))
+	sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).normalized().slerp(local,weight))
 # --- Fingers -------------------------------------------------------------------
 # Each finger is a chain Finger1 (metacarpal) .. Finger4 (tip) with +Y along the
 # bone; flexion is a rotation about the bone's -X from its rest pose (measured
@@ -743,9 +764,9 @@ static func apply_grip(hero:HeroCharacter,side:String,handle:Transform3D,style:S
 	var sk=hero.skeleton;var blend=1.-exp(-hero.frame_dt*24.) if hero.frame_dt>0. else 1.
 	for b in pose:
 		var target:Quaternion=pose[b]
-		if hero.finger_memory.has(b) and blend<1.:target=Quaternion(hero.finger_memory[b]).slerp(target,blend)
+		if hero.finger_memory.has(b) and blend<1.:target=Quaternion(hero.finger_memory[b]).normalized().slerp(target.normalized(),blend)
 		hero.finger_memory[b]=target
-		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).slerp(target,weight))
+		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).normalized().slerp(target.normalized(),weight))
 # 1.4.4 round 6: fingers closed round a handle that rides the hand itself (the
 # melee tools): the handle lies along the fist's thumb axis through `centre`
 # (wrist-bone space), with the given half extents (metres: radius, half
@@ -764,7 +785,7 @@ static func fingers_round(hero:HeroCharacter,side:String,centre:Vector3,shape:Di
 	var sk=hero.skeleton
 	for b in pose:
 		hero.finger_memory.erase(b)
-		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).slerp(pose[b],weight))
+		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).normalized().slerp(Quaternion(pose[b]).normalized(),weight))
 # Fixed curl (the shapeless "rest" hand). `pointing` keeps the index finger straight.
 static func curl(hero:HeroCharacter,side:String,weight:float,style:String="rest",pointing:bool=false):
 	var c:Dictionary=CURLS.get(style,CURLS.rest)
@@ -778,7 +799,7 @@ static func curl(hero:HeroCharacter,side:String,weight:float,style:String="rest"
 		var target:Quaternion=sk.get_bone_rest(b).basis.get_rotation_quaternion()*Quaternion(Vector3.RIGHT,-amount)
 		if pointing and finger=="Index":target=straight(hero,b)
 		hero.finger_memory.erase(b)
-		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).slerp(target,weight))
+		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).normalized().slerp(target.normalized(),weight))
 # Local rotation of a bone in the skin bind (T) pose: a straight finger.
 static var straight_cache={}
 static func straight(hero:HeroCharacter,bone:int) -> Quaternion:

@@ -143,6 +143,9 @@ func run():
 	var vb=a.view_body
 	var fore_y:Vector3=vb.bone_world(vb.bone["LowerArm.R"]).basis.y.normalized();var hand_y:Vector3=vb.bone_world(vb.bone["Wrist.R"]).basis.y.normalized()
 	expect(fore_y.angle_to(hand_y)<HeroIK.WRIST_LIMIT-.1,"first-person pistol: the wrist bends %.0f deg, inside its limit (forearm near the barrel line)"%rad_to_deg(fore_y.angle_to(hand_y)))
+	# Round 8: the forearm continues the hand (meta fp_follow); the hidden shoulder follows the elbow.
+	expect(fore_y.angle_to(hand_y)<deg_to_rad(6.),"first-person pistol: the firing wrist is straight (%.1f deg)"%rad_to_deg(fore_y.angle_to(hand_y)))
+	expect(vb.get_meta("fp_follow",{}).has("R") and float(vb.get_meta("fp_stretch_R",1.))<.01 and Actor.FP_UPPER.R.z>.8 and Actor.FOLLOW_LOAD_BEND>0. and Actor.FOLLOW_LOAD_BEND<1.,"firing arm follows the hand without stretching; a sideways loading hold keeps part of the bend")
 	expect(Actor.FP_FOREARM_PISTOL.R.z>.8 and Actor.FP_SHOULDER.pistol.R.z>.3 and Actor.FP_SHOULDER.pistol.L.x<-.3,"pistol forearm line and shoulder anchors (both hands for DUET)")
 	expect(HeroIK.FIRING_SLIDE>=.03 and HeroIK.GUARD_DROP>=.02 and HeroIK.THUMB_RAISED_BASE>.4,"firing hand: middle finger kept under the guard, thumb raised along the frame")
 	expect(absf(MeleeVisual.KNIFE_ROLL-2.67)<.01,"knife rolled about the blade so its edge (-X of the model) faces ahead in the rest pose")
@@ -162,7 +165,9 @@ func run():
 	expect(a.gun.position.x>.28 and a.gun.position.y<-.40,"rifle at the hip sits to the right of the centre (x %.2f)"%a.gun.position.x)
 	# Round 7: the firing forearm runs straight back from the grip; the wrist is nearly straight.
 	var rf:Vector3=a.view_body.bone_world(a.view_body.bone["LowerArm.R"]).basis.y.normalized();var rh:Vector3=a.view_body.bone_world(a.view_body.bone["Wrist.R"]).basis.y.normalized()
-	expect(rf.angle_to(rh)<deg_to_rad(40.),"first-person rifle: the firing wrist bends %.0f deg (forearm straight behind the grip)"%rad_to_deg(rf.angle_to(rh)))
+	expect(rf.angle_to(rh)<deg_to_rad(6.),"first-person rifle: the firing wrist bends %.1f deg (forearm continues the hand)"%rad_to_deg(rf.angle_to(rh)))
+	var lf:Vector3=a.view_body.bone_world(a.view_body.bone["LowerArm.L"]).basis.y.normalized();var lh:Vector3=a.view_body.bone_world(a.view_body.bone["Wrist.L"]).basis.y.normalized()
+	expect(not a.view_body.get_meta("fp_follow",{}).has("L") and lf.angle_to(lh)<=HeroIK.WRIST_LIMIT+.01,"rifle support arm keeps its own line (out to the left) within the wrist limit")
 	expect(Actor.FP_FOREARM.R.z>.9 and Actor.FP_SHOULDER.rifle.R.z>.4,"firing forearm line runs back along the barrel from a shoulder behind the hand")
 	p.hand=-1;a.handedness=-1
 	for i in range(40):a.visual(1./30.,p,g.clock)
