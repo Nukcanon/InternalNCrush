@@ -198,6 +198,45 @@ func posed_profile(h:HeroCharacter,sd:String) -> String:
 	return out
 # Close-ups of each hand from the eye (narrow lens) and the whole view model
 # from the right side.
+# 1.4.5: the firing index fingertip against the trigger (gun-base space, m;
+# the trigger point of GunModel.handles / the gun's own grip shape).
+func trigger_report(vb:HeroCharacter,label:String):
+	if not is_instance_valid(vb.held) or not vb.held is GunModel:return
+	var gm:GunModel=vb.held;var hd:Dictionary=GunModel.handles(str(gm.look.get("base","")))
+	if not hd.has("trigger"):return
+	var ch:Dictionary=HeroIK.finger_chains(vb,"R");var ib:Array=ch.Index
+	var tipw:Vector3=vb.bone_world(ib[-1])*Vector3(0,HeroIK.TIP.Index,0)
+	var to_base:Transform3D=gm.base.global_transform.affine_inverse()
+	var d:Vector3=to_base*tipw-Vector3(hd.trigger)
+	# splay between neighbouring fingers (degrees between their first-bone
+	# directions) and each finger's least gap to the gun surface (m)
+	var dirs={};var gaps={}
+	var contact=GripField.contact(gm,gm.right_grip.global_transform)
+	for f in ["Index","Middle","Ring","Pinky"]:
+		var bs:Array=ch[f];dirs[f]=(vb.bone_world(bs[2]).origin-vb.bone_world(bs[1]).origin).normalized()
+		var g=INF
+		for b in bs.slice(1):
+			if not contact.is_empty():g=minf(g,GripField.distance(contact,gm.right_grip.global_transform.affine_inverse()*vb.bone_world(b).origin))
+		gaps[f]=g
+	# neighbouring fingers' second joints apart (mm, world): about a finger's
+	# width when they lie together
+	var j2=func(f:String) -> Vector3:return vb.bone_world(ch[f][2]).origin
+	var j3=func(f:String) -> Vector3:return vb.bone_world(ch[f][3]).origin
+	var splay="M-R %.0f/%.0f R-P %.0f/%.0f mm"%[j2.call("Middle").distance_to(j2.call("Ring"))*1000.,j3.call("Middle").distance_to(j3.call("Ring"))*1000.,j2.call("Ring").distance_to(j2.call("Pinky"))*1000.,j3.call("Ring").distance_to(j3.call("Pinky"))*1000.]
+	print("TRIGGER %s base=%s tip-trigger=%s |d|=%.3f handle=%s splay %s gaps M %.3f R %.3f P %.3f"%[label,str(gm.look.get("base","")),str(d.snapped(Vector3.ONE*.002)),d.length(),str((to_base*gm.right_grip.global_position).snapped(Vector3.ONE*.005)),splay,gaps.Middle,gaps.Ring,gaps.Pinky])
+# [index tip to trigger (m), how far the middle finger rises above the guard
+# bar inside the guard's span (m, <= 0 is clear)] in gun-base space.
+func finger_fit(vb:HeroCharacter,gm:GunModel,hd:Dictionary) -> Array:
+	var to_base:Transform3D=gm.base.global_transform.affine_inverse();var t:Vector3=hd.trigger
+	var ch:Dictionary=HeroIK.finger_chains(vb,"R")
+	var tip:Vector3=to_base*(vb.bone_world(ch.Index[-1])*Vector3(0,HeroIK.TIP.Index,0))
+	var bar=t.y-HeroIK.GUARD_DROP;var over=-INF
+	var mids:Array=ch.Middle;var pts=[]
+	for b in mids:pts.append(to_base*vb.bone_world(b).origin)
+	pts.append(to_base*(vb.bone_world(mids[-1])*Vector3(0,HeroIK.TIP.get("Middle",.03),0)))
+	for q in pts:
+		if q.z>t.z-.035 and q.z<t.z+.03:over=maxf(over,q.y-bar)
+	return [tip.distance_to(t),over if over>-INF else -1.]
 func closeups(a,label:String):
 	var cam=Camera3D.new();root.add_child(cam);cam.fov=28.
 	var vb:HeroCharacter=a.view_body
@@ -209,6 +248,7 @@ func closeups(a,label:String):
 		for i in range(2):await process_frame
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png(out+label+"-hand"+sd+".png")
+	if "trigger" in only:trigger_report(vb,label)
 	if "thumbprobe" in only and is_instance_valid(vb.held):
 		# Where the support thumb would point (gun space, -z forward) for a sweep
 		# of its base flexion with the pinch joints.
@@ -230,6 +270,27 @@ func closeups(a,label:String):
 		var ib:Vector3=to_gun*(wrist*HeroIK.finger_frames(sk,chains.Index,[0.,0.,0.,0.])[0].origin);var it:Vector3=to_gun*(wrist*(HeroIK.finger_frames(sk,chains.Index,[0.,0.,0.,0.])[3]*Vector3(0,HeroIK.TIP.Index,0)))
 		line+=" | straight index dir=%s palm_normal(gun)=%s hand_y(gun)=%s"%[str((it-ib).normalized().snapped(Vector3.ONE*.01)),str((to_gun.basis*wrist.basis.z).normalized().snapped(Vector3.ONE*.01)),str((to_gun.basis*wrist.basis.y).normalized().snapped(Vector3.ONE*.01))]
 		print(line)
+	if "thumbsweep" in only and is_instance_valid(vb.held):
+		# Firing thumb: tip (gun space, x right / y up / -z forward) and its
+		# clearance from the gun's surface for a sweep of the three joints.
+		var chains:Dictionary=HeroIK.finger_chains(vb,"R");var sk=vb.skeleton
+		var wrist:Transform3D=vb.bone_world(vb.bone["Wrist.R"]);var to_gun:Transform3D=vb.held.global_transform.affine_inverse()
+		var model:GunModel=vb.held if vb.held is GunModel else null
+		var field=GripField.contact(model,model.right_grip.global_transform) if model else {}
+		var rows=[]
+		for a0 in [-.9,-.6,-.3,0.,.3,.6,.9,1.2]:
+			for a1 in [0.,.4,.8,1.2]:
+				for a2 in [0.,.5,1.]:
+					var fr:Array=HeroIK.finger_frames(sk,chains.Thumb,[a0,a1,a2])
+					var tip:Vector3=wrist*(fr[2]*Vector3(0,HeroIK.TIP.Thumb,0))
+					var clear=INF
+					for k in range(3):
+						var p:Vector3=wrist*fr[k].origin
+						if not field.is_empty():clear=minf(clear,GripField.distance(field,model.right_grip.global_transform.affine_inverse()*p))
+					var g:Vector3=to_gun*tip
+					rows.append([a0,a1,a2,g,clear])
+		for r in rows:
+			if r[3].y>-.02 and r[4]>-.004:print("THUMBSWEEP a=[%.1f,%.1f,%.1f] tip(gun)=%s clear=%.3f"%[r[0],r[1],r[2],str(Vector3(r[3]).snapped(Vector3.ONE*.005)),r[4]])
 	if "loadhand" in only:
 		# The loading (support) hand from above-front and from the left side.
 		var focus:Vector3=vb.bone_world(vb.bone["Wrist.L"]).origin
@@ -324,6 +385,32 @@ func run():
 		# Round 8: the revolver reload as a sequence.
 		["revolver-reload10",1,1,"heavy_pistol",-1,"reload:.1"],["revolver-reload20",1,1,"heavy_pistol",-1,"reload:.2"],["revolver-reload40",1,1,"heavy_pistol",-1,"reload:.4"],["revolver-reload50",1,1,"heavy_pistol",-1,"reload:.5"],
 		["revolver-reload75",1,1,"heavy_pistol",-1,"reload:.75"],["quad-reload15",2,0,"h5",-1,"reload:.15"],["quad-reload45",2,0,"h5",-1,"reload:.45"],["quad-reload75",2,0,"h5",-1,"reload:.75"],["quad-reload90",2,0,"h5",-1,"reload:.9"],["pistol-reload30",0,1,"pistol",-1,"reload:.3"],["pistol-reload60",0,1,"pistol",-1,"reload:.6"],["revolver-reload85",1,1,"heavy_pistol",-1,"reload:.85"],["revolver-reload95",1,1,"heavy_pistol",-1,"reload:.95"]]
+	# 1.4.5 "triggerfit": per gun base, search the firing handle's offset (up /
+	# forward, base metres) so the index fingertip is on the trigger and the
+	# middle finger stays below the trigger guard's bar (GUARD_DROP under the
+	# trigger). Prints the best offset per base.
+	if "triggerfit" in only:
+		var reps={"AK":"a1","SMG":"c1","Pistol":"pistol","Revolver":"heavy_pistol","Revolver_Small":"eng_pistol","Shotgun":"e1","ShortCannon":"e3","Sniper":"r2","Sniper_2":"r1"}
+		for base_name in reps:
+			var wid=reps[base_name];var w=Catalog.get_weapon(wid)
+			equip(a,p,maxi(0,int(w.get("role",0))),1 if int(w.get("slot",0))==1 else 0,wid);aim.call(false);await settle([a])
+			var gm:GunModel=a.view_weapon;var hd:Dictionary=GunModel.handles(base_name)
+			var start:Vector3=gm.right_grip.position;var best=[INF]
+			var shapes:Dictionary=gm.get_meta("grip_shapes",{})
+			for dy in [-.03,-.02,-.01,0.,.01,.02,.03]:
+				for dz in [-.02,-.01,0.,.01,.02,.03]:
+					gm.right_grip.position=start+Vector3(0,dy,dz)
+					# the solver's trigger is kept in the handle's frame (GunModel.place_handles)
+					if shapes.has("R") and hd.has("trigger"):shapes.R.trigger=gm.right_grip.transform.affine_inverse()*Vector3(hd.trigger);gm.set_meta("grip_shapes",shapes)
+					HeroIK.offset_cache.clear();HeroIK.grip_cache.clear();a.view_body.finger_memory.clear()
+					await settle([a],8)
+					var f=finger_fit(a.view_body,gm,hd)
+					var cost=float(f[0])+12.*maxf(0.,float(f[1]))
+					if cost<best[0]:best=[cost,dy,dz,f]
+			gm.right_grip.position=start
+			if shapes.has("R") and hd.has("trigger"):shapes.R.trigger=gm.right_grip.transform.affine_inverse()*Vector3(hd.trigger);gm.set_meta("grip_shapes",shapes)
+			print("TRIGGERFIT %s (%s) best dy=%.3f dz=%.3f tip-trigger=%.3f middle_over_bar=%.3f"%[base_name,wid,best[1],best[2],best[3][0],best[3][1]])
+		print("HANDS_REVIEW_OK");quit();return
 	# "allguns": every weapon and tool in first person at the hip (right-handed).
 	if "allguns" in only:
 		var chosen=only.filter(func(x):return Catalog.weapons.has(x))
@@ -340,6 +427,9 @@ func run():
 				if HeroIK.on_screen(a.camera,a.view_body.bone_world(a.view_body.bone["UpperArm."+sd]).origin):cut.append(sd)
 			print("ELBOWS fp-gun-",wid," on_screen=",cut)
 			if "armprofile" in only:print("ARMPROFILE fp-gun-",wid," ",posed_profile(a.view_body,"R")," | ",posed_profile(a.view_body,"L"))
+			if "trigger" in only:trigger_report(a.view_body,"fp-gun-"+str(wid))
+			if "fingerdebug" in only:
+				HeroIK.debug_contact=true;HeroIK.grip_cache.clear();HeroIK.offset_cache.clear();await settle([a],1);HeroIK.debug_contact=false
 			if "fpside" in only:await side_shot(a,"fp-side-"+str(wid))
 		for c in [["knife",0,MeleeCombat.SLOT,""],["wrench",3,MeleeCombat.SLOT,""]]:
 			reset(p);p.role=c[1];p.slot=c[2];a.shown_weapon="";await settle([a]);await shot("fp-gun-"+c[0])
@@ -352,7 +442,7 @@ func run():
 		for c in cases:
 			var label=("fp-" if hand>0 else "fp-left-")+c[0]
 			if not wanted(label):continue
-			if hand<0 and not c[0] in ["rifle-hip","comet-reload45","tether","grenade-cook","pistol-hip","medkit","link","laser-hip","shotgun-hip","knife-cut","throw60","sniper-hip","quad-reload30"]:continue
+			if hand<0 and not c[0] in ["rifle-hip","comet-reload45","tether","grenade-cook","pistol-hip","medkit","link","laser-hip","shotgun-hip","knife-cut","throw60","sniper-hip","quad-reload30","fold-hip","tidal-hip","mender-hip","revolver-reload50","shotgun-reload70","dual-hip"]:continue
 			equip(a,p,c[1],c[2],c[3],c[4]);aim.call(false);await settle([a])
 			if "ikdebug" in only and is_instance_valid(a.view_body):a.view_body.set_meta("ik_debug",true);await settle([a],1);a.view_body.remove_meta("ik_debug")
 			var extra:String=c[5]

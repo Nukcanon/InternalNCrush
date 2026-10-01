@@ -162,7 +162,8 @@ func run():
 	var raw:Vector3=GunModel.HANDLES.Pistol.right;var mapped:Vector3=GunModel.handles("Pistol").right
 	expect(mapped.y<raw.y-.005 and GunModel.handles("Pistol").grip.y>GunModel.HANDLES.Pistol.grip.y*1.2,"pistol handle moved down to the stretched grip and its half height grew")
 	expect(GunModel.deform_of("Shotgun").get("grip",1.)==1.,"stock-wrist shotguns keep their shape")
-	expect(GunModel.handles("Shotgun").right.z<-.27 and float(GunModel.handles("Shotgun").tilt)<.2,"shotgun firing hand sits just behind the trigger guard")
+	# 1.4.5: round the stock wrist, leaning back with it, just behind the guard
+	expect(GunModel.handles("Shotgun").right.z<-.22 and float(GunModel.handles("Shotgun").tilt)>.3 and float(GunModel.handles("Shotgun").tilt)<.8,"shotgun firing hand closes round the stock wrist just behind the trigger guard")
 	expect(Vector3(Actor.THROW_KEYS[3][2]).x>-.6 and Vector3(Actor.THROW_KEYS[2][2]).x>-.3,"throw: the hand no longer turns far down after the release")
 	# --- Round 3: guns to the shooting side, support arm out, throwables -----
 	expect(Actor.FP_FOREARM.L.x<-.6 and Actor.FP_FOREARM.L.z<.55 and Actor.FP_SHOULDER.rifle.L.x<-.35,"support forearm leaves the handguard down and to the left (shoulder out left)")

@@ -157,6 +157,7 @@ static func world_shape(handle:Transform3D,style:String,shape:Dictionary) -> Dic
 	var half:Vector3=shape.get("half",base.half)*scale
 	var out={"half":half,"round":minf(float(shape.get("round",base.round))*scale,minf(half.x,minf(half.y,half.z)))}
 	if shape.has("trigger"):out.trigger=shape.trigger*scale
+	if shape.get("thumb_over",false):out.thumb_over=true
 	return out
 # Knuckle (proximal finger joint) positions in the wrist frame, per hero rig.
 static var knuckle_cache={}
@@ -362,7 +363,13 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 				# (below 1 the forearm turns part way toward the fixed line instead;
 				# e.g. a revolver turned sideways to load keeps a bent wrist, or its
 				# forearm would cross the view from the side)}
+				# 1.4.5 "line" (world): a straight stock's wrist line, back along the
+				# stock - the forearm lies along it rather than continuing the hand
+				# (the hand wraps the wrist with its knuckles down).
+				# (half way between the stock and the hand's own line, so the wrist
+				# bends moderately rather than at a right angle)
 				var f:Dictionary=follow[side];var line:Vector3=-target.basis.y.normalized()
+				if f.has("line"):line=(line+Vector3(f.line).normalized()).normalized()
 				# Round 9: "bend" tilts the forearm below the hand's line (the elbow
 				# lower, the wrist moderately bent as the user drew it: a fully
 				# straight wrist ran the forearm up through a raked grip's stock), and
@@ -559,14 +566,22 @@ static func finger_chains(hero:HeroCharacter,side:String) -> Dictionary:
 static func box_distance(p:Vector3,half:Vector3,rounding:float) -> float:
 	var q=p.abs()-(half-Vector3.ONE*rounding)
 	return Vector3(maxf(q.x,0.),maxf(q.y,0.),maxf(q.z,0.)).length()+minf(maxf(q.x,maxf(q.y,q.z)),0.)-rounding
-static func flexed(sk:Skeleton3D,bone:int,amount:float) -> Transform3D:
+static func flexed(sk:Skeleton3D,bone:int,amount:float,spread:float=0.) -> Transform3D:
 	var rest:Transform3D=sk.get_bone_rest(bone)
-	return Transform3D(Basis(rest.basis.get_rotation_quaternion()*Quaternion(Vector3.RIGHT,-amount)),rest.origin)
+	return Transform3D(Basis(rest.basis.get_rotation_quaternion()*Quaternion(Vector3.BACK,spread)*Quaternion(Vector3.RIGHT,-amount)),rest.origin)
+# 1.4.5: sideways swing of a finger at its base joint (about the bone's Z:
+# positive toward the thumb), set while one finger is solved so every search
+# (wrap, trigger) sees it. The firing index reaches up into the trigger
+# guard; middle, ring and little fingers spread a little down the grip.
+static var frame_spread=0.
+const FIRING_SPREAD={"Middle":0.,"Ring":.12,"Pinky":.25} # ring and little finger closed up to the middle
+const FIRING_SQUEEZE=0. # (no pressing into the grip: the user preferred fingers just touching)
+const INDEX_SPREADS=[0.,.08,.16,.24,.32,.4,-.08]
 # Joint frames of one finger for the given flexion angles (hand space).
 static func finger_frames(sk:Skeleton3D,bones:Array,angles:Array) -> Array:
 	var frames=[];var t=Transform3D.IDENTITY
 	for i in range(bones.size()):
-		t=t*flexed(sk,bones[i],angles[i]);frames.append(t)
+		t=t*flexed(sk,bones[i],angles[i],frame_spread if i==0 else 0.);frames.append(t)
 	return frames
 static func segment_end(sk:Skeleton3D,bones:Array,frames:Array,i:int,tip:float) -> Vector3:
 	return frames[i]*(sk.get_bone_rest(bones[i+1]).origin if i+1<bones.size() else Vector3(0,tip,0))
@@ -604,6 +619,7 @@ const THUMB_PINCH_BASE=-.7
 # 1.4.5 round 3: the loading hand's thumb stands where it stood (the user's
 # screenshots) - [base, middle] - and only its tip joint bends forward
 # (THUMB_LOAD_TIP, toward the gun); the pinch above hid the whole thumb.
+const THUMB_OVER=[-.3,1.2,.5]
 const THUMB_LOAD=[.2,.1]
 # (thumbprobe, gun space: -.6 turns the last segment from up-and-aside to
 # straight ahead along the gun; positive bends it out to the side)
@@ -617,7 +633,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 	if not contact.is_empty():
 		var tg:Transform3D=contact.to_gun
 		where=str([contact.field.id,tg.origin.snapped(Vector3.ONE*.002),tg.basis.x.snapped(Vector3.ONE*.01),tg.basis.y.snapped(Vector3.ONE*.01),snappedf(float(contact.k)/hand_scale,.001),Vector3(contact.get("box",{}).get("half",Vector3.ZERO)).snapped(Vector3.ONE*.001)])
-	var key=str([hero.role,side,style,offset.snapped(Vector3.ONE*.002),shape.half.snapped(Vector3.ONE*.002),snappedf(shape.round,.002),trigger.snapped(Vector3.ONE*.002) if trigger!=null else null,pointing,where])
+	var key=str([hero.role,side,style,offset.snapped(Vector3.ONE*.002),shape.half.snapped(Vector3.ONE*.002),snappedf(shape.round,.002),trigger.snapped(Vector3.ONE*.002) if trigger!=null else null,pointing,where,shape.get("thumb_over",false)])
 	if grip_cache.has(key):return grip_cache[key]
 	if grip_cache.size()>512:grip_cache.clear()
 	var sk=hero.skeleton
@@ -640,7 +656,8 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			# Firing hand: the thumb rests raised along the frame's side, straight
 			# but for a slight bend, as a pistol or rifle is held; it only curls
 			# round the grip when a straight thumb would run into the gun.
-			var raised=style=="pistol" and trigger!=null
+			# (1.4.5: not on a straight stock's wrist - the thumb wraps over the top)
+			var raised=style=="pistol" and trigger!=null and not shape.get("thumb_over",false)
 			if raised:
 				angles[0]=THUMB_RAISED_BASE
 				for i in range(1,bones.size()):angles[i]=THUMB_RAISED
@@ -656,12 +673,19 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			if pinch:
 				angles[0]=THUMB_LOAD[0]
 				for i in range(1,bones.size()):angles[i]=THUMB_LOAD_TIP if i==bones.size()-1 else THUMB_LOAD[mini(i,THUMB_LOAD.size()-1)]
-			if not raised and not pinch:
+			# 1.4.5: round a straight stock's wrist the thumb lies over the top
+			# (THUMB_OVER, from tools/review_hands.gd thumbsweep: the tip on the
+			# top of the wrist, touching; the wrap search left it straight along
+			# the right side).
+			var over=shape.get("thumb_over",false) and not pinch
+			if over:
+				for i in range(bones.size()):angles[i]=THUMB_OVER[mini(i,THUMB_OVER.size()-1)]
+			if not raised and not pinch and not over:
 				for i in range(1,bones.size()):angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,THUMB_RADIUS,0.,1.2,.9)
 			# On the real surface the thumb may run into the receiver / tube above
 			# the grip: swing it further across (round the handle) until it lies
 			# clear, keeping the least swing that works.
-			if not raised and not pinch and not contact.is_empty() and chain_clearance(sk,bones,angles,tip,dist)<-.004:
+			if not raised and not pinch and not over and not contact.is_empty() and chain_clearance(sk,bones,angles,tip,dist)<-.004:
 				var best=angles.duplicate();var best_clear=chain_clearance(sk,bones,angles,tip,dist)
 				for extra in [.25,.5,.75,1.,-.25]:
 					var trial=angles.duplicate();trial[0]=float(THUMB_BASE.get(style,.15))+extra
@@ -672,15 +696,28 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 				angles=best
 		else:
 			angles[0]={"Index":.05,"Middle":.06,"Ring":.1,"Pinky":.15}.get(finger,.06)
+			frame_spread=float(FIRING_SPREAD.get(finger,0.)) if style=="pistol" and trigger!=null and not pointing else 0.
 			if finger=="Index" and pointing:
 				for i in range(1,bones.size()):angles[i]=0.
 			elif finger=="Index" and trigger!=null:
 				# The trigger sits inside a thin guard that the grip field (6.5 mm
 				# cells) cannot resolve: the index finger keeps the grip box.
-				angles=trigger_finger(sk,bones,angles,tip,box_dist,to_handle.affine_inverse()*trigger,dist if not contact.is_empty() else Callable())
+				# 1.4.5: its base also swings up toward the thumb as far as needed
+				# (INDEX_SPREADS) so the finger goes into the guard onto the trigger.
+				var best_angles=angles;var best_cost=INF;var best_spread=0.
+				for s in INDEX_SPREADS:
+					frame_spread=s
+					var trial=trigger_finger(sk,bones,angles.duplicate(),tip,box_dist,to_handle.affine_inverse()*trigger,dist if not contact.is_empty() else Callable())
+					var c=float(trigger_cost)+absf(s)*.01
+					if c<best_cost:best_cost=c;best_angles=trial;best_spread=s
+				angles=best_angles;frame_spread=best_spread
 			else:
+				# 1.4.5: on the firing hand the middle, ring and little fingers squeeze
+				# the grip, a few millimetres into the model, so they hold it tight
+				# (and close up together) instead of resting just off it.
+				var squeeze=FIRING_SQUEEZE if style=="pistol" and trigger!=null else 0.
 				for i in range(1,bones.size()):
-					angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,FINGER_RADIUS[mini(i+1,4)],0.,MAX_FLEX[mini(i+1,4)],MAX_FLEX[mini(i+1,4)])
+					angles[i]=wrap_joint(sk,bones,angles,i,tip,dist,FINGER_RADIUS[mini(i+1,4)]-squeeze,0.,MAX_FLEX[mini(i+1,4)],MAX_FLEX[mini(i+1,4)])
 				# 1.4.2: on the firing hand the middle finger touched the trigger
 				# guard while still straight and stayed out along it; it now tucks
 				# under the guard and closes round the front of the grip.
@@ -691,7 +728,7 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 					# ...but never into the grip: ease the tip joints back until the
 					# finger lies on the surface (a touch, as the other fingers).
 					for step in range(12):
-						if chain_clearance(sk,bones,angles,tip,dist)>=.0005:break
+						if chain_clearance(sk,bones,angles,tip,dist)>=.0005-squeeze:break
 						for i in range(bones.size()-1,0,-1):angles[i]=maxf(float(wrapped[i]),float(angles[i])-.06)
 		if debug_contact and not contact.is_empty():
 			var frames=finger_frames(sk,bones,angles);var ends=[]
@@ -699,7 +736,8 @@ static func grip_pose(hero:HeroCharacter,side:String,style:String,offset:Vector3
 			print("FINGER ",contact.field.id," ",side," ",style," ",finger," angles ",angles.map(func(x):return snappedf(x,.01))," end_dist ",ends)
 		for i in range(bones.size()):
 			var rest:Quaternion=sk.get_bone_rest(bones[i]).basis.get_rotation_quaternion()
-			out[bones[i]]=(rest*Quaternion(Vector3.RIGHT,-float(angles[i]))).normalized()
+			out[bones[i]]=(rest*Quaternion(Vector3.BACK,frame_spread if i==0 else 0.)*Quaternion(Vector3.RIGHT,-float(angles[i]))).normalized()
+		frame_spread=0.
 		if finger=="Index" and pointing:
 			for i in range(1,bones.size()):out[bones[i]]=straight(hero,bones[i])
 	grip_cache[key]=out
@@ -769,14 +807,19 @@ static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist
 		var frames=finger_frames(sk,bones,trial)
 		var cost=0.
 		for i in range(1,n):
-			var d=dist.call(segment_end(sk,bones,frames,i,tip))-FINGER_RADIUS[mini(i+1,4)]
+			var end:Vector3=segment_end(sk,bones,frames,i,tip)
+			var d=dist.call(end)-FINGER_RADIUS[mini(i+1,4)]
+			# 1.4.5: inside the trigger guard's opening (round the trigger) the
+			# field reads solid - its 6.5 mm cells fill the thin guard's hole - so
+			# it would keep the finger out of the guard, under its bar.
+			var in_guard=end.distance_to(trigger)<GUARD_OPENING
 			# 1.4.4: the first bone also keeps out of the real receiver / guard.
-			if i<=2 and field.is_valid():d=minf(d,field.call(segment_end(sk,bones,frames,i,tip))-FINGER_RADIUS[mini(i+1,4)])
+			if i<=2 and field.is_valid() and not in_guard:d=minf(d,field.call(end)-FINGER_RADIUS[mini(i+1,4)])
 			if d<0.:cost+=-d*40.
 			# Round 6: the last bone and the tip may touch the guard (the field
 			# cannot tell the thin guard from the trigger) but not go deep into
 			# the receiver behind it (shotgun stocks: the tip sank 11-18 mm).
-			if i>2 and field.is_valid():
+			if i>2 and field.is_valid() and not in_guard:
 				var deep=field.call(segment_end(sk,bones,frames,i,tip))-FINGER_RADIUS[mini(i+1,4)]+.003
 				if deep<0.:cost+=-deep*160.
 		var pad:Vector3=frames[n-1]*Vector3(0,tip*.6,-FINGER_RADIUS[4]*.8)
@@ -796,7 +839,10 @@ static func trigger_finger(sk:Skeleton3D,bones:Array,angles:Array,tip:float,dist
 				var trial=[angles[0],maxf(0.,centre[1]+d2*.05),maxf(0.,centre[2]+d3*.05),maxf(0.,centre[3]+d4*.1)]
 				var cost=cost_of.call(trial)
 				if cost<best_cost:best_cost=cost;best=trial
+	trigger_cost=best_cost
 	return best
+static var trigger_cost=0. # the last trigger_finger's best cost (index spread search)
+const GUARD_OPENING=.03 # hand units round the trigger point treated as the guard's open hole
 # Applies a grip's finger pose (weight blends from the animated pose). A small
 # per-hero memory smooths changes between grips.
 static func apply_grip(hero:HeroCharacter,side:String,handle:Transform3D,style:String,shape:Dictionary,weight:float,pointing:bool=false,contact:Dictionary={}):
@@ -806,6 +852,7 @@ static func apply_grip(hero:HeroCharacter,side:String,handle:Transform3D,style:S
 	var offset=grip_offset(hero,side,style,ws,hand_scale,contact)
 	var hand={"half":ws.half/hand_scale,"round":float(ws.round)/hand_scale}
 	if ws.has("trigger") and not pointing:hand.trigger=ws.trigger/hand_scale
+	if ws.get("thumb_over",false):hand.thumb_over=true
 	var pose=grip_pose(hero,side,style,offset/hand_scale,hand,pointing,contact,hand_scale)
 	var sk=hero.skeleton;var blend=1.-exp(-hero.frame_dt*24.) if hero.frame_dt>0. else 1.
 	for b in pose:

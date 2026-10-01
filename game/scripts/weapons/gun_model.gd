@@ -14,6 +14,9 @@ static var bases={}
 #  left:  centre of the handguard / pump (palm up under it, "fore" half
 #         extents) or of a vertical grip ("left_style": "pistol").
 #  sight: rear-sight point the camera lines up with when aiming without optics.
+# Straight stocks (no pistol grip): shotguns and FOLD.
+const STRAIGHT_STOCKS=["Shotgun","ShortCannon"]
+func straight_wrist() -> bool:return str(look.get("base","")) in STRAIGHT_STOCKS
 const HANDLES={
 	"AK":{"right":Vector3(0,-.125,-.231),"tilt":.05,"grip":Vector3(.0215,.058,.04),"round":.015,"trigger":Vector3(0,-.054,-.298),
 		# 1.4.2: no handguard on this base (only a bare barrel ahead of the
@@ -29,11 +32,15 @@ const HANDLES={
 	"Revolver_Small":{"right":Vector3(0,-.067,-.008),"tilt":.36,"grip":Vector3(.014,.035,.028),"round":.011,"trigger":Vector3(0,-.042,-.079),"sight":Vector3(0,.07,-.02),"gate":Vector3(-.024,.016,-.015)},
 	# 1.4.2: the firing hand at the front of the stock wrist (the web against the
 	# receiver) and the support hand on the pump itself (measured on the model).
-	"Shotgun":{"right":Vector3(0,-.05,-.29),"tilt":.1,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
+	# 1.4.5: these two have straight stocks (no pistol grip): the firing hand
+	# closes round the stock wrist leaning back with it (tilt .5; laid fully
+	# along the stock the index finger could not reach the trigger), the arm
+	# coming in from the side (Actor.fp_follow_for, STRAIGHT_STOCKS).
+	"Shotgun":{"right":Vector3(0,-.02,-.25),"tilt":.5,"grip":Vector3(.029,.045,.03),"round":.02,"trigger":Vector3(0,-.095,-.38),
 		# "port": the loading port under the receiver just ahead of the trigger
 		# guard (shells went into the guard before).
 		"left":Vector3(0,-.045,-.84),"fore":Vector3(.0266,.0275,.06),"fore_round":.02,"sight":Vector3(0,.05,-.60),"port":Vector3(0,-.085,-.50)},
-	"ShortCannon":{"right":Vector3(0,-.02,-.28),"tilt":.1,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
+	"ShortCannon":{"right":Vector3(0,-.02,-.28),"tilt":.5,"grip":Vector3(.025,.04,.028),"round":.018,"trigger":Vector3(0,-.07,-.356),
 		# 1.4.2: on the pump, not on the barrel tip (the fingers passed the muzzle).
 		"left":Vector3(-.007,-.008,-.485),"fore":Vector3(.034,.031,.04),"fore_round":.025,"sight":Vector3(0,.05,-.45),"breech":Vector3(0,.03,-.56)},
 	"Sniper":{"right":Vector3(0,-.115,-.258),"tilt":.33,"grip":Vector3(.014,.048,.039),"round":.012,"trigger":Vector3(0,-.07,-.346),
@@ -168,6 +175,9 @@ func build(w:Dictionary,ink:bool=false):
 		left_grip.transform=right_grip.transform*Transform3D(Basis.IDENTITY,Vector3(0,-.024,-.006)*k)
 		shapes.L={"half":Vector3(r.half)+Vector3(.026,.012,.032)*k,"round":float(r.get("round",.012))+.012*k,"cup":true}
 		set_meta("grip_styles",{"R":"pistol","L":"pistol"})
+	# 1.4.5: a straight stock's wrist is closed round by the whole hand, the
+	# thumb over the top (not raised along the side as on a pistol grip).
+	if straight_wrist() and shapes.has("R"):shapes.R=Dictionary(shapes.R).duplicate();shapes.R.thumb_over=true
 	set_meta("grip_shapes",shapes)
 	# Third person: where the weapon sits in the shoulder frame (HeroCharacter).
 	if h.has("frame_offset"):set_meta("frame_offset",h.frame_offset*base.scale.x)

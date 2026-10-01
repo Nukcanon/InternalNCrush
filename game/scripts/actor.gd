@@ -578,6 +578,15 @@ func visual(dt:float,p:Dictionary,now:float):
 	# 1.4.4 turned-in, dipped hip angle made the muzzle visibly point below and
 	# left of the crosshair); only held gear still turns in a little.
 	rotation_target.y+=(HIP_YAW_GEAR if gadget_up else 0.)*(1.-ads_blend)
+	# Round 3 (the user): the rear of the gun goes out to the side and down,
+	# the muzzle still on the crosshair: the barrel line crosses the aim line
+	# HIP_CONVERGE ahead (any line through the aim line projects through the
+	# screen centre), so the stock no longer runs straight back at the eye and
+	# the firing hand sits naturally. Beam weapons stay parallel (their beam
+	# leaves the muzzle for the far aim point).
+	if not gadget_up and not throwable and not bool(w.get("laser",false)):
+		var converge=hip_converge(hip_base,converge_distance(w))*(1.-ads_blend)
+		rotation_target.y+=converge.x;rotation_target.x+=converge.y
 	# 1.4.5 DUET: no sprint tilt; the two pistols swing like running arms instead
 	# (one forward and up while the other goes back and down, 5 cm each way).
 	pair_swing=lerpf(pair_swing,1. if sprint and dual else 0.,1.-exp(-dt*8.))
@@ -743,6 +752,11 @@ const FOLLOW_DROP=.20
 const FOLLOW_BEND_DUAL=.22
 const FOLLOW_DROP_DUAL=.08
 const FP_UPPER_DUAL_X=.35 # DUET: shoulders further out, the arms open to both sides
+const STOCK_BEND=.25 # straight stocks (shotguns, FOLD): forearm bend below its line
+const STOCK_DROP=0. # ...least slope down from the wrist to the elbow
+const STOCK_ELBOW_OUT=.45 # ...and the elbow out to the side
+const STOCK_HIP=Vector3(.14,-.40,-.56) # their hip anchor (before the side shift below)
+const STOCK_CONVERGE=1.2 # ...crossing the aim line nearer: the gun lies across the view, its side seen
 # Aimed recoil: pitch (rad per recoil unit), drop and push-back (m per unit).
 const ADS_KICK_PITCH=.035
 const ADS_KICK_DROP=.006
@@ -810,11 +824,24 @@ static func hip_base_for(w:Dictionary,gadget_up:bool=false) -> Vector3:
 	# Hand-held launchers (QUAD) sit lower and further right: the tube cluster
 	# is wide and would cover the middle of the screen.
 	elif rocket and not shoulder:hip_base=Vector3(.34,-.42,-.46)
+	# 1.4.5 straight stocks (shotguns, FOLD), as other shooters hold them: the
+	# rear of the gun near the bottom centre, the gun rising across to the
+	# crosshair, the firing arm reaching in from the side.
+	elif str(GunLooks.look(w).get("base","")) in GunModel.STRAIGHT_STOCKS:hip_base=STOCK_HIP
 	elif short_gun_kind(w):hip_base.y=-.37
 	# Guns (not gadgets, not the centred pair) sit further to the shooting side
 	# (the user's 1.4.4 round-3 request) so the middle of the screen is clear.
 	if not gadget_up and not dual:hip_base.x+=.06
 	return hip_base
+# Hip turn (yaw in toward the centre, pitch up) that makes the barrel line
+# cross the aim line HIP_CONVERGE ahead (view-space units; the bore runs about
+# HIP_BORE above the right handle).
+const HIP_CONVERGE=4.
+const HIP_BORE=.08
+static func converge_distance(w:Dictionary) -> float:
+	return STOCK_CONVERGE if str(GunLooks.look(w).get("base","")) in GunModel.STRAIGHT_STOCKS else HIP_CONVERGE
+static func hip_converge(hip:Vector3,distance:float=HIP_CONVERGE) -> Vector2:
+	return Vector2(atan2(hip.x,distance),atan2(-(hip.y+HIP_BORE),distance))
 # View-weapon scale: long guns are compact in the view, pistols keep their
 # size next to the big cartoon hand.
 static func view_weapon_scale(w:Dictionary) -> float:return 1.18 if GunLooks.hold_kind(w)=="pistol" else .9
@@ -826,12 +853,20 @@ static func hip_weapon_offset(model:GunModel,pair:float) -> Vector3:
 	return -grip+(Vector3(pair*.5*model.scale.x,0,0) if model.dual_guns.size()>1 else Vector3.ZERO)
 # The arm-follow settings of a gun hold (meta "fp_follow", HeroIK.solve_arm):
 # the firing forearm continues the hand with the hidden shoulder following.
-static func fp_follow_for(hold:String,paired:bool,hand:float,weight:float=1.) -> Dictionary:
+static func fp_follow_for(hold:String,paired:bool,hand:float,weight:float=1.,model:GunModel=null) -> Dictionary:
 	var follow={}
 	if hold=="item":return follow
 	# DUET: the arms open out to both sides with the wrists bent less.
 	var bend=FOLLOW_BEND_DUAL if paired else FOLLOW_BEND;var drop=FOLLOW_DROP_DUAL if paired else FOLLOW_DROP;var out=FP_UPPER_DUAL_X if paired else 0.
 	follow.R={"upper":Vector3((FP_UPPER.R.x+out)*hand,FP_UPPER.R.y,FP_UPPER.R.z),"weight":weight,"bend":bend,"drop":drop}
+	# 1.4.5: a straight stock (shotguns, FOLD) is held round its wrist; the
+	# forearm runs back along the stock instead of continuing the hand.
+	# (the hand closes round the wrist knuckles-down, so the forearm comes in
+	# level from the side - elbow out, as a shotgun is held - not from below:
+	# no least slope, little extra bend)
+	if is_instance_valid(model) and model.straight_wrist():
+		follow.R.line=-model.right_grip.global_basis.y.normalized();follow.R.bend=STOCK_BEND;follow.R.drop=STOCK_DROP
+		follow.R.upper=Vector3((FP_UPPER.R.x+STOCK_ELBOW_OUT)*hand,FP_UPPER.R.y,FP_UPPER.R.z)
 	if paired:follow.L={"upper":Vector3((FP_UPPER.L.x-out)*hand,FP_UPPER.L.y,FP_UPPER.L.z),"weight":weight,"bend":bend,"drop":drop}
 	return follow
 func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
@@ -921,7 +956,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		# A gun turned sideways to load (revolver gate, shells, break action) keeps a
 		# bent wrist: fully straight, the forearm would cross the view from the side.
 		var w=1.-FOLLOW_LOAD_BEND*smoothstep(0.,1.,load_hold)
-		follow=fp_follow_for(str(state.hold),state.hold=="pistol" and state.two_hands,float(handedness),w)
+		follow=fp_follow_for(str(state.hold),state.hold=="pistol" and state.two_hands,float(handedness),w,view_weapon)
 	view_body.set_meta("fp_follow",follow)
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	if throwing and item_up and throw_start.has("wrist"):
