@@ -40,10 +40,15 @@ static func apply(node:Node3D,device:Dictionary,local_id:int):
 		node.set_meta("silhouette_state",key)
 		node.set_meta("silhouette_meshes",node.find_children("*","MeshInstance3D",true,false))
 	var meshes=node.get_meta("silhouette_meshes",[])
+	# 1.4.5: parts swapped out since the list was taken (a new weapon or held
+	# item) are dropped from it; outside the tree they have no transform.
+	if meshes.any(func(mesh):return not is_instance_valid(mesh) or not mesh.is_inside_tree()):
+		meshes=node.find_children("*","MeshInstance3D",true,false).filter(func(mesh):return mesh.is_inside_tree());node.set_meta("silhouette_meshes",meshes);changed=true
 	if not owned:
 		if changed:
 			for mesh in meshes:mesh.material_overlay=null
 		return
+	if not node.is_inside_tree():return
 	# Union the whole assembly in root space, then express it in each mesh space.
 	# A per-part box mistakes a neighbouring part for a wall.
 	var bounds=AABB();var first=true
