@@ -101,8 +101,11 @@ static func at_ease(c:HeroCharacter):
 	var hips:Vector3=c.bone_world(c.bone["Hips"]).origin;var xf:Basis=c.global_basis.orthonormalized()
 	var scale=c.HEIGHTS[c.role]/1.8
 	# character space: +X its right, -Z ahead; palms back, knuckles across the back
-	var right_at=hips+xf*Vector3(.07,.03,.16)*scale;var left_at=hips+xf*Vector3(-.07,.01,.17)*scale
+	# (1.5.2: the hands up at the small of the back and close in, so the arms bend and the elbows go out)
+	var right_at=hips+xf*Vector3(.05,.25,.16)*scale;var left_at=hips+xf*Vector3(-.05,.23,.17)*scale
 	var rb=Basis(Vector3(0,-1,0),Vector3(-1,0,0),Vector3(0,0,-1));var lb=Basis(Vector3(0,1,0),Vector3(1,0,0),Vector3(0,0,-1))
+	# (1.5.2, the user's photo: elbows a little out from the body, as soldiers stand at ease)
+	c.set_meta("pole_override",{"R":Vector3(.75,-.15,.35),"L":Vector3(-.75,-.15,.35)})
 	c.wrist_override={"R":Transform3D(xf*rb,right_at),"L":Transform3D(xf*lb,left_at),"curl_R":"rest","curl_L":"rest"}
 	for i in range(4):c.drive(.05,{"hold":"none","pitch":0.})
 func _gui_input(event):

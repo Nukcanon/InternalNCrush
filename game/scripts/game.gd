@@ -1197,7 +1197,7 @@ func fire(id:int):
 	var spray=AimModel.current_spray(w,p,a.aim_progress,bool(a.input_state.crouch))
 	if GadgetLoadout.mounted(p,bool(a.input_state.crouch)):spray*=.4
 	p.shot_time=clock;p.spray_phase=float(p.get("spray_phase",0))+1.;p.spray_index=int(p.spray_phase);p.bloom=minf(float(w.get("bloom_max",1.2)),float(p.get("bloom",0))+float(w.get("shot_bloom",.12)))
-	var origin=a.muzzle_world();var eye=a.eye();var last_end=origin+a.direction()*float(w.get("max_range",300.));var pattern_rotation=randf();var pellet_ends=[];var marks=[];var healed_targets={};var heal_marks=[]
+	var origin=a.muzzle_world();var eye=a.eye();var last_end=origin+a.direction()*float(w.get("max_range",300.));var pattern_rotation=randf();var pellet_ends=[];var marks=[];var healed_targets={};var repaired=0.;var heal_marks=[]
 	# A visible camera above cover does not permit firing a barrel embedded in that cover.
 	var blocked_barrel=ray(eye,a.desired_muzzle(),[a.get_rid()],1|4|8)
 	for pellet in range(int(w.pellets)):
@@ -1235,11 +1235,19 @@ func fire(id:int):
 			dmg*=R.damage_water(arena.submerged(hit.position),arena.wading(a.position),not arena.wading(collider.position))
 			damage(collider.pid,dmg,id,head,wid,origin,hit.position)
 		elif collider is InteractiveProp:collider.hit(hit.position,(hit.position-origin).normalized(),dmg)
-		elif collider.has_meta("device"):damage_device(int(collider.get_meta("device")),CombatBalance.structure_damage(w,dist),id)
+		elif collider.has_meta("device"):
+			var did=int(collider.get_meta("device"))
+			# 1.5.2 (the user): RIVET rounds repair friendly structures, 8 per hit (weapons.json repair_per_hit)
+			if float(w.get("repair_per_hit",0.))>0. and devices.has(did) and int(devices[did].team)==int(p.team) and int(options.mode)!=1:
+				var d=devices[did];var gain=minf(float(w.repair_per_hit),maxf(0.,float(d.get("max_hp",d.hp))-float(d.hp)))
+				d.hp=float(d.hp)+gain;repaired+=gain
+				if heal_marks.size()<4:heal_marks.append(hit.position)
+			else:damage_device(did,CombatBalance.structure_damage(w,dist),id)
 		else:
 			var surface=mark_surface(hit,origin)
 			if not surface.is_empty():marks.append(surface)
 	if not marks.is_empty():wall_marks_batch.rpc(marks)
+	if repaired>0.:feedback(id,"","구조물 수리 +%d"%roundi(repaired))
 	if not heal_marks.is_empty():effect.rpc("heal_plus",origin,origin,id,-100.,{"points":heal_marks})
 	if has_meta("probe_pellets"):get_meta("probe_pellets").append_array(pellet_ends) # tools/probe_shotgun.gd
 	effect.rpc("shot",origin,last_end,id,clock,{"weapon":wid,"bloom":p.bloom,"spray_phase":p.spray_phase,"pellets":pellet_ends})

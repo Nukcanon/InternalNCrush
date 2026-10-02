@@ -54,7 +54,7 @@
     "role": 0,
     "slot": 0,
     "damage": 19,
-    "interval": 0.09,
+    "interval": 0.0896,
     "mag": 32,
     "reserve": 128,
     "price": 2800,
@@ -206,7 +206,7 @@
     "role": 1,
     "slot": 0,
     "damage": 80,
-    "interval": 1.6,
+    "interval": 1.5,
     "mag": 6,
     "reserve": 30,
     "price": 2400,
@@ -262,7 +262,7 @@
     "role": 1,
     "slot": 0,
     "damage": 120,
-    "interval": 2.35,
+    "interval": 2.0,
     "mag": 4,
     "reserve": 20,
     "price": 3800,
@@ -637,7 +637,7 @@
     "pellets": 9,
     "reach": 18.0,
     "zoom": 62,
-    "reload": 3.35,
+    "reload": 2.9,
     "kind": "gun",
     "fire_mode": "semi",
     "model_index": 12,
@@ -967,7 +967,7 @@
     "role": 5,
     "slot": 0,
     "damage": 22,
-    "interval": 0.24,
+    "interval": 0.2222,
     "mag": 24,
     "reserve": 96,
     "price": 2400,
@@ -1013,7 +1013,7 @@
     "pattern_recovery": 36.63,
     "heal_per_pellet": 5,
     "heal_cap": 5,
-    "description": "의료 카빈 · 아군 명중 시 5 회복 · 250 RPM · 적에게 22 피해 · 거리에 따라 피해와 회복 감소"
+    "description": "의료 카빈 · 아군 명중 시 5 회복 · 270 RPM · 적에게 22 피해 · 거리에 따라 피해와 회복 감소"
   },
   "pistol": {
     "name": "SIDE",
@@ -1215,7 +1215,9 @@
     "spray_seed": 8.51,
     "spray_direction": 1,
     "pattern_recovery": 34.16,
-    "single_load": true
+    "single_load": true,
+    "repair_per_hit": 8,
+    "description": "공병 리볼버 · 아군 포탑·엄폐물 명중 시 8 수리 · 적에게 29 피해"
   },
   "burst_pistol": {
     "name": "TRIO",
@@ -1226,7 +1228,7 @@
     "mag": 15,
     "reserve": 60,
     "price": 0,
-    "spread": 1.782,
+    "spread": 1.604,
     "pellets": 1,
     "reach": 24.0,
     "zoom": 58,
@@ -1241,7 +1243,7 @@
     "bloom_recovery": 5.658,
     "weight_kg": 1.2,
     "portability": 86,
-    "stability": 32,
+    "stability": 42,
     "ads_ms": 170,
     "ads_spread": 0.604,
     "category": "권총",
@@ -1266,7 +1268,8 @@
     "spray_frequency": 3.18,
     "spray_seed": 8.88,
     "spray_direction": 1,
-    "pattern_recovery": 32.26
+    "pattern_recovery": 32.26,
+    "description": "3점사 권총 · 안정성을 높여 탄퍼짐이 적음 · 적에게 17 피해"
   },
   "med_pistol": {
     "name": "FEATHER",
@@ -1316,7 +1319,10 @@
     "spray_frequency": 2.5,
     "spray_seed": 9.25,
     "spray_direction": -1,
-    "pattern_recovery": 34.94
+    "pattern_recovery": 34.94,
+    "heal_per_pellet": 5,
+    "heal_cap": 5,
+    "description": "의료 권총 · 아군 명중 시 5 회복 · 적에게 22 피해 · 거리에 따라 피해와 회복 감소"
   },
   "repair": {
     "name": "FIX · 원격 수리 도구",

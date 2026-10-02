@@ -43,7 +43,7 @@ write('pump',faded(excerpt('user_shotgun_reload',3.18,.50/LOW,LOW),.002,.06),gai
 # (round 2: then the user's pipe swing and pipe bang, each starting just before the one
 # before it ends, so the three run on without a gap)
 slide=excerpt('user_rocket_reload',.05,.40);swing=sample('user_pipe_swing');bang=sample('user_pipe_bang')
-dry=mix(1.25,(slide,1.,0),(swing,.75,.30),(bang,.9,.30+.17))
+dry=mix(1.25,(slide,1.,0),(swing,.75,.30),(bang,.12,.30+.17)) # (1.5.2: the last bang well down, about 17 dB)
 write('rocket_insert',mix(2.3,(dry,1.,0),(reverb(lowpass(dry,3200),1.3,1800.,2.3),.55,.01)),gain=3)
 
 # --- ARC beam: the weld recording, spikes rounded, as a loop --------------------------
@@ -68,7 +68,7 @@ def medigun(seconds=2.):
  return lowpass(out,3600)
 # (round 2, the user's power-charge: its middle, the sharp top cut away, as the loop)
 charge=highpass(lowpass(lowpass(sample('user_charge'),2600),2600),90)
-write_loop('link_loop',seamless(soften(charge,1.6),int(rate*.5)),gain=-12) # (round 3: much quieter; round 4/5: louder again; rounds 6-8: down 3, 2 and 2 dB)
+write_loop('link_loop',seamless(soften(charge,1.6),int(rate*.5)),gain=-14) # (round 3: much quieter; round 4/5: louder again; rounds 6-8: down 3, 2 and 2 dB; 1.5.2: 2 dB more)
 
 # --- FIX repair: a welding arc - crackle, hiss and a mains buzz (loop) -------------
 def welding(seconds=2.4,seed=1511):
@@ -100,9 +100,10 @@ def written(key):
 # (both swings last the same, as the attacks do: the knife's tail trimmed, the wrench's padded)
 def fit(values,seconds):
  n=int(rate*seconds);return (values+[0.]*n)[:n]
-write('knife_swing',faded(fit(sample('user_knife_draw'),.5),.003,.08),gain=kept_gain('knife_swing'))
+sword=sample('user_sword')
+write('knife_swing',sword,gain=kept_gain('knife_swing')) # (1.5.2: the user's sword swing as it is - only its leading silence cut)
 write('knife_flesh',faded(sample('user_knife_stab'),.002,.04),gain=kept_gain('knife_flesh'))
-write('wrench_swing',fit(faded(sample('user_swing'),.003,.05),.5),gain=kept_gain('wrench_swing'))
+write('wrench_swing',fit(faded(sample('user_swing'),.003,.05),len(sword)/rate),gain=kept_gain('wrench_swing')) # (padded to the sword's length)
 write('wrench_flesh',faded(sample('user_wood_hit'),.002,.1),gain=kept_gain('wrench_flesh'))
 write('body_impact',faded(sample('user_bullet_hit'),.001,.08),gain=kept_gain('body_impact'))
 # hurt: four short "oof"s a little quieter (one picked at random, AudioBank.variant_stream);
@@ -161,4 +162,4 @@ def transformer(seconds=4.):
   buzz=math.tanh(math.sin(2*math.pi*120*t)*3.)*.22
   out.append((math.tanh(hum*.55)*.9+buzz)*swell)
  n=int(rate*seconds);return lowpass(lowpass(out,1800),1800)[n:2*n]
-write_loop('shield_loop',transformer(),gain=-3) # (round 7: louder)
+write_loop('shield_loop',transformer(),gain=-5) # (round 7: louder; 1.5.2: 2 dB down)

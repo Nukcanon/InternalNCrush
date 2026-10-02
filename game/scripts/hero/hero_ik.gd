@@ -412,6 +412,10 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var d=clampf(a.distance_to(t),absf(la-lb)+.01,(la+lb)*.999)
 	var dir=(t-a).normalized()
 	var pole:Vector3=a+hero.facing_basis()*(POLE_FP if fp else POLE)[side]
+	# 1.5.2 (the user: the at-ease preview kept its elbows tight to the body): a pose may
+	# point the elbows itself (meta "pole_override": side -> character-space direction)
+	var pole_set:Dictionary=hero.get_meta("pole_override",{})
+	if pole_set.has(side):pole=a+hero.global_basis.orthonormalized()*Vector3(pole_set[side]) # (the hero's own frame: +X its right, +Z behind)
 	# First person: where the forearm line from the wrist ends (the elbow the
 	# view model wants); also the reference direction round the circle.
 	if fp and elbow_goal==Vector3.INF:
@@ -438,6 +442,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		# First person: the elbows hang below and out (the arm is seen from the
 		# shoulder). Third person: the upper arm and forearm stay outside the torso.
 		var align_w=2.2 if fp else 1.;var pole_w=0. if elbow_goal!=Vector3.INF else .25 if fp else .45
+		if pole_set.has(side):pole_w=3.;align_w=.3
 		# (1.4.6: a hold may pull its elbow harder toward the forearm line - the
 		# free arm spread out beside a throwable, Actor FREE_ARM_OUT)
 		var elbow_w=float(Dictionary(hero.get_meta("fp_elbow_w",{})).get(side,FP_ELBOW_W)) if fp else FP_ELBOW_W
@@ -468,7 +473,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 				var cl=((cq2*cq1*wl_rot).normalized().inverse()*want).normalized()
 				if cl.w<0.:cl=-cl
 				var roll=absf(wrapf(2.*atan2(cl.y,cl.w),-PI,PI))
-				cost+=TWIST_W*maxf(0.,roll-TWIST_FREE)
+				cost+=TWIST_W*(.15 if pole_set.has(side) else 1.)*maxf(0.,roll-TWIST_FREE) # (a posed elbow outweighs the forearm roll)
 				if elbow_goal!=Vector3.INF:cost+=elbow_w*e.distance_to(elbow_goal)
 				if not torso.is_empty():
 					cost+=TORSO_W*(torso_depth(torso,e)+torso_depth(torso,(a+e)*.5)+torso_depth(torso,(e+w_end)*.5)+torso_depth(torso,e.lerp(w_end,.25)))
@@ -1003,6 +1008,43 @@ static func fingers_round(hero:HeroCharacter,side:String,centre:Vector3,shape:Di
 	for b in pose:
 		hero.finger_memory.erase(b)
 		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).normalized().slerp(Quaternion(pose[b]).normalized(),weight))
+# 1.5.2 (the user: the ring and little fingers round the wrench looked odd - they lay open
+# beside the handle): chosen fingers bent as the middle finger is (already fitted to the
+# handle by the grip), joint for joint - a fixed fist curl sank the little finger into the
+# handle, a lighter one left the ring finger long with a pinched last joint.
+# names: finger -> Vector2(share of the middle finger's bend, base swing toward the thumb in radians).
+# With the handle's shape (centre in wrist space, half, round - fingers_round's) a finger
+# whose joints or tip would sink into it bends less, just as far as it lies on the surface
+# (the little finger's base sits nearer the handle than the middle finger's).
+static func close_fingers(hero:HeroCharacter,side:String,weight:float,names:Dictionary,shape:Dictionary={}):
+	var sk=hero.skeleton;var chains=finger_chains(hero,side)
+	if not chains.has("Middle"):return
+	var middle:Array=chains.Middle
+	for finger in names:
+		if not chains.has(finger):continue
+		var share:Vector2=Vector2(names[finger]);var bones:Array=chains[finger]
+		var start:Array=[];for b in bones:start.append(sk.get_bone_pose_rotation(b))
+		var amount=share.x
+		while true:
+			for i in range(mini(bones.size(),middle.size())):
+				var m:int=middle[i];var b:int=bones[i]
+				var bend:Quaternion=(sk.get_bone_rest(m).basis.get_rotation_quaternion().inverse()*sk.get_bone_pose_rotation(m)).normalized()
+				var target:Quaternion=sk.get_bone_rest(b).basis.get_rotation_quaternion()*Quaternion(Vector3.BACK,share.y if i==0 else 0.)*Quaternion.IDENTITY.slerp(bend,amount)
+				hero.finger_memory.erase(b)
+				sk.set_bone_pose_rotation(b,Quaternion(start[i]).normalized().slerp(target.normalized(),weight))
+			if shape.is_empty() or amount<=0. or finger_clear(hero,side,finger,bones,shape):break
+			amount=maxf(0.,amount-.05)
+# Whether a finger's joints and tip keep out of a melee handle's box (hand units, as fingers_round).
+static func finger_clear(hero:HeroCharacter,side:String,finger:String,bones:Array,shape:Dictionary) -> bool:
+	var wrist:Transform3D=hero.bone_world(hero.bone["Wrist."+side]);var hs=hero.hand_scale()
+	var hb:Basis=wrist.basis.orthonormalized()*FRAMES.pistol[side].inverse();var origin:Vector3=wrist*Vector3(shape.centre)
+	# (from the second knuckle on: the first sits where the hand holds the handle, whatever the bend)
+	for i in range(2,bones.size()+1):
+		var p:Vector3
+		if i<bones.size():p=hero.bone_world(bones[i]).origin
+		else:p=hero.bone_world(bones[i-1])*Vector3(0,float(TIP.get(finger,.03)),0)
+		if box_distance(hb.inverse()*(p-origin)/hs,Vector3(shape.half),float(shape.round))<FINGER_RADIUS[mini(i+1,4)]-.002:return false
+	return true
 # Fixed curl (the shapeless "rest" hand). `pointing` keeps the index finger straight.
 static func curl(hero:HeroCharacter,side:String,weight:float,style:String="rest",pointing:bool=false):
 	var c:Dictionary=CURLS.get(style,CURLS.rest)

@@ -673,6 +673,7 @@ func solve_hands(s:Dictionary):
 				if wrist_override.has("tool_"+side):
 					var tool:Dictionary=wrist_override["tool_"+side]
 					HeroIK.fingers_round(self,side,Vector3(tool.centre),tool,weight)
+					if tool.has("close"):HeroIK.close_fingers(self,side,weight,tool.close,tool)
 				else:HeroIK.curl(self,side,weight,str(wrist_override.get("curl_"+side,"fist")))
 				var open=float(wrist_override.get("open_"+side,0.))
 				if open>0.:HeroIK.curl(self,side,weight*open,"open")

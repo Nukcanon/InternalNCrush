@@ -73,7 +73,9 @@ func grip(_side:String) -> Node3D:return palm
 ## the wrist bone's space and half extents (radius, half length, radius) in
 ## the same units.
 func handle_shape() -> Dictionary:
-	return {"centre":FIST_HOLLOW,"half":Vector3(.02,.11,.015) if tool else Vector3(.012,.055,.011),"round":.012 if tool else .011}
+	var shape={"centre":FIST_HOLLOW,"half":Vector3(.02,.11,.015) if tool else Vector3(.012,.055,.011),"round":.012 if tool else .011}
+	if tool:shape.close={"Ring":Vector2(1.,.06),"Pinky":Vector2(1.,.1)} # (1.5.2: closed round the long handle like a fist)
+	return shape
 ## 1.4.4 first-person swing: the wrist's place in camera space (right-handed;
 ## x mirrors for a left-handed player) over the swing. The hand keeps its
 ## orientation from the arm (HeroCharacter solves the arm straight to it), so

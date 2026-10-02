@@ -108,6 +108,7 @@ func _next_announcement():
 static func audible_range(key:String) -> float:
 	if key in ["explosion","rocket_explosion","bomb_explosion","flash","smoke"]:return 220.
 	if key=="bomb_beep":return 90.
+	if key in ["link_loop","shield_loop"]:return 20. # (1.5.2, the user: the LINK and shield hums carry 20 m)
 	if key.begins_with("gun_") or key in ["rocket_launch","skill","turret_detect"]:return 160.
 	return 40.
 var loop_streams={}

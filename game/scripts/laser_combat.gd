@@ -30,7 +30,8 @@ static func tick(g:Node,id:int,dt:float):
 	var end:Vector3=hit.get("position",eye+direction*float(w.max_range))
 	var obstruction=g.ray(eye,a.desired_muzzle(),[a.get_rid()],1|4|8)
 	if not obstruction.is_empty():hit=obstruction;end=hit.position
-	else:hit=g.ray(origin,end,[a.get_rid()]);end=hit.get("position",end)
+	# (1.5.2, the user: the beam must land dead on the crosshair - re-cast from the muzzle,
+	# whatever stood between the muzzle and that point took the hit instead; the eye's hit stands)
 	var amount=dps((heat+float(p.laser_heat))*.5)*used*CombatBalance.range_factor(w,origin.distance_to(end))
 	if not hit.is_empty():
 		var collider=hit.collider

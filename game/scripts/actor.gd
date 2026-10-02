@@ -521,7 +521,7 @@ func update_skill_hums(p:Dictionary,now:float):
 			var stream=bank.loop_stream(key)
 			if stream==null:continue
 			player=AudioStreamPlayer3D.new();player.stream=stream;player.volume_db=float(bank.catalog.get(key,{}).get("gain_db",-13.))
-			player.unit_size=4.;player.max_distance=30.;player.position=Vector3.UP;add_child(player);player.play();skill_hums[key]=player
+			player.unit_size=4.;player.max_distance=GameAudio.audible_range(key) if key=="shield_loop" else 30.;player.position=Vector3.UP;add_child(player);player.play();skill_hums[key]=player
 		elif not on and is_instance_valid(player):player.queue_free();skill_hums.erase(key)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
@@ -1233,6 +1233,8 @@ func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false
 	seen_shot=at;shot_serial+=1;recoil=minf(1.8,recoil*.35+float(game.current_weapon(game.players[pid]).get("recoil_kick",1.)))
 	var fired=game.current_weapon(game.players[pid])
+	# 1.5.2 (the user): the ARC has no recoil at all - hip or zoomed the gun never lifts (and a beam casts no casings)
+	if bool(fired.get("laser",false)):recoil=0.;kick=0.;return true
 	kick_power=kick_strength(fired);kick_unsteady=clampf((100.-float(fired.get("stability",70)))/100.,0.,1.)
 	kick=minf(1.6,kick*.35+1.);kick_side=fposmod(sin(shot_serial*78.233+pid*12.9898)*43758.5453,1.)*2.-1.
 	if GadgetLoadout.mounted(game.players[pid],bool(input_state.crouch)):recoil*=.4;kick*=.4

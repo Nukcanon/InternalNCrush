@@ -123,7 +123,7 @@ func begin(game:Node,owner:int,target:int,repairing:bool):
 	if near:
 		var player=AudioStreamPlayer.new();player.stream=stream;player.volume_db=volume;hum=player
 	else:
-		var player=AudioStreamPlayer3D.new();player.stream=stream;player.volume_db=volume;player.max_distance=GameAudio.audible_range("link_loop");player.unit_size=5.;hum=player
+		var player=AudioStreamPlayer3D.new();player.stream=stream;player.volume_db=volume;player.max_distance=GameAudio.audible_range("repair_loop" if repairing else "link_loop");player.unit_size=5.;hum=player
 	add_child(hum);hum.play()
 func end(game:Node,owner:int,target:int):
 	if not started or not is_instance_valid(game):return

@@ -37,9 +37,9 @@ static var LOOKS={
 	"SIDE":{"base":"Pistol","scale":1.,"palette":palette(STEEL,DARK,LIGHT,DARK)},
 	"CHIME":{"base":"Revolver","scale":1.,"palette":palette(Color("8a8f98"),DARK,LIGHT)},
 	"SPARK":{"base":"Pistol","scale":1.05,"palette":palette(Color("5a6270"),DARK,Color("7fd0ff"),DARK),"attach":["comp","extmag"]}, # (1.5.0: it looked just like SIDE - a compensator and an extended magazine for the machine pistol)
-	"RIVET":{"base":"Revolver_Small","scale":1.,"palette":palette(Color("d9a93a"),DARK,Color("f3d27a"),DARK)},
-	"TRIO":{"base":"Pistol","scale":1.02,"palette":palette(Color("6a4f63"),DARK,Color("f08fb8"),DARK)},
-	"FEATHER":{"base":"Pistol","scale":.98,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
+	"RIVET":{"base":"Revolver_Small","scale":1.,"palette":palette(Color("d9a93a"),DARK,Color("f3d27a"),DARK),"attach":["rivet"]},
+	"TRIO":{"base":"Pistol","scale":1.02,"palette":palette(Color("6a4f63"),DARK,Color("f08fb8"),DARK),"attach":["trio"]},
+	"FEATHER":{"base":"Pistol","scale":.98,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a")),"attach":["feather"]},
 	"DUET":{"base":"Revolver_Small","scale":.95,"palette":palette(Color("7a808a"),DARK,Color("ffcf6b"),DARK)},
 	# 1.4.5: remodelled with a pistol grip (the medic's hand went through the
 	# wide stock wrist) and its own hand set-up on that grip.
@@ -64,6 +64,13 @@ static func hold_kind(w:Dictionary) -> String:
 	return "rifle"
 # Small rounded attachments in the cartoon style, placed relative to markers.
 const MUZZLE_GAIN=.012 # 1.5.0: how far a muzzle device reaches past the bare muzzle
+# 1.5.2: a pistol's slide-mounted parts go on the slide (it locks back and runs forward); the
+# node is placed so its children use gun space like every attachment.
+static func slide_part(gun:GunModel,part:Node3D) -> Node3D:
+	if not is_instance_valid(gun.slide):return part
+	var on=Node3D.new();on.name=part.name+"OnSlide";gun.slide.add_child(on)
+	on.transform=GunModel.relative(gun.slide,gun).affine_inverse();part.set_meta("on_slide",on)
+	return on
 static func attach(gun:GunModel,l:Dictionary):
 	var accent:Color=l.get("palette",{}).get("Grey2",LIGHT)
 	var dark:Color=l.get("palette",{}).get("DarkGrey",DARK)
@@ -329,9 +336,12 @@ static func attach(gun:GunModel,l:Dictionary):
 				# sniper scope: flip-up lens caps, open
 				var y=.12*gun.base.scale.y;var zo=-.603*sz;var zr=-.307*sz
 				MeshFactory.cylinder(part,Vector3(0,y,zo-.008),.05*sz,.016,dark,Vector3(PI/2,0,0),-1.,16)
-				MeshFactory.box(part,Vector3(0,y+.085*sz,zo-.03),Vector3(.09*sz,.09*sz,.008),accent.darkened(.1),Vector3(-.35,0,0),.4)
+				# (1.5.2, the user: the caps are round) open discs on a little hinge above each lens
+				MeshFactory.cylinder(part,Vector3(0,y+.085*sz,zo-.03),.046*sz,.008,accent.darkened(.1),Vector3(PI/2-.35,0,0),-1.,20)
+				MeshFactory.box(part,Vector3(0,y+.046*sz,zo-.014),Vector3(.016,.012,.012),dark,Vector3.ZERO,.2)
 				MeshFactory.cylinder(part,Vector3(0,y,zr+.008),.04*sz,.016,dark,Vector3(PI/2,0,0),-1.,14)
-				MeshFactory.box(part,Vector3(0,y+.07*sz,zr+.03),Vector3(.07*sz,.07*sz,.008),accent.darkened(.1),Vector3(.35,0,0),.4)
+				MeshFactory.cylinder(part,Vector3(0,y+.07*sz,zr+.03),.036*sz,.008,accent.darkened(.1),Vector3(PI/2+.35,0,0),-1.,18)
+				MeshFactory.box(part,Vector3(0,y+.036*sz,zr+.014),Vector3(.014,.012,.012),dark,Vector3.ZERO,.2)
 			# 1.5.1 round 2 (the user: only snipers, DMRs and the ARC carry scopes - every other
 			# gun has iron sights): iron sight styles, so guns of a role still differ.
 			"iron_ak":
@@ -378,13 +388,54 @@ static func attach(gun:GunModel,l:Dictionary):
 				MeshFactory.box(part,Vector3(0,(top+h)*.5,zf),Vector3(.007,h-top,.008),dark,Vector3.ZERO,.1)
 				MeshFactory.box(part,Vector3(0,h-.003,zf+.0045),Vector3(.004,.004,.001),accent,Vector3.ZERO,0.)
 				gun.set_meta("sight_aim",Vector3(0,h,zr))
+			# 1.5.2 (the user: FEATHER, RIVET and TRIO looked like the other pistols): their own
+			# parts, the trigger guard, grip and action kept. Parts on a moving slide ride it.
+			"feather":
+				var m:Vector3=gun.muzzle.position*gun.base.scale;var on=slide_part(gun,part)
+				for sx in [-1.,1.]:
+					for k in range(3):MeshFactory.box(on,Vector3(sx*.0175,.044-k*.004,-.03-k*.045),Vector3(.004,.01,.05),accent,Vector3(0,0,sx*.25),.3)
+					MeshFactory.box(on,Vector3(sx*.0185,.03,-.12),Vector3(.002,.016,.005),accent,Vector3.ZERO,0.)
+					MeshFactory.box(on,Vector3(sx*.0185,.03,-.12),Vector3(.002,.005,.016),accent,Vector3.ZERO,0.)
+				MeshFactory.cylinder(on,m+Vector3(0,0,-.018),.013,.036,MEDIC_WHITE.darkened(.05),Vector3(PI/2,0,0),-1.,14)
+				MeshFactory.cylinder(on,m+Vector3(0,0,-.038),.0145,.006,accent,Vector3(PI/2,0,0),-1.,14)
+				MeshFactory.box(part,Vector3(0,-.03,-.15),Vector3(.022,.02,.05),accent.darkened(.1),Vector3.ZERO,.5)
+				MeshFactory.box(part,Vector3(0,-.03,-.177),Vector3(.014,.012,.004),Color("eafff3"),Vector3.ZERO,0.)
+				# a green heal vial along the frame's left side, capped at both ends
+				MeshFactory.cylinder(part,Vector3(-.026,-.02,-.105),.0095,.075,Color("62e39f"),Vector3(PI/2,0,0),-1.,12)
+				for z in [-.068,-.142]:MeshFactory.cylinder(part,Vector3(-.026,-.02,z),.011,.008,MEDIC_WHITE.darkened(.15),Vector3(PI/2,0,0),-1.,12)
+				gun.muzzle.position.z-=.04/maxf(.01,gun.base.scale.z)
+			"trio":
+				var m:Vector3=gun.muzzle.position*gun.base.scale;var on=slide_part(gun,part)
+				MeshFactory.box(on,m+Vector3(0,.002,-.02),Vector3(.03,.03,.04),dark,Vector3.ZERO,.3)
+				for k in range(3):MeshFactory.box(on,m+Vector3(0,.0175,-.008-k*.012),Vector3(.016,.004,.006),accent,Vector3.ZERO,0.)
+				for sx in [-1.,1.]:
+					for k in range(3):MeshFactory.box(on,Vector3(sx*.0185,.036,-.05-k*.035),Vector3(.003,.012,.02),dark.darkened(.3),Vector3(0,0,0),0.)
+				for k in range(3):MeshFactory.box(part,Vector3(0,-.032,-.14-k*.022),Vector3(.026,.008,.012),accent.darkened(.2),Vector3.ZERO,.2)
+				for sx in [-1.,1.]:MeshFactory.box(on,Vector3(sx*.0188,.022,-.095),Vector3(.002,.005,.17),accent,Vector3.ZERO,0.)
+				for sx in [-1.,1.]:
+					for k in range(3):MeshFactory.box(on,m+Vector3(sx*.0152,.002,-.01-k*.011),Vector3(.003,.012,.006),accent.darkened(.25),Vector3.ZERO,0.)
+				MeshFactory.box(part,Vector3(0,-.026,-.162),Vector3(.02,.008,.07),dark,Vector3.ZERO,.2)
+				gun.muzzle.position.z-=.04/maxf(.01,gun.base.scale.z)
+			"rivet":
+				var m:Vector3=gun.muzzle.position*gun.base.scale
+				MeshFactory.box(part,m+Vector3(0,.006,.07),Vector3(.034,.034,.13),dark.lightened(.1),Vector3.ZERO,.4)
+				for sx in [-1.,1.]:
+					for k in range(4):MeshFactory.cylinder(part,m+Vector3(sx*.018,.006,.025+k*.03),.0045,.004,accent.lightened(.2),Vector3(0,0,PI/2),-1.,8)
+				MeshFactory.cylinder(part,m+Vector3(0,0,-.012),.016,.024,dark,Vector3(PI/2,0,0),.021,12)
+				for k in range(6):MeshFactory.box(part,m+Vector3(0,.0245,.02+k*.02),Vector3(.037,.005,.02),Color("1c1d22") if k%2==0 else Color("f2c230"),Vector3.ZERO,0.)
+				MeshFactory.box(part,Vector3(-.026,.01,-.06),Vector3(.006,.014,.07),dark,Vector3.ZERO,.2)
+				# a rivet feed tube along the barrel's right side, rivet heads showing
+				MeshFactory.cylinder(part,m+Vector3(.026,-.004,.075),.008,.12,dark,Vector3(PI/2,0,0),-1.,10)
+				for k in range(5):MeshFactory.cylinder(part,m+Vector3(.034,-.004,.03+k*.022),.0055,.006,accent.lightened(.25),Vector3(0,0,PI/2),-1.,8)
+				gun.muzzle.position.z-=.024/maxf(.01,gun.base.scale.z)
 			"coils":
 				for i in range(3):
 					var ring=MeshFactory.cylinder(part,Vector3(0,top,left_z-.11-i*.07),.032,.022,Color("c79bff"),Vector3(PI/2,0,0),-1.,12)
 					ring.set_meta("glow",true)
-		MeshFactory.merge_children(part)
-		for mesh in part.get_children():
-			if mesh is MeshInstance3D and not mesh.has_meta("scope_lens"):mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		for holder in [part]+([part.get_meta("on_slide")] if part.has_meta("on_slide") else []):
+			MeshFactory.merge_children(holder)
+			for mesh in holder.get_children():
+				if mesh is MeshInstance3D and not mesh.has_meta("scope_lens"):mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 # Support tools have no Toon Shooter source: small rounded cartoon builds with
 # the same markers as the baked guns (origin at the grip, muzzle -Z).
 static func build_tool(kind:String) -> Node3D:
