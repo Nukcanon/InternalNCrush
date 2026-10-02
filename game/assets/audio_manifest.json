@@ -255,9 +255,9 @@
     "file": "res://assets/audio/gun_h5.wav",
     "category": "combat",
     "gain_db": 2,
-    "sha256": "b7bd2ba01345d6363db16b24d31a5d764c766df336661aa598450d80ad4892a8",
+    "sha256": "f37f70e4cd1de345677ecd597e9226a014cb4afedb91f3ff8aefe0cffa17da34",
     "license": "CC0-1.0",
-    "duration": 1.149,
+    "duration": 1.191,
     "family": "rocket"
   },
   "gun_h6": {

@@ -221,26 +221,34 @@ func split_pump():
 	if str(look.get("base",""))=="Shotgun" and str(spec.get("reload_style",""))=="shell" and bool(spec.get("single_load",false)):pump=split_part(PUMP_BOX,"Pump")
 ## Moves the base mesh's triangles inside `box` (base-local) to a part of their
 ## own under a holder node (returned) that can slide along the gun.
+static var split_cache={}
 func split_part(box:AABB,part_name:String) -> Node3D:
 	var holder:Node3D=null
 	for m in base.find_children("*","MeshInstance3D",true,false):
 		if m.mesh==null or (is_instance_valid(magazine) and (m==magazine or magazine.is_ancestor_of(m))):continue
 		var to_base:Transform3D=relative(m,base)
-		var body=ArrayMesh.new();var part=ArrayMesh.new();var moved=0
-		for s in range(m.mesh.get_surface_count()):
-			var arrays=m.mesh.surface_get_arrays(s);var v:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
-			var idx:PackedInt32Array=arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX]!=null else PackedInt32Array(range(v.size()))
-			var keep=PackedInt32Array();var take=PackedInt32Array()
-			for t in range(0,idx.size(),3):
-				var inside=box.has_point(to_base*v[idx[t]]) and box.has_point(to_base*v[idx[t+1]]) and box.has_point(to_base*v[idx[t+2]])
-				var into=take if inside else keep
-				into.append(idx[t]);into.append(idx[t+1]);into.append(idx[t+2])
-			moved+=take.size()
-			for pair in [[body,keep],[part,take]]:
-				if pair[1].is_empty():continue
-				var a=arrays.duplicate();a[Mesh.ARRAY_INDEX]=pair[1]
-				pair[0].add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,a)
-				pair[0].surface_set_material(pair[0].get_surface_count()-1,m.mesh.surface_get_material(s))
+		# (1.5.1: the same mesh cut by the same box is cut once - every rebuild shares the
+		# result, so a weapon swap neither re-cuts nor duplicates its geometry)
+		var cut_key=str(m.mesh.get_rid().get_id())+str(box)+str(to_base)
+		var body:ArrayMesh;var part:ArrayMesh;var moved=0
+		if split_cache.has(cut_key):body=split_cache[cut_key][0];part=split_cache[cut_key][1];moved=split_cache[cut_key][2]
+		else:
+			body=ArrayMesh.new();part=ArrayMesh.new()
+			for s in range(m.mesh.get_surface_count()):
+				var arrays=m.mesh.surface_get_arrays(s);var v:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+				var idx:PackedInt32Array=arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX]!=null else PackedInt32Array(range(v.size()))
+				var keep=PackedInt32Array();var take=PackedInt32Array()
+				for t in range(0,idx.size(),3):
+					var inside=box.has_point(to_base*v[idx[t]]) and box.has_point(to_base*v[idx[t+1]]) and box.has_point(to_base*v[idx[t+2]])
+					var into=take if inside else keep
+					into.append(idx[t]);into.append(idx[t+1]);into.append(idx[t+2])
+				moved+=take.size()
+				for pair in [[body,keep],[part,take]]:
+					if pair[1].is_empty():continue
+					var a=arrays.duplicate();a[Mesh.ARRAY_INDEX]=pair[1]
+					pair[0].add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,a)
+					pair[0].surface_set_material(pair[0].get_surface_count()-1,m.mesh.surface_get_material(s))
+			split_cache[cut_key]=[body,part,moved]
 		if moved==0:continue
 		m.mesh=body
 		if holder==null:holder=Node3D.new();holder.name=part_name+"Holder";m.get_parent().add_child(holder)

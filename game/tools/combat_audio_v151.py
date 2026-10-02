@@ -21,10 +21,10 @@ def soften(values,drive=2.2):
  return [math.tanh(v/peak*drive)/k*peak for v in values]
 
 # --- rockets (user_rocket: launch at 0.02 s, explosion from 1.52 s) -----------------
-launch=faded(excerpt('user_rocket',.02,1.08/LOW,LOW),.002,.25)
-for wid,w in weapons.items():
- if not w.get('rocket'):continue
- write('gun_'+wid,launch,gain=2);manifest['gun_'+wid]['family']='rocket'
+# (each launcher a touch apart in pitch: every attack weapon keeps its own sound file)
+for k,wid in enumerate(sorted(w for w in weapons if weapons[w].get('rocket'))):
+ p=LOW*(1.-.035*k)
+ write('gun_'+wid,faded(excerpt('user_rocket',.02,1.08/p,p),.002,.25),gain=2);manifest['gun_'+wid]['family']='rocket'
 # flight: the launch's own fading whoosh, re-triggered every 0.5 s (CombatFx.sync_rockets)
 whoosh=excerpt('user_rocket',.18,.52/LOW,LOW)
 level=math.sqrt(sum(v*v for v in whoosh)/len(whoosh))
