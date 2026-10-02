@@ -1,6 +1,7 @@
 class_name TargetReveal
 extends RefCounted
 static var outlines={}
+const MARKED_INK=Color("ff5a2e") # 1.4.6: a marked target's outline
 static func outline_for(team:int) -> ShaderMaterial:
 	if outlines.has(team):return outlines[team]
 	var material=ShaderMaterial.new();var shader=Shader.new()
@@ -34,6 +35,8 @@ static func visible_to(game:Node,target:int,observer:int) -> bool:
 	return p.alive and p.mark>game.clock and float(p.get("reveal_to",{}).get(observer_key(game,observer),0))>game.clock
 static func apply(actor:Node,p:Dictionary):
 	var shown=visible_to(actor.game,actor.pid,actor.game.local_id)
+	# 1.4.6: a marked target's ink outline turns the marker colour
+	if is_instance_valid(actor.character):actor.character.set_ink(MARKED_INK if shown else HeroStyle.INK_DEFAULT)
 	DeploymentSilhouette.apply(actor.character,{"owner":actor.game.local_id if shown else 0,"team":p.team,"level":str([p.role,actor.shown_weapon])},actor.game.local_id)
 	if shown and not actor.character.get_meta("medic_selected",false):
 		for mesh in actor.character.get_meta("silhouette_meshes",[]):

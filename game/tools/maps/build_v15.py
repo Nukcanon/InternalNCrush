@@ -43,13 +43,17 @@ PILLAR_SIDE = 0.42   # 1.4.5: square pillars under the building mass over covere
 PILLAR_INSET = 0.21  # flush in the opening's corner (deeper, it closed 4 m passages for bots)
 PARAPET_T = 0.25
 WATER_Y = -0.7
-WATER_BED = -2.2
+# 1.4.6 (the user): deep water is 2 m or more and deadly; nothing between
+# 0.5 m and 2 m; shallow water (0.5 m at most) is safe and walkable.
+WATER_BED = -2.9          # deep: 2.2 m under the surface
+SHALLOW_SURFACE = -0.02
+SHALLOW_BAND = -0.24      # a step a walker climbs by itself (Actor.STEP_HEIGHT .28)
 STOREY = 3.1
 RING = 2
 INDOOR = set(':123456')
 GROUND = set('.,SNTDABC') | set('cbskopwtnrf') | INDOOR
 COVER = set('cbskopwtnrf123456')
-WALK = GROUND | set('^v/')
+WALK = GROUND | set('^v/=')   # '=' shallow water (walkable, 1.4.6)
 BLOCK = set('#H')
 MARK_MIRROR = {'S': 'N', 'N': 'S', 'A': 'B', 'B': 'A'}
 
@@ -156,6 +160,13 @@ class Map:
     def ring_cells(self):
         # Void near the playable area becomes a boundary building ('R').
         seen = [[self.g[r][c] in WALK or self.g[r][c] == '~' for c in range(self.w)] for r in range(self.h)]
+        # 1.4.6: shallow and deep water never touch - a strip of land (or a
+        # building) always lies between them, so the safe and the deadly water
+        # are never confused.
+        for r in range(self.h):
+            for c in range(self.w):
+                if self.g[r][c] == '=' and any(self.at(r + dr, c + dc) == '~' for dr in (-1, 0, 1) for dc in (-1, 0, 1)):
+                    self.problems.append('shallow water touches deep water at %d,%d' % (r, c))
         for r in range(self.h):
             for c in range(self.w):
                 if self.g[r][c] not in ' x':
@@ -166,7 +177,7 @@ class Map:
 
     # --- levels and stairs ----------------------------------------------------
     def base_level(self, ch):
-        return RAISE if ch == '^' else SINK if ch == 'v' else 0.
+        return RAISE if ch == '^' else SINK if ch == 'v' else SHALLOW_BAND if ch == '=' else 0.
 
     def levels(self):
         self.level = {}
@@ -336,6 +347,7 @@ def build(index):
     groups = {}
     surfaces = []
     seen = set()
+    boats, open_quays = place_boats(m)
 
     def emit(points, kind):
         sig = tuple(sorted(tuple(round(v, 4) for v in p) for p in points))
@@ -373,8 +385,8 @@ def build(index):
     # --- walk surfaces -------------------------------------------------------------
     flat = {}
     for (r, c), y in m.level.items():
-        if (r, c) in m.stairs:
-            continue
+        if (r, c) in m.stairs or m.g[r][c] == '=':
+            continue  # (shallow water draws its own stepped bed below)
         ch = m.g[r][c]
         kind = 'upper' if y > .1 else 'lower' if y < -.1 else ('plaza' if ch == ',' else 'indoor' if ch in INDOOR else 'ground')
         if ch not in '.,' and ch not in INDOOR and kind == 'ground':
@@ -456,6 +468,11 @@ def build(index):
                         continue  # the higher cell draws the drop
                     if abs(ou - hu) < .05 and abs(ov - hv) < .05:
                         continue
+                    if other == '=' and m.g[r][c] != '=':
+                        # 1.4.6: the bank of shallow water is one low step (no
+                        # parapet): walk straight in and out.
+                        wall(v, u, ov, ou, hv, hu, 'shallowbed')
+                        continue
                     # This side is higher: retaining wall down to the neighbour, and a
                     # parapet on top unless this is a stair flight's side.
                     rail = (r, c) not in m.stairs and (nr, nc) not in m.stairs
@@ -467,6 +484,11 @@ def build(index):
                     # under a ceiling carries the building above its opening.
                     continue
                 if other == '~':
+                    if (r, c, d) in open_quays:
+                        # 1.4.6: a boat lies alongside here - an open quay edge
+                        # (a yellow-and-black curb stone, no parapet) to board it.
+                        wall(v, u, WATER_BED, WATER_BED, hv, hu, 'wall')
+                        continue
                     wall(v, u, WATER_BED, WATER_BED, hv + PARAPET, hu + PARAPET, 'wall')
                     rail_edge(u, v, d)
                     parapet(emit, wall, u, v, d, hu, hv)
@@ -589,6 +611,18 @@ def build(index):
                     wall(u, v, WATER_BED, WATER_BED, top, top, 'wall')
                     fronts.append(front(m, u, v, WATER_Y, WATER_Y, 0., top - WATER_Y, m.lot.get((r + d[0], c + d[1]), 0), 8, m.lot_style.get((r + d[0], c + d[1]))))
 
+    # 1.4.6 shallow water: one flat sandy bed .24 m down (the user: the depth
+    # never changes inside a pool; the bank is a step a walker climbs by
+    # itself), a clear surface over it, and a walk surface for the bots.
+    shallow_cells = m.cells('=')
+    shallow = unary_union([box(c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL) for r, c in shallow_cells]) if shallow_cells else Polygon()
+    if shallow_cells:
+        floor(shallow, lambda x, z: SHALLOW_BAND, 'shallowbed')
+        floor(shallow, lambda x, z: SHALLOW_SURFACE, 'water_shallow')
+        for p in polys(shallow):
+            surfaces.append({'rings': [[[round(x - ox, 4), round(z - oz, 4)] for x, z in ring] for ring in rings(p)],
+                             'plane': [0, 0, SHALLOW_BAND], 'layer': 'lower'})
+
     # --- objectives, spawns, cover, trees -------------------------------------------------
     def marker(ch):
         cells = m.cells(ch)
@@ -633,6 +667,7 @@ def build(index):
                 props.append([round(x + offset[0] + wx - ox, 4), round(z + offset[1] + wz - oz, 4), y, round(yaw + dyaw, 5), part])
     decor_count = len(props)
     props += wall_decor(m, index)
+    props += water_safety(m, open_quays, props, spawns, targets)
     m.decor_count = len(props) - decor_count
 
     # Loose (movable) props against walls on quiet ground, in partner pairs.
@@ -641,7 +676,8 @@ def build(index):
     # second pass: two cells apart, room cells and corners allowed.
     loose = []
     taken = []
-    candidates = sorted(m.cells('.,:'), key=lambda p: ((p[0] * 5 + p[1] * 3 + index) % 9, p))
+    doors = place_doors(m, spawns, targets)
+    candidates =sorted(m.cells('.,:'), key=lambda p: ((p[0] * 5 + p[1] * 3 + index) % 9, p))
     passes = [(3, '.,', False), (2, '.,:', True)]
     for r, c, (spacing, allowed, corners) in [(r, c, p) for p in passes for r, c in candidates]:
         if len(loose) >= 10 or (corners and len(loose) >= 6):
@@ -666,6 +702,9 @@ def build(index):
             continue
         # Wall decor shares these cells: never drop a physics prop inside one.
         if any(math.dist((x - ox, z - oz), (p[0], p[1])) < 2.2 for p in props):
+            continue
+        # (1.4.6) never where a door leaf swings
+        if any(math.dist((x - ox, z - oz), (dd[0], dd[1])) < 3.2 for dd in doors):
             continue
         taken.append((r, c))
         loose.append([round(x - ox, 4), round(z - oz, 4), m.level.get((r, c), 0.)])
@@ -707,7 +746,10 @@ def build(index):
             'terrain': None, 'elevated_crossing': bool(m.cells('^')),
             'spawn_heights': [level_at(p) for p in spawns], 'target_heights': [level_at(p) for p in targets],
             'water': [[centred(p) for p in q.exterior.coords] for q in polys(water)] if water_cells else [],
-            'vehicles': [], 'boats': [], 'doors': place_doors(m, spawns, targets), 'water_kind': bp.get('water_kind', 'river'), 'water_height': WATER_Y,
+            'vehicles': [], 'boats': boats, 'doors': doors, 'water_kind': bp.get('water_kind', 'river'), 'water_height': WATER_Y,
+            'shallow': [[centred(p) for p in q.exterior.coords] for q in polys(shallow)] if shallow_cells else [], 'shallow_height': SHALLOW_SURFACE,
+            'open_quays': [[round(x - ox, 4), round(z - oz, 4), round(x2 - ox, 4), round(z2 - oz, 4)] for x, z, x2, z2 in quay_lines(m, open_quays)],
+            'water_gates': [[round(g[0] - ox, 4), round(g[1] - oz, 4), round(g[2] - ox, 4), round(g[3] - oz, 4)] + list(g[4:]) for g in water_gates(m)],
             'water_boat': [], 'version': 15, 'grid': [''.join(row) for row in m.g], 'cell': CELL}
     spec = {'paths': [[list(p) for p in path] for path in paths], 'upper_path': [], 'lower_path': [], 'id': index + 1,
             'name': bp['name'], 'capacity': bp['capacity'], 'dimensions': [m.W, m.H], 'rectangle': False,
@@ -845,6 +887,309 @@ def wall_decor(m, index):
     return out
 
 
+# 1.4.6 boats (the user): deep water carries boats that suit the map, moored
+# alongside a quay so they can be boarded (BoatModels: deck flush with the
+# quay, the parapet open where the boat lies). Sizes: (length, beam) metres.
+BOAT_SIZES = {'narrowboat': (11.0, 2.3), 'houseboat': (9.0, 3.4), 'launch': (6.5, 2.4), 'fishing': (9.0, 3.2), 'tug': (8.0, 3.4),
+              'lighter': (12.0, 4.2), 'patrol': (9.5, 3.0), 'workboat': (6.0, 2.4), 'wreck': (9.0, 3.2), 'punt': (4.5, 1.5)}
+BOAT_TYPES = {'canal': ['narrowboat', 'houseboat', 'launch'], 'oldtown': ['narrowboat', 'launch', 'houseboat'], 'market': ['narrowboat', 'houseboat'],
+              'harbour': ['fishing', 'tug', 'lighter'], 'logistics': ['lighter', 'tug', 'workboat'], 'shipyard': ['tug', 'lighter', 'fishing'],
+              'coastal_base': ['patrol', 'launch', 'lighter'], 'desert': ['patrol', 'workboat'], 'wreckyard': ['wreck', 'fishing'],
+              'nuclear': ['workboat'], 'power': ['workboat'], 'greenhouse': ['punt'], 'orchard': ['punt'], 'aqueduct': ['narrowboat', 'punt'],
+              'hillside': ['launch', 'punt']}
+
+
+def place_boats(m):
+    """Boats in the deep water ('~'): the largest that fits each straight run
+    of water, with a margin to every wall, lying along the run beside a quay
+    (walkable ground cells at level 0) where there is one. Regular maps place
+    half-turn pairs. Returns (boats, open quay edges)."""
+    style = MAP_STYLE[m.index] if m.index < len(MAP_STYLE) else 'harbour'
+    types = BOAT_TYPES.get(style, ['launch', 'workboat'])
+    taken = set()
+    boats, open_quays = [], set()
+    water = set(m.cells('~'))
+    if not water:
+        return boats, open_quays
+    def quay_cell(r, c):
+        return m.at(r, c) in '.,' and abs(m.level.get((r, c), 1.) ) < .01 and (r, c) not in m.stairs
+    candidates = []
+    for (r, c) in sorted(water):
+        for along in [(0, 1), (1, 0)]:
+            across = (along[1], along[0])
+            for thick in (3, 2, 1):
+                for run in range(8, 1, -1):
+                    cells = [(r + across[0] * t + along[0] * k, c + across[1] * t + along[1] * k) for k in range(run) for t in range(thick)]
+                    if not all(p in water for p in cells):
+                        continue
+                    length, beam = run * CELL - 1.4, thick * CELL - 1.6
+                    fit = [t for t in types if BOAT_SIZES[t][0] <= length and BOAT_SIZES[t][1] <= beam]
+                    if not fit:
+                        continue
+                    # quay along one long side (the middle cell(s) of the run)
+                    mid = [run // 2] if run % 2 else [run // 2 - 1, run // 2]
+                    sides = []
+                    for side, t in ((-1, -1), (1, thick)):
+                        q = [(r + across[0] * t + along[0] * k, c + across[1] * t + along[1] * k) for k in mid]
+                        if all(quay_cell(*p) for p in q):
+                            sides.append((side, q))
+                    candidates.append((-(len(sides) > 0), -run * thick, r, c, along, thick, run, fit, sides))
+                    break
+    candidates.sort(key=lambda x: x[:4])
+    placed = 0
+    for _, _, r, c, along, thick, run, fit, sides in candidates:
+        if placed >= (4 if m.symmetric else 3):
+            break
+        across = (along[1], along[0])
+        cells = [(r + across[0] * t + along[0] * k, c + across[1] * t + along[1] * k) for k in range(run) for t in range(thick)]
+        mirrored = [m.mirror(*p) for p in cells] if m.symmetric else []
+        if any(p in taken for p in cells + mirrored) or (m.symmetric and set(cells) & set(mirrored)):
+            continue
+        kind = fit[(r * 7 + c * 3 + m.index) % len(fit)]
+        L, B = BOAT_SIZES[kind]
+        # centre of the run; against the quay side when there is one
+        x0, z0 = c * CELL, r * CELL
+        xs = [p[1] for p in cells]; zs = [p[0] for p in cells]
+        cx = (min(xs) + max(xs) + 1) * CELL / 2
+        cz = (min(zs) + max(zs) + 1) * CELL / 2
+        side, quay = sides[0] if sides else (0, [])
+        if not side:
+            # (the user) a boat nobody can board lies out of jumping reach:
+            # 4.5 m and more of open water to any walkable ground
+            hull = box(cx - (L / 2 if along == (0, 1) else B / 2), cz - (B / 2 if along == (0, 1) else L / 2),
+                       cx + (L / 2 if along == (0, 1) else B / 2), cz + (B / 2 if along == (0, 1) else L / 2))
+            if any(hull.distance(box(wc * CELL, wr * CELL, (wc + 1) * CELL, (wr + 1) * CELL)) < 4.5 for wr, wc in m.level):
+                continue
+        # an even run: centre the boat on one quay cell when it still fits, so the
+        # 4 m opening lies along the boat's straight middle
+        if run % 2 == 0 and L + 1.4 + CELL <= run * CELL:
+            cx += along[1] * CELL / 2
+            cz += along[0] * CELL / 2
+            quay = quay[1:]
+        if side:
+            # hull side .15 m off the quay wall
+            shift = (thick * CELL / 2 - B / 2 - .15) * side
+            cx += across[1] * shift
+            cz += across[0] * shift
+        yaw = 0. if along == (0, 1) else math.pi / 2
+        # local +z of the boat (Godot: Basis(UP, yaw) * (0,0,1) = (sin, 0, cos))
+        lz = (math.sin(yaw), math.cos(yaw))
+        q = (across[1] * side, across[0] * side)
+        gap = (1 if lz[0] * q[0] + lz[1] * q[1] > 0 else -1) if side else 0
+        for (pr, pc), dd in [((p[0], p[1]), (-across[0] * side, -across[1] * side)) for p in quay]:
+            open_quays.add((pr, pc, dd))
+        boats.append([round(cx - m.ox, 4), round(cz - m.oz, 4), round(WATER_Y, 4), round(yaw, 5), kind, bool(side), gap])
+        taken.update(cells)
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                taken.update((p[0] + dr, p[1] + dc) for p in cells)
+        placed += 1
+        if m.symmetric:
+            mr, mc = m.mirror(r, c)
+            mx, mz = m.W - cx, m.H - cz
+            boats.append([round(mx - m.ox, 4), round(mz - m.oz, 4), round(WATER_Y, 4), round(yaw + math.pi, 5), kind, bool(side), gap])
+            for (pr, pc), dd in [((p[0], p[1]), (-across[0] * side, -across[1] * side)) for p in quay]:
+                mp = m.mirror(pr, pc)
+                open_quays.add((mp[0], mp[1], (-dd[0], -dd[1])))
+            taken.update(mirrored)
+            for dr in (-1, 0, 1):
+                for dc in (-1, 0, 1):
+                    taken.update((p[0] + dr, p[1] + dc) for p in mirrored)
+            placed += 1
+    return boats, open_quays
+
+
+def water_safety(m, open_quays, props, spawns, targets):
+    """(the user) In front of deadly (deep) water: a few drowning warning signs
+    and lifebuoy stands on the quay, against the parapet - never many: at most
+    one of each per stretch of water (and its half-turn partner)."""
+    out = []
+    water = set(m.cells('~'))
+    if not water:
+        return out
+    seen = set()
+    comps = []
+    for cell in sorted(water):
+        if cell in seen:
+            continue
+        comp, stack = [], [cell]
+        seen.add(cell)
+        while stack:
+            a = stack.pop()
+            comp.append(a)
+            for d in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                b = (a[0] + d[0], a[1] + d[1])
+                if b in water and b not in seen:
+                    seen.add(b)
+                    stack.append(b)
+        comps.append(comp)
+    taken = {'warning_sign': [], 'lifebuoy_stand': []}
+    # (the user) warning signs at least 30 m apart - never too many
+    spacing = {'warning_sign': 30., 'lifebuoy_stand': 30.}
+    def quay_spots(comp, relaxed):
+        spots = []
+        for r, c in comp:
+            for d in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                qr, qc = r - d[0], c - d[1]   # quay cell, water lies in direction d from it
+                if m.at(qr, qc) not in '.,' or abs(m.level.get((qr, qc), 0. if relaxed else 1.)) > .01 or (qr, qc, d) in open_quays:
+                    continue
+                if not relaxed and any(m.at(qr + dr, qc + dc) in COVER | set('SNTDABC/') for dr in (-1, 0, 1) for dc in (-1, 0, 1)):
+                    continue
+                spots.append((qr, qc, d))
+        spots.sort(key=lambda s: ((s[0] * 7 + s[1] * 13 + m.index) % 17, s))
+        return spots
+
+    for comp in comps:
+        if m.symmetric and all(m.canonical(*p) != p for p in comp):
+            continue  # its partner places the pair
+        # 1.4.6: every stretch of deadly water gets its sign and lifebuoy - where
+        # the quay is crowded (cover, an objective), the second pass takes any
+        # free spot along it (still clear of props, spawns and targets).
+        for relaxed in (False, True):
+          spots = quay_spots(comp, relaxed)
+          for kind in ['warning_sign', 'lifebuoy_stand']:
+            if relaxed and any(math.dist(t, m.centre(r, c)) < CELL * 2.5 for r, c in comp for t in taken[kind]):
+                continue  # this stretch already has one
+            for qr, qc, d in spots:
+                x, z = m.centre(qr, qc)
+                # against the parapet (its .25 m thickness), beside the cell centre
+                x += d[1] * (CELL / 2 - .62) + (d[0] * (.9 if kind == 'warning_sign' else -.9))
+                z += d[0] * (CELL / 2 - .62) + (d[1] * (.9 if kind == 'warning_sign' else -.9))
+                if any(math.dist((x, z), t) < spacing[kind] for t in taken[kind]) or any(math.dist((x, z), t) < 3.5 for k2 in taken for t in taken[k2]):
+                    continue
+                if any(math.dist((x - m.ox, z - m.oz), (p[0], p[1])) < 1.6 for p in props):
+                    continue
+                if min(math.dist((x, z), p) for p in spawns + targets) < 6:
+                    continue
+                yaw = math.atan2(d[1], d[0]) + math.pi  # facing the street (away from the water)
+                pairs = [(x, z, yaw)]
+                if m.symmetric:
+                    pairs.append((m.W - x, m.H - z, yaw + math.pi))
+                for px, pz, pyaw in pairs:
+                    out.append([round(px - m.ox, 4), round(pz - m.oz, 4), 0., round(pyaw, 5), kind])
+                    taken[kind].append((px, pz))
+                if kind == 'lifebuoy_stand':
+                    break  # one lifebuoy per stretch of water; signs repeat every 30 m along it
+    return out
+
+
+def water_gates(m):
+    """1.4.6 (the user: water must lead somewhere - out of the map, to the sea,
+    or into a drain - and nobody may leave through it). Barred openings in the
+    walls round the water, as world segments [x, z, x2, z2, nx, nz, bed, top,
+    kind] (n: from the water into the wall):
+      'outlet'  where deep water meets the map's outer wall (it flows on out
+                of the map, to the sea or the next canal): a tall barred arch;
+      'culvert' where a canal stops at a crossing and goes on beyond it (the
+                water passes under the street): a low barred opening;
+      'drain'   the ends of a pool that leads nowhere else, and the ends of a
+                shallow ditch along the outer wall: a barred drain."""
+    dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+
+    def outside(r, c):
+        return m.at(r, c) in ' R' or not (0 <= r < m.h and 0 <= c < m.w)
+
+    def perimeter(r, c, dr, dc):
+        a = m.at(r + dr, c + dc)
+        return outside(r + dr, c + dc) or (a == '#' and outside(r + 2 * dr, c + 2 * dc))
+
+    def side(r, c, dr, dc):
+        x0, z0, x1, z1 = c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL
+        return {(0, 1): (x1, z0, x1, z1), (0, -1): (x0, z0, x0, z1), (1, 0): (x0, z1, x1, z1), (-1, 0): (x0, z0, x1, z0)}[(dr, dc)]
+
+    out = []
+    for ch in '~=':
+        deep = ch == '~'
+        cells = set(m.cells(ch))
+        seen = set()
+        for cell in sorted(cells):
+            if cell in seen:
+                continue
+            comp, st = [], [cell]
+            seen.add(cell)
+            while st:
+                a = st.pop()
+                comp.append(a)
+                for d in dirs:
+                    b = (a[0] + d[0], a[1] + d[1])
+                    if b in cells and b not in seen:
+                        seen.add(b)
+                        st.append(b)
+            if m.symmetric and all(m.canonical(*p) != p for p in comp):
+                continue  # (its half-turn partner adds the mirrored pair)
+            gates = []
+            rs = [r for r, c in comp]
+            cs = [c for r, c in comp]
+            long_rows = max(rs) - min(rs) >= max(cs) - min(cs)
+            for r, c in comp:
+                for dr, dc in dirs:
+                    if (r + dr, c + dc) in cells:
+                        continue
+                    if perimeter(r, c, dr, dc):
+                        if deep:
+                            gates.append((r, c, dr, dc, 'outlet', WATER_BED, 1.7))
+                        continue  # (a shallow ditch drains at its ends, below)
+                    if deep:
+                        # water of the same canal again 1-3 cells straight on: it runs under the crossing
+                        if any((r + dr * k, c + dc * k) in cells for k in (2, 3, 4)):
+                            gates.append((r, c, dr, dc, 'culvert', WATER_BED, -.06))
+            if not deep:
+                # a ditch along the outer wall: one drain at each end (in the wall)
+                ends = sorted(comp, key=lambda p: (p[0], p[1]))
+                for r, c in {ends[0], ends[-1]}:
+                    for dr, dc in dirs:
+                        if (r + dr, c + dc) not in cells and perimeter(r, c, dr, dc):
+                            if not any(g[0] == r and g[1] == c for g in gates):
+                                gates.append((r, c, dr, dc, 'drain', SHALLOW_BAND, .95))
+                            break
+            elif not any(g[4] == 'outlet' for g in gates) and not any(g[4] == 'culvert' for g in gates):
+                # a pool that leads nowhere: drains at both ends of its long axis
+                axis = [(1, 0), (-1, 0)] if long_rows else [(0, 1), (0, -1)]
+                for dr, dc in axis:
+                    far = max(comp, key=lambda p: p[0] * dr + p[1] * dc)
+                    row = [p for p in comp if (p[0] * dr + p[1] * dc) == (far[0] * dr + far[1] * dc)]
+                    mid = sorted(row)[len(row) // 2]
+                    gates.append((mid[0], mid[1], dr, dc, 'drain', WATER_BED, -.06))
+            # A canal along the outer wall leaves it through ONE barred arch (the
+            # middle of each run of wall, at most two cells wide), not bars all along.
+            outlets = [g for g in gates if g[4] == 'outlet']
+            keep = []
+            for d in set((g[2], g[3]) for g in outlets):
+                line = sorted((g for g in outlets if (g[2], g[3]) == d), key=lambda g: (g[0], g[1]))
+                runs, run = [], []
+                for g in line:
+                    if run and abs(g[0] - run[-1][0]) + abs(g[1] - run[-1][1]) == 1 and (g[0] == run[-1][0] or g[1] == run[-1][1]):
+                        run.append(g)
+                    else:
+                        if run:
+                            runs.append(run)
+                        run = [g]
+                if run:
+                    runs.append(run)
+                for run in runs:
+                    mid = len(run) // 2
+                    keep += run if len(run) <= 3 else run[max(0, mid - 1):mid + 1]
+            gates = [g for g in gates if g[4] != 'outlet'] + keep
+            for r, c, dr, dc, kind, b, t in gates:
+                x0, z0, x1, z1 = side(r, c, dr, dc)
+                pairs = [(x0, z0, x1, z1, dc, dr)]
+                if m.symmetric and not any(m.mirror(*p) in comp for p in comp):
+                    pairs.append((m.W - x0, m.H - z0, m.W - x1, m.H - z1, -dc, -dr))
+                for px0, pz0, px1, pz1, nx, nz in pairs:
+                    out.append((px0, pz0, px1, pz1, nx, nz, b, t, kind))
+    return out
+
+
+def quay_lines(m, open_quays):
+    """World segments (x, z, x2, z2) of the open quay edges (a hazard curb)."""
+    out = []
+    for r, c, d in sorted(open_quays):
+        x0, z0, x1, z1 = c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL
+        seg = {(0, 1): (x1, z0, x1, z1), (0, -1): (x0, z0, x0, z1), (1, 0): (x0, z1, x1, z1), (-1, 0): (x0, z0, x1, z0)}[d]
+        out.append(seg)
+    return out
+
+
 def place_doors(m, spawns, targets, limit=3):
     """Interactive doors (plan entries [x, z, y, yaw, left, right]) across
     one-cell corridors between building blocks, preferring connectors in the
@@ -858,8 +1203,9 @@ def place_doors(m, spawns, targets, limit=3):
                 continue
             if m.g[r][c] not in '.,:':
                 continue
-            ns = m.walk(r - 1, c) and m.walk(r + 1, c) and m.at(r, c - 1) in BLOCK | {'R'} and m.at(r, c + 1) in BLOCK | {'R'}
-            ew = m.walk(r, c - 1) and m.walk(r, c + 1) and m.at(r - 1, c) in BLOCK | {'R'} and m.at(r + 1, c) in BLOCK | {'R'}
+            side = BLOCK | {'R', '~'}  # (1.4.6: a quay gate between a wall and the water counts too)
+            ns = m.walk(r - 1, c) and m.walk(r + 1, c) and m.at(r, c - 1) in side and m.at(r, c + 1) in side
+            ew = m.walk(r, c - 1) and m.walk(r, c + 1) and m.at(r - 1, c) in side and m.at(r + 1, c) in side
             if not (ns or ew):
                 continue
             ends = [(r - 1, c), (r + 1, c)] if ns else [(r, c - 1), (r, c + 1)]
@@ -886,7 +1232,11 @@ def place_doors(m, spawns, targets, limit=3):
             x, z = m.centre(rr, cc)
             # The door wall runs along its local X: across a N-S corridor that is world X.
             yaw = 0. if ns else math.pi / 2
-            doors.append([round(x - m.ox, 4), round(z - m.oz, 4), m.level.get((rr, cc), 0.), yaw, CELL / 2, CELL / 2])
+            # The wall beside the door reaches the side wall - on a water side it
+            # stops at the quay parapet (.25 m inside the cell), never into it.
+            left, right = ((rr, cc - 1), (rr, cc + 1)) if ns else ((rr + 1, cc), (rr - 1, cc))
+            reach = [CELL / 2 - (.27 if m.at(*s) == '~' else 0.) for s in (left, right)]
+            doors.append([round(x - m.ox, 4), round(z - m.oz, 4), m.level.get((rr, cc), 0.), yaw, reach[0], reach[1]])
             taken.append((rr, cc))
     return doors
 

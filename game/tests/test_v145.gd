@@ -24,7 +24,8 @@ func run():
 	var rifle=GunModel.new();root.add_child(rifle);rifle.build(Catalog.get_weapon("a1"),true)
 	expect(pistol.mag_height>.03 and rifle.mag_height>pistol.mag_height*1.5,"rifle magazine is taller than the pistol's (%.3f vs %.3f)"%[rifle.mag_height,pistol.mag_height])
 	var pt=ReloadMotion.mag_travel(pistol,.4);var rt=ReloadMotion.mag_travel(rifle,.4)
-	expect(pt.y<0. and rt.y<pt.y and absf(pt.y)>=pistol.mag_height*1.2 and absf(pt.y)<pistol.mag_height*1.6,"each magazine drops by about its own height (pistol %.3f, rifle %.3f)"%[pt.y,rt.y])
+	# (1.4.6, the user: the magazine leaves the screen with the hand and comes back - past its own height it goes on out of view)
+	expect(pt.y<0. and rt.y<pt.y and absf(pt.y)>=pistol.mag_height*ReloadMotion.MAG_CLEAR+ReloadMotion.OFF_VIEW*.9,"each magazine clears its well by its own height, then leaves the view (pistol %.3f, rifle %.3f)"%[pt.y,rt.y])
 	expect(ReloadMotion.mag_travel(rifle,0.).length()<.001 and ReloadMotion.mag_travel(rifle,.9).length()<.001,"the magazine is home at the start and once seated")
 	pistol.queue_free();rifle.queue_free()
 	# --- Aimed recoil ------------------------------------------------------------

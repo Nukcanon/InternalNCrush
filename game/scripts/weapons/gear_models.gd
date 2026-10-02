@@ -180,8 +180,10 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false,pull
 			right=Vector3(.14,.02,-.06);left=Vector3(-.14,.02,-.06);two=true;grip=sides("pistol",Vector3(.012,.1,.03))
 		1:
 			# Marker: rugged tablet with antenna and glowing screen.
-			M.box(node,Vector3(0,.02,-.08),Vector3(.2,.13,.04),INK,Vector3(.5,0,0),.6)
-			M.box(node,Vector3(0,.025,-.1),Vector3(.15,.09,.01),Color("7fe0ff"),Vector3(.5,0,0),.3)
+			# 1.4.6 (the user): the screen faces the holder - on the near (+Z) face,
+			# the tablet tilted up toward the eye.
+			M.box(node,Vector3(0,.02,-.08),Vector3(.2,.13,.04),INK,Vector3(-.5,0,0),.6)
+			M.box(node,Vector3(0,.031,-.061),Vector3(.15,.09,.01),Color("7fe0ff"),Vector3(-.5,0,0),.3)
 			M.cylinder(node,Vector3(.08,.1,-.07),.007,.12,INK,Vector3.ZERO,-1.,8)
 			M.sphere(node,Vector3(.08,.16,-.07),Vector3(.025,.025,.025),accent)
 			right=Vector3(.1,.02,-.08);left=Vector3(-.1,.02,-.08);two=true;grip=sides("pistol",Vector3(.01,.06,.02))

@@ -1,0 +1,130 @@
+{
+  "version": "1.2.3",
+  "threads": false,
+  "source_commit": "19386e693a45134b2f8a69ecbe4d5b28ea800ae6",
+  "executable": "game-19386e693a45",
+  "transport": "WebRTC",
+  "touch": "coarse-pointer/mobile detection; landscape",
+  "files": [
+    {
+      "path": "game-19386e693a45.apple-touch-icon.png",
+      "bytes": 11952,
+      "sha256": "9b374ecbc8558f480421e646f38aaa8a69d5b1d65ff7b48d0735da214c46773a"
+    },
+    {
+      "path": "game-19386e693a45.audio.position.worklet.js",
+      "bytes": 3149,
+      "sha256": "347b512529c5dca302093f7b9de6d184dd09d10e9a6fba62cbab098a891b2368"
+    },
+    {
+      "path": "game-19386e693a45.audio.worklet.js",
+      "bytes": 7298,
+      "sha256": "5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3"
+    },
+    {
+      "path": "game-19386e693a45.icon.png",
+      "bytes": 5702,
+      "sha256": "08808dd5397e9a502cb3624944151f87a9705b5b66b5c365c5ca4c6ab51525f5"
+    },
+    {
+      "path": "game-19386e693a45.js",
+      "bytes": 317142,
+      "sha256": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31"
+    },
+    {
+      "path": "game-19386e693a45.pck",
+      "bytes": 73378384,
+      "sha256": "9bba80fcca08a365db6d87e52a8772003b3e089c456beffd1daba7e313a6d95d"
+    },
+    {
+      "path": "game-19386e693a45.png",
+      "bytes": 21443,
+      "sha256": "3cb4495c0b98dfbe4b663cbf2b6836473572339beb66d902367893162a70be0e"
+    },
+    {
+      "path": "game-19386e693a45.wasm",
+      "bytes": 43699190,
+      "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+    },
+    {
+      "path": "guide/controls.jpg",
+      "bytes": 174072,
+      "sha256": "ee2cba2a79f24fde58038135f8f69b584cf2eb0e9d3d94726b8db4240e5b5ef0"
+    },
+    {
+      "path": "guide/internet.jpg",
+      "bytes": 134274,
+      "sha256": "858ddbc64517cf0f4132df92cd758ced21aa02e637bb2b7236f3d955d4cff027"
+    },
+    {
+      "path": "guide/lan.jpg",
+      "bytes": 149508,
+      "sha256": "652a4d918c86f36996eeb729d126a129519de379a3c8d8dfbe6b7cc28f261fa0"
+    },
+    {
+      "path": "guide/settings.jpg",
+      "bytes": 161880,
+      "sha256": "ceb6c52b7543a61698b1bf97a7266a2e3c2d3f3f0c08c1fd31cac0ea3ecb966a"
+    },
+    {
+      "path": "guide/touch.jpg",
+      "bytes": 193575,
+      "sha256": "8a5d76d608159ab4b77e7c6e04b87bcdf9bc8da2b15f1cca7864d5511b154659"
+    },
+    {
+      "path": "index.html",
+      "bytes": 12325,
+      "sha256": "c7c04ffcbcd1d6e262e57d1f6e551f22235fa4ae65de245727b4337b90b06b2a"
+    },
+    {
+      "path": "licenses/AUDIO_KENNEY_LICENSE.txt",
+      "bytes": 610,
+      "sha256": "043d5a52d1dc1dfd67437b55b714b7fd629031153ac579b9fdedc5396c037f99"
+    },
+    {
+      "path": "licenses/AUDIO_Q009_LICENSE.txt",
+      "bytes": 19440,
+      "sha256": "4863004eb6a6d471b5b88b8299d9456aef0b47275bba8c3f2f1034b7ea8623a4"
+    },
+    {
+      "path": "licenses/CREDITS.md",
+      "bytes": 2358,
+      "sha256": "485dab47781a2369bb390f9f835dbefd45dea9b25a7cb114aa1fa2addd1f09de"
+    },
+    {
+      "path": "licenses/dohyeon-OFL.txt",
+      "bytes": 4347,
+      "sha256": "de5ff32211a4340b01477af39ee339d639438955e409f79b666d4b9207f3c92c"
+    },
+    {
+      "path": "licenses/FONT_LICENSE.txt",
+      "bytes": 4393,
+      "sha256": "88f117575237307bdd86a17ef15e21790fc9a662fe4dfb103ca1ca077f0d9982"
+    },
+    {
+      "path": "licenses/GODOT_LICENSE.txt",
+      "bytes": 1169,
+      "sha256": "0cc27400b8da8c06bb35350422c14715647cd2632c138921fd49caa6610a1ef6"
+    },
+    {
+      "path": "licenses/LICENSE.ASSETS.md",
+      "bytes": 6962,
+      "sha256": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c"
+    },
+    {
+      "path": "licenses/LICENSE.txt",
+      "bytes": 1749,
+      "sha256": "45adbdbc980b658476e31fb5fe81a280de2e7fda6ed2b3d2eb58ca466a3e614c"
+    },
+    {
+      "path": "licenses/rajdhani-OFL.txt",
+      "bytes": 4373,
+      "sha256": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f"
+    },
+    {
+      "path": "licenses/SOUND_CREDITS.md",
+      "bytes": 4197,
+      "sha256": "b1ad8e25653e1d6f7bd3c1134e9555c11e57a059c674ecb15458d6cc84cbde34"
+    }
+  ]
+}

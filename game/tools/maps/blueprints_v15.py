@@ -101,6 +101,10 @@ def logistics():
     k.points('o', (19, 2), (21, 8)).points('k', (22, 1)).points('c', (20, 0))
     # East-middle connector alley.
     k.fill(14, 5, 6, 1, '.').put(17, 5, 's')
+    # 1.4.6: a dock basin behind the yard's back street (deep: lighters and a
+    # tug at the quay) and, past a pier, a shallow slipway (safe to wade).
+    k.fill(6, 10, 5, 2, '~').fill(15, 10, 8, 2, '~')
+    k.fill(5, 10, 1, 2, '.').fill(4, 9, 1, 3, '.').fill(3, 9, 1, 3, '=')  # (1.4.6: a ditch along the edge, draining out of the map)
     return k
 
 
@@ -121,6 +125,10 @@ def oldtown():
     k.fill(15, 0, 2, 5, '.').points('c', (16, 2)).points('b', (15, 4))   # east lane
     k.fill(13, 1, 2, 2, '^').fill(13, 3, 2, 1, '/')            # terrace from the east exit
     k.put(12, 4, '.').fill(13, 4, 2, 1, '.')
+    # 1.4.6: a canal behind the spawn street (deep, railed, narrowboats moored
+    # at the quay) and a shallow brook across the east lane (safe to wade).
+    k.fill(3, 6, 5, 1, '~').fill(12, 6, 5, 1, '~')
+    k.fill(16, 3, 1, 2, '=')  # (1.4.6: a ditch along the outer wall, draining into it - not a pool in the lane)
     return k
 
 
@@ -434,6 +442,10 @@ def desert():
     k.fill(25, 3, 2, 2, ':').fill(28, 6, 2, 2, ':').points('1', (25, 3))      # bunkers
     k.fill(25, 0, 4, 2, '.')
     k.fill(11, 7, 4, 1, '.').fill(19, 4, 5, 1, '.')
+    # 1.4.6: the base's sea inlet behind the back street (deep sea: patrol
+    # boats at the quay) and a shallow oasis pool in the motor pool.
+    k.fill(3, 12, 10, 2, '~').fill(21, 12, 10, 2, '~')
+    k.fill(3, 4, 1, 4, '=')  # (1.4.6: a ditch along the outer wall, draining into it)
     return k
 
 
@@ -757,7 +769,7 @@ regular(2, '제철소', 16, steelmill(), ('제철소', '주조장 / 압연 라�
 regular(3, '연구소', 16, institute(), ('연구소', '유리 아트리움 / 실험동 / 기록실', '실내 단층 · 클린룸'),
         ['lab'], indoor=True, props={'n': ['bench', 'planter'], 'c': ['cabinet', 'crate_stack'], 'b': 'lab_bench', '5': 'lab_bench', '2': 'bookcase', 'w': 'planter_long'})
 regular(4, '사막 기지', 16, desert(), ('사막 기지', '차량 정비장 / 레이더 언덕 / 막사', '레이더 언덕 +2m'),
-        ['desert', 'coastal_base'], props={'k': ['vehicle_pickup', 'vehicle_utility'], 'o': 'container_small', 's': ['sacktrench', 'sacktrench_small'], 'b': 'barrier_single', '1': 'crate_stack', '6': 'gastank'})
+        ['desert', 'coastal_base'], water_kind='sea', props={'k': ['vehicle_pickup', 'vehicle_utility'], 'o': 'container_small', 's': ['sacktrench', 'sacktrench_small'], 'b': 'barrier_single', '1': 'crate_stack', '6': 'gastank'})
 regular(6, '중앙역', 16, station(), ('중앙역', '광장 / 기둥 대합실 / 승강장·선로', '승강장 +2m, 선로 -2m'),
         ['station', 'oldtown', 'plaza'], props={'n': ['bench', 'sign'], '5': 'bench', '3': 'pillar', 'o': 'container_long', 'k': 'vehicle_van', 'c': ['luggage', 'trashcontainer'], 'w': 'planter_long'})
 

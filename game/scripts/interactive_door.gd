@@ -27,11 +27,18 @@ void fragment(){
  ALBEDO=COLOR.rgb;ROUGHNESS=clamp(UV2.x,.24,.96);METALLIC=clamp(UV2.y,0.,1.);
 }
 """
+	# 1.4.6: procedural leaves (DoorModels) matched to the buildings and region
+	# around the door; one mesh shared by both leaves.
+	var family=DoorModels.family_at(arena.map_index,pos,arena.bounds,arena.get_meta("plan_fronts",[]))
+	var kit=DistrictFacade.Kit.new();DoorModels.leaf(kit,family,id+arena.map_index)
+	var leaf_mesh=kit.detail.commit()
+	set_meta("door_family",family)
+	if family in ["wood_panel","ornate","plank","barn","shoji","frosted"]:metal=Color("4a3424") # timber frame for timber doors
 	for side in [-1,1]:
 		MeshFactory.box(self,Vector3(side*(opening_width*.5+.13),1.40,0),Vector3(.18,2.8,.36),metal)
 		var leaf=AnimatableBody3D.new();leaf.collision_layer=1;leaf.collision_mask=0;leaf.sync_to_physics=false;leaf.set_meta("door_id",id);leaf.set_meta("door",self);leaf.position=Vector3(side*opening_width*.25,1.4,0);add_child(leaf)
 		var holder=Node3D.new();leaf.add_child(holder);holder.position.y=-1.4
-		ImportedWorldProp.build(holder,DoorArt.style(arena.map_index,id),Vector3(1.15,2.8,.5),"doors_original",true)
+		var leaf_visual=MeshInstance3D.new();leaf_visual.mesh=leaf_mesh;holder.add_child(leaf_visual)
 		holder.scale.x=-side*opening_width/WIDTH
 		var material=ShaderMaterial.new();material.shader=leaf_shader;material.set_shader_parameter("leaf_offset",leaf.position.x);material.set_shader_parameter("leaf_mirror",holder.scale.x);material.set_shader_parameter("half_aperture",opening_width*.5)
 		for mesh in holder.get_children():

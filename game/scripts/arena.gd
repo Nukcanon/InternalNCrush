@@ -128,10 +128,12 @@ func tree(pos:Vector3):
 		HumanModel.cord(trunk,Vector3(0,2.2+i*.12,0),end,.07,Color("87745a"))
 		HumanModel.oval(trunk,end+Vector3.UP*.6,Vector3(2.6,2.1,2.5),Color("779261") if i%2==0 else Color("94a678"))
 func build(which:int):
-	if not bake_geometry and ArenaCache.restore(self,which):return
+	if not bake_geometry and ArenaCache.restore(self,which):DistrictProps.exact_collision(self);return
 	if ResourceLoader.exists("res://scripts/district_layout.gd") and FileAccess.file_exists("res://assets/arenas/districts/map_%02d.json"%which) and which!=PracticeLayout.INDEX:
 		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
-		DistrictLayout.build(self,which);finish_architecture();apply_surface_detail();ArenaLighting.build(self);return
+		DistrictLayout.build(self,which);finish_architecture();apply_surface_detail();ArenaLighting.build(self)
+		if not bake_geometry:DistrictProps.exact_collision(self)
+		return
 	if DefusalLayout.enabled(which) or which==PracticeLayout.INDEX:
 		map_index=which;building=true;architecture=Node3D.new();architecture.name="Architecture";add_child(architecture)
 		if which==PracticeLayout.INDEX:PracticeLayout.build(self)
@@ -169,8 +171,7 @@ func build(which:int):
 			text3d("NORTH TERMINAL" if sx<0 else "SOUTH TERMINAL",Vector3(0,3.3,sx*88),Color("f3eddb"),65).pixel_size=.015
 		if has_water:
 			var water=box(Vector3(0,.31,0),Vector3(18,.6,66),Color(.18,.52,.59,.50),false)
-			var shader=Shader.new();shader.code="shader_type spatial; render_mode blend_mix, cull_disabled; uniform vec4 tint : source_color = vec4(0.12,0.47,0.53,0.5); void fragment(){float ripple=sin(UV.x*100.0+TIME*0.7)*sin(UV.y*55.0-TIME*0.4); ALBEDO=tint.rgb+vec3(ripple*0.035); ROUGHNESS=0.3; ALPHA=tint.a;}"
-			var material=ShaderMaterial.new();material.shader=shader;water.get_child(0).material_override=material
+			water.get_child(0).material_override=WaterSurface.material(false) # (1.4.6 water design)
 			for x in [-9.3,9.3]:detail(Vector3(x,.17,0),Vector3(.6,.32,66.6),Color("cfceba"))
 			for z in [-35,35]:detail(Vector3(0,.07,z),Vector3(20,.14,2.2),Color("849e9f"))
 		else:
@@ -246,8 +247,7 @@ func spawn_candidates(team:int,roaming:bool) -> Array:
 	return out
 func make_water():
 	var water=box(Vector3(0,.31,0),Vector3(18,.6,66),Color(.18,.52,.59,.50),false)
-	var shader=Shader.new();shader.code="shader_type spatial; render_mode blend_mix, cull_disabled; void fragment(){float v=sin(UV.x*85.0+TIME)*sin(UV.y*70.0-TIME*.7); ALBEDO=vec3(.12,.4,.46)+v*.025; ROUGHNESS=.3; ALPHA=.45;}"
-	var mat_water=ShaderMaterial.new();mat_water.shader=shader;water.get_child(0).material_override=mat_water
+	water.get_child(0).material_override=WaterSurface.material(false) # (1.4.6 water design)
 	for x in [-9.3,9.3]:detail(Vector3(x,.2,0),Vector3(.6,.4,66),Color("b4bab0"))
 func bridge(z:float):
 	var prior=building;building=false
@@ -269,13 +269,24 @@ func apply_surface_detail():
 	for mesh in list:
 		if mesh.name=="Geometry":mesh.material_override=material
 func wading(pos:Vector3) -> bool:
+	if shallow(pos):return true
 	if has_meta("district_water"):return pos.y<float(get_meta("water_height",-.35))+.1 and get_meta("district_waters",[get_meta("district_water")]).any(func(basin):return Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),basin))
 	if map_index==5:
 		for z in [-27,0,27]:
 			if absf(pos.z-z)<2.5:return false
 	return has_water and water_rect.has_point(Vector2(pos.x,pos.z)) and pos.y<.61
 func submerged(pos:Vector3) -> bool:return wading(pos) and pos.y<=.61
+## 1.4.6: standing in shallow water (safe, walkable, .45 m at most).
+func shallow(pos:Vector3) -> bool:
+	if not has_meta("shallow_waters") or pos.y>float(get_meta("shallow_height",-.02))+.1:return false
+	return get_meta("shallow_waters").any(func(basin):return Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),basin))
+## 1.4.6: deep water (river, canal or sea basin, 2 m and more) is deadly once
+## a player is in it - a fall over a parapet, off a boat or an open quay.
+func deep_water(pos:Vector3) -> bool:
+	if not has_meta("district_water"):return false
+	return get_meta("district_waters",[get_meta("district_water")]).any(func(basin):return Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),basin))
 func fatal_water(pos:Vector3) -> bool:
+	if has_meta("district_water") and pos.y<float(get_meta("water_height",-.35))-.3 and deep_water(pos):return true
 	if get_meta("water_kind","river")!="sea" or pos.y>=float(get_meta("water_height",-.35))-.65:return false
 	if pos.x>bounds.x*.52 and DistrictLayout.heights(self,pos).is_empty():return true
 	return wading(pos) or (not playable_polygon.is_empty() and not Geometry2D.is_point_in_polygon(Vector2(pos.x,pos.z),playable_polygon))

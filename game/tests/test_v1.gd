@@ -53,7 +53,13 @@ func run():
 	var shot_start=prop.global_position
 	g.phase="combat";g.clock=20.;g.players[1].protect=0.;g.players[1].fire_ready=0.;g.players[1].reload=0.;g.players[1].slot=0;g.players[1].primary="a1";g.players[1].mag.a1=10;g.players[1].spray_phase=0.
 	actor.input_state.crouch=false;actor.last_sprint=false;actor.sprint_release=0.;actor.spread_angle=0.;actor.reset_view(0)
-	actor.position=prop.global_position+Vector3(.1,.15,2.)-Vector3.UP*actor.eye_height(false)
+	# (1.4.6: from whichever side of the prop is open - a prop against a wall
+	# put the shooter inside the wall when it always stood 2 m to the south)
+	for side in [Vector3(0,0,2.),Vector3(0,0,-2.),Vector3(2.,0,0),Vector3(-2.,0,0)]:
+		actor.reset_view(atan2(side.x,side.z))
+		actor.position=prop.global_position+side+(Vector3(.1,0,0) if side.x==0. else Vector3(0,0,.1))+Vector3.UP*.15-Vector3.UP*actor.eye_height(false)
+		var look=g.ray(actor.eye(),actor.eye()+actor.direction()*4.,[actor.get_rid()],1|8)
+		if not look.is_empty() and look.collider==prop:break
 	g.fire(1);await create_timer(.7).timeout
 	expect(g.players[1].mag.a1==9 and prop.global_position.distance_to(shot_start)>.08,"real fire path consumes ammo and pushes the hit prop")
 	expect(g.arena.prop_states().size()==g.arena.props.size(),"snapshot includes complete prop set")

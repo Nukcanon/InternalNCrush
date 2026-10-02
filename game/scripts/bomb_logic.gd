@@ -66,6 +66,13 @@ static func tick(game:Node,dt:float):
 		to=hit.position+hit.normal*.015;velocity=velocity.slide(hit.normal)*.35
 		if hit.normal.y>.55:velocity=Vector3.ZERO;game.bomb.resting=true
 	game.bomb.position=to;game.bomb.velocity=velocity
+	# 1.4.6: a bomb dropped into deep water (2 m and more) could never be picked
+	# up again - it goes back to the attackers' start.
+	var arena=game.arena
+	if is_instance_valid(arena) and arena.has_method("deep_water") and arena.deep_water(to) and to.y<float(arena.get_meta("water_height",-.35))+.1:
+		var points:Array=arena.spawn_points[MatchFlow.attackers(game)] if arena.spawn_points.size()>MatchFlow.attackers(game) else []
+		if not points.is_empty():
+			game.bomb.position=Vector3(points[0])+Vector3.UP*.3;game.bomb.velocity=Vector3.ZERO;game.bomb.resting=true
 static func beep_interval(remaining:float,total:float) -> float:
 	var fraction=remaining/maxf(1.,total)
 	return 1.2 if fraction>.5 else .75 if fraction>.25 else .4 if fraction>.1 else .16

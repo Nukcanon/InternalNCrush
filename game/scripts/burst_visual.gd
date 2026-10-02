@@ -11,6 +11,9 @@ var bomb=false
 var pooled=false
 var active=false
 var debris:Array=[]
+## 1.4.6: the shader warm-up burst (CombatFx.warm_effects) is drawn but never
+## seen - the user saw it as a puff of smoke and flying bits on entering a map.
+var ghost=false
 func retire():
 	active=false;hide();set_process(false)
 	for body in debris:
@@ -39,12 +42,17 @@ func build(fire:bool):
 		else:puffs.append(puff)
 	# Fire/smoke puffs above remain identical at every quality; only tiny debris scales.
 	if GraphicsOptions.physics_effects<2 or OS.has_feature("web"):return
-	for i in range([4,8,12][GraphicsOptions.detail]):
+	# (the warm-up burst draws one debris piece too, shrunk out of sight, so its
+	# material is ready before the first real explosion)
+	for i in range(1 if ghost else [4,8,12][GraphicsOptions.detail]):
 		if debris_count>=[12,36,72][GraphicsOptions.detail]:break
 		var body=RigidBody3D.new();add_child(body);body.position=Vector3.UP*.3;body.mass=.04;body.collision_layer=0;body.collision_mask=1;body.continuous_cd=true;body.linear_damp=.25
 		var size=[Vector3(.05,.045,.065),Vector3(.075,.045,.10),Vector3(.105,.045,.135)][i%3];MeshFactory.box(body,Vector3.ZERO,size,Color("686e70"))
 		if not debris_shapes.has(i%3):var box=BoxShape3D.new();box.size=size;debris_shapes[i%3]=box
 		var collision=CollisionShape3D.new();collision.shape=debris_shapes[i%3];body.add_child(collision);debris.append(body)
+		if ghost:
+			for m in body.get_children():
+				if m is MeshInstance3D:m.scale=Vector3.ONE*.001
 		body.linear_velocity=Vector3(rng.randf_range(-4.5,4.5),rng.randf_range(2.,5.5),rng.randf_range(-4.5,4.5));body.angular_velocity=Vector3(6,9,4)
 		debris_count+=1;body.tree_exited.connect(func():debris_count=maxi(0,debris_count-1))
 func _process(dt:float):
@@ -55,8 +63,8 @@ func _process(dt:float):
 		var expansion=1.-pow(1.-t,3.)
 		puff.node.position=blast_scale*puff.velocity*expansion*(1.1 if puff.flame else 2.2)+Vector3.UP*(.25 if puff.dust else .35+t*.7)
 		puff.node.scale=Vector3.ONE*(.35+expansion*puff.size)*blast_scale
-		puff.material.albedo_color.a=puff.alpha*(1.-smoothstep(.12 if puff.flame else .35,1.,t))*smoothstep(0.,.07,t)
-		if puff.flame:puff.material.emission_energy_multiplier=1.6*(1.-t)
+		puff.material.albedo_color.a=puff.alpha*(1.-smoothstep(.12 if puff.flame else .35,1.,t))*smoothstep(0.,.07,t)*(.003 if ghost else 1.)
+		if puff.flame:puff.material.emission_energy_multiplier=1.6*(1.-t)*(.003 if ghost else 1.)
 	if age>(7.2 if bomb else 3.):
 		if pooled:retire()
 		else:queue_free()

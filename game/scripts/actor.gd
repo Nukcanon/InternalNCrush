@@ -86,6 +86,14 @@ var turn_sway=0.
 var shot_serial=0
 var fall_peak=0.
 var falling=false
+## 1.4.6 (the user): falls of a storey (~3 m) are free, two storeys (6 m) cost
+## 60, three storeys (9 m) and more kill. Health only (game.damage: armour and
+## the heavy's guard never absorb a fall; the medic's invulnerability does).
+const FALL_SAFE=3.2
+const FALL_LETHAL=9.
+static func fall_damage(height:float) -> float:
+	if height>=FALL_LETHAL:return 10000.
+	return maxf(0.,(height-FALL_SAFE)*60./(6.-FALL_SAFE))
 var rotation_target_extra=Vector3.ZERO # hip-only view-model tilt (one-handed pistol cant)
 var launcher_tilt=0. # 0..1: launcher tipped forward so the rear end can be loaded
 # Third-person loading pose: far enough ahead of the chest that the arms stay outside the torso.
@@ -264,7 +272,7 @@ func simulate(dt:float,now:float,can_move:bool):
 	if not was_grounded and is_on_floor():
 		land_kick=clampf((fall_peak-global_position.y)*.008,.035,.14)
 		if game.server and game.phase=="combat" and falling and not game.arena.wading(global_position):
-			var amount=maxf(0.,(fall_peak-global_position.y-9.)*(40./3.6))
+			var amount=fall_damage(fall_peak-global_position.y)
 			if amount>0.:game.damage(pid,amount,pid,false,"fall")
 		falling=false
 	if game.server and can_move:
@@ -737,6 +745,11 @@ const FP_FOREARM={"R":Vector3(.14,-.26,.95),"L":Vector3(-.85,-.30,.45)}
 const FP_FOREARM_PISTOL={"R":Vector3(.12,-.22,.97),"L":Vector3(-.12,-.22,.97)}
 # Two-handed items (kits, plates) in front of the chest.
 const FP_FOREARM_ITEM={"R":Vector3(.25,-.45,.86),"L":Vector3(-.35,-.50,.78)}
+const FREE_ARM_OUT=Vector3(-1.,-.22,.12) # wrist -> elbow of the free arm with a throwable (camera space)
+const FREE_SHOULDER_OUT=Vector3(-.08,.06,.26) # its (hidden) shoulder: a little out and well back (the upper arm stays out of view)
+const FREE_ELBOW_W=14. # and the elbow pulled firmly to that line (HeroIK solve_arm)
+const FREE_ARM_PIN=Vector3(-.40,-.88,.26) # pulling the pin: the forearm runs down out of the view
+const FREE_SHOULDER_PIN=Vector3(-.04,-.10,.12)
 # Raised fist (melee, throws): the forearm comes up nearly vertically.
 const FP_FOREARM_STEEP={"R":Vector3(.30,-.88,.36),"L":Vector3(-.30,-.88,.36)}
 # Melee: a shallow forearm from the lower right, fist ahead, blade up.
@@ -903,6 +916,7 @@ static func short_gun_kind(w:Dictionary) -> bool:
 # 1.4.4: at the hip every weapon stays in the bottom third of the screen (the
 # user's rule); aiming brings it up to the sight line. Shared with the kill
 # replay (1.4.5), whose first-person view is built the same way as live play.
+const GADGET_OUT=Vector3(.0,.015,-.05)
 static func hip_base_for(w:Dictionary,gadget_up:bool=false) -> Vector3:
 	var kind=GunLooks.hold_kind(w);var dual=bool(w.get("dual",false))
 	var rocket=bool(w.get("rocket",false));var shoulder=bool(GunLooks.look(w).get("shoulder",false))
@@ -920,6 +934,8 @@ static func hip_base_for(w:Dictionary,gadget_up:bool=false) -> Vector3:
 	# Guns (not gadgets, not the centred pair) sit further to the shooting side
 	# (the user's 1.4.4 round-3 request) so the middle of the screen is clear.
 	if not gadget_up and not dual:hip_base.x+=.06
+	# 1.4.6 (the user): held gadgets a little further out from the body
+	if gadget_up:hip_base+=GADGET_OUT
 	return hip_base
 # Hip turn (yaw in toward the centre, pitch up) that makes the barrel line
 # cross the aim line HIP_CONVERGE ahead (view-space units; the bore runs about
@@ -1036,6 +1052,17 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if throwing:
 		var line:Vector3=throw_forearm(1.-(float(p.throw_until)-now)/THROW_TIME)
 		lines.R=Vector3(line.x*handedness,line.y,line.z)
+	# 1.4.6 (the user): holding a throwable, the free arm is spread further out
+	# to the side - the hand stays where it is, the elbow goes out.
+	if item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p):
+		# (while the pin is pulled the elbow drops instead: the upper arm stays
+		# below the view, never half in it)
+		var pin=p.get("cooking",0)>0
+		var line:Vector3=FREE_ARM_PIN if pin else FREE_ARM_OUT;var out:Vector3=FREE_SHOULDER_PIN if pin else FREE_SHOULDER_OUT
+		lines.L=Vector3(line.x*handedness,line.y,line.z)
+		var shoulders:Dictionary=Dictionary(view_body.get_meta("fp_shoulders",{})).duplicate()
+		if shoulders.has("L"):shoulders.L=Vector3(shoulders.L)+Vector3(out.x*handedness,out.y,out.z);view_body.set_meta("fp_shoulders",shoulders)
+	view_body.set_meta("fp_elbow_w",{"L":FREE_ELBOW_W} if item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p) else {})
 	view_body.set_meta("fp_forearm",lines)
 	# Round 8: a gun hand's forearm continues the hand (wrist straight); the
 	# hidden shoulder follows (HeroIK solve_arm, meta "fp_follow").

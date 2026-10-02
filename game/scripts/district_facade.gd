@@ -111,6 +111,55 @@ const STYLES={
 		"plinth":[1.0,"5a6268"],"win":["none",0.,0.,0.],"spacing":4.,"top":"none","ground":"vault","extras":["rivets","stripe","deposit","vaultdoor"]},
 	"server":{"indoor":true,"pattern":TILES,"colors":["d6dde2","c8d2d8"],"trim":"2fb8e0","frame":"4a5560","glass":"a0c8e0","doors":["4a5560"],
 		"plinth":[.2,"5a6670"],"win":["none",0.,0.,0.],"spacing":4.,"top":"none","ground":"airlock","extras":["racks","cable_tray","stripe"]}}
+# 1.4.6 (the user): windows and doors are not the same everywhere - each
+# region of a map (MapRegions) takes one of its style's looks. Overrides of the
+# style keys: win [kind,w,h,sill], frame, shutters, door (the facade door kind:
+# door / glazed / double / plank / steel).
+const REGION_LOOKS={
+	"oldtown":[{},{"win":["transom",.95,1.35,.9],"frame":"3f4f5a","shutters":[],"door":"glazed"},{"win":["double",1.4,1.15,.95],"frame":"f4efe2","shutters":["c9a36d","5a7a9a"],"door":"double"},{"win":["bay",1.3,1.2,1.0],"frame":"6b4a3a","shutters":[],"door":"plank"}],
+	"hillside":[{},{"win":["double",1.3,1.0,1.0],"frame":"b5563e","door":"plank"},{"win":["round",.8,.8,1.2],"frame":"2f8a8a","door":"glazed"},{"win":["louvre",.9,1.0,1.0],"frame":"3d6fa8","shutters":["3d6fa8"]}],
+	"canal":[{},{"win":["bay",1.3,1.3,.9],"frame":"2f3f36","door":"glazed"},{"win":["transom",1.0,1.4,.8],"frame":"f2ede2","door":"double"},{"win":["cross",1.1,1.4,.85],"frame":"7a3f3a","door":"plank"}],
+	"plaza":[{},{"win":["bay",1.4,1.4,.8],"frame":"fbf6ea","door":"double"},{"win":["transom",1.1,1.4,.8],"frame":"5a6a5a","door":"glazed","shutters":[]},{"win":["round",.9,.9,1.3],"frame":"8a6a5a","shutters":["6f8a6a"]}],
+	"market":[{},{"win":["louvre",1.0,1.2,1.0],"frame":"6b4a3a","door":"plank"},{"win":["double",1.4,1.1,1.0],"frame":"2f5f8a","door":"glazed"},{"win":["round",.85,.85,1.2],"frame":"efe6d2"}],
+	"station":[{},{"win":["transom",1.3,1.6,.7],"door":"double"},{"win":["round",1.0,1.0,1.3],"door":"glazed"}],
+	"harbour":[{},{"win":["porthole",.9,.9,1.4],"door":"steel"},{"win":["wide",2.6,.7,1.6],"door":"steel","frame":"2f3a44"}],
+	"shipyard":[{},{"win":["industrial",2.0,1.4,1.4],"door":"steel"},{"win":["porthole",.9,.9,1.6],"door":"steel"}],
+	"logistics":[{},{"win":["wide",2.8,.7,2.0],"door":"steel"},{"win":["industrial",1.8,1.2,1.6],"door":"steel"}],
+	"desert":[{},{"win":["louvre",.8,.9,1.3],"door":"plank"},{"win":["round",.7,.7,1.4],"door":"steel"}],
+	"orchard":[{},{"win":["cross",.9,1.0,1.1],"door":"plank"},{"win":["louvre",.9,1.0,1.1],"door":"plank"}],
+	"quarry":[{},{"win":["industrial",1.4,1.0,1.4],"door":"steel"},{"win":["slats",.9,.9,1.3],"door":"plank"}],
+	"fortress":[{},{"win":["lattice",.7,1.1,1.5],"door":"plank"},{"win":["round",.6,.6,2.0],"door":"plank"}],
+	"mountain_fort":[{},{"win":["lattice",.6,1.0,1.7],"door":"plank"},{"win":["slats",.7,1.0,1.6],"door":"plank"}],
+	"monastery":[{},{"win":["pair",1.2,1.5,1.2]},{"win":["round",.9,.9,1.6],"door":"plank"}],
+	"aqueduct":[{},{"win":["transom",.9,1.2,1.1],"door":"double"},{"win":["louvre",.9,1.2,1.1],"door":"plank"}],
+	"nuclear":[{},{"win":["wide",2.4,.6,2.0],"door":"steel"},{"win":["porthole",.8,.8,1.6],"door":"steel"}],
+	"wreckyard":[{},{"win":["industrial",1.6,1.2,1.4],"door":"steel"},{"win":["slats",1.0,1.0,1.4],"door":"plank"}],
+	"furnace":[{},{"win":["industrial",1.6,1.2,1.8],"door":"steel"},{"win":["round",.9,.9,2.0],"door":"steel"}],
+	"greenhouse":[{},{"win":["grid",0.,0.,.4]},{"win":["grid",0.,0.,1.0],"frame":"dfe8dc"}],
+	"coastal_base":[{},{"win":["porthole",.8,.8,1.5],"door":"steel"},{"win":["wide",2.2,.5,1.7],"door":"steel"}],
+	"range":[{},{"win":["slats",1.2,1.0,1.0]},{"win":["cross",1.0,1.0,1.1],"door":"plank"}],
+	"steelmill":[{},{"win":["industrial",2.4,1.6,4.0]},{"win":["round",1.2,1.2,4.2]}],
+	"lab":[{},{"win":["wide",2.6,1.0,1.1],"door":"steel"},{"win":["cross",1.6,1.2,1.0]}],
+	"garage":[{},{"win":["industrial",2.0,1.2,2.0]},{"win":["wide",2.4,.8,2.2]}],
+	"power":[{},{"win":["porthole",.9,.9,2.0]},{"win":["industrial",1.8,1.2,2.4]}],
+	"testlab":[{},{"win":["wide",2.6,1.0,1.0]},{"win":["cross",1.8,1.2,1.0]}],
+	"derelict":[{},{"win":["industrial",1.8,1.6,3.0]},{"win":["slats",1.4,1.4,3.2]}],
+	"highrise":[{},{"win":["wide",3.0,1.6,.9]},{"win":["cross",2.0,2.2,.9]}],
+	"library":[{},{"win":["pair",1.4,1.6,3.0]},{"win":["round",1.2,1.2,3.4]}],
+	"vault":[{},{"win":["none",0.,0.,0.]},{"win":["porthole",.8,.8,2.0]}],
+	"server":[{},{"win":["none",0.,0.,0.]},{"win":["wide",2.6,.6,2.2]}]}
+static var look_cache={}
+## The style as one region of map `index` shows it.
+static func region_style(style:Dictionary,index:int,region:int) -> Dictionary:
+	var name=style_name_of(style)
+	var looks:Array=REGION_LOOKS.get(name,[{}])
+	var pick_index=(region+index)%looks.size()
+	var key=name+":"+str(pick_index)
+	if not look_cache.has(key):
+		var merged=style.duplicate(true);merged["look_of"]=name
+		for k in looks[pick_index]:merged[k]=looks[pick_index][k]
+		look_cache[key]=merged
+	return look_cache[key]
 # Ground (outdoor) / floor + ceiling (indoor): [color, pattern].
 const GROUNDS={"oldtown":["d6c8a8",TILES],"hillside":["c8bca2",TILES],"canal":["b9bdb8",TILES],"plaza":["e0d2b8",TILES],"market":["c9b89a",BRICKS],
 	"station":["cfc6b4",TILES],"harbour":["9aa0a2",PANELS],"shipyard":["8f9496",PANELS],"logistics":["a0a4a6",PANELS],"desert":["d9bf8a",PLAIN],
@@ -125,6 +174,7 @@ static var skin_materials={}
 static var storey_height=3.1 # current map storey (windows fit inside one storey)
 static func style_for(index:int) -> Dictionary:return STYLES[MAP_STYLE[clampi(index,0,MAP_STYLE.size()-1)]]
 static func style_name_of(style:Dictionary) -> String:
+	if style.has("look_of"):return str(style.look_of)
 	for key in STYLES:
 		if STYLES[key]==style:return key
 	return ""
@@ -223,8 +273,10 @@ static func build(a:Node,plan:Dictionary) -> Array:
 		var n=Vector3(-d.z,0,d.x)
 		kit.xf=Transform3D(Basis(d,Vector3.UP,n),u)
 		var piece={"length":length,"y0":float(f[4]),"y1":float(f[5]),"from":float(f[6]),"top":float(f[7]),"lot":int(f[8]),"flags":int(f[9]),"storey":storey,"lite":lite,"index":index}
-		# 1.5 blueprints name a style per building lot so one map mixes building types.
-		front(kit,STYLES.get(str(f[10]),style) if f.size()>10 else style,piece,fixtures)
+		# 1.5 blueprints name a style per building lot so one map mixes building types;
+		# 1.4.6: each region of the map shows its own look of that style.
+		var lot_style:Dictionary=STYLES.get(str(f[10]),style) if f.size()>10 else style
+		front(kit,region_style(lot_style,index,MapRegions.region(index,mid,a.bounds)),piece,fixtures)
 	for key in kits:
 		var kit:Kit=kits[key]
 		for pair in [[kit.skin,skin_material(index),"FacadeSkin"],[kit.detail,WorldSurface.material("detail",index,true),"FacadeDetail"]]:
@@ -328,19 +380,180 @@ static func sloped_band(kit:Kit,x0:float,x1:float,y0:float,y1:float,lo:float,hi:
 	kit.quad4(kit.detail,Vector3(x0,y0+hi,z),Vector3(x1,y1+hi,z),Vector3(x1,y1+hi,.03),Vector3(x0,y0+hi,.03),col.lightened(.06))
 	kit.quad4(kit.detail,Vector3(x0,y0+lo,.03),Vector3(x1,y1+lo,.03),Vector3(x1,y1+lo,z),Vector3(x0,y0+lo,z),col.darkened(.12))
 
+## 1.4.6 audit (tools/audit_v146.gd): when set, every window and facade door
+## records its world box [centre, half size, basis] here.
+static var record=null
+static var blockers:Array=[] # 1.4.6: [transform, local AABB] of every prop, boat and door leaf (DistrictDressing)
+## 1.4.6 (the user: no window or door may run into anything): true when the
+## wall box (x cx +- w/2, y0..y1, out to depth) meets a prop, boat or door.
+static func blocked(kit:Kit,cx:float,y0:float,y1:float,w:float,depth:float) -> bool:
+	if blockers.is_empty():return false
+	var corners=[]
+	for x in [cx-w*.5,cx+w*.5]:
+		for y in [y0,y1]:
+			for z in [0.,depth+.06]:corners.append(kit.xf*Vector3(x,y,z))
+	var lo:Vector3=corners[0];var hi:Vector3=corners[0]
+	for c in corners:lo=lo.min(c);hi=hi.max(c)
+	var world=AABB(lo,hi-lo);var seen={}
+	var near=[]
+	for gx in range(floori(world.position.x/8.),floori(world.end.x/8.)+1):
+		for gz in range(floori(world.position.z/8.),floori(world.end.z/8.)+1):near.append_array(blocker_grid.get(Vector2i(gx,gz),[]))
+	for b in near:
+		if seen.has(b[4]) or not b[2].intersects(world):continue
+		seen[b[4]]=true
+		var xf:Transform3D=b[0];var box:AABB=b[1]
+		# Map solids (b[3]): the wall the facade hangs on ends at z 0 - only what
+		# stands out from it (a pillar, a low wall, a crossing wall) counts.
+		var solid=bool(b[3])
+		if b.size()>5:
+			# a floor/step triangle of the map's trimesh, tested exactly
+			var into=kit.xf.affine_inverse()
+			if tri_box(Vector3(cx,(y0+y1)*.5,(.08+depth+.06)*.5),Vector3(w*.5-.01,(y1-y0)*.5-.01,(depth+.06-.08)*.5),into*Vector3(b[5][0]),into*Vector3(b[5][1]),into*Vector3(b[5][2])):skipped+=1;return true
+			continue
+		var inv=xf.affine_inverse();var l:Vector3=inv*Vector3(corners[0]);var h:Vector3=l
+		for k in range(corners.size()):
+			var c:Vector3=corners[k]
+			if solid and k%2==0:c=kit.xf*(kit.xf.affine_inverse()*c+Vector3(0,0,.08))
+			var p:Vector3=inv*c;l=l.min(p);h=h.max(p)
+		if AABB(l,h-l).intersects(box.grow(-.02 if solid else .03)):skipped+=1;return true
+	return false
+## 1.4.6 (the user: a window half under a door): true when this window or door
+## (its own extent, x cx +- w/2, y0..y1) meets one already built - another front
+## on the same wall, or a crossing wall's.
+static func meets_opening(kit:Kit,cx:float,y0:float,y1:float,w:float) -> bool:
+	var corners=[]
+	for x in [cx-w*.5,cx+w*.5]:
+		for y in [y0,y1]:
+			for z in [.04,.3]:corners.append(kit.xf*Vector3(x,y,z))
+	var lo:Vector3=corners[0];var hi:Vector3=corners[0]
+	for c in corners:lo=lo.min(c);hi=hi.max(c)
+	var world=AABB(lo,hi-lo)
+	for o in openings:
+		if not AABB(o[2]).intersects(world):continue
+		var into:Transform3D=Transform3D(o[0]).affine_inverse();var ol=Vector3.INF;var oh=-Vector3.INF
+		for c in corners:
+			var p:Vector3=into*Vector3(c);ol=ol.min(p);oh=oh.max(p)
+		var h:Vector3=o[1]
+		if AABB(ol,oh-ol).intersects(AABB(-h,h*2.)):skipped+=1;return true
+	return false
+## Sets the blockers: [transform, local box, solid] each, sorted into 8 m cells.
+static var blocker_grid:={}
+static var skipped:=0 # windows and doors left out (audit)
+static func set_blockers(list:Array):
+	blockers=[];blocker_grid={}
+	for e in list:
+		var world:AABB=e[0]*e[1];var b=[e[0],e[1],world,e[2],blockers.size()];blockers.append(b)
+		if e.size()>3:b.append(e[3]) # triangle (world corners)
+		for gx in range(floori(world.position.x/8.),floori(world.end.x/8.)+1):
+			for gz in range(floori(world.position.z/8.),floori(world.end.z/8.)+1):
+				var key=Vector2i(gx,gz)
+				if not blocker_grid.has(key):blocker_grid[key]=[]
+				blocker_grid[key].append(b)
+## Triangle against an axis-aligned box (separating axes, Akenine-Moller).
+static func tri_box(c:Vector3,h:Vector3,a:Vector3,b:Vector3,d:Vector3) -> bool:
+	if h.x<=0. or h.y<=0. or h.z<=0.:return false
+	var v=[a-c,b-c,d-c]
+	for i in range(3):
+		if minf(v[0][i],minf(v[1][i],v[2][i]))>h[i] or maxf(v[0][i],maxf(v[1][i],v[2][i]))<-h[i]:return false
+	var e=[v[1]-v[0],v[2]-v[1],v[0]-v[2]]
+	var n:Vector3=e[0].cross(e[1])
+	if n.length_squared()<1e-12:return false
+	var r=h.x*absf(n.x)+h.y*absf(n.y)+h.z*absf(n.z)
+	if absf(n.dot(v[0]))>r:return false
+	for edge in e:
+		for axis in [Vector3.RIGHT,Vector3.UP,Vector3.BACK]:
+			var ax:Vector3=axis.cross(edge)
+			if ax.length_squared()<1e-12:continue
+			var p0=ax.dot(v[0]);var p1=ax.dot(v[1]);var p2=ax.dot(v[2])
+			var rr=h.x*absf(ax.x)+h.y*absf(ax.y)+h.z*absf(ax.z)
+			if minf(p0,minf(p1,p2))>rr or maxf(p0,maxf(p1,p2))<-rr:return false
+	return true
+## Every window and facade door built, [transform, half size] (DistrictDressing
+## keeps them for DistrictProps.settle_props: a prop is never moved in front of one).
+static var openings:Array=[]
+static func note(kit:Kit,kind:String,cx:float,y0:float,y1:float,w:float,depth:float):
+	var c=kit.xf*Vector3(cx,(y0+y1)*.5,depth*.5+.06);var basis:Basis=kit.xf.basis
+	var o_xf=Transform3D(basis.orthonormalized(),c);var o_half=Vector3(w*.5,(y1-y0)*.5,maxf(.02,depth*.5))
+	openings.append([o_xf,o_half,o_xf*AABB(-o_half,o_half*2.)])
+	if record==null:return
+	record.append({"kind":kind,"centre":c,"half":Vector3(w*.5,(y1-y0)*.5,maxf(.02,depth*.5)),"basis":basis})
 ## Windows by kind. y = storey floor level; sill height from the style.
 static func window(kit:Kit,style:Dictionary,cx:float,y:float,hs:int,near_deck:bool):
+	if str(style.win[0])!="none" and blocked(kit,cx,y+float(style.win[3])-.1,y+float(style.win[3])+float(style.win[2])+.6,float(style.win[1])+.3,.6):return
+	if str(style.win[0])!="none" and meets_opening(kit,cx,y+float(style.win[3]),y+float(style.win[3])+float(style.win[2]),float(style.win[1])):return
+	if record!=null:
+		var wk=str(style.win[0])
+		if not wk in ["none","band","grid"]:note(kit,"window_"+wk,cx,y+float(style.win[3]),y+float(style.win[3])+float(style.win[2]),float(style.win[1])+.2,.46 if wk=="bay" else .1)
 	var kind=str(style.win[0]);var ww=float(style.win[1]);var wh=float(style.win[2]);var sill=float(style.win[3])
 	var frame=Color(style.frame);var glass=Color(style.glass);var trim=Color(style.trim)
 	# A window (with its arch head) always fits inside one storey.
+	var head=ww*.5 if kind in ["arch","transom","pair"] else 0.
+	if kind=="pair":head=ww*.21
 	if not bool(style.get("indoor",false)):
-		var room=storey_height-sill-.3-(ww*.5 if kind=="arch" else 0.)
+		var room=storey_height-sill-.3-head
 		if wh>room:
-			sill=maxf(.5,storey_height-.3-(ww*.5 if kind=="arch" else 0.)-wh)
-			wh=minf(wh,storey_height-sill-.3-(ww*.5 if kind=="arch" else 0.))
+			sill=maxf(.5,storey_height-.3-head-wh)
+			wh=minf(wh,storey_height-sill-.3-head)
 	var yb=y+sill
 	match kind:
 		"none":return
+		# 1.4.6 window kinds (REGION_LOOKS).
+		"porthole","round":
+			var r=minf(ww,wh)*.5;var c=Vector3(cx,yb+r,.07)
+			kit.disc(c,r,glass,14)
+			kit.disc(c+Vector3(-r*.35,r*.35,.004),r*.22,glass.lightened(.25),8)
+			var ring=Basis(Vector3.RIGHT,Vector3.BACK,Vector3.RIGHT.cross(Vector3.BACK))
+			PropModels.lathe(kit,Vector3(cx,yb+r,.03),ring,[[r,0.],[r+.13,0.],[r+.13,.09],[r,.09]],frame,16,true)
+			if kind=="porthole":
+				for i in range(6):
+					var a=TAU*i/6.
+					kit.box(Vector3(cx+cos(a)*(r+.065),yb+r+sin(a)*(r+.065),.13),Vector3(.05,.05,.03),frame.darkened(.3))
+			else:
+				kit.slab(cx-.025,cx+.025,yb,yb+2.*r,.09,frame);kit.slab(cx-r,cx+r,yb+r-.025,yb+r+.025,.09,frame)
+			return
+		"bay":
+			var depth=.42
+			kit.box(Vector3(cx,yb-.12,depth*.5),Vector3(ww+.3,.16,depth+.04),trim)
+			kit.box(Vector3(cx,yb+wh+.1,depth*.5),Vector3(ww+.36,.18,depth+.08),trim)
+			for side in [-1.,1.]:kit.box(Vector3(cx+side*(ww*.5+.07),yb+wh*.5,depth*.5),Vector3(.12,wh+.04,depth),frame)
+			kit.quad(Vector3(cx-ww*.5,yb,depth+.005),Vector3(ww,0,0),Vector3(0,wh,0),glass)
+			kit.quad(Vector3(cx-ww*.5-.13,yb,.03),Vector3(0,0,depth-.03),Vector3(0,wh,0),glass.darkened(.08))
+			kit.quad(Vector3(cx+ww*.5+.13,yb,depth),Vector3(0,0,-(depth-.03)),Vector3(0,wh,0),glass.darkened(.08))
+			for k in [-1.,0.,1.]:kit.box(Vector3(cx+k*ww*.33,yb+wh*.5,depth+.02),Vector3(.05,wh,.04),frame)
+			kit.box(Vector3(cx,yb+wh*.62,depth+.02),Vector3(ww,.05,.04),frame)
+			for side in [-1.,1.]:kit.box(Vector3(cx+side*ww*.3,yb-.32,.15),Vector3(.1,.26,.26),trim.darkened(.1)) # brackets
+			return
+		"louvre","slats":
+			var f2=.08
+			kit.slab(cx-ww*.5-f2,cx+ww*.5+f2,yb-f2,yb+wh+f2,.05,frame)
+			var wood=Color(pick(style.get("shutters",[]),hs) if not style.get("shutters",[]).is_empty() and str(pick(style.shutters,hs))!="" else style.frame).darkened(.05)
+			if kind=="louvre":
+				var n=maxi(4,int(wh/.12))
+				for k in range(n):
+					var sy=yb+wh*k/n
+					kit.slab(cx-ww*.5,cx+ww*.5,sy,sy+wh/n,.07,wood.darkened(.18))
+					kit.slab(cx-ww*.5,cx+ww*.5,sy+wh/n*.45,sy+wh/n,.1,wood)
+				kit.slab(cx-.025,cx+.025,yb,yb+wh,.12,frame)
+			else:
+				var n=maxi(4,int(ww/.14))
+				for k in range(n):
+					var sx=cx-ww*.5+ww*k/n
+					kit.slab(sx+.008,sx+ww/n-.008,yb,yb+wh,.09,wood.darkened(.06*(k%3)))
+				for yy in [yb+wh*.2,yb+wh*.8]:kit.slab(cx-ww*.5,cx+ww*.5,yy-.04,yy+.04,.11,wood.darkened(.25))
+			kit.slab(cx-ww*.5-.14,cx+ww*.5+.14,yb-f2-.06,yb-f2,.12,trim)
+			return
+		"pair":
+			var pw=ww*.42
+			kit.slab(cx-ww*.5-.1,cx+ww*.5+.1,yb-.1,yb+wh,.05,frame)
+			for side in [-1.,1.]:
+				var px=cx+side*ww*.26
+				kit.quad(Vector3(px-pw*.5,yb,.085),Vector3(pw,0,0),Vector3(0,wh,0),glass)
+				kit.arch(px,yb+wh,.085,pw*.5,glass)
+				kit.arch_ring(px,yb+wh,.09,pw*.5,.08,frame)
+				kit.slab(px-.02,px+.02,yb,yb+wh,.1,frame.darkened(.2))
+			kit.slab(cx-.06,cx+.06,yb,yb+wh+pw*.4,.12,trim) # centre column
+			kit.slab(cx-ww*.5-.16,cx+ww*.5+.16,yb-.17,yb-.1,.12,trim)
+			return
 		"band":
 			return # bands are drawn per house in extras (continuous strip)
 		"grid":
@@ -375,6 +588,27 @@ static func window(kit:Kit,style:Dictionary,cx:float,y:float,hs:int,near_deck:bo
 	if kind in ["rect","tall","broken"]:kit.slab(cx-ww*.5,cx+ww*.5,yb+wh*.55-.03,yb+wh*.55+.03,.1,frame)
 	if kind=="grille":
 		for i in [-1,1]:kit.slab(cx+i*ww*.25-.02,cx+i*ww*.25+.02,yb,yb+wh,.11,Color("3a3a3a"))
+	match kind:
+		"cross":kit.slab(cx-ww*.5,cx+ww*.5,yb+wh*.5-.03,yb+wh*.5+.03,.1,frame)
+		"double":
+			kit.slab(cx-.06,cx+.06,yb,yb+wh,.11,frame)
+			kit.slab(cx-ww*.5,cx+ww*.5,yb+wh*.74-.025,yb+wh*.74+.025,.1,frame)
+			for side in [-1.,1.]:kit.box(Vector3(cx+side*.12,yb+wh*.45,.12),Vector3(.03,.1,.04),Color("c9a03a"))
+		"transom":
+			kit.slab(cx-ww*.5-f,cx+ww*.5+f,yb+wh-.02,yb+wh+.06,.1,frame)
+			kit.arch(cx,yb+wh+.06,.085,ww*.5,pane.lightened(.1))
+			kit.arch_ring(cx,yb+wh+.06,.09,ww*.5,.09,frame)
+			for k in [-1.,1.]:kit.slab(cx+k*ww*.2-.015,cx+k*ww*.2+.015,yb+wh+.06,yb+wh+.06+ww*.42,.1,frame)
+		"industrial":
+			for k in range(1,4):kit.slab(cx-ww*.5+ww*k/4.-.02,cx-ww*.5+ww*k/4.+.02,yb,yb+wh,.1,frame.darkened(.2))
+			for k in range(1,3):kit.slab(cx-ww*.5,cx+ww*.5,yb+wh*k/3.-.02,yb+wh*k/3.+.02,.1,frame.darkened(.2))
+			if hs%4==1:kit.quad(Vector3(cx-ww*.5+.02,yb+wh*.34,.088),Vector3(ww*.25-.04,0,0),Vector3(0,wh*.3,0),pane.lightened(.3)) # an opened pane
+		"wide":
+			var cols=maxi(2,int(ww/.9))
+			for k in range(1,cols):kit.slab(cx-ww*.5+ww*k/cols-.025,cx-ww*.5+ww*k/cols+.025,yb,yb+wh,.1,frame)
+		"lattice":
+			for k in range(1,4):kit.slab(cx-ww*.5+ww*k/4.-.012,cx-ww*.5+ww*k/4.+.012,yb,yb+wh,.095,Color("3a3a3a"))
+			for k in range(1,5):kit.slab(cx-ww*.5,cx+ww*.5,yb+wh*k/5.-.012,yb+wh*k/5.+.012,.095,Color("3a3a3a"))
 	# Sill.
 	kit.slab(cx-ww*.5-.16,cx+ww*.5+.16,yb-f-.07,yb-f,.12,trim)
 	# Shutters.
@@ -394,6 +628,7 @@ static func window(kit:Kit,style:Dictionary,cx:float,y:float,hs:int,near_deck:bo
 			kit.box(Vector3(fx,yb-f,.14),Vector3(.18,.16,.16),Color(["d9577a","f0c24f","e07a5f","8fbf5a"][(hs+k)%4]))
 
 static func door(kit:Kit,style:Dictionary,cx:float,y:float,dw:float,dh:float,hs:int,kind:="door"):
+	note(kit,"door_"+kind,cx,y,y+dh,dw*(1.45 if kind=="double" else 1.)+.2,.1)
 	var frame=Color(style.trim);var col=Color(pick(style.doors,hs))
 	match kind:
 		"roller":
@@ -434,6 +669,44 @@ static func door(kit:Kit,style:Dictionary,cx:float,y:float,dw:float,dh:float,hs:
 			if kind=="gate":
 				for k in range(3):kit.slab(cx-dw*.5,cx+dw*.5,y+.4+k*.8,y+.48+k*.8,.1,Color("3a3a3a"))
 			return
+		# 1.4.6 facade doors per region (REGION_LOOKS "door").
+		"glazed":
+			kit.slab(cx-dw*.5-.1,cx+dw*.5+.1,y,y+dh+.1,.05,frame)
+			kit.slab(cx-dw*.5,cx+dw*.5,y,y+dh,.07,col)
+			kit.quad(Vector3(cx-dw*.5+.14,y+dh*.48,.072),Vector3(dw-.28,0,0),Vector3(0,dh*.42,0),Color(style.glass).lightened(.12))
+			for k in [-1.,1.]:kit.slab(cx+k*(dw*.5-.14)-.02,cx+k*(dw*.5-.14)+.02,y+dh*.48,y+dh*.9,.085,col.darkened(.15))
+			kit.slab(cx-dw*.5+.14,cx+dw*.5-.14,y+dh*.69-.02,y+dh*.69+.02,.085,col.darkened(.15))
+			kit.slab(cx-dw*.5+.14,cx+dw*.5-.14,y+.15,y+dh*.4,.085,col.lightened(.08))
+			kit.box(Vector3(cx+dw*.5-.14,y+1.0,.1),Vector3(.05,.16,.05),Color("c9c2b0"))
+			return
+		"double":
+			var w2=dw*1.45
+			kit.slab(cx-w2*.5-.12,cx+w2*.5+.12,y,y+dh+.12,.05,frame)
+			for side in [-1.,1.]:
+				var lx=cx+side*w2*.25
+				kit.slab(lx-w2*.25+.01,lx+w2*.25-.01,y,y+dh,.07,col)
+				kit.slab(lx-w2*.25+.1,lx+w2*.25-.1,y+dh*.55,y+dh-.14,.085,col.lightened(.08))
+				kit.slab(lx-w2*.25+.1,lx+w2*.25-.1,y+.14,y+dh*.45,.085,col.lightened(.08))
+				kit.box(Vector3(cx+side*.08,y+1.05,.1),Vector3(.04,.22,.05),Color("d8c070"))
+			kit.slab(cx-w2*.5-.12,cx+w2*.5+.12,y+dh+.12,y+dh+.3,.1,frame.darkened(.1)) # lintel
+			return
+		"plank":
+			kit.slab(cx-dw*.5-.12,cx+dw*.5+.12,y,y+dh+.12,.05,frame.darkened(.2))
+			var n=5
+			for k in range(n):kit.slab(cx-dw*.5+dw*k/n+.006,cx-dw*.5+dw*(k+1)/n-.006,y,y+dh,.07,col.darkened(.05*(k%2)))
+			for yy in [y+.35,y+dh-.4]:
+				kit.slab(cx-dw*.5,cx+dw*.5,yy-.05,yy+.05,.09,Color("3a3a3a"))
+				for k in range(4):kit.box(Vector3(cx-dw*.4+k*dw*.27,yy,.1),Vector3(.04,.04,.03),Color("5a5a5a"))
+			kit.box(Vector3(cx+dw*.5-.16,y+1.05,.1),Vector3(.12,.04,.04),Color("3a3a3a"))
+			return
+		"steel":
+			kit.slab(cx-dw*.5-.12,cx+dw*.5+.12,y,y+dh+.12,.05,Color(style.frame).darkened(.25))
+			kit.slab(cx-dw*.5,cx+dw*.5,y,y+dh,.07,col.lightened(.05))
+			kit.quad(Vector3(cx-.15,y+dh*.62,.072),Vector3(.3,0,0),Vector3(0,.42,0),Color(style.glass)) # wired vision panel
+			kit.slab(cx-dw*.5+.06,cx+dw*.5-.06,y+.05,y+.3,.08,Color("9aa0a4")) # kick plate
+			kit.slab(cx-dw*.5+.12,cx+dw*.5-.12,y+1.0,y+1.06,.11,Color("c9cdd0")) # push bar
+			for k in range(4):kit.box(Vector3(cx-dw*.5+.08,y+.4+k*.55,.08),Vector3(.03,.03,.02),Color("6a7074"))
+			return
 	# Plain panel door with frame, panels and knob.
 	kit.slab(cx-dw*.5-.1,cx+dw*.5+.1,y,y+dh+.1,.05,frame)
 	kit.slab(cx-dw*.5,cx+dw*.5,y,y+dh,.07,col)
@@ -464,7 +737,18 @@ static func ground_floor(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float
 	var steep=absf(y1-y0)>.35
 	var door_bay=-1
 	if not steep and w>=3.:door_bay=(hs/5)%bays if bays>1 else (0 if hs%2==0 else -1)
+	# 1.4.6 (the user: no water right at a shop door): a wall standing in a
+	# ditch (its foot below the street) has plain windows - no door, no shopfront.
+	if low<-.12:
+		door_bay=-1
+		if kind in ["shop","arcade","glass","roller","dock","barn","gate"]:kind="plain"
 	if indoor:door_bay=-1 if hs%3 else door_bay
+	# 1.4.6 (the user): a door never opens straight into a prop - where one
+	# stands in front of it, the bay keeps a window instead.
+	if door_bay>=0:
+		var cx=x0+w*(door_bay+.5)/bays
+		if blocked(kit,cx,minf(y0,y1)+.06,maxf(y0,y1)+3.,minf(3.4,w/bays),1.2):door_bay=-1
+		elif meets_opening(kit,cx,minf(y0,y1)+.1,maxf(y0,y1)+2.3,1.6):door_bay=-1
 	for b in range(bays):
 		var cx=x0+w*(b+.5)/bays
 		var y=lerpf(y0,y1,(cx-x0)/w)
@@ -481,7 +765,7 @@ static func ground_floor(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float
 				"gate":door(kit,style,cx,y,1.8,2.9,hs+b,"gate")
 				"bunker":door(kit,style,cx,y,1.2,2.1,hs+b,"door");kit.slab(cx-1.,cx+1.,y+2.2,y+2.45,.12,Color(style.plinth[1]))
 				"glass":door(kit,style,cx,y,1.4,2.2,hs+b,"airlock")
-				_:door(kit,style,cx,y,1.15,2.15,hs+b,"door")
+				_:door(kit,style,cx,y,1.15,2.15,hs+b,str(style.get("door","door")))
 			var aw:Array=style.get("awnings",[])
 			if not aw.is_empty() and not near_deck and kind!="shop":awning(kit,cx,y+2.95,1.9,pick(aw,hs+b),.8)
 			if style.extras.has("lantern") and not near_deck:

@@ -10,7 +10,7 @@ static func remaining(p:Dictionary) -> int:
 static func begin(g:Node,id:int,source:String="key") -> bool:
 	var p=g.players[id]
 	if not equipped(p) or not g.options.classes or g.phase!="combat" or not g.can_attack(p) or remaining(p)<=0 or g.clock<p.gadget_ready or p.get("cooking",0)>0:return false
-	var serial=g.next_grenade;g.next_grenade+=1;p.cooking=serial;p.cook_input=source;p.gadget_count-=1;p.gadget_ready=g.clock+.5;p.grenade_started=g.clock
+	var serial=g.next_grenade;g.next_grenade+=1;p.cooking=serial;p.cook_input=source;p.cook_held=false;p.gadget_count-=1;p.gadget_ready=g.clock+.5;p.grenade_started=g.clock
 	g.grenades.append({"id":serial,"owner":id,"pos":g.actors[id].muzzle_world(),"velocity":Vector3.ZERO,"until":g.clock+FUSE,"held":true,"released":-100.,"cluster":GadgetLoadout.cluster(p),"kind":"flash" if p.role==4 and p.gadget==1 else "smoke" if p.role==4 and p.gadget==0 else "frag","rotation":Vector3.ZERO})
 	if p.role==4 and int(p.gadget) in [0,1]:
 		if p.gadget==1:p.flash_count=maxi(0,int(p.flash_count)-1)

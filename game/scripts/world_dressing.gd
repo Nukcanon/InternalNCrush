@@ -28,6 +28,15 @@ static func allowed(arena:Node,pos:Vector3,placed:Array) -> bool:
 		if pos.distance_to(supply.pos)<4.:return false
 	for old in placed:
 		if pos.distance_to(old)<(4.4 if arena.bounds.x<=36 else 5.2):return false
+	# 1.4.6 (the user): never in front of a window or a facade door
+	if not arena.has_meta("facade_opening_boxes"):
+		var boxes=[]
+		for o in arena.get_meta("facade_openings",[]):
+			var h:Vector3=o[1]+Vector3(.05,0,.3);boxes.append(o[0]*AABB(-h,h*2.))
+		arena.set_meta("facade_opening_boxes",boxes)
+	var area=AABB(pos-Vector3(1.25,0,1.25),Vector3(2.5,2.,2.5))
+	for b in arena.get_meta("facade_opening_boxes"):
+		if b.intersects(area):return false
 	return true
 static func build(arena:Node):
 	var rng=RandomNumberGenerator.new();rng.seed=641029+arena.map_index*179

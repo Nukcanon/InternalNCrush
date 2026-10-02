@@ -1,0 +1,389 @@
+[
+  {
+    "number": 1,
+    "name": "TIDAL YARD · 항구",
+    "players": 32,
+    "levels": [
+      0.0
+    ],
+    "page": 2,
+    "file": "01_TIDAL_YARD.png"
+  },
+  {
+    "number": 2,
+    "name": "DRY DOCK · 물류 기지",
+    "players": 32,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      7.4,
+      8.4
+    ],
+    "page": 3,
+    "file": "02_DRY_DOCK.png"
+  },
+  {
+    "number": 3,
+    "name": "FOUNDRY · 주조 공장",
+    "players": 16,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      7.4,
+      8.4
+    ],
+    "page": 4,
+    "file": "03_FOUNDRY.png"
+  },
+  {
+    "number": 4,
+    "name": "RESEARCH · 연구동",
+    "players": 16,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 5,
+    "file": "04_RESEARCH.png"
+  },
+  {
+    "number": 5,
+    "name": "MESA RELAY · 사막 관측소",
+    "players": 16,
+    "levels": [
+      0.0
+    ],
+    "page": 6,
+    "file": "05_MESA_RELAY.png"
+  },
+  {
+    "number": 6,
+    "name": "CANAL DISTRICT · 운하 지구",
+    "players": 32,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      7.4,
+      8.4
+    ],
+    "page": 7,
+    "file": "06_CANAL_DISTRICT.png"
+  },
+  {
+    "number": 7,
+    "name": "TRANSIT HALL · 환승 터미널",
+    "players": 16,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      7.4,
+      8.4
+    ],
+    "page": 8,
+    "file": "07_TRANSIT_HALL.png"
+  },
+  {
+    "number": 8,
+    "name": "COURTYARD · 안뜰",
+    "players": 6,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 9,
+    "file": "08_COURTYARD.png"
+  },
+  {
+    "number": 9,
+    "name": "WORKSHOP · 정비소",
+    "players": 6,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 10,
+    "file": "09_WORKSHOP.png"
+  },
+  {
+    "number": 10,
+    "name": "SWITCHBACK · 굽은 골목",
+    "players": 6,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 11,
+    "file": "10_SWITCHBACK.png"
+  },
+  {
+    "number": 11,
+    "name": "ORCHARD · 과수원",
+    "players": 6,
+    "levels": [
+      0.0
+    ],
+    "page": 12,
+    "file": "11_ORCHARD.png"
+  },
+  {
+    "number": 12,
+    "name": "POWER ROOM · 전력실",
+    "players": 6,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 13,
+    "file": "12_POWER_ROOM.png"
+  },
+  {
+    "number": 13,
+    "name": "FOUNTAIN · 분수 광장",
+    "players": 6,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 14,
+    "file": "13_FOUNTAIN.png"
+  },
+  {
+    "number": 14,
+    "name": "CARGO ROW · 적재 구역",
+    "players": 8,
+    "levels": [
+      0.0
+    ],
+    "page": 15,
+    "file": "14_CARGO_ROW.png"
+  },
+  {
+    "number": 15,
+    "name": "TWIN LAB · 쌍둥이 실험실",
+    "players": 8,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 16,
+    "file": "15_TWIN_LAB.png"
+  },
+  {
+    "number": 16,
+    "name": "FOUNDRY EAST · 동부 공장",
+    "players": 8,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      7.4,
+      8.4
+    ],
+    "page": 17,
+    "file": "16_FOUNDRY_EAST.png"
+  },
+  {
+    "number": 17,
+    "name": "ROOFTOP · 옥상",
+    "players": 8,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      7.4,
+      8.4
+    ],
+    "page": 18,
+    "file": "17_ROOFTOP.png"
+  },
+  {
+    "number": 18,
+    "name": "MARKET LOOP · 순환 시장",
+    "players": 8,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      8.4
+    ],
+    "page": 19,
+    "file": "18_MARKET_LOOP.png"
+  },
+  {
+    "number": 19,
+    "name": "QUARRY PASS · 채석 통로",
+    "players": 8,
+    "levels": [
+      -3.2,
+      0.0,
+      4.2,
+      7.4,
+      8.4
+    ],
+    "page": 20,
+    "file": "19_QUARRY_PASS.png"
+  },
+  {
+    "number": 20,
+    "name": "KASBAH · 성채 시장",
+    "players": 8,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 21,
+    "file": "20_KASBAH.png"
+  },
+  {
+    "number": 21,
+    "name": "REACTOR · 이중 원자로",
+    "players": 8,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 22,
+    "file": "21_REACTOR.png"
+  },
+  {
+    "number": 22,
+    "name": "VIADUCT · 고가 수로",
+    "players": 8,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 23,
+    "file": "22_VIADUCT.png"
+  },
+  {
+    "number": 23,
+    "name": "ARCHIVE · 기록 보관소",
+    "players": 8,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 24,
+    "file": "23_ARCHIVE.png"
+  },
+  {
+    "number": 24,
+    "name": "SHIPBREAK · 해체 부두",
+    "players": 8,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 25,
+    "file": "24_SHIPBREAK.png"
+  },
+  {
+    "number": 25,
+    "name": "MONASTERY · 언덕 수도원",
+    "players": 8,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 26,
+    "file": "25_MONASTERY.png"
+  },
+  {
+    "number": 26,
+    "name": "FOUNDRY CORE · 용광로",
+    "players": 12,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 27,
+    "file": "26_FOUNDRY_CORE.png"
+  },
+  {
+    "number": 27,
+    "name": "GREENHOUSE · 유리 온실",
+    "players": 12,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 28,
+    "file": "27_GREENHOUSE.png"
+  },
+  {
+    "number": 28,
+    "name": "METRO VAULT · 지하 금고",
+    "players": 12,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 29,
+    "file": "28_METRO_VAULT.png"
+  },
+  {
+    "number": 29,
+    "name": "COASTGUARD · 해안 통제소",
+    "players": 12,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 30,
+    "file": "29_COASTGUARD.png"
+  },
+  {
+    "number": 30,
+    "name": "DATACENTER · 데이터 센터",
+    "players": 12,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 31,
+    "file": "30_DATACENTER.png"
+  },
+  {
+    "number": 31,
+    "name": "CITADEL · 산성",
+    "players": 12,
+    "levels": [
+      0.0,
+      4.2
+    ],
+    "page": 32,
+    "file": "31_CITADEL.png"
+  },
+  {
+    "number": 32,
+    "name": "FIELD ACADEMY · 훈련 기지",
+    "players": 16,
+    "levels": [
+      0.0,
+      4.2,
+      8.4,
+      12.6
+    ],
+    "page": 33,
+    "file": "32_FIELD_ACADEMY.png"
+  }
+]

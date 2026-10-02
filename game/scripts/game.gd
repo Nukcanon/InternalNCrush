@@ -903,7 +903,9 @@ func handle_command(id:int,action:String,data:Dictionary):
 		if not (value is bool or value is int or value is float or value is String):return
 		if value is String and value.length()>80:return
 		if (value is float or value is int) and (not is_finite(float(value)) or absf(float(value))>100000):return
-	if not players.has(id) or not rate_limit(id,"cmd_"+action,.08):return
+	# (1.4.6, the user: a throwable sometimes stayed in the hand and blew up -
+	# a release right after another one was rate-limited away: releases always count)
+	if not players.has(id) or (not action.ends_with("_release") and not rate_limit(id,"cmd_"+action,.08)):return
 	var p=players[id]
 	match action:
 		"bot_add":RosterControls.add_bot(self,id,int(data.get("team",0)))
@@ -1070,6 +1072,12 @@ func process_trigger(id:int):
 		if pressed and seq>int(p.get("grenade_click_seq",-1)):
 			p.grenade_click_seq=seq;GrenadeLogic.begin(self,id,"mouse")
 		if not held and not pressed and p.get("cook_input","")=="mouse":GrenadeLogic.release(self,id)
+		# 1.4.6: a click-started throw ("direct") is also released when the trigger
+		# is seen up again after being held - it no longer depends on the single
+		# release command alone.
+		if p.get("cooking",0)>0 and p.get("cook_input","")=="direct":
+			if held:p.cook_held=true
+			elif bool(p.get("cook_held",false)) and not pressed:GrenadeLogic.release(self,id)
 		return
 	if p.get("cooking",0)>0:return
 	if p.slot>=2:

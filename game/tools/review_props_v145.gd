@@ -23,6 +23,10 @@ func run():
 			var item=kind.replace("loose_","").replace("_flat","")
 			var prop=InteractiveProp.new();prop.configure(7,item,false);node.add_child(prop);prop.position.y={"barrel":.485,"tire":.365}[item]
 			if kind=="loose_tire_flat":prop.rotation.x=PI/2;prop.position.y=.12
+		elif kind.begins_with("doorleaf_"):
+			var kit=DistrictFacade.Kit.new();DoorModels.leaf(kit,kind.replace("doorleaf_",""),3)
+			var mi=MeshInstance3D.new();mi.mesh=kit.detail.commit();mi.material_override=WorldSurface.material("detail",13,true);node.add_child(mi);node.rotation.y=-.5
+		elif kind.begins_with("door_"):ImportedWorldProp.build(node,kind,Vector3(1.15,2.8,.5),"doors_original",true)
 		elif kind.begins_with("kenney_"):ImportedWorldProp.build(node,kind.replace("kenney_",""),Vector3.ONE,"car",true)
 		else:DistrictProps.build(node,kind,13,3+kinds.find(kind))
 		var bounds=AABB();var first=true

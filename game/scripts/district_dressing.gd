@@ -1,8 +1,36 @@
 extends RefCounted
 class_name DistrictDressing
 const M=preload("res://scripts/mesh_factory.gd")
+const GATE_DARK=Color("15191d")
+const GATE_FRAME=Color("8b8f8a")
+const GATE_BAR=Color("4b5157")
+## [x, z, x2, z2, nx, nz, bed, top, kind]: a barred opening in the wall at the
+## segment, n pointing from the water into the wall.
+static func water_gate(a:Node,g:Array) -> AABB:
+	var u=Vector3(g[0],0,g[1]);var v=Vector3(g[2],0,g[3]);var n=Vector3(g[4],0,g[5]).normalized()
+	var along=(v-u).normalized();var length=u.distance_to(v);var kind=str(g[8])
+	var margin=.35 if kind=="outlet" else .5;var top=float(g[7])
+	# (deep water is opaque: nothing is drawn far below its surface)
+	var low=maxf(float(g[6]),-.9);var width=length-margin*2.;var centre=(u+v)*.5
+	var across=func(w:float,h:float,d:float) -> Vector3:return Vector3(absf(along.x)*w+absf(n.x)*d,h,absf(along.z)*w+absf(n.z)*d)
+	# the dark opening on the wall face, with a frame round it
+	M.box(a.architecture,centre-n*.01+Vector3.UP*(low+top)*.5,across.call(width,top-low,.02),GATE_DARK)
+	var frame=.22
+	for s in [-1.,1.]:M.box(a.architecture,centre+along*s*(width*.5+frame*.5)-n*.06+Vector3.UP*(low+top+frame)*.5,across.call(frame,top-low+frame,.14),GATE_FRAME)
+	M.box(a.architecture,centre-n*.06+Vector3.UP*(top+frame*.5),across.call(width+frame*2.,frame,.14),GATE_FRAME)
+	# the bars (vertical, with two cross bars) a little out in the water
+	var step=.18;var count=maxi(2,int(width/step))
+	for k in range(count+1):
+		var p=centre+along*(-width*.5+width*k/count)-n*.1
+		M.box(a.architecture,p+Vector3.UP*(low+top)*.5,Vector3(.045,top-low,.045),GATE_BAR)
+	for y in [lerpf(low,top,.35),lerpf(low,top,.8)]:
+		M.box(a.architecture,centre-n*.1+Vector3.UP*y,across.call(width,.05,.05),GATE_BAR)
+	# (its box, so no window or facade door is drawn over it)
+	var size:Vector3=across.call(width+frame*2.,top+frame-low,.4)
+	return AABB(centre-n*.2+Vector3.UP*low-Vector3(size.x,0,size.z)*.5,size)
 static func build(a:Node,plan:Dictionary):
 	var index=a.map_index
+	a.set_meta("plan_fronts",plan.get("fronts",[])) # access doors take the look of the buildings around them (DoorModels)
 	for support in plan.get("supports",[]):
 		var base=float(support[3]) if support.size()>3 else 0.
 		var height=float(support[2])-base
@@ -48,13 +76,13 @@ static func build(a:Node,plan:Dictionary):
 				dressed.fronts.append([u.x,u.z,v.x,v.z,origin.y,origin.y,0.,gate_height,int(abs(origin.x*7+origin.z*3))+side,0])
 			var lu=origin-basis.x*face*1.6+n;var lv=origin+basis.x*face*1.6+n
 			dressed.fronts.append([lu.x,lu.z,lv.x,lv.z,origin.y,origin.y,2.8,gate_height,int(abs(origin.x*7+origin.z*3)),2])
-	fixtures.append_array(DistrictFacade.build(a,dressed))
 	for entry in plan.get("doors",[]):
 		var origin=Vector3(entry[0],entry[2],entry[1]);var yaw=float(entry[3]);var basis=Basis(Vector3.UP,yaw)
 		var opening=3.2
 		var wall_height=6.8 if a.indoors else float(plan.get("street_height",3.1))
 		for side in [-1,1]:
 			var extent=float(entry[4] if side<0 else entry[5]);var width=extent-opening*.5
+			if width<.2:continue # (a quay side: the parapet itself closes the gap)
 			var centre=origin+basis*Vector3(side*(opening*.5+width*.5),wall_height*.5,0)
 			var prior_blocks=a.navigation_blocks.size();var prior_obstacles=a.obstacles.size()
 			var body=a.solid_rotated(centre,Vector3(width,wall_height,.28),Color("8e9f94"),yaw)
@@ -69,20 +97,42 @@ static func build(a:Node,plan:Dictionary):
 				if child is MeshInstance3D:child.material_override=WorldSurface.material("wall",index)
 		a.solid_rotated(origin+Vector3.UP*(2.8+wall_height)*.5,Vector3(opening,wall_height-2.8,.30),Color("b7c5b0"),yaw)
 		a.add_door(origin,yaw,opening)
-	var anchors=plan.props.duplicate()
+	var anchors=plan.props.duplicate();var blockers=[]
 	var outdoor=not a.indoors
 	for j in range(plan.get("trees",[]).size()):
 		var t=plan.trees[j]
 		anchors.append([t[0],t[1],t[2],float(j)*1.7,DistrictProps.tree_for(index,j)])
 	# Boats stay on the water (authored watercraft).
+	# 1.4.6: boats (BoatModels) moored in deep water; a boat beside a quay can be
+	# boarded - its deck is flush with the quay where the parapet is open.
 	for boat in plan.get("boats",[]):
 		var node=Node3D.new();a.architecture.add_child(node);node.position=Vector3(boat[0],boat[2],boat[1]);node.rotation.y=float(boat[3])
-		node.set_meta("prop_asset",boat[4]);ImportedWorldProp.build(node,boat[4],Vector3.ONE,"transport_original",true)
+		node.set_meta("prop_asset",str(boat[4]));node.set_meta("boat",true)
+		var kit=DistrictFacade.Kit.new()
+		var parts=BoatModels.build(kit,str(boat[4]),int(absf(boat[0]*7+boat[1]*3))+index,int(boat[6]) if boat.size()>6 else 0)
+		var visual=MeshInstance3D.new();visual.mesh=kit.detail.commit();visual.material_override=WorldSurface.material("detail",index,true);node.add_child(visual)
+		var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;node.add_child(body)
+		for part in parts:
+			var shape=CollisionShape3D.new();shape.shape=part[0];shape.transform=part[1];body.add_child(shape)
+	# 1.4.6 (the user: water leads somewhere and nobody leaves through it):
+	# barred openings where the water goes on - out through the outer wall
+	# (outlet), under a crossing (culvert) or into a drain (build_v15.water_gates).
+	var gate_boxes=[]
+	for gate in plan.get("water_gates",[]):gate_boxes.append(water_gate(a,gate))
+	for box in gate_boxes:blockers.append([Transform3D.IDENTITY,box,false])
+	# open quay edges beside the boats: a yellow-and-black curb line
+	for q in plan.get("open_quays",[]):
+		var u=Vector2(q[0],q[1]);var v=Vector2(q[2],q[3]);var n=int(u.distance_to(v)/.5)
+		for k in range(n):
+			var p=u.lerp(v,(k+.5)/n)
+			M.box(a.architecture,Vector3(p.x,.02,p.y),Vector3(.5 if absf(u.x-v.x)>.1 else .18,.04,.5 if absf(u.y-v.y)>.1 else .18),Color("f0c23f") if k%2==0 else Color("2a2a2a"))
 	for i in range(anchors.size()):
 		var p=anchors[i];var named=p.size()>4
 		var pos=Vector3(p[0],float(p[2]) if p.size()>2 else 0.,p[1])
 		var kind=str(p[4]) if named else DistrictProps.kind_for(index,i)
 		if kind=="streetlight" and not outdoor:kind="crate_stack"
+		# 1.4.6: each region of the map has its own theme of props (same size class).
+		if not kind.begins_with("tree_"):kind=PropCatalog.themed(kind,index,MapRegions.region(index,pos,a.bounds),i*7+index)
 		var node=Node3D.new();a.architecture.add_child(node);node.position=pos
 		node.set_meta("prop_asset",kind)
 		if p.size()>3:node.rotation.y=float(p[3])
@@ -115,6 +165,33 @@ static func build(a:Node,plan:Dictionary):
 			a.navigation_blocks.append(node.transform*occupied)
 		if kind=="streetlight":
 			fixtures.append({"pos":node.transform*Vector3(0,4.3,.6),"direction":Vector3(0,-1,0),"color":Color("ffe2b0"),"range":9.,"energy":2.})
+		blockers.append([node.transform,visual_bounds if kind=="streetlight" else footprint,false]) # the lamp arm reaches out over the street
+	# 1.4.6 (the user): facades come after the props, boats and doors - no window
+	# or facade door is drawn where any of them stands against the wall.
+	for node in a.architecture.get_children():
+		if node.has_meta("boat"):
+			for m in node.get_children():
+				if m is MeshInstance3D:blockers.append([node.transform,m.get_aabb(),false])
+	for door in a.doors.values():
+		for leaf in door.leaves:
+			for cs in leaf.get_children():
+				if cs is CollisionShape3D and cs.shape is BoxShape3D and cs.is_inside_tree():blockers.append([cs.global_transform,AABB(-cs.shape.size*.5,cs.shape.size),false])
+	# ...nor where a pillar, a low wall or a crossing wall of the map stands.
+	if a.is_inside_tree():
+		var stack:Array=[a]
+		while not stack.is_empty():
+			var n:Node=stack.pop_back()
+			if n.has_meta("prop_asset") or n.has_meta("boat") or n.has_meta("door_id") or n is InteractiveProp:continue
+			if n is CollisionShape3D and n.shape is BoxShape3D:blockers.append([n.global_transform,AABB(-n.shape.size*.5,n.shape.size),true])
+			if n is CollisionShape3D and n.shape is ConcavePolygonShape3D:
+				var faces:PackedVector3Array=n.shape.get_faces();var xf:Transform3D=n.global_transform
+				for k in range(0,faces.size(),3):
+					var tri=[xf*faces[k],xf*faces[k+1],xf*faces[k+2]]
+					blockers.append([Transform3D.IDENTITY,AABB(tri[0],Vector3.ZERO).expand(tri[1]).expand(tri[2]).grow(.05),true,tri])
+			stack.append_array(n.get_children())
+	DistrictFacade.set_blockers(blockers);DistrictFacade.openings=[]
+	fixtures.append_array(DistrictFacade.build(a,dressed))
+	DistrictFacade.set_blockers([]);a.set_meta("facade_openings",DistrictFacade.openings);DistrictFacade.openings=[]
 	for p in plan.get("loose_props",[]):
 		var id=a.props.size();var item=DistrictArt.loose(index,id);var prop=InteractiveProp.new()
 		var height={"barrel":.485,"crate":.29,"cone":.31,"canister":.325,"tire":.365}[item]

@@ -218,7 +218,7 @@ func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:f
 	light.tree_exited.connect(func():active_lights=maxi(0,active_lights-1))
 	var t=light.create_tween();t.tween_property(light,"light_energy",0.,seconds);t.tween_callback(light.queue_free)
 func muzzle_light(pos:Vector3):temporary_light(pos,Color("ffc77b"),1.3,3.8,.075)
-func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.,bomb:bool=false):
+func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.,bomb:bool=false,ghost:bool=false):
 	var node:BurstVisual
 	for candidate in explosion_pool:
 		if not candidate.active:node=candidate;break
@@ -230,7 +230,7 @@ func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.,bomb:bool=false):
 		for candidate in explosion_pool:
 			if candidate.age>node.age:node=candidate
 		node.retire()
-	node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.bomb=bomb;node.build(fire)
+	node.position=pos;node.set_meta("explosion",true);node.blast_scale=blast_scale;node.bomb=bomb;node.ghost=ghost;node.build(fire)
 	temporary_light(pos+Vector3.UP*.3,Color("ffc78a"),6.,10.,.20)
 ## First explosion of a match stalled a frame (~60 ms: the burst's shaders and
 ## the first point light's lit variants compile). Draw a tiny, faint one in
@@ -238,7 +238,7 @@ func explosion(pos:Vector3,fire:bool=true,blast_scale:float=1.,bomb:bool=false):
 func warm_effects(camera:Camera3D):
 	if not is_instance_valid(camera):return
 	var at=camera.global_position-camera.global_basis.z*3.+Vector3.DOWN*1.1
-	explosion(at,true,.02)
+	explosion(at,true,.02,false,true)
 	# explosion() lit the scene briefly at full strength; keep its range (every
 	# lit surface nearby compiles its light variant) but make it invisible.
 	for child in get_children():

@@ -434,6 +434,9 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		# First person: the elbows hang below and out (the arm is seen from the
 		# shoulder). Third person: the upper arm and forearm stay outside the torso.
 		var align_w=2.2 if fp else 1.;var pole_w=0. if elbow_goal!=Vector3.INF else .25 if fp else .45
+		# (1.4.6: a hold may pull its elbow harder toward the forearm line - the
+		# free arm spread out beside a throwable, Actor FREE_ARM_OUT)
+		var elbow_w=float(Dictionary(hero.get_meta("fp_elbow_w",{})).get(side,FP_ELBOW_W)) if fp else FP_ELBOW_W
 		var torso=torso_frame(hero) if not fp else {}
 		var w_end=a+dir*d
 		var want:Quaternion=target.basis.get_rotation_quaternion()
@@ -456,7 +459,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 				if cl.w<0.:cl=-cl
 				var roll=absf(wrapf(2.*atan2(cl.y,cl.w),-PI,PI))
 				cost+=TWIST_W*maxf(0.,roll-TWIST_FREE)
-				if elbow_goal!=Vector3.INF:cost+=FP_ELBOW_W*e.distance_to(elbow_goal)
+				if elbow_goal!=Vector3.INF:cost+=elbow_w*e.distance_to(elbow_goal)
 				if not torso.is_empty():
 					cost+=TORSO_W*(torso_depth(torso,e)+torso_depth(torso,(a+e)*.5)+torso_depth(torso,(e+w_end)*.5)+torso_depth(torso,e.lerp(w_end,.25)))
 				if cost<best_cost:best_cost=cost;best_angle=angle

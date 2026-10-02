@@ -60,10 +60,21 @@ static func build(node:Node3D,kind:String,index:int,ordinal:int) -> AABB:
 	var material=WorldSurface.material("detail",index,true)
 	# 1.4.5: remodelled vehicles, drums, casks, cable drums and the water tank
 	# (PropModels) replace the old generated set.
-	if PropModels.has(kind):
+	if PropModels.has(kind) or PropCatalog.has(kind):
 		var pk=DistrictFacade.Kit.new()
-		var pbox=PropModels.build(pk,kind,ordinal+index*7)
+		var pbox=PropModels.build(pk,kind,ordinal+index*7) if PropModels.has(kind) else PropCatalog.build(pk,kind,ordinal+index*7)
 		var pv=MeshInstance3D.new();pv.mesh=pk.detail.commit();pv.material_override=material;node.add_child(pv)
+		if kind=="fountain":
+			# 1.4.6 (the user: all water in the new design): clear, light, moving water
+			var pool=MeshInstance3D.new();var disc=CylinderMesh.new();disc.top_radius=1.3;disc.bottom_radius=1.3;disc.height=.01;disc.radial_segments=24;disc.rings=1
+			pool.mesh=disc;pool.position.y=.43;pool.material_override=WaterSurface.material_kind("shallow");pool.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			pool.set_meta("no_collision",true);node.add_child(pool)
+		if kind=="warning_sign":
+			# the words on both faces of the plate
+			for face in [1.,-1.]:
+				var label=Label3D.new();label.text="깊은 물 · 익사 위험";label.font=load("res://assets/fonts/DoHyeon-Regular.ttf");label.font_size=40;label.pixel_size=.0042
+				label.modulate=Color("c22a22");label.outline_size=0;label.double_sided=false;label.position=Vector3(0,1.17,.018*face);label.rotation.y=0. if face>0 else PI
+				node.add_child(label)
 		return pbox
 	if kind.begins_with("vehicle_"):
 		# Parked vehicles (original transport set) as hard cover, length along local X.
@@ -98,6 +109,8 @@ static func build(node:Node3D,kind:String,index:int,ordinal:int) -> AABB:
 ## in the prop's local frame. Procedural props list their solid parts; baked
 ## props use the convex hull of their mesh; the rest keep the footprint box.
 const CYL="cyl"
+const NEW_PIECES=["ammo_crates","equipment_cases","sack_stack","lobster_pots","produce_boxes","sack_pallet","drum_pallet","brick_pallet","water_barrels",
+	"generator","milk_churns","vending_machine","phone_booth","wheelie_bins","notice_board","mailbox","fire_hydrant","statue","net_rack","compressor","wheelbarrow","flower_cart","warning_sign","lifebuoy_stand"]
 static var hull_cache={}
 static func cylinder(p:Vector3,radius:float,height:float,axis_z:=false) -> Array:
 	var s=CylinderShape3D.new();s.radius=radius;s.height=height
@@ -147,6 +160,15 @@ static func collision(node:Node3D,kind:String,occupied:AABB) -> Array:
 			var roof=BoxShape3D.new();roof.size=Vector3(2.7,.06,1.4)
 			return [block(Vector3(-1.25,0,-.5),Vector3(1.25,1.2,.5)),[roof,Transform3D(Basis(Vector3.RIGHT,atan2(.3,1.35)),Vector3(0,2.33,.075))]]
 	if kind.begins_with("tree_") or kind=="streetlight" or kind.begins_with("vehicle_"):return [block(occupied.position,occupied.end)]
+	# 1.4.6 themed pieces: their own cylinders, else hulls of their mesh in
+	# height bands (a footprint box would leave air to stand on above them).
+	if PropCatalog.has(kind) and kind in NEW_PIECES:
+		var own=PropCatalog.collision(kind,occupied)
+		if not own.is_empty():return own
+		for child in node.get_children():
+			if child is MeshInstance3D and child.mesh:
+				var hulls=band_hulls(child.mesh,4)
+				if not hulls.is_empty():return hulls.map(func(h):return [h,Transform3D()])
 	if has_baked(kind):
 		# Baked mesh cut into horizontal bands, one convex hull per band (a single
 		# hull ran from a tank's valve to its rim, leaving an invisible cone of
@@ -188,6 +210,38 @@ const SINK_LIMIT=.02
 const JOINTS=[["low_wall","pillar"],["sacktrench","sacktrench_small"],["sacktrench","sacktrench"],["sacktrench_small","sacktrench_small"]]
 static func joint(a:String,b:String) -> bool:
 	var pair=[a,b];pair.sort();return pair in JOINTS
+## 1.4.6 (the user): a shot at any prop must strike the prop itself, never the
+## air beside it. When a map loads, every static prop and boat swaps its
+## approximate collision (boxes / hulls, kept in the cache for the bake's
+## settling pass) for its exact visible surface. Shapes are shared per mesh.
+static var exact_shapes={}
+static func exact_collision(a:Node3D):
+	if not is_instance_valid(a.architecture):return
+	if exact_shapes.size()>400:exact_shapes.clear()
+	for node in a.architecture.get_children():
+		if not (node.has_meta("footprint") or node.has_meta("boat")):continue
+		if str(node.get_meta("prop_asset","")).begins_with("tree_"):continue
+		var body:StaticBody3D=null
+		var visuals=[]
+		for child in node.get_children():
+			if child is StaticBody3D:body=child
+			elif child is MeshInstance3D and child.mesh!=null and not child.has_meta("no_collision"):visuals.append(child)
+		if body==null or visuals.is_empty():continue
+		var faces=PackedVector3Array()
+		var key=""
+		for mesh in visuals:key+=str(mesh.mesh.get_instance_id())+str(mesh.transform)
+		if exact_shapes.has(key):faces=PackedVector3Array()
+		else:
+			for mesh in visuals:
+				var source:PackedVector3Array=mesh.mesh.get_faces()
+				var xf:Transform3D=body.transform.affine_inverse()*mesh.transform
+				for p in source:faces.append(xf*p)
+			if faces.size()<3:continue
+			var shape=ConcavePolygonShape3D.new();shape.set_faces(faces);shape.backface_collision=true
+			exact_shapes[key]=shape
+		for child in body.get_children():
+			if child is CollisionShape3D:body.remove_child(child);child.queue_free()
+		var exact=CollisionShape3D.new();exact.shape=exact_shapes[key];body.add_child(exact)
 ## Map bake pass (after a physics step, so the space holds every wall): props
 ## sunk more than SINK_LIMIT into walls or other props move to a nearby spot on the same floor, or
 ## are removed (SINK_LIMIT). Returns [moved, removed].
@@ -207,6 +261,7 @@ static func settle_props(a:Node3D) -> Array:
 					var levels=DistrictLayout.heights(a,node.transform*Vector3(x,0,z))
 					if levels.is_empty() or absf(float(levels[0])-base_y)>.12:return false
 			var at=node.position
+			if covers_opening(a,node,footprint):return false
 			return not (a.navigation_goals+a.zones).any(func(goal):return Vector2(goal.x-at.x,goal.z-at.z).length()<2.5+footprint.size.length()*.5 and absf(goal.y-at.y)<2.)
 		var before=node.position
 		# Designed joints (a low wall into its end pillar, sandbag corners) may overlap.
@@ -221,6 +276,20 @@ static func settle_props(a:Node3D) -> Array:
 	for i in indices:a.navigation_blocks.remove_at(i)
 	for n in dropped:n.free()
 	return [moved,dropped.size()]
+## 1.4.6 (the user): true when the prop would stand in a window or a facade door.
+static func covers_opening(a:Node3D,node:Node3D,footprint:AABB) -> bool:
+	var world:AABB=node.transform*footprint
+	var inv=node.transform.affine_inverse()
+	for o in a.get_meta("facade_openings",[]):
+		var xf:Transform3D=o[0];var h:Vector3=o[1]+Vector3(.05,0,.3)
+		if not (xf*AABB(-h,h*2.)).intersects(world):continue
+		var l=Vector3.INF;var hi=-Vector3.INF
+		for x in [-h.x,h.x]:
+			for y in [-h.y,h.y]:
+				for z in [-h.z,h.z]:
+					var p:Vector3=inv*(xf*Vector3(x,y,z));l=l.min(p);hi=hi.max(p)
+		if AABB(l,hi-l).intersects(footprint):return true
+	return false
 ## Moves a freshly placed prop sideways out of walls and props it sinks into
 ## (more than SINK_LIMIT), at most `limit` metres; false when it still
 ## overlaps. Designed joints (JOINTS) may overlap; touching is fine.

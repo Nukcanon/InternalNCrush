@@ -24,7 +24,7 @@ def run_group(name):
     return process.returncode, content
 
 def main():
-    for test in ["optics_v13", "room_weapons_v13", "settings_guard_v13", "combat_refresh", "bot_settings", "dialog_style", "objective_floor_markers", "lobby_v135", "screens_v14"]:
+    for test in ["optics_v13", "room_weapons_v13", "settings_guard_v13", "combat_refresh", "bot_settings", "dialog_style", "objective_floor_markers", "lobby_v135", "screens_v14", "water_v128", "v146_water", "v146_fall"]:
         if test not in TESTS:TESTS.append(test)
     OUT.mkdir(parents=True, exist_ok=True)
     failed = []

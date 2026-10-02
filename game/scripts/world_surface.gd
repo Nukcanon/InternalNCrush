@@ -64,6 +64,7 @@ static func detail_slot(kind:String,index:int) -> String:
 		"wall","perimeter","tunnel","skin":return STYLE_WALL.get(style,"concrete_wall")
 		"ground","lower":return ground
 		"waterbed":return "gravel"
+		"shallowbed":return "tiles_stone" # (1.4.6: a smooth pale bed, never the street's own ground)
 		"plaza":return {"sand":"paving","dirt":"paving","gravel":"concrete","asphalt":"concrete","steel_floor":"concrete"}.get(ground,ground)
 		"indoor":return "wood_floor" if fam in ["town","garden","library","historic"] else "tiles_stone" if fam in ["lab","quarry"] else "concrete"
 		"stair_ramp","stair_detail":return "concrete" if fam in ["port","industrial","lab"] else "tiles_stone"
@@ -169,7 +170,9 @@ static func material(kind:String,index:int,vertex_paint:bool=false,zone:int=0) -
 			if kind=="ceiling" and not ceiling.is_empty():color=Color(ceiling[0]);pattern=int(ceiling[1]);meters=2.4
 		"eave_edge","eave_edge_room","trim":color=Color(palette.trim);pattern=PLAIN
 		"stair_detail":color=Color(palette.ground[z]).lightened(.12);pattern=TILES;meters=.9
-		"water":color=Color("3f9fbf");pattern=PLAIN
+		"water":color=Color("123f86");pattern=PLAIN # (1.4.6: deep, deadly water - the plan views match WaterSurface)
+		"water_shallow":color=Color("8fd2ff");pattern=PLAIN
+		"shallowbed":color=Color("a9d2dc");pattern=PLAIN;meters=1.6 # 1.4.6 pale blue-grey bed of shallow water
 		_:color=Color(palette.walls[z]).lightened(.2)
 	var mat=ShaderMaterial.new();mat.shader=shader
 	mat.set_shader_parameter("tint",color);mat.set_shader_parameter("pattern",pattern);mat.set_shader_parameter("tile_meters",meters)

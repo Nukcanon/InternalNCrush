@@ -365,9 +365,13 @@ func animate_reload(t:float,recoil:float=0.,_shot_age:float=10.):
 	if not is_instance_valid(magazine):return
 	if t<0.:magazine.transform=mag_rest;magazine.visible=true;return
 	var drop=ReloadMotion.mag_drop(t)
-	# Gun space -> the magazine's parent (the scaled base).
-	var offset=ReloadMotion.mag_travel(self,t)/maxf(.01,base.scale.x)
-	magazine.transform=Transform3D(Basis(Vector3.RIGHT,.55*drop)*mag_rest.basis,mag_rest.origin+offset)
+	# Gun space -> the magazine's parent (the scaled base). 1.4.6: plus where the
+	# support hand really is (HeroCharacter: "mag_hand_delta", the arm may fall
+	# short of its target) - the magazine stays in the fist.
+	var travel=ReloadMotion.mag_travel(self,t)
+	if ReloadMotion.carrying(t):travel+=Vector3(get_meta("mag_hand_delta",Vector3.ZERO))*drop
+	var offset=travel/maxf(.01,base.scale.x)
+	magazine.transform=Transform3D(Basis(Vector3.FORWARD,ReloadMotion.mag_lean(t))*mag_rest.basis,mag_rest.origin+offset)
 	# The magazine stays in the support hand through the swap (old one out, new one in).
 	magazine.visible=true
 # The baked magazines are open at the top (they sat in the well): drawn from

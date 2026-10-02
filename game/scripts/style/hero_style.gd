@@ -22,9 +22,28 @@ static var sphere_mesh:SphereMesh
 static var toon:Shader
 static var outline:Shader
 static var materials={}
-# Ink outlines double the vertex work, so only the high native preset gets them.
+# 1.4.6 (the user): the thin ink outline of the original design is back on the
+# default (medium) preset and up, native and Web; only the low preset skips it
+# (it doubles the vertex work of the heroes).
 static func outlines_enabled() -> bool:
-	return not RenderStyle.web() and GraphicsOptions.detail>=2
+	return GraphicsOptions.detail>=1
+const INK_DEFAULT=Color(0.10,0.11,0.16)
+static var ink_materials={}
+## The outline pass in another colour (a marked target).
+static func outline_material(ink:Color) -> ShaderMaterial:
+	var key=ink.to_html()
+	if ink_materials.has(key):return ink_materials[key]
+	if outline==null:outline=load("res://shaders/hero_outline.gdshader")
+	var m=ShaderMaterial.new();m.shader=outline;m.set_shader_parameter("ink",ink)
+	ink_materials[key]=m;return m
+## A hero material with its outline pass recoloured (cached per material and colour).
+static func with_ink(material:Material,ink:Color) -> Material:
+	if not material is ShaderMaterial or material.next_pass==null:return material
+	var key=str(material.get_instance_id())+ink.to_html()
+	if ink_materials.has(key):return ink_materials[key]
+	var m:ShaderMaterial=material.duplicate();m.next_pass=outline_material(ink)
+	m.set_meta("ink_source",material)
+	ink_materials[key]=m;return m
 static func toon_material(outlined:bool=false,gloss:float=0.) -> ShaderMaterial:
 	var key=str([outlined,gloss])
 	if materials.has(key):return materials[key]
@@ -98,6 +117,6 @@ static func double_sided(source:Material) -> Material:
 	materials[key]=m;return m
 # Releases every cached shader/material/mesh (tests and shutdown).
 static func clear_cache():
-	materials.clear();smoothed.clear();toon=null;outline=null;sphere_mesh=null;double_shader=null
+	materials.clear();smoothed.clear();ink_materials.clear();toon=null;outline=null;sphere_mesh=null;double_shader=null
 	GunModel.bases.clear();GadgetVisual.templates.clear();CombatFX.device_templates.clear()
 	HeroCharacter.scenes.clear();HeroCharacter.libraries.clear();HeroCharacter.bodies.clear()

@@ -98,6 +98,8 @@ var quick_join:Control
 var quick_join_mode=-1
 var lobby_connect_button:Button
 const MENU_SCALE=.88
+const GEAR_PREVIEW_H=150. # class / gear window: fixed preview height
+const GEAR_INFO_H=190. # and the description + stat graph box (scrolls past this)
 # Evaluated on use: touch detection can finish after the UI node is created
 # (phones used to get the 40 px desktop buttons).
 var ACTION_HEIGHT:int:
@@ -210,7 +212,7 @@ func make_panel(title:String,width=640,compact=false):
 	# FHD screen); shorter pages keep the 560 minimum.
 	var page_ceiling=floorf(720./MENU_SCALE_NOW)-128.
 	stack.minimum_size_changed.connect(func():
-		if is_instance_valid(scroll) and is_instance_valid(stack):scroll.custom_minimum_size.y=clampf(stack.get_combined_minimum_size().y+10.,560.,page_ceiling))
+		if is_instance_valid(scroll) and is_instance_valid(stack):scroll.custom_minimum_size.y=clampf(stack.get_combined_minimum_size().y+10.,float(scroll.get_meta("min_page",560.)),page_ceiling))
 	var eyebrow=Label.new();eyebrow.text="NUKCANON  /  INTERNAL N CRUSH";eyebrow.add_theme_color_override("font_color",UiSkin.ACCENT);eyebrow.add_theme_font_size_override("font_size",14);stack.add_child(eyebrow)
 	label(title,32)
 func pin_actions(node:Control):
@@ -649,6 +651,9 @@ func gear():
 	if is_instance_valid(game.kill_replay) and game.kill_replay.active:game.kill_replay.finish()
 	var p=bot_choice if bot_setup else game.players[game.local_id];var queued=p.get("pending_loadout",{});var chosen=queued.get("role",p.role)
 	make_panel("병과 · 장비",1160);screen="gear";preview_kind=0;preview_secondary=false;gear_category=0
+	# 1.4.6 (the user): the window is only as tall as its content and never
+	# scrolls as a whole (only the weapon cards and the info box scroll inside)
+	panel_scroll.set_meta("min_page",0.);panel_scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	if WeaponRules.mode(game.options)>0:
 		gear_category=2 if WeaponRules.mode(game.options)==1 else 1
 	var title=stack.get_child(stack.get_child_count()-1);stack.remove_child(title);var heading=HBoxContainer.new();stack.add_child(heading);heading.add_child(title);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;button("맵 보기",show_current_map,heading).custom_minimum_size.x=190 if TouchControls.supported() else 130
@@ -679,10 +684,18 @@ func gear():
 	gear_cards=GridContainer.new();gear_cards.columns=3;gear_cards.add_theme_constant_override("h_separation",8);gear_cards.add_theme_constant_override("v_separation",8);cards_inset.add_child(gear_cards)
 	role_detail=label("",17,form);role_detail.modulate=UiSkin.ACCENT
 	var right=VBoxContainer.new();right.custom_minimum_size.x=440;right.size_flags_horizontal=Control.SIZE_EXPAND_FILL;split.add_child(right)
-	preview_widget=EquipmentPreview.new();right.add_child(preview_widget);preview_widget.custom_minimum_size=Vector2(440,160);preview_widget.size_flags_vertical=Control.SIZE_SHRINK_BEGIN
-	preview_caption=label("",21,right)
+	# 1.4.6 (the user): the window keeps one size whatever is selected - the
+	# preview has a fixed height, and the description and the stat graph share
+	# one fixed-height box that scrolls only when they do not fit.
+	var touch=TouchControls.supported()
+	preview_widget=EquipmentPreview.new();preview_widget.fixed_height=GEAR_PREVIEW_H;right.add_child(preview_widget);preview_widget.custom_minimum_size=Vector2(440,GEAR_PREVIEW_H);preview_widget.size_flags_vertical=Control.SIZE_SHRINK_BEGIN
+	preview_caption=label("",21,right);preview_caption.clip_text=true;preview_caption.autowrap_mode=TextServer.AUTOWRAP_OFF
+	var info=preload("res://scripts/menu_touch_scroll.gd").new();info.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;info.custom_minimum_size=Vector2(440,GEAR_INFO_H*(1.3 if touch else 1.));right.add_child(info)
+	var info_inset=MarginContainer.new();info_inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;info.add_child(info_inset)
+	var info_bar=info.get_v_scroll_bar();info_bar.visibility_changed.connect(func():info_inset.add_theme_constant_override("margin_right",16 if info_bar.visible else 0))
+	var info_box=VBoxContainer.new();info_box.size_flags_horizontal=Control.SIZE_EXPAND_FILL;info_box.add_theme_constant_override("separation",8);info_inset.add_child(info_box)
 	stat_graph=StatGraph.new()
-	gear_detail=label("",15,right);gear_detail.add_theme_font_size_override("font_size",14);gear_detail.modulate=UiSkin.INK;right.add_child(stat_graph)
+	gear_detail=label("",15,info_box);gear_detail.add_theme_font_size_override("font_size",14);gear_detail.modulate=UiSkin.INK;info_box.add_child(stat_graph)
 	stack=outer
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);outer.add_child(actions);pin_actions(actions)
 	gear_submit=button("선택 적용",func():

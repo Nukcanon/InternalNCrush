@@ -148,6 +148,12 @@ static func build(a:Node,index:int):
 		for points in plan.water:basins.append(ring(points))
 		a.set_meta("district_waters",basins)
 		a.set_meta("water_kind",plan.get("water_kind","river"));a.set_meta("water_height",float(plan.get("water_height",-.35)))
+	# 1.4.6 shallow water (safe, walkable, .45 m at most), kept apart from the deep basins
+	if not plan.get("shallow",[]).is_empty():
+		a.has_water=true
+		var shallow=[]
+		for points in plan.shallow:shallow.append(ring(points))
+		a.set_meta("shallow_waters",shallow);a.set_meta("shallow_height",float(plan.get("shallow_height",-.02)))
 	a.playable_polygon=ring(plan.border[0]);a.district_surfaces=[]
 	for source in plan.surfaces:
 		var surface={"rings":[],"plane":Vector3(source.plane[0],source.plane[1],source.plane[2])}
@@ -171,7 +177,10 @@ static func build(a:Node,index:int):
 		if group.kind=="water":
 			visual.material_override=WaterSurface.material(plan.get("water_kind","river")=="sea")
 			visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		if group.kind in ["water","stair_detail"]:continue
+		if group.kind=="water_shallow":
+			visual.material_override=WaterSurface.material_kind("shallow")
+			visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if group.kind in ["water","water_shallow","stair_detail"]:continue
 		var collision=CollisionShape3D.new();var shape=ConcavePolygonShape3D.new();shape.set_faces(mesh.get_faces());shape.backface_collision=true;collision.shape=shape;body.add_child(collision)
 	# Vertical fascia gives elevated paths visible thickness without changing cover.
 	var edges=SurfaceTool.new();edges.begin(Mesh.PRIMITIVE_TRIANGLES);var edge_count=0

@@ -1,6 +1,6 @@
 class_name ArenaCache
 extends RefCounted
-const REVISION=161 # 1.4.5: remodelled vehicles / drums / casks / cable drums / water tank (PropModels); before: spawn screens, pipes above window heads, broken panes rarer, laundry posts, pillars under covered-room masses
+const REVISION=165 # 1.4.6: barred water outlets/culverts/drains, ditches along the outer walls; 164: 1.4.6: windows/doors clear of props and walls, flat shallow pools, fountain water, signs on every deep stretch; 162: water rules (deep 2.2 m deadly / shallow .22 m), boats, regional looks, prop catalog; before: 1.4.5: remodelled vehicles / drums / casks / cable drums / water tank (PropModels); before: spawn screens, pipes above window heads, broken panes rarer, laundry posts, pillars under covered-room masses
 const FIELDS=["district_surfaces","water_rect","has_water","spawn_points","ffa_spawns","sites","zones","obstacles","map_index","indoors","bounds","playable_polygon","walk_surfaces","floor_holes","navigation_goals","navigation_blocks","vertical_map","chunk_count"]
 static func restore(arena:Node,index:int) -> bool:
 	var path="res://assets/arenas/complete/map_%02d.scn"%index
@@ -28,7 +28,8 @@ static func save(arena:Node,path:String) -> Error:
 	var source=Node3D.new();source.name="CachedArena"
 	var state={"metadata":{},"props":[],"doors":[],"supplies":[]}
 	for key in FIELDS:state[key]=arena.get(key)
-	for key in arena.get_meta_list():state.metadata[key]=arena.get_meta(key)
+	for key in arena.get_meta_list():
+		if not str(key).begins_with("facade_opening"):state.metadata[key]=arena.get_meta(key) # (bake-time only)
 	for i in range(arena.supplies.size()):arena.supplies[i].node.name="Supply_%d"%i
 	for item in arena.supplies:state.supplies.append({"pos":item.pos,"path":arena.get_path_to(item.node)})
 	for prop in arena.props.values():state.props.append({"id":prop.prop_id,"kind":prop.kind,"transform":prop.transform})

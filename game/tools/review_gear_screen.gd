@@ -2,7 +2,7 @@ extends SceneTree
 # 1.4.5: the class / equipment screen as the player sees it - the item preview
 # above its description (tight framing, no empty band) for a weapon, gadgets
 # and the armour (hero standing at ease).
-var out="res://../validation/v145-gear/"
+var out="res://../validation/v146-gear/"
 func _initialize():call_deferred("run")
 func shot(label:String):
 	for i in range(8):await process_frame
@@ -23,4 +23,8 @@ func run():
 			if cat==3:g.ui.gear_armor.select(2)
 			g.ui.refresh_gear_detail();g.ui.refresh_gear_cards()
 			await shot("role%d-cat%d"%[role,cat])
+			print("GEAR_PANEL role%d cat%d size=%s page_scroll=%s"%[role,cat,str(g.ui.panel.size),str(g.ui.panel_scroll.get_v_scroll_bar().visible)+' content=%s view=%s'%[str(g.ui.stack.get_combined_minimum_size().y) if is_instance_valid(g.ui.stack) else '-',str(g.ui.panel_scroll.size.y)]])
+	# many weapons: the card area scrolls, the window does not grow
+	g.ui.gear_category=0;g.ui.weapon_ids=g.ui.weapon_ids+g.ui.weapon_ids+g.ui.weapon_ids;g.ui.refresh_gear_cards();await shot("many-weapons")
+	print("GEAR_PANEL many size=%s"%str(g.ui.panel.size))
 	print("GEAR_SCREEN_OK");quit()

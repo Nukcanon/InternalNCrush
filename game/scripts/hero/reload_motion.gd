@@ -46,9 +46,27 @@ static func mag_offset(t:float) -> Vector3:
 ## own height, so a pistol's short magazine comes just clear of the grip (and
 ## stays in view) while a rifle's long one travels further (1.4.5: the fixed
 ## offset put a pistol's magazine 80 cm below the eye, out of the view).
+## 1.4.6 (the user: the magazine never came out - it only tipped back while the
+## hand dropped): it slides STRAIGHT down out of the well first (no tilt), clear
+## of the gun by its own height, and only then swings out toward the support
+## hand's side and back; it goes in the same way in reverse (across under the
+## well, then straight up).
 static func mag_travel(gun:GunModel,t:float) -> Vector3:
+	# (the user, round 2: the magazine leaves the screen completely with the
+	# hand and comes back in with the new one - so past its own length it keeps
+	# going down and back toward the body, out of the first-person view; how far
+	# depends on the magazine's length, so it differs a little per gun)
 	var drop=mag_drop(t);var h=float(gun.mag_height)
-	return Vector3(-.15*h*drop,-MAG_CLEAR*h*drop,.8*h*drop)
+	var clear=smoothstep(0.,.35,drop);var away=smoothstep(.3,1.,drop)
+	return Vector3(-(.55*h+.08)*away,-MAG_CLEAR*h*clear-OFF_VIEW*away,(.45*h+OFF_BACK)*away)
+const OFF_VIEW=.6 # (the user: lower the hand further if needed - out of view on every gun)
+const OFF_BACK=.34 # toward the body: the first-person arm can reach there (below the view)
+## The magazine's lean once clear of the well: turned a little toward the
+## support hand (a roll), never tipped back on the gun.
+static func mag_lean(t:float) -> float:
+	return .35*smoothstep(.3,1.,mag_drop(t))
+## True while the support hand carries the magazine (it moves with the hand).
+static func carrying(t:float) -> bool:return t>=DETACH and t<=SEAT
 const MAG_CLEAR=1.35
 static func hand(position:Vector3,style:String,shape:Dictionary={},basis:Basis=Basis.IDENTITY) -> Dictionary:
 	return {"position":position,"style":style,"shape":shape,"basis":basis}

@@ -122,6 +122,18 @@ func team_tint(source:Color) -> Color:
 	var hue:Color=HeroStyle.TEAM_MAIN[clampi(team,0,1)]
 	var value=clampf(.34+source.v*.8,.36,.95)
 	return Color.from_hsv(hue.h,lerpf(hue.s,hue.s*.7,value),value)
+## 1.4.6: the outline colour (marked targets show theirs in the marker colour).
+var ink_colour=HeroStyle.INK_DEFAULT
+func set_ink(colour:Color):
+	if not outlined or colour.is_equal_approx(ink_colour):return
+	ink_colour=colour
+	var plain=colour.is_equal_approx(HeroStyle.INK_DEFAULT)
+	for body in meshes():
+		for surface in range(body.mesh.get_surface_count()):
+			var m:Material=body.get_surface_override_material(surface)
+			if m==null:continue
+			var base:Material=m.get_meta("ink_source",m)
+			body.set_surface_override_material(surface,base if plain else HeroStyle.with_ink(base,colour))
 func meshes() -> Array:
 	return skeleton.get_children().filter(func(n):return n is MeshInstance3D and n.name!="FPArms")
 # First person: only the arm/hand mesh is drawn.
@@ -696,6 +708,15 @@ func solve_hands(s:Dictionary):
 			reload_hand=not first_person
 			grip_hand("L",handle,str(work.style),work.get("shape",{}),weight)
 			reload_hand=false
+			# 1.4.6 (the user: the hand dropped but the magazine stayed): the
+			# magazine goes where the hand really went - the arm can fall short
+			# of its target (fixed first-person shoulder) - so it stays in the fist.
+			var delta=Vector3.ZERO
+			if is_instance_valid(held.magazine) and ReloadMotion.carrying(float(s.get("reload",-1.))):
+				var aimed:Transform3D=HeroIK.wrist_target(handle,"L",str(work.style),hand_scale(),self,work.get("shape",{}),{})
+				delta=held.global_transform.basis.inverse()*(bone_world(bone["Wrist.L"]).origin-aimed.origin)
+				if delta.length()>.6:delta=Vector3.ZERO # (a stray solve: keep the planned path)
+			held.set_meta("mag_hand_delta",delta)
 			return
 	if bool(s.get("two_hands",true)):
 		if left==null:return

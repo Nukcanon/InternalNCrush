@@ -9,6 +9,7 @@ var skill_symbol:SkillIcon
 var frame_width=1.3
 var frame_height=1.3
 var preview_kind=0
+var fixed_height=0. # 1.4.6: >0 keeps this height whatever is shown (UI gear window)
 func _ready():
 	# (vertical: as tall as the item needs, not the whole free height - the
 	# description below gets the room)
@@ -22,6 +23,7 @@ func _ready():
 	camera=Camera3D.new();stage.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.current=true
 	resized.connect(fit_frame)
 func fit_frame():
+	if fixed_height>0.:custom_minimum_size.y=fixed_height
 	if is_instance_valid(camera):camera.size=maxf(frame_height,frame_width/maxf(.3,size.x/maxf(1.,size.y)))
 	if is_instance_valid(skill_symbol):
 		skill_symbol.size=Vector2(76,76);skill_symbol.position=(size-skill_symbol.size)*.5
@@ -32,7 +34,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 	model=Node3D.new();stage.add_child(model)
 	if is_instance_valid(skill_symbol):skill_symbol.hide()
 	if (kind==1 and weapon.is_empty()) or (kind==2 and gadget in [-1,99]):
-		custom_minimum_size.y=130.;return
+		custom_minimum_size.y=130.;fit_frame();return
 	if kind==0:
 		var c=HeroCharacter.new();model.add_child(c);c.build(role,team,true);c.set_armor(armor_level)
 		var w=Catalog.get_weapon("pistol" if weapon.is_empty() else weapon)
@@ -58,6 +60,8 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 
 	else:
 		gadget_model(model,role,gadget);camera.position=Vector3(1,.9,-3);camera.look_at(Vector3(0,.2,0));camera.size=1.3
+		# 1.4.6: the marker's screen is on its near side (it faces the holder) - shown screen first
+		if role==1 and not gadget in [8,9]:model.rotation.y=PI
 	# Preview owns lit material copies; global low/Web settings must not flatten it.
 	for mesh in model.find_children("*","MeshInstance3D",true,false):
 		var material=mesh.material_override
@@ -76,7 +80,7 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 		# 1.4.5: framed close (1.85x / 2.5x left the item small in a big empty
 		# box and pushed the description below out of view); the box is only as
 		# tall as the item needs, so the text under it shows.
-		var margin=(1.15 if weapon=="remote" else 1.18) if kind==1 else 1.3 if compact else 1.15
+		var margin=(1.32 if weapon=="remote" else 1.18) if kind==1 else 1.3 if compact else 1.15
 		frame_width=maxf(.12 if compact else .3,diameter)*margin
 		frame_height=maxf(.12 if compact else .22,bounds.size.y+diameter*.13)*margin
 		custom_minimum_size.y=clampf(330.*frame_height/frame_width,110.,210.)

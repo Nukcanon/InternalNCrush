@@ -16,7 +16,7 @@ func run():
 		viewport.size=Vector2i((dimensions/dimensions[dimensions.max_axis_index()]*1024.).round());camera.size=dimensions.y
 		var container=Node3D.new();viewport.add_child(container);var meshes=[]
 		for group in plan.groups:
-			if group.kind not in ["ground","upper","lower","waterbed","water","roof","wall","perimeter","quay_edge","tunnel","stair_detail"]:continue
+			if group.kind not in ["ground","upper","lower","waterbed","water","water_shallow","roof","wall","perimeter","quay_edge","tunnel","stair_detail"]:continue
 			var st=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
 			for i in range(0,group.vertices.size(),3):
 				var points=[]
@@ -49,7 +49,7 @@ func run():
 		for level in range(3):
 			for mesh in meshes:
 				var kind=mesh.get_meta("kind")
-				mesh.visible=kind in (["ground","roof","water","wall","perimeter","quay_edge","stair_detail"] if level==0 else ["upper","roof","wall","perimeter"] if level==1 else ["lower","waterbed","tunnel"])
+				mesh.visible=kind in (["ground","roof","water","water_shallow","wall","perimeter","quay_edge","stair_detail"] if level==0 else ["upper","roof","wall","perimeter"] if level==1 else ["lower","waterbed","tunnel"])
 			for frame in range(3):await process_frame
 			await RenderingServer.frame_post_draw
 			var picture=viewport.get_texture().get_image()
