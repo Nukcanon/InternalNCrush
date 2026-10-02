@@ -51,5 +51,8 @@ func run():
 		if id>=0:continue
 		PracticeSession.input(practice,id);expect(not practice.actors[id].input_state.fire and not practice.actors[id].input_state.alt,"practice target never attacks "+str(id))
 	practice.players[-1].protect=0.;practice.damage(-1,500,1);practice.clock+=4.1;practice.server_tick(.016);expect(practice.players[-1].alive,"destroyed practice target respawns")
+	# 1.4.8 (the user): no automatic reload at the practice entrance - only the reserve is infinite.
+	var me=practice.players[1];var wid=str(me.primary);me.mag[wid]=3;me.refit_ready=0.;practice.actors[1].position=PracticeSession.spawn_point(1);PracticeSession.tick(practice)
+	expect(int(me.mag[wid])==3 and practice.options.infinite,"practice entrance leaves the magazine as it is (reload by hand, infinite reserve)")
 	practice.leave_game();practice.free();await process_frame
 	print("ARENA_FLOW_V103_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)
