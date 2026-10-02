@@ -9,7 +9,7 @@ func run():
 	Catalog.load_all()
 	expect(Rules.CLASS_HP==[100.,100.,150.,100.,130.,100.],"class health")
 	expect(MedicLink.RATE==20. and Catalog.get_weapon("m1").heal_rate==20.,"LINK rate matches catalog")
-	expect(Catalog.get_weapon("m2").damage==22 and is_equal_approx(60./Catalog.get_weapon("m2").interval,250.),"PIPER balance")
+	expect(Catalog.get_weapon("m2").damage==22 and absf(60./Catalog.get_weapon("m2").interval-270.)<1.,"PIPER balance (1.5.2: 270 rpm)")
 	expect(Catalog.get_weapon("m3").damage==16 and Catalog.get_weapon("m3").pellets==8 and is_equal_approx(60./Catalog.get_weapon("m3").interval,80.),"MENDER balance")
 	var touch=TouchControls.new();root.add_child(touch)
 	for role in range(6):

@@ -12,7 +12,7 @@ func run():
 		for distance in [0.,30.,120.]:expect(is_equal_approx(CombatBalance.damage_at(w,distance,zone),300. if zone=="head" else 120. if zone=="torso" else 90.),"MONOLITH revised zone damage")
 	for zone in ["hands","feet"]:expect(CombatBalance.damage_at(w,30.,zone)<100.,"extremity not one-shot")
 	expect(CombatBalance.damage_at(w,180.)<150.,"long range falloff preserved")
-	expect(w.interval==2.35 and w.mag==4 and w.reload==3.8,"heavy sniper tradeoffs preserved")
+	expect(w.interval==2.0 and w.mag==4 and w.reload==3.8,"heavy sniper tradeoffs preserved (1.5.2: 30 rpm)")
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.options.bots=0;g.host_game();g.start_match();g.set_physics_process(false)
 	var p=g.players[1];p.protect=0.;p.armor=50.;p.hp=100.;p.shield=0.;p.invulnerable=0.
 	g.damage(1,100.,1,false,"r2");expect(p.hp==50. and p.alive,"armor prevents unarmored one-shot rule")
