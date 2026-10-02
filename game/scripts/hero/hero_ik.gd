@@ -613,6 +613,13 @@ static func fingers_of(hero:HeroCharacter,side:String) -> Array:
 			if n.begins_with(finger):out.append([i,finger,int(n.substr(finger.length(),1))]);break
 	finger_bones[key]=out;return out
 static var chain_cache={}
+# 1.4.10 (the user: switching to a throwable, its hand shook): the first-person arm
+# carries its upper arm and forearm roll on from last frame (solve_arm) - across a
+# change of what is held that dragged the old hold's arm in for about a second.
+# A new hold starts from its own clip.
+static func reset_continuity(hero:Node):
+	for side in ["L","R"]:
+		for key in ["upper_","fore_","kept_","roll_"]:hero.remove_meta(key+side)
 static func finger_chains(hero:HeroCharacter,side:String) -> Dictionary:
 	var key=str([hero.role,side])
 	if chain_cache.has(key):return chain_cache[key]

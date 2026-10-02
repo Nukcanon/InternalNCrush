@@ -12,12 +12,13 @@ func run():
 	g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=13
 	g.build_world();g.add_player(1,"PLAYER","pin_local")
 	g.ui.show_hud();g.phase="combat";g.clock=100.
-	var role=4;var gadget=1;var shots=false
+	var role=4;var gadget=1;var shots=false;var hand=1
 	for arg in OS.get_cmdline_user_args():
 		if str(arg).begins_with("role="):role=int(str(arg).substr(5))
 		if str(arg).begins_with("gadget="):gadget=int(str(arg).substr(7))
 		if str(arg)=="shots":shots=true
-	var p=g.players[1];p.protect=0.;p.alive=true;p.role=role;p.primary=Catalog.first(role);p.secondary="pistol";p.slot=2;p.gadget=gadget;p.team=0;p.gadget_count=3;p.flash_count=3;p.smoke=3
+		if str(arg).begins_with("hand="):hand=int(str(arg).substr(5))
+	var p=g.players[1];p.protect=0.;p.alive=true;p.role=role;p.primary=Catalog.first(role);p.secondary="pistol";p.slot=2;p.gadget=gadget;p.team=0;p.gadget_count=3;p.flash_count=3;p.smoke=3;p.hand=hand
 	var a=g.actors[1];a.shown_role=-1;a.set_local(true);a.set_team(0)
 	a.position=Vector3(0,.1,g.arena.bounds.y-8.);a.reset_view(0);await physics_frame
 	var step=1./60.

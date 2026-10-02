@@ -64,9 +64,9 @@ func run():
 	var g=load("res://scripts/game.gd").new();g.render_actors=true;root.add_child(g);g.set_physics_process(false);g.ui.clear_panel();g.server=true;g.local_id=1;g.phase="lobby";g.options.map_random=false;g.options.map=0;g.build_world();g.add_player(1,"TEST","v101_test")
 	var actor=g.actors[1];var p=g.players[1]
 	p.hand=-1;actor.reset_view(0);actor.visual(.1,p,g.clock)
-	expect(actor.handedness==-1 and actor.character.scale.x<0 and actor.gun.scale.x<0,"left-handed spawn mirrors first and third person models")
+	expect(actor.handedness==-1 and actor.character.scale.x<0 and (actor.view_mirror.scale.x<0 or not actor.local),"left-handed spawn mirrors first and third person models (1.4.10: first person through the view mirror)")
 	p.hand=1;actor.reset_view(0);actor.visual(.1,p,g.clock)
-	expect(actor.handedness==1 and actor.character.scale.x>0,"right-handed spawn restores both models")
+	expect(actor.handedness==1 and actor.character.scale.x>0 and actor.view_mirror.scale.x>0,"right-handed spawn restores both models")
 	var left=0;seed(101)
 	for i in range(300):
 		g.spawn(1)

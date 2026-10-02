@@ -551,6 +551,8 @@ func settings():
 	if TouchControls.supported():
 		check("가까운 적으로 에임 보정",bool(game.profile.touch_aim_assist),func(on):game.profile.touch_aim_assist=on;game.save_profile())
 		check("조준한 적에게 자동 발사",bool(game.profile.touch_auto_fire),func(on):game.profile.touch_auto_fire=on;game.save_profile())
+	# 1.4.10 (the user): left-handed - the view is mirrored, the gun and throwables in the left hand
+	check("왼손잡이 · 총과 투척 무기를 왼손으로",bool(game.profile.get("left_handed",false)),func(on):game.profile.left_handed=on;game.save_profile();game.apply_hand())
 	label("저격 조준 중 휠로 배율 조절 · SCOUT 4/8× · MONOLITH 4/8/16×. 마지막 배율을 총마다 기억합니다. 모바일은 배율 ± 버튼을 사용합니다.",16)
 	label("화면과 감도 설정은 다음 실행에도 유지됩니다.",14)
 	stack=tabs[1]

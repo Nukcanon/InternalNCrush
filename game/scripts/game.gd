@@ -65,7 +65,7 @@ var bomb={"planted":false,"site":-1,"time":0.0,"actor":0,"progress":0.0,"positio
 var server=false
 var dedicated=false
 var local_id=1
-var profile={"nick":"Player%04d"%randi_range(0,9999),"token":"","sensitivity":.0023,"ads_sensitivity":.75,"sniper_mouse_sensitivity":.75,"sniper_touch_sensitivity":.65,"scope_zoom":{},"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"gunfire_reduction":false,"lobby_url":"","graphics_auto":true,"graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":60,"lighting_quality":1,"physics_effects":1,"corpse_quality":1,"fog_enabled":false,"menu_animation":true,"visual_revision":0,"display_revision":0,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028,"touch_aim_assist":true,"touch_auto_fire":false,"web_render_scale":1.,"web_quality":-1,"web_options":{}}
+var profile={"nick":"Player%04d"%randi_range(0,9999),"token":"","left_handed":false,"sensitivity":.0023,"ads_sensitivity":.75,"sniper_mouse_sensitivity":.75,"sniper_touch_sensitivity":.65,"scope_zoom":{},"volume":.65,"window":true,"resolution":0,"monitor":0,"display_mode":-1,"width":0,"height":0,"ui_volume":.75,"hit_volume":.85,"gunfire_reduction":false,"lobby_url":"","graphics_auto":true,"graphics_quality":1,"antialias":0,"shadow_quality":0,"decor_quality":1,"frame_limit":60,"lighting_quality":1,"physics_effects":1,"corpse_quality":1,"fog_enabled":false,"menu_animation":true,"visual_revision":0,"display_revision":0,"hud_scale":.8,"hud_opacity":.38,"performance_revision":0,"mobile_initialized":false,"touch_sensitivity":.0028,"touch_aim_assist":true,"touch_auto_fire":false,"web_render_scale":1.,"web_quality":-1,"web_options":{}}
 var bot_start_loadout={}
 var pending_loadout={"role":0,"primary":"a1","secondary":"pistol","armor":0,"team":-1,"gadget":0}
 var snapshot_timer=0.0
@@ -552,7 +552,9 @@ func spawn(id:int):
 	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.;p.reveal_to={}
 	# 1.4.2: only bots are sometimes left-handed (variety in third person); a
 	# player's own hands no longer swap sides from one life to the next.
-	p.hand=(-1 if randf()<.12 else 1) if id<0 else 1
+	# (1.4.10: a player keeps the left-handed setting, Game.hand_setting / the "hand" command)
+	if id<0:p.hand=-1 if randf()<.12 else 1
+	else:p.hand=hand_setting() if id==local_id else int(p.get("hand",1))
 	a.reset_view(0. if options.get("practice",false) else open_yaw(best,atan2(best.x,best.z) if Vector2(best.x,best.z).length()>1. else 0.));p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0 if p.get("owned_primary",true) else 1;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
 	if bot_agents.has(id):bot_agents[id].reset_after_spawn()
 	if id==local_id:capture_pointer()
@@ -934,7 +936,7 @@ func team_count(team:int) -> int:
 		if p.team==team:n+=1
 	return n
 func handle_command(id:int,action:String,data:Dictionary):
-	if action not in ["bot_add","bot_remove","start","slot","reload","loadout","bot_settings","kick","vote_kick","vote","team","team_swap","team_policy","slide","skill","gadget","gadget_press","gadget_release","gadget_mode","melee","trigger_press","trigger_release","bomb_tap"] or data.size()>16:return
+	if action not in ["hand","bot_add","bot_remove","start","slot","reload","loadout","bot_settings","kick","vote_kick","vote","team","team_swap","team_policy","slide","skill","gadget","gadget_press","gadget_release","gadget_mode","melee","trigger_press","trigger_release","bomb_tap"] or data.size()>16:return
 	for key in data:
 		if not (key is String or key is StringName) or str(key).length()>32:return
 		var value=data[key]
@@ -946,6 +948,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 	if not players.has(id) or (not action.ends_with("_release") and not rate_limit(id,"cmd_"+action,.08)):return
 	var p=players[id]
 	match action:
+		"hand":p.hand=-1 if bool(data.get("left",false)) else 1 # 1.4.10: the player's left-handed setting
 		"bot_add":RosterControls.add_bot(self,id,int(data.get("team",0)))
 		"bot_remove":RosterControls.remove_bot(self,id,int(data.get("target",0)))
 		"start":
@@ -1679,10 +1682,18 @@ func snapshot(s:Dictionary):receive_state(s)
 func receive_state(s:Dictionary):
 	if server or arena==null:return
 	var _t=Time.get_ticks_usec();receive_state_body(s);prof_add("receive",_t)
+# 1.4.10 (the user): the left-handed setting - mirrored first person, gun and throws in the left hand.
+func hand_setting() -> int:return -1 if bool(profile.get("left_handed",false)) else 1
+var hand_sent_ms=-100000
+func apply_hand():
+	if not players.has(local_id):return
+	if server:players[local_id].hand=hand_setting()
+	else:hand_sent_ms=Time.get_ticks_msec();command("hand",{"left":hand_setting()<0})
 func receive_state_body(s:Dictionary):
 	var sequence=int(s.get("sequence",received_sequence+1))
 	if sequence<=received_sequence:return
 	received_sequence=sequence;last_snapshot_ms=Time.get_ticks_msec();connection_notice=false
+	if players.has(local_id) and int(players[local_id].get("hand",1))!=hand_setting() and Time.get_ticks_msec()-hand_sent_ms>1500:apply_hand()
 	if s.has("team_policy"):options.merge(s.team_policy,true)
 	if int(s.get("map",options.map))!=int(options.map):options.map=int(s.map);build_world()
 	completed_games=int(s.get("completed_games",0));control_leg=int(s.get("control_leg",0))
