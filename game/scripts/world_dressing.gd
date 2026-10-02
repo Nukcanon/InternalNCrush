@@ -61,12 +61,14 @@ static func build(arena:Node):
 		else:
 			var type=fixed_count%12;fixed_count+=1
 			var node=Node3D.new();arena.architecture.add_child(node);node.position=pos;node.rotation.y=rng.randf_range(-PI,PI)
-			furniture(node,type,arena.indoors)
 			if type==6:
-				node.queue_free()
-				var body=InteractiveProp.new();body.position=pos;body.rotation.y=node.rotation.y;body.configure(moving_count,"table",arena.props_authoritative)
+				# (1.4.7: the static copy was only queue_freed - the same-frame bake merged it,
+				# and its table top flickered against the movable table's)
+				var yaw=node.rotation.y;arena.architecture.remove_child(node);node.free()
+				var body=InteractiveProp.new();body.position=pos;body.rotation.y=yaw;body.configure(moving_count,"table",arena.props_authoritative)
 				arena.add_child(body);arena.props[moving_count]=body;moving_count+=1
 			else:
+				furniture(node,type,arena.indoors)
 				var body=StaticBody3D.new();node.add_child(body);body.collision_layer=1;body.collision_mask=0
 				var faces=PackedVector3Array()
 				for mesh in node.get_children():

@@ -40,7 +40,7 @@ static func build(a:Node,plan:Dictionary):
 		for mesh in body.get_children():
 			if mesh is MeshInstance3D:mesh.material_override=WorldSurface.material("trim",index)
 		M.box(a.architecture,Vector3(pos.x,base+.10,pos.z),Vector3(side+.2,.20,side+.2),Color("8c9696"))
-		M.box(a.architecture,Vector3(pos.x,support[2]-.13,pos.z),Vector3(side+.37,.25,side+.22),Color("687982"))
+		M.box(a.architecture,Vector3(pos.x,support[2]-.145,pos.z),Vector3(side+.37,.25,side+.22),Color("687982")) # (1.4.7: top 1.5 cm under the shaft's - no shared plane)
 	# Decorative fa챌ades are separate from tactical collision/cover. Their
 	# visibility can change with quality without revealing players behind walls.
 	var fixtures=[]

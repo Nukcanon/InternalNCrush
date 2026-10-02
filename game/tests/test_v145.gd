@@ -39,11 +39,8 @@ func run():
 	expect(gm.contains("Vector3(-PI/2,0,0),r*.35,10)"),"load-round bullet cone points forward")
 	expect(gm.contains("point.z=maxf(point.z,rear+.09)"),"QUAD loading fist stays a hand and a half behind the tubes")
 	# --- Spawn screens -----------------------------------------------------------
-	expect(DistrictLayout.SPAWN_SCREENS.has(1) and DistrictLayout.SPAWN_SCREENS.has(8) and not DistrictLayout.SPAWN_SCREENS.has(4),"spawn screens on the maps whose street ran spawn to spawn")
-	var plan=DistrictLayout.read_plan(8)
-	var here=Vector2(plan.spawns[0][0],plan.spawns[0][1]);var there=Vector2(plan.spawns[1][0],plan.spawns[1][1]);var dir=(there-here).normalized()
-	var span=DistrictLayout.lane_extent(plan,here+dir*DistrictLayout.SCREEN_DISTANCE,Vector2(-dir.y,dir.x))
-	expect(span.size()==2 and float(span[1])-float(span[0])>3.,"the street in front of a spawn is measured (%s)"%str(span))
+	# (1.4.7: the screens are gone - the spawns moved out of sight instead; tools/audit_spawn_los.gd)
+	expect(DistrictLayout.SPAWN_SCREENS.is_empty(),"no spawn screen walls: the spawns themselves are out of each other's sight")
 	expect(ArenaCache.REVISION>=159,"arena cache revision bumped for the new geometry")
 	# --- Wrench on a friendly turret -------------------------------------------
 	var mc=FileAccess.get_file_as_string("res://scripts/melee_combat.gd")

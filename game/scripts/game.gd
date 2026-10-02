@@ -324,6 +324,7 @@ func build_world():
 	if not is_instance_valid(spectator_camera):
 		spectator_camera=Camera3D.new();spectator_camera.near=.1;spectator_camera.far=350;add_child(spectator_camera)
 func start_bot_match(selection:Dictionary):
+	ui.enter_play_fullscreen() # (1.4.7: at the start click, before the heavy loading - not when the HUD appears)
 	bot_start_loadout=selection.duplicate(true)
 	var _ph=Prof.now();host_game(OfflineMultiplayerPeer.new());Prof.add("start_host_game",_ph)
 	bot_start_loadout.clear()
@@ -346,13 +347,19 @@ func prime_first_frame():
 	if is_instance_valid(start_cover):start_cover.queue_free()
 	start_cover=CanvasLayer.new();start_cover.layer=60;add_child(start_cover)
 	var shade=ColorRect.new();shade.color=Color("101820");shade.set_anchors_preset(Control.PRESET_FULL_RECT);shade.mouse_filter=Control.MOUSE_FILTER_IGNORE;start_cover.add_child(shade)
-	var label=Label.new();label.text="전투 준비 중…";label.theme=ui.theme;label.set_anchors_preset(Control.PRESET_FULL_RECT);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.add_theme_font_size_override("font_size",28);shade.add_child(label)
-	start_cover_frames=START_COVER_FRAMES
+	# (1.4.7: past every edge, so a window/fullscreen resize mid-cover never shows a bar)
+	shade.offset_left=-64;shade.offset_top=-64;shade.offset_right=64;shade.offset_bottom=64
+	# (1.4.7, the user: white and larger - it read too dark)
+	var label=Label.new();label.text="전투 준비 중…";label.theme=ui.theme;label.set_anchors_preset(Control.PRESET_FULL_RECT);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size",56);label.add_theme_color_override("font_color",Color.WHITE);label.add_theme_color_override("font_outline_color",Color("0b1218"));label.add_theme_constant_override("outline_size",6);shade.add_child(label)
+	start_cover_frames=START_COVER_FRAMES;start_cover_size=get_viewport().get_visible_rect().size
 var start_cover:CanvasLayer
 var start_cover_frames=0
+var start_cover_size=Vector2.ZERO
 const START_COVER_FRAMES=4
 func host_game(transport:MultiplayerPeer=null):
 	if phase!="menu" or connection_busy:return
+	if transport==null and not dedicated:ui.enter_play_fullscreen()
 	R.sanitize_room(options)
 	if options.get("map_random",false):options.map=R.random_map(options)
 	reset_transport_state();stop_room_search()
@@ -385,6 +392,7 @@ func peer_opened(id:int):
 		peer.set_timeout(32,10000,45000);peer.ping_interval(1000)
 	if server:pending_peers[id]=Time.get_ticks_msec()
 func join_game(ip:String):
+	ui.enter_play_fullscreen()
 	if phase!="menu" or connection_busy:return
 	last_server_ip=ip.strip_edges()
 	if last_server_ip.is_empty():ui.notice("서버 IP를 입력하세요.");return
@@ -507,6 +515,26 @@ func equip_ammo(p:Dictionary):
 	for id in [p.primary,p.secondary]:
 		if str(id).is_empty():continue
 		var w=C.get_weapon(id);p.mag[id]=int(w.mag);p.reserve[id]=int(w.reserve)
+## 1.4.7: a player spawns looking toward the middle of the map (yaw = the way to
+## the origin; the fixed 0/PI faced the back wall on maps whose blue spawn lies
+## at +z). Spawns tucked out of the enemy's sight (build_v15.relocate_spawns) can
+## face a wall that way; then the most open way out nearest to it.
+func open_yaw(pos:Vector3,yaw:float) -> float:
+	var space=get_world_3d().direct_space_state if is_inside_tree() else null
+	if space==null:return yaw
+	var eye=pos+Vector3.UP*1.5
+	var reach=func(y:float) -> float:
+		var to=eye+Vector3(-sin(y),0,-cos(y))*24.
+		var hit=space.intersect_ray(PhysicsRayQueryParameters3D.create(eye,to,1))
+		return 24. if hit.is_empty() else eye.distance_to(hit.position)
+	if reach.call(yaw)>=8.:return yaw
+	var best=yaw;var best_reach=-1.
+	for i in range(1,16):
+		for side in [1.,-1.]:
+			var y=yaw+side*i*TAU/32.
+			var r=minf(reach.call(y),14.)
+			if r>best_reach+.5:best=y;best_reach=r
+	return wrapf(best,-PI,PI)
 func spawn(id:int):
 	BotSettings.apply_role(self,id)
 	players[id].use_prev=false
@@ -523,7 +551,7 @@ func spawn(id:int):
 	# 1.4.2: only bots are sometimes left-handed (variety in third person); a
 	# player's own hands no longer swap sides from one life to the next.
 	p.hand=(-1 if randf()<.12 else 1) if id<0 else 1
-	a.reset_view((0. if p.team==MatchFlow.attackers(self) else PI) if int(options.mode)==4 and DefusalLayout.enabled(int(options.map)) else 0. if options.get("practice",false) and id==1 else 0. if p.team==1 else PI);p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0 if p.get("owned_primary",true) else 1;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
+	a.reset_view(0. if options.get("practice",false) else open_yaw(best,atan2(best.x,best.z) if Vector2(best.x,best.z).length()>1. else 0.));p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0 if p.get("owned_primary",true) else 1;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
 	if bot_agents.has(id):bot_agents[id].reset_after_spawn()
 	if id==local_id:capture_pointer()
 func choose_spawn(id:int) -> Vector3:
@@ -795,6 +823,10 @@ func _process(dt:float):
 	# rebuilding the HUD several times before the next image is shown.
 	if start_cover_frames>0:
 		start_cover_frames-=1
+		# (1.4.7: the window was still growing to full screen - the cover stays
+		# until its size has held for a few frames, so no unpainted band shows)
+		var now_size=get_viewport().get_visible_rect().size
+		if now_size!=start_cover_size:start_cover_size=now_size;start_cover_frames=maxi(start_cover_frames,3)
 		if start_cover_frames==0 and is_instance_valid(start_cover):start_cover.queue_free()
 	if phase=="menu" or not render_actors or not is_physics_processing():return
 	render_update(dt)

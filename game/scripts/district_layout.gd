@@ -26,7 +26,7 @@ static func read_plan(index:int) -> Dictionary:
 # base in view from the first second; tools/audit_spawn_los.gd). A staggered
 # pair of screen walls across the street in front of each spawn breaks the
 # line of sight while leaving a path round either end.
-const SPAWN_SCREENS=[0,1,2,3,5,6,7,8,10,12,13,14,15,16,17,18,25,26,27,28,29]
+const SPAWN_SCREENS=[] # 1.4.7 (the user): no screen walls - the spawns themselves moved out of sight (build_v15.relocate_spawns)
 const SCREEN_DISTANCE=11.
 const SCREEN_HEIGHT=3.2
 static func lane_extent(plan:Dictionary,at:Vector2,right:Vector2) -> Array:
@@ -192,7 +192,10 @@ static func build(a:Node,index:int):
 				var v=Vector3(p[0],source.plane[0]*p[0]+source.plane[1]*p[1]+source.plane[2],p[1]);var w=Vector3(q[0],source.plane[0]*q[0]+source.plane[1]*q[1]+source.plane[2],q[1])
 				if maxf(v.y,w.y)<.4:continue
 				var normal=(w-v).cross(Vector3.DOWN).normalized()
-				for point in [v,w,v+Vector3.DOWN*.18,w,w+Vector3.DOWN*.18,v+Vector3.DOWN*.18]:edges.set_normal(normal);edges.add_vertex(point)
+				# (1.4.7, the user: two materials in one plane flickered - the fascia sat
+				# exactly on the wall faces below raised paths; it now stands 1.5 cm off)
+				var off=normal*.015
+				for point in [v,w,v+Vector3.DOWN*.18,w,w+Vector3.DOWN*.18,v+Vector3.DOWN*.18]:edges.set_normal(normal);edges.add_vertex(point+off)
 				edge_count+=1
 	if edge_count>0:
 		edges.index();var fascia=MeshInstance3D.new();fascia.mesh=edges.commit();fascia.material_override=WorldSurface.material("trim",index);a.architecture.add_child(fascia)

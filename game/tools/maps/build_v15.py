@@ -68,6 +68,162 @@ def expand(bp):
     return [list(r) for r in rows]
 
 
+SIGHT_BLOCK = set('#RH^')
+
+
+def relocate_spawns(m):
+    """1.4.7 (the user: no team may see the enemy side from its own spawn - fix it
+    by moving the starting positions, not with screen walls). Sight is traced on
+    the cell grid at the spawn grid points (16 per team, as DistrictLayout lays
+    them out) through walls, boundary buildings and raised decks. Tried in order,
+    the first that leaves no clear line is kept:
+      1. the 2x2 spawn marker moved up to three cells within its own area;
+      2. the spawn alcove slid sideways along the outer wall;
+      3. a dog-leg: the spawn tucked sideways into the wall band beside its
+         alcove (a short passage back to it), the wall in front of it kept.
+    Regular maps change one side and mirror it; defusal maps move both."""
+    import copy
+    g0 = m.g
+    defusal = m.bp['mode'] == 'defusal'
+    teams = ('T', 'D') if defusal else ('S', 'N')
+
+    def at(g, r, c):
+        return g[r][c] if 0 <= r < len(g) and 0 <= c < len(g[0]) else ' '
+
+    def cells(g, ch):
+        return [(r, c) for r in range(len(g)) for c in range(len(g[0])) if g[r][c] == ch]
+
+    def centre(cs):
+        return (sum((c + .5) * CELL for r, c in cs) / len(cs), sum((r + .5) * CELL for r, c in cs) / len(cs))
+
+    def grid(p):
+        return [(p[0] + (i % 4 - 1.5) * 1.7, p[1] + (i // 4 - 1.5) * 1.7) for i in range(16)]
+
+    def stands(g, x, z):
+        return at(g, int(z // CELL), int(x // CELL)) in '.,:' + ''.join(teams)
+
+    def blocked(g, a, b):
+        n = max(1, int(math.dist(a, b) / .25))
+        for k in range(1, n):
+            x = a[0] + (b[0] - a[0]) * k / n
+            z = a[1] + (b[1] - a[1]) * k / n
+            if at(g, int(z // CELL), int(x // CELL)) in SIGHT_BLOCK:
+                return True
+        return False
+
+    def visible(g):
+        cs = [cells(g, ch) for ch in teams]
+        if not all(cs):
+            return 1
+        a = [p for p in grid(centre(cs[0])) if stands(g, *p)]
+        b = [p for p in grid(centre(cs[1])) if stands(g, *p)]
+        if len(a) < 8 or len(b) < 8:
+            return 1
+        return sum(1 for p in a for q in b if not blocked(g, p, q))
+
+    def mirrored(g):
+        if not m.symmetric:
+            return g
+        H, W = len(g), len(g[0])
+        out = copy.deepcopy(g)
+        for r in range(H // 2):
+            for c in range(W):
+                src = g[H - 1 - r][W - 1 - c]
+                out[r][c] = MARK_MIRROR.get(src, src)
+        return out
+
+    if not visible(g0):
+        return None
+
+    def move_marker(g, ch, dr, dc):
+        cs = cells(g, ch)
+        h = copy.deepcopy(g)
+        for r, c in cs:
+            h[r][c] = ','
+        for r, c in cs:
+            if at(g, r + dr, c + dc) not in '.,' + ch:
+                return None
+            h[r + dr][c + dc] = ch
+        return h
+
+    def slide(g, ch, k):
+        cs = cells(g, ch)
+        rows = sorted(set(r for r, c in cs))
+        h = copy.deepcopy(g)
+        inward = -1 if rows[0] > len(g) / 2 else 1
+        for r in rows:
+            lo = min(c for rr, c in cs if rr == r); hi = max(c for rr, c in cs if rr == r)
+            while at(g, r, lo - 1) in '.,': lo -= 1
+            while at(g, r, hi + 1) in '.,': hi += 1
+            old = [g[r][c] for c in range(lo, hi + 1)]
+            for c in range(lo, hi + 1):
+                h[r][c] = '#'
+            for i, c in enumerate(range(lo + k, hi + k + 1)):
+                if at(g, r, c) not in '#.,' + ch:
+                    return None
+                h[r][c] = old[i]
+        mouth = rows[0] - 1 if inward < 0 else rows[-1] + 1
+        cs2 = cells(h, ch)
+        if not all(at(h, mouth, c) in '.,cbw' for r, c in cs2 if r == (rows[0] if inward < 0 else rows[-1])):
+            return None
+        return h
+
+    def dogleg(g, ch, side, depth):
+        cs = cells(g, ch)
+        rows = sorted(set(r for r, c in cs)); cols = sorted(set(c for r, c in cs))
+        inward = -1 if rows[0] > len(g) / 2 else 1
+        edge = rows[0] if inward < 0 else rows[-1]
+        lo, hi = cols[0], cols[-1]
+        while at(g, rows[0], lo - 1) in '.,': lo -= 1
+        while at(g, rows[0], hi + 1) in '.,': hi += 1
+        if side < 0:
+            new_cols = [lo - depth - 1, lo - depth]; corridor = range(lo - depth - 1, lo)
+        else:
+            new_cols = [hi + depth, hi + depth + 1]; corridor = range(hi + 1, hi + depth + 2)
+        h = copy.deepcopy(g)
+        for r in rows:
+            for c in corridor:
+                if at(g, r, c) != '#':
+                    return None
+        for r, c in cs:
+            h[r][c] = ','
+        for r in rows:
+            for c in corridor:
+                h[r][c] = ','
+            for c in new_cols:
+                h[r][c] = ch
+        if any(at(h, edge + inward, c) not in '#R' for c in new_cols):
+            return None
+        return h
+
+    movers = [teams[0]] if m.symmetric else list(teams)
+    trials = []
+    shifts = sorted(((dr, dc) for dr in range(-3, 4) for dc in range(-3, 4) if (dr, dc) != (0, 0)), key=lambda d: abs(d[0]) + abs(d[1]))
+    if m.symmetric:
+        trials += [('marker %d,%d' % d, (lambda g, d=d: move_marker(g, teams[0], *d))) for d in shifts]
+        trials += [('slide %d' % k, (lambda g, k=k: slide(g, teams[0], k))) for k in sorted(range(-8, 9), key=abs) if k]
+        trials += [('dogleg %d,%d' % (s, d), (lambda g, s=s, d=d: dogleg(g, teams[0], s, d))) for d in range(1, 6) for s in (-1, 1)]
+    else:
+        for d1 in [(0, 0)] + shifts:
+            for d2 in [(0, 0)] + shifts:
+                if d1 == d2 == (0, 0):
+                    continue
+                def both(g, d1=d1, d2=d2):
+                    h = move_marker(g, teams[0], *d1) if d1 != (0, 0) else g
+                    return move_marker(h, teams[1], *d2) if h is not None and d2 != (0, 0) else h
+                trials.append(('markers %s %s' % (d1, d2), both))
+    for name, trial in trials:
+        h = trial(g0)
+        if h is None:
+            continue
+        h = mirrored(h)
+        if not visible(h):
+            m.g = h
+            return name
+    m.problems.append('spawns still see each other')
+    return 'unresolved'
+
+
 class Map:
     def __init__(self, index, bp):
         self.index = index
@@ -83,6 +239,7 @@ class Map:
         self.symmetric = bool(bp.get('symmetric'))
         self.hall = float(bp.get('hall', 7.2 if not any('^' in ''.join(r) for r in self.g) else 9.6))
         self.problems = []
+        self.spawn_move = relocate_spawns(self)
         self.ring_cells()
         self.levels()
         self.augment_cover()
@@ -104,7 +261,7 @@ class Map:
                 return False
             # Spawn exits stay clear; objectives and stairs only need their
             # neighbouring cells free (sites get cover around them, as in CS).
-            if near(r, c, 'SNTD', 2) or near(r, c, 'ABC/', 1):
+            if near(r, c, 'SNTD', 3) or near(r, c, 'ABC/', 1):  # (1.4.7: 3 - a moved spawn's alcove mouth stays clear)
                 return False
             sides = sum(self.walk(r + dr, c + dc) for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)])
             if sides < 3:

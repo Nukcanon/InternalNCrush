@@ -285,7 +285,7 @@ func check(title:String,value:bool,callback:Callable) -> CheckBox:
 func edit(title:String,value:String,callback:Callable,secret=false) -> LineEdit:
 	var row=HBoxContainer.new();stack.add_child(row);var l=Label.new();l.text=title;l.custom_minimum_size.x=155;row.add_child(l);var e=LineEdit.new();e.text=value;e.secret=secret;e.size_flags_horizontal=Control.SIZE_EXPAND_FILL;e.text_changed.connect(callback);row.add_child(e);return e
 func menu():
-	play_fullscreen_done=false
+	play_fullscreen_done=false;first_hud_done=false
 	if not root or game.demo_mode:return
 	game.stop_room_search()
 	if hud:hud.queue_free();hud=null
@@ -882,6 +882,7 @@ func hud_bar(pos:Vector2,color:Color) -> ColorRect:
 	var bg=ColorRect.new();bg.color=Color("344752");bg.position=pos;bg.size=Vector2(220,5);bg.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(bg)
 	var bar=ColorRect.new();bar.color=color;bar.position=pos;bar.size=Vector2(220,5);bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;hud.add_child(bar);return bar
 var play_fullscreen_done=false
+var first_hud_done=false # (1.4.7: its own flag - full screen is now asked at the start click, before the HUD)
 # 1.4.5: entering play goes full screen by itself. Desktop: the window switches
 # to borderless full screen for this session when it was windowed (the
 # display-mode setting is left as it is). Web: the page requests full screen
@@ -899,7 +900,7 @@ func build_hud():
 	clear_panel()
 	# The first HUD of a match from the menu (bots, LAN, internet alike): the
 	# first frame is prepared behind a short cover (Game.prime_first_frame).
-	if not play_fullscreen_done:game.call_deferred("prime_first_frame")
+	if not first_hud_done:first_hud_done=true;game.call_deferred("prime_first_frame")
 	enter_play_fullscreen()
 	if hud:hud.queue_free()
 	hud=Control.new();hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(hud)

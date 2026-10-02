@@ -325,11 +325,15 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 	kit.quad4(kit.skin,Vector3(x0,y0+base,.03),Vector3(x1,y1+base,.03),Vector3(x1,y1+top,.03),Vector3(x0,y0+top,.03),wall)
 	# Decorative roofline: parapets of varying height give a lively skyline.
 	var crown=top
+	# 1.4.7 (the user: two materials flicker): at the ends of a front the roof pieces
+	# reach 2 cm past the corner, so their end faces never lie in the crossing wall's face.
+	var ex0=x0-.02 if x0<.01 else x0;var ex1=x1+.02 if x1>p.length-.01 else x1
 	if style.get("roofline",false) and not room and not indoor:
 		var extra=[0.,.5,1.1,1.7][hs%4]
 		if extra>0.:
-			crown=top+extra
-			kit.slab(x0,x1,minf(y0,y1)+top-.02,minf(y0,y1)+crown,.3,wall,-.27)
+			# (fronts along x sit 2 cm higher: two crossing crowns at a corner never share a top)
+			crown=top+extra+(.02 if absf(kit.xf.basis.x.x)>.7 else 0.)
+			kit.slab(ex0,ex1,minf(y0,y1)+top-.02,minf(y0,y1)+crown,.3,wall,-.25)
 	# Plinth.
 	if base<=0. and not style.plinth.is_empty():
 		sloped_band(kit,x0,x1,y0,y1,0.,float(style.plinth[0]),.012,Color(style.plinth[1]))
@@ -371,7 +375,7 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 	if indoor:
 		interior(kit,style,p,x0,x1,y0,y1,level,top,hs,fixtures)
 	# Top edge.
-	roof_edge(kit,style,x0,x1,minf(y0,y1)+crown,trim,wall,hs)
+	roof_edge(kit,style,ex0,ex1,minf(y0,y1)+crown,trim,wall,hs)
 	extras(kit,style,p,x0,x1,y0,y1,level,crown,hs,fixtures)
 
 static func sloped_band(kit:Kit,x0:float,x1:float,y0:float,y1:float,lo:float,hi:float,depth:float,col:Color):
@@ -804,7 +808,7 @@ static func roof_edge(kit:Kit,style:Dictionary,x0:float,x1:float,y:float,trim:Co
 			kit.slab(x0-.05,x1+.05,y-.3,y-.12,.12,trim)
 			kit.slab(x0-.1,x1+.1,y-.12,y+.02,.22,trim.lightened(.05))
 		"parapet":
-			kit.slab(x0,x1,y-.25,y,.08,trim)
+			kit.slab(x0,x1,y-.25,y+.03,.08,trim) # (1.4.7: tops 3 cm over the roof's, not in its plane)
 		"eave":
 			var roof=Color(pick(["b5563e","8f4a3a","6a5a4a","4f6a7a"],hs))
 			kit.quad4(kit.detail,Vector3(x0-.1,y-.35,.7),Vector3(x1+.1,y-.35,.7),Vector3(x1+.1,y,.03),Vector3(x0-.1,y,.03),roof)
@@ -818,7 +822,7 @@ static func roof_edge(kit:Kit,style:Dictionary,x0:float,x1:float,y:float,trim:Co
 			kit.slab(x0,x1,y+.55,y+.65,.12,trim,-.1)
 			for k in range(int((x1-x0)/.3)):kit.slab(x0+.1+k*.3,x0+.2+k*.3,y-.12,y+.55,.08,trim,-.05)
 		"crenel":
-			kit.slab(x0,x1,y-.2,y,.1,trim)
+			kit.slab(x0,x1,y-.2,y+.03,.1,trim)
 			var n=maxi(1,roundi((x1-x0)/1.2))
 			for k in range(n):
 				if k%2==0:kit.slab(x0+(x1-x0)*k/n,x0+(x1-x0)*(k+1)/n,y,y+.7,.35,wall.darkened(.05),-.3)
@@ -827,20 +831,20 @@ static func roof_edge(kit:Kit,style:Dictionary,x0:float,x1:float,y:float,trim:Co
 			var cx=(x0+x1)*.5;var hw=(x1-x0)*.5
 			for k in range(3):
 				var sw=hw*(1.-k*.28)
-				kit.slab(cx-sw,cx+sw,y+k*.6,y+(k+1)*.6,.3,wall,-.27)
+				kit.slab(cx-sw,cx+sw,y+k*.6,y+(k+1)*.6,.3,wall,-.25)
 				kit.slab(cx-sw-.04,cx+sw+.04,y+(k+1)*.6-.08,y+(k+1)*.6,.36,trim,-.3)
-			kit.slab(cx-.25,cx+.25,y+1.8,y+2.3,.3,wall,-.27);kit.slab(cx-.3,cx+.3,y+2.3,y+2.4,.36,trim,-.3)
+			kit.slab(cx-.25,cx+.25,y+1.8,y+2.3,.3,wall,-.25);kit.slab(cx-.3,cx+.3,y+2.3,y+2.4,.36,trim,-.3)
 		"round":
 			kit.slab(x0,x1,y-.1,y+.25,.1,wall.darkened(.05))
 			for k in range(int((x1-x0)/2.4)):kit.box(Vector3(x0+1.2+k*2.4,y-.5,.2),Vector3(.14,.14,.4),Color("7a5a3a"))
 		"rail":
-			kit.slab(x0,x1,y-.18,y,.08,trim)
+			kit.slab(x0,x1,y-.18,y+.03,.08,trim)
 			kit.slab(x0,x1,y+.95,y+1.02,.05,trim,-.2)
 			for k in range(int((x1-x0)/1.5)+1):kit.slab(x0+k*1.5,x0+k*1.5+.05,y,y+.95,.05,trim,-.2)
 		"jagged":
 			var n=maxi(1,int((x1-x0)/1.4))
 			for k in range(n):
-				var h=[.0,.5,.2,.8,.35][(hs+k)%5]
+				var h=[.03,.5,.2,.8,.35][(hs+k)%5]
 				kit.slab(x0+(x1-x0)*k/n,x0+(x1-x0)*(k+1)/n,y-.15,y+h,.06,wall.darkened(.1+.05*(k%2)))
 
 static func lantern(kit:Kit,x:float,y:float,fixtures:Array,light:Color):
@@ -1029,7 +1033,7 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 							kit.box(Vector3(x+.25,low+.12+r*.22,.07),Vector3(.48,.22,.1),sb.darkened(.05*((k+r)%2)));x+=.52;k+=1
 			"camo":
 				if hs%3==0:
-					for k in range(4):kit.quad(Vector3(x0+.5+k*w/4.,low+1.+(k%2)*1.3,.035),Vector3(minf(1.4,w/4.),0,0),Vector3(0,.8,0),Color(["8a8f5a","a89a6a","6f7a4a","b5a06a"][(hs+k)%4]))
+					for k in range(4):kit.quad(Vector3(x0+.5+k*w/4.,low+1.+(k%2)*1.3,.05),Vector3(minf(1.4,w/4.),0,0),Vector3(0,.8,0),Color(["8a8f5a","a89a6a","6f7a4a","b5a06a"][(hs+k)%4]))
 			"antenna":
 				if hs%4==0:
 					kit.slab(x1-.6,x1-.54,low+top,low+top+2.5,.06,Color("5a5f60"),-.3)
@@ -1037,11 +1041,11 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"rust":
 				for k in range(3):
 					var rx=x0+((hs*7+k*31)%100)/100.*maxf(.5,w-1.2);var ry=low+.4+((hs+k*13)%5)*.7
-					kit.quad(Vector3(rx,ry,.036),Vector3(.9,0,0),Vector3(0,1.1,0),Color(["9a5a32","7a4a2a","a8683a"][k%3]))
+					kit.quad(Vector3(rx,ry,.05+k*.012),Vector3(.9,0,0),Vector3(0,1.1,0),Color(["9a5a32","7a4a2a","a8683a"][k%3]))
 			"targets":
 				if hs%2==0 and w>2.4:
 					var c=Vector3((x0+x1)*.5,low+1.5,.08)
-					kit.disc(c,.55,Color("f4f1e8"),12);kit.disc(c+Vector3(0,0,.005),.4,Color("e05a3a"),12);kit.disc(c+Vector3(0,0,.01),.2,Color("f4f1e8"),10);kit.disc(c+Vector3(0,0,.015),.08,Color("e05a3a"),8)
+					kit.disc(c,.55,Color("f4f1e8"),12);kit.disc(c+Vector3(0,0,.012),.4,Color("e05a3a"),12);kit.disc(c+Vector3(0,0,.024),.2,Color("f4f1e8"),10);kit.disc(c+Vector3(0,0,.036),.08,Color("e05a3a"),8)
 			"planters":
 				if p.from<=0.:kit.slab(x0+.1,x1-.1,low,low+.5,.12,Color("8a6a4a"))
 			"vines":
@@ -1079,7 +1083,7 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"toolboards":
 				if hs%2==1 and w>2.:
 					var tx=x0+w*.5
-					kit.slab(tx-.9,tx+.9,level+1.2,level+2.2,.03,Color("c8a878"))
+					kit.slab(tx-.9,tx+.9,level+1.2,level+2.2,.05,Color("c8a878"))
 					for k in range(5):kit.slab(tx-.75+k*.35,tx-.7+k*.35,level+1.4,level+2.,.07,Color(["c93f3f","3f5fc9","3a3a3a","c9a03a","3a3a3a"][k]))
 			"gauges":
 				if hs%2==0:
@@ -1143,4 +1147,4 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 						kit.slab(c.x+cos(a)*.9-.07,c.x+cos(a)*.9+.07,c.y+sin(a)*.9-.07,c.y+sin(a)*.9+.07,.14,Color("d8d0b8"))
 			"graffiti":
 				if hs%3==0 and w>3.:
-					for k in range(3):kit.quad(Vector3(x0+.8+k*.7,level+.6+(k%2)*.3,.036),Vector3(.8,0,0),Vector3(0,.6,0),Color(["e05aa0","3fb8e0","f0c23f"][k]))
+					for k in range(3):kit.quad(Vector3(x0+.8+k*.7,level+.6+(k%2)*.3,.05+k*.012),Vector3(.8,0,0),Vector3(0,.6,0),Color(["e05aa0","3fb8e0","f0c23f"][k]))
