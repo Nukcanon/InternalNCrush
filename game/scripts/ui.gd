@@ -798,7 +798,7 @@ func refresh_gear_cards():
 				var index=i;image_card(gear_cards,"gadget"+str(role)+"_"+str(gear_gadget.get_item_id(i)),gear_gadget.get_item_text(i).split(" · ")[0],gear_gadget.selected==i,func():gear_gadget.select(index);preview_kind=2;refresh_gear_detail();refresh_gear_cards())
 		3:
 			for i in range(3):
-				var index=i;image_card(gear_cards,"armor"+str(i),["기본 복장","경량 방어구","중량 방어구"][i],gear_armor.selected==i,func():gear_armor.select(index);preview_kind=3;refresh_gear_detail();refresh_gear_cards())
+				var index=i;image_card(gear_cards,"armor%d_%d"%[gear_class.selected,i],["기본 복장","경량 방어구","중량 방어구"][i],gear_armor.selected==i,func():gear_armor.select(index);preview_kind=3;refresh_gear_detail();refresh_gear_cards())
 		4:image_card(gear_cards,"skill"+str(role),Rules.SKILLS[role],true,func():preview_kind=4;refresh_gear_detail())
 func selected_loadout() -> Dictionary:
 	return WeaponRules.selection(game.options,{"role":gear_class.selected,"primary":weapon_ids[gear_primary.selected],"armor":gear_armor.selected,"gadget":-1 if gear_gadget.get_selected_id()==99 else gear_gadget.get_selected_id(),"repair":gear_secondary=="repair","secondary":gear_secondary})

@@ -92,8 +92,8 @@
   "gun_h2": {
     "file": "res://assets/audio/gun_h2.wav",
     "category": "combat",
-    "gain_db": -5.79,
-    "sha256": "66b29e1fb373ec991cb00f557428688c08e03726b3cd22e3a99f6e988c5af055",
+    "gain_db": -5.73,
+    "sha256": "c65badb9ecb4f92fe2fac0767a45ea2be4a4b6a8dd6d7db0a0d96d07029362df",
     "license": "CC-BY-SA-3.0",
     "duration": 0.8,
     "family": "machinegun"
@@ -436,10 +436,10 @@
   "switch": {
     "file": "res://assets/audio/switch.wav",
     "category": "combat",
-    "gain_db": -5,
-    "sha256": "ef0d189340968133927e011c1235c8082e530b0de3d0557aef147ae20b047699",
+    "gain_db": -5.0,
+    "sha256": "73f4183781489f3ca7beef2f87ba72c5ce7761535eb382774b1eb0a91823a161",
     "license": "CC0-1.0",
-    "duration": 0.19
+    "duration": 0.32
   },
   "reload": {
     "file": "res://assets/audio/reload.wav",
@@ -692,7 +692,7 @@
   "bounce": {
     "file": "res://assets/audio/bounce.wav",
     "category": "combat",
-    "gain_db": -1,
+    "gain_db": -9.0,
     "sha256": "b7fc7768cbe19affbbd46c19240eddd9e452c74b814f9784cc6c2fa284897e2e",
     "license": "CC0-1.0",
     "duration": 0.3
@@ -1008,10 +1008,18 @@
   "shield_loop": {
     "file": "res://assets/audio/shield_loop.wav",
     "category": "combat",
-    "gain_db": -5,
+    "gain_db": -16,
     "sha256": "352c10365917149a110d32ad810c992d1d86583b5340a55eac350e052a63710a",
     "license": "CC0-1.0",
     "duration": 4.0,
     "loop": true
+  },
+  "shield_block": {
+    "file": "res://assets/audio/shield_block.wav",
+    "category": "combat",
+    "gain_db": -4,
+    "sha256": "84f11130fda48ee38d040b1a39e256f23f81ae61ed55b666c5aa2dc347db3fb6",
+    "license": "CC0-1.0",
+    "duration": 0.275
   }
 }

@@ -22,7 +22,8 @@ static func cues(w:Dictionary,count:int,tactical:bool=false) -> Array:
 	# (1.5.1, the user: a pistol's magazine seats with its own click, from their clip)
 	if style=="pistol" and not tactical:return [[.02,"reload"],[ReloadMotion.SEAT,"pistol_magazine"],[ReloadMotion.SEAT+.04,"action_close"]]
 	if style=="pistol":return [[.02,"reload"],[ReloadMotion.SEAT,"pistol_magazine"]]
-	return [[.02,"reload"],[ReloadMotion.SEAT,"magazine"]] if tactical else [[.02,"reload"],[ReloadMotion.SEAT,"magazine"],[.86,"bolt"]]
+	# (1.5.3, the user: every magazine-fed gun seats its magazine with the pistol's click)
+	return [[.02,"reload"],[ReloadMotion.SEAT,"pistol_magazine"]] if tactical else [[.02,"reload"],[ReloadMotion.SEAT,"pistol_magazine"],[.86,"bolt"]]
 static func tick(g:Node,id:int):
 	var p=g.players[id]
 	if p.reload<=0.:return

@@ -20,7 +20,7 @@ func run():
 		expect(events.filter(func(e):return e[1]=="shell_insert").size()==1,"one shell insert per loading cycle (1.5.0: a pump gun loads one shell per cycle)")
 		expect(not events.any(func(e):return e[1]=="bolt"),"the pump sounds once when the loading ends, not in each cycle (MagazineReload.finish)")
 	expect(not ReloadAudio.cues(Catalog.get_weapon("e3"),2).any(func(e):return e[1]=="bolt"),"break-action has no fictitious charging handle")
-	for id in ["a1","r2"]:expect(ReloadAudio.cues(Catalog.get_weapon(id),10)[1][1]=="magazine","magazine insertion cue")
+	for id in ["a1","r2"]:expect(ReloadAudio.cues(Catalog.get_weapon(id),10)[1][1]=="pistol_magazine","magazine insertion cue (1.5.3: the pistol's click on every magazine gun)")
 	expect(ReloadAudio.cues(Catalog.get_weapon("pistol"),10)[1][1]=="pistol_magazine","pistol magazine insertion cue (1.5.1: its own click, the user's clip)")
 	var holder=Node3D.new();root.add_child(holder)
 	var detailed=BulletMark.make(false);var simple=BulletMark.make(true);holder.add_child(detailed);holder.add_child(simple)

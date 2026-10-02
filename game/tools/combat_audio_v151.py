@@ -162,4 +162,22 @@ def transformer(seconds=4.):
   buzz=math.tanh(math.sin(2*math.pi*120*t)*3.)*.22
   out.append((math.tanh(hum*.55)*.9+buzz)*swell)
  n=int(rate*seconds);return lowpass(lowpass(out,1800),1800)[n:2*n]
-write_loop('shield_loop',transformer(),gain=-5) # (round 7: louder; 1.5.2: 2 dB down)
+write_loop('shield_loop',transformer(),gain=-16) # (round 7: louder; 1.5.2: 2 dB down; 1.5.3: 11 dB more)
+
+# --- 1.5.3 -------------------------------------------------------------------------
+# a round stopped by the heavy's shield: the user's elevator power-down ding, 1.5x as fast, 4 dB down
+ding=sample('user_shield_ding',1.5)
+write('shield_block',faded(ding,.001,.01),gain=-4)
+# a throwable's bounce off the ground 8 dB quieter
+manifest['bounce']['gain_db']=kept_gain('bounce',-8.)
+# the weapon switch (the user's pick, candidate C): a quick cloth swish and a crisp click - the
+# magazine-release click a little lower - at the level the old switch sound had
+def onset(values,floor=.03):
+ peak=max(map(abs,values),default=1.);first=next((i for i,v in enumerate(values) if abs(v)>floor*peak),0)
+ return values[max(0,first-40):]
+def clipped(values,seconds,fade):
+ v=values[:int(rate*seconds)];f=int(rate*fade);return [s*min(1.,i/44,(len(v)-1-i)/f) for i,s in enumerate(v)]
+def rms(values):return math.sqrt(sum(v*v for v in values)/max(1,len(values)))
+before=rms(written('switch'))
+swap=mix(.32,(clipped(onset(sample('k_cloth1',1.3)),.16,.05),.45,0),(clipped(onset(sample('mag_release_z',.9)),.14,.04),.6,.09))
+write('switch',[v*before/max(1e-6,rms(swap)) for v in swap],gain=kept_gain('switch'))

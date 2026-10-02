@@ -21,7 +21,9 @@ func run():
 		jobs.append(["gadget"+str(role)+"_8",2,role,Catalog.first(role),8])
 		jobs.append(["gadget"+str(role)+"_9",2,role,Catalog.first(role),9])
 		jobs.append(["skill"+str(role),4,role,Catalog.first(role),0])
-	for variant in range(3):jobs.append(["armor"+str(variant),3,0,"a1",variant])
+	# (1.5.3, the user: every class's armour cards showed the assault hero - one set per class)
+	for role in range(6):
+		for variant in range(3):jobs.append(["armor%d_%d"%[role,variant],3,role,Catalog.first(role),variant])
 	var generated=0
 	for job in jobs:
 		var missing=not FileAccess.file_exists("res://assets/thumbnails/"+str(job[0])+".png")

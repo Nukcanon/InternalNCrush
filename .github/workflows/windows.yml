@@ -1,4 +1,4 @@
-name: Build and publish Internal N Crush 1.5.2
+name: Build and publish Internal N Crush 1.5.3
 # Four parallel job families share .github/scripts/ci_prepare.sh: the
 # functional regressions split into shards, the review/audit checks, the
 # network runners and the Windows/Web exports. The draft release is created
@@ -167,7 +167,7 @@ jobs:
           python3 web/test_webgl_handles.py "web/build/$web_name.js"
           mkdir -p web/build/guide
           for screen in controls touch settings lan internet; do cp "validation/v117/$screen.jpg" "web/build/guide/$screen.jpg"; done
-          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.5.2.zip", include_config=False)'
+          python3 -c 'from nas.setup import package; package("out/InternalNCrush_NAS_Linux_v1.5.3.zip", include_config=False)'
           python3 web/package_web.py
       - uses: actions/upload-artifact@v4
         with:
@@ -178,17 +178,17 @@ jobs:
         with:
           overwrite: true
           name: InternalNCrush-Windows
-          path: out/InternalNCrush_Windows_v1.5.2.zip
+          path: out/InternalNCrush_Windows_v1.5.3.zip
       - uses: actions/upload-artifact@v4
         with:
           overwrite: true
           name: release-files
           if-no-files-found: error
           path: |
-            out/InternalNCrush_Windows_v1.5.2.zip
-            out/InternalNCrush_Web_v1.5.2.zip
-            out/InternalNCrush_NAS_Linux_v1.5.2.zip
-            out/WEB_RELEASE_v1.5.2.json
+            out/InternalNCrush_Windows_v1.5.3.zip
+            out/InternalNCrush_Web_v1.5.3.zip
+            out/InternalNCrush_NAS_Linux_v1.5.3.zip
+            out/WEB_RELEASE_v1.5.3.json
             out/SHA256SUMS.txt
   publish-release:
     needs: [functional, checks, network, build]
@@ -202,7 +202,7 @@ jobs:
         with:
           name: release-files
           path: release-files
-      - name: Create draft 1.5.2 downloads after successful tests
+      - name: Create draft 1.5.3 downloads after successful tests
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -210,18 +210,18 @@ jobs:
           test "$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq .sha)" = "$GITHUB_SHA"
           cd release-files
           sha256sum --check SHA256SUMS.txt
-          if gh release view internal-n-crush-v1.5.2 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
+          if gh release view internal-n-crush-v1.5.3 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > /tmp/is-draft; then
             if [ "$(cat /tmp/is-draft)" != true ]; then
-              echo "1.5.2 is already public; preserve its verified immutable assets."
+              echo "1.5.3 is already public; preserve its verified immutable assets."
               exit 0
             fi
-            gh release edit internal-n-crush-v1.5.2 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+            gh release edit internal-n-crush-v1.5.3 --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create internal-n-crush-v1.5.2 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.5.2" --notes "New FEATHER, TRIO and RIVET looks (FEATHER heals allies, RIVET repairs friendly structures), ARC without recoil, fire-rate and reload changes, round KESTREL scope caps, quieter rocket reload, sword knife swing, closer shield/LINK hums, wrench grip and armor preview pose fixes." --repo "$GITHUB_REPOSITORY"
+            gh release create internal-n-crush-v1.5.3 --draft --target "$GITHUB_SHA" --title "Internal N Crush 1.5.3" --notes "Shield blocks only shots through its panel (with a ding), stability now sets spread, PIPER/control/BASTION changes, class health, stronger weight speed effect, ARC overheats in 3 s, per-class armor cards, steadier throwing arms, new switch and magazine sounds, quieter shield hum and bounces." --repo "$GITHUB_REPOSITORY"
           fi
-          gh release upload internal-n-crush-v1.5.2 InternalNCrush_Windows_v1.5.2.zip InternalNCrush_Web_v1.5.2.zip InternalNCrush_NAS_Linux_v1.5.2.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.5.3 InternalNCrush_Windows_v1.5.3.zip InternalNCrush_Web_v1.5.3.zip InternalNCrush_NAS_Linux_v1.5.3.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           # Publish the installation descriptor last, after both downloads exist.
-          gh release upload internal-n-crush-v1.5.2 WEB_RELEASE_v1.5.2.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload internal-n-crush-v1.5.3 WEB_RELEASE_v1.5.3.json --clobber --repo "$GITHUB_REPOSITORY"
 
           # Keep this draft until rendered Windows/Web soak results are reviewed.
-          gh release edit internal-n-crush-v1.5.2 --notes-file ../RELEASE_NOTES_V152.md --repo "$GITHUB_REPOSITORY"
+          gh release edit internal-n-crush-v1.5.3 --notes-file ../RELEASE_NOTES_V153.md --repo "$GITHUB_REPOSITORY"

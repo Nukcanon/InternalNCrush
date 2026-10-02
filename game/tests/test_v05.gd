@@ -28,7 +28,7 @@ func run():
 	var p=g.players[1];g.clock=100.;g.spawn(1);p.fire_ready=0.;p.switch_until=0.;p.role=0;p.skill_ready=0.;p.gadget_ready=0.;p.armor=0.;var rounds=p.mag[p.primary];var gadgets=p.gadget_count
 	g.fire(1);g.use_skill(1);g.use_gadget(1)
 	expect(p.mag[p.primary]==rounds and p.skill_ready==0 and p.gadget_count==gadgets,"spawn protection blocks fire, skills, and gadgets")
-	g.players[3].team=1-p.team;g.damage(1,40,3);expect(p.hp==100.,"protected player cannot take damage")
+	g.players[3].team=1-p.team;g.damage(1,40,3);expect(p.hp==Rules.max_hp(p),"protected player cannot take damage")
 	g.clock+=Rules.SPAWN_PROTECTION+.01;g.fire(1)
 	expect(p.mag[p.primary]<rounds,"weapon works as soon as protection expires")
 	p.hp=40.;p.shot_time=0.;p.last_hit=0.;g.options.autoheal=false;g.passive_regen(p,10.)
@@ -37,7 +37,7 @@ func run():
 	p.last_hit=0.;p.shot_time=g.clock-9.;g.passive_regen(p,1.);expect(p.hp==40.,"firing also restarts passive healing delay")
 	p.shot_time=0.;g.passive_regen(p,10.);expect(p.hp==50.,"passive heal restores only ten health over ten seconds")
 	for mode in [0,1,2,3,4]:
-		g.options.mode=mode;p.hp=99.5;g.passive_regen(p,1.);expect(p.hp==100.,"healing respects max HP independently of respawn mode "+str(mode))
+		g.options.mode=mode;p.hp=Rules.max_hp(p)-.5;g.passive_regen(p,1.);expect(p.hp==Rules.max_hp(p),"healing respects max HP independently of respawn mode "+str(mode))
 	g.options.mode=0;p.team=0;g.players[3].team=1;g.actors[3].position=Vector3(-78,.1,-75);g.players[3].alive=true
 	await physics_frame;await physics_frame
 	var positions={};var safe=true

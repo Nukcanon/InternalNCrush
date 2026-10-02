@@ -30,7 +30,7 @@ func run():
 		MatchFlow.update_gate(g)
 		var gate=g.arena.get_node("PreparationGate")
 		expect(gate.get_child(0).get_child(0).shape.size.z>=1. and gate.get_child(0).get_child(1).material_override.albedo_color.a<.5,"preparation gate is thick and translucent %d"%index)
-		g.players[1].protect=0.;g.damage(1,999.,7);expect(g.players[1].hp==100. and not g.can_attack(g.players[1]),"preparation blocks attack and incoming damage %d"%index)
+		g.players[1].protect=0.;g.damage(1,999.,7);expect(g.players[1].hp==Rules.max_hp(g.players[1]) and not g.can_attack(g.players[1]),"preparation blocks attack and incoming damage %d"%index)
 		g.phase="combat";MatchFlow.update_gate(g);g.actors[1].position=g.arena.sites[0];g.bomb={"carrier":1,"planted":false,"site":-1,"actor":0,"progress":0.,"position":Vector3.ZERO,"time":0.}
 		g.interact(1,3.1)
 		expect(g.bomb.planted and g.bomb.time==45.,"map %d uses the requested bomb countdown"%index)

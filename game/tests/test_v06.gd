@@ -41,7 +41,7 @@ func run():
 	expect(a.kick>0. and a.kick_power>0.,"a shot starts the first-person kick")
 	expect(Actor.kick_strength(W.call("h4"))>Actor.kick_strength(W.call("e1")) and Actor.kick_strength(W.call("e1"))>Actor.kick_strength(W.call("a1")) and Actor.kick_strength(W.call("r2"))>Actor.kick_strength(W.call("r4")),"kick: launcher > shotgun > rifle, heavy sniper > marksman")
 	expect(Actor.kick_ads_scale(W.call("e1"))>1.5 and Actor.kick_ads_scale(W.call("h2"))>1.5 and Actor.kick_ads_scale(W.call("a1"))<1.1,"aimed: shotguns and machine guns kick harder than a rifle")
-	var spread_before=float(W.call("e1").spread);expect(spread_before==2.7,"the shot spread itself is unchanged")
+	var spread_before=float(W.call("e1").spread);expect(is_equal_approx(spread_before,Catalog.stability_spread(W.call("e1").stability)/sqrt(W.call("e1").aim_ratio)),"the shot spread itself is unchanged (1.5.3: set by stability)")
 	for i in range(80):g.combat_fx.eject_case(Vector3.UP,Vector3.RIGHT,Vector3.UP,0,i)
 	expect(g.combat_fx.casings.size()==[18,40,CombatFX.MAX_CASINGS][GraphicsOptions.detail],"case pool remains bounded")
 	g.combat_fx._process(CombatFX.CASING_LIFETIME+.1);expect(g.combat_fx.casings.is_empty(),"casings disappear after their lifetime")

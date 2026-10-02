@@ -81,10 +81,11 @@ var weapon_models={}
 var recoil=0.0
 # 1.4.9 (the user): the first-person firing animation. Its strength comes from
 # the gun's power (damage x pellets; launchers far stronger), its shake from low
-# stability. Visual only - the shot's spread and pattern are untouched.
+# "shake" (the stability numbers before 1.5.3, when stability came to set the spread).
+# Visual only - the shot's spread and pattern are untouched.
 var kick=0.0 # per-shot envelope: 1 at a shot, then back to 0
 var kick_power=1.0
-var kick_unsteady=.3 # 0..1 from (100 - stability)
+var kick_unsteady=.3 # 0..1 from (100 - shake: the weapon's pre-1.5.3 stability)
 var kick_side=0.0 # this shot's sideways throw, -1..1
 var scope_kick=Vector3.ZERO # scope overlay (Reticle): x,y offset and z size change, in scope radii
 const ROCKET_KICK_HOLD=.38 # a launcher shows its kick before it tips down to load
@@ -1003,7 +1004,13 @@ func update_throw_hands(p:Dictionary,now:float,active:bool,dt:float=1./60.):
 			var pulled=pin.translated(PIN_DRAW*smoothstep(PIN_REACH,PIN_PULL,age))
 			key=pulled;curl="pinch";in_hand=true
 		else:
-			key=blend_key(Transform3D(pin.basis,pin.origin+PIN_DRAW),aim,smoothstep(PIN_PULL,COCK_TIME,age));curl="pinch" if age<PIN_PULL+.08 else "flat";in_hand=age<PIN_PULL+.12
+			# (1.5.3, the user: the pulling arm spun while the throwable was held - the pin hand
+			# and the aiming hand differ by near half a turn about the forearm, so the turn went
+			# either way round and the wrist wrung, then the forearm unwound. It turns through
+			# the idle hand on the way, always the same way round.)
+			var t=smoothstep(PIN_PULL,COCK_TIME,age);var drawn=Transform3D(pin.basis,pin.origin+PIN_DRAW)
+			var turn:Basis=Basis(pin.basis.get_rotation_quaternion().slerp(idle.basis.get_rotation_quaternion(),t*2.)) if t<.5 else Basis(idle.basis.get_rotation_quaternion().slerp(aim.basis.get_rotation_quaternion(),t*2.-1.))
+			key=Transform3D(turn,drawn.origin.lerp(aim.origin,t));curl="pinch" if age<PIN_PULL+.08 else "flat";in_hand=age<PIN_PULL+.12
 	elif throwing:
 		var phase=1.-(float(p.throw_until)-now)/THROW_TIME
 		# 1.4.9 (the user: the arms flapped): one sweep down through the throw; the
@@ -1235,7 +1242,7 @@ func show_shot(at:float) -> bool:
 	var fired=game.current_weapon(game.players[pid])
 	# 1.5.2 (the user): the ARC has no recoil at all - hip or zoomed the gun never lifts (and a beam casts no casings)
 	if bool(fired.get("laser",false)):recoil=0.;kick=0.;return true
-	kick_power=kick_strength(fired);kick_unsteady=clampf((100.-float(fired.get("stability",70)))/100.,0.,1.)
+	kick_power=kick_strength(fired);kick_unsteady=clampf((100.-float(fired.get("shake",70)))/100.,0.,1.)
 	kick=minf(1.6,kick*.35+1.);kick_side=fposmod(sin(shot_serial*78.233+pid*12.9898)*43758.5453,1.)*2.-1.
 	if GadgetLoadout.mounted(game.players[pid],bool(input_state.crouch)):recoil*=.4;kick*=.4
 	if not game.current_weapon(game.players[pid]).get("rocket",false) and local and is_instance_valid(view_weapon) and is_instance_valid(game.combat_fx) and game.players.has(pid) and game.players[pid].slot<2:

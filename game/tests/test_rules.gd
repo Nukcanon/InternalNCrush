@@ -17,8 +17,9 @@ func run():
 	g.actors[1].position=Vector3(0,0,60);g.actors[2].position=Vector3(0,0,55)
 	await physics_frame;await physics_frame
 	g.players[2].armor=50;g.damage(2,40,1)
-	expect(g.players[2].armor==10 and g.players[2].hp==100,"armor absorbs damage first")
-	g.damage(2,30,1);expect(g.players[2].hp==80 and g.players[2].armor==0,"excess damage reaches health")
+	var full=Rules.max_hp(g.players[2]) # (1.5.3: assault 110)
+	expect(g.players[2].armor==10 and g.players[2].hp==full,"armor absorbs damage first")
+	g.damage(2,30,1);expect(g.players[2].hp==full-20 and g.players[2].armor==0,"excess damage reaches health")
 	g.damage(2,200,1);expect(not g.players[2].alive and g.players[1].kills==1 and g.drops.size()==1,"elimination score and weapon drop")
 	g.spawn(2);expect(g.players[2].alive and g.actors[2].collision_layer==2,"respawn restores collision")
 	g.players[1].role=3;g.players[1].skill_ready=0;g.actors[1].position=Vector3(25,0,65);g.actors[1].aim_yaw=0.;g.actors[1].aim_pitch=0

@@ -1257,16 +1257,35 @@ func blast_push(id:int,impulse:Vector3,duration:float):
 	if not actors.has(id) or not players.has(id):return
 	actors[id].velocity+=impulse
 	players[id].blast_until=clock+duration
+# The heavy's shield panel (CombatFx status "shield": 1.6 x 2.55 m, 0.78 m ahead of the body,
+# turned with the aim): where the line from rom to 	o passes through it, else INF.
+const SHIELD_AHEAD=.78
+const SHIELD_HALF_WIDTH=.8
+const SHIELD_SPAN=Vector2(.085,2.635)
+func shield_crossing(target:int,from:Vector3,to:Vector3) -> Vector3:
+	if not actors.has(target):return Vector3.INF
+	var frame=Transform3D(Basis(Vector3.UP,actors[target].aim_yaw),actors[target].position);var back=frame.affine_inverse()
+	var a:Vector3=back*from;var b:Vector3=back*to
+	if a.z>-SHIELD_AHEAD or b.z<-SHIELD_AHEAD:return Vector3.INF # (the panel faces ahead: -Z)
+	var at:Vector3=a.lerp(b,(-SHIELD_AHEAD-a.z)/(b.z-a.z))
+	if absf(at.x)>SHIELD_HALF_WIDTH or at.y<SHIELD_SPAN.x or at.y>SHIELD_SPAN.y:return Vector3.INF
+	return frame*at
 func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:String="world",hit_origin:Vector3=Vector3.INF,hit_point:Vector3=Vector3.INF):
 	if not players.has(target) or not players[target].alive:return
 	if weapon_id!="redeploy" and int(options.mode)==4 and (phase=="buy" or MatchFlow.protected_spawn(self,target)):return
 	var p=players[target]
 	if p.protect>clock or p.get("invulnerable",0)>clock:return
 	if players.has(source) and target!=source and not enemies(players[source],p) and not options.friendly:return
-	if weapon_id!="fall" and p.shield>clock and actors.has(source):
-		var dir=(actors[source].position-actors[target].position).normalized()
-		dir.y=0.;dir=dir.normalized()
-		if (Basis(Vector3.UP,actors[target].aim_yaw)*Vector3.FORWARD).dot(dir)>.4:amount*=.15
+	# 1.5.3 (the user: shots beside the shield were blocked too - any shooter in front counted):
+	# only a hit whose line from its origin to the body passes through the shield's panel
+	if weapon_id!="fall" and p.shield>clock:
+		var from=hit_origin if hit_origin.is_finite() else actors[source].eye() if actors.has(source) and source!=target else Vector3.INF
+		var to=hit_point if hit_point.is_finite() else actors[target].eye()-Vector3.UP*.35
+		var through=shield_crossing(target,from,to) if from.is_finite() else Vector3.INF
+		if through.is_finite():
+			amount*=.15
+			# (one ding per moment: a shotgun's pellets would ring together)
+			if clock>=float(p.get("shield_ding_at",-1.)):p.shield_ding_at=clock+.06;effect.rpc("shield_block",through,through,source)
 	var armored=(p.armor>0 or float(p.get("plate",0))>0) and weapon_id!="fall"
 	# Bonus consumes armor only; any base damage left after breaking armor remains unscaled.
 	if armored and weapon_id=="h6":amount+=minf(float(p.armor)+float(p.get("plate",0)),amount*1.3)*(1.-1./1.3)
@@ -1836,6 +1855,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	if kind=="laser_vent":play_sound("laser_vent",from,owner!=local_id);return
 	if kind=="heal_area":
 		combat_fx.heal_area(from);play_sound("heal",from,owner!=local_id);return
+	if kind=="shield_block":play_sound("shield_block",from,true);return
 	if kind=="heal_plus":
 		for point in shot_state.get("points",[]):combat_fx.heal_plus(point)
 		return

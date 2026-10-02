@@ -1,6 +1,6 @@
 class_name LaserCombat
 extends RefCounted
-const HEAT_SECONDS=4.
+const HEAT_SECONDS=3. # (1.5.3, the user: overheats in 3 s, was 4)
 const LOCK_SECONDS=2.
 const COOL_SECONDS=2.
 const BATTERY_SECONDS=6.

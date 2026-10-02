@@ -45,6 +45,8 @@ static func on_screen(cam:Camera3D,p:Vector3) -> bool:
 # Human limits: wrist bend (flexion / deviation) and forearm twist.
 const WRIST_LIMIT=1.25
 const TWIST_LIMIT=1.3
+const THROW_TWIST_LIMIT=2.8 # (first person, a held throwable: see solve_arm)
+const THROW_WRIST_ROLL=.7
 static var calibration={}
 static func rot(hero:HeroCharacter,index:int) -> Quaternion:return hero.bone_world(index).basis.get_rotation_quaternion()
 # Rotation taking unit vector `from` to `to`. Quaternion(from,to) is numerically
@@ -508,7 +510,9 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	if fp and hero.frame_dt>0. and hero.has_meta("upper_"+side) and bool(hero.get_meta("fp_carry_upper",false)):
 		var prev_u:Quaternion=hero.get_meta("upper_"+side)
 		var carried=(arc((prev_u*Vector3.UP).normalized(),(elbow-a).normalized())*prev_u).normalized()
-		upper_world=carried.slerp(upper_world,1.-exp(-hero.frame_dt*3.)).normalized()
+		# (1.5.3: eased far slower - at 3/s the free hand's base turned some 200 deg while the
+		# throwable was held, and the forearm and hand turned round after it)
+		upper_world=carried.slerp(upper_world,1.-exp(-hero.frame_dt*.4)).normalized()
 	if fp:hero.set_meta("upper_"+side,upper_world)
 	var c1=elbow+q1*(c-b)
 	var q2=arc((c1-elbow).normalized(),(a+dir*d-elbow).normalized())
@@ -559,14 +563,29 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		var near=before if before!=INF else float(hero.get_meta("roll_"+side,angle))
 		while angle-near>PI:angle-=TAU
 		while angle-near<-PI:angle+=TAU
+		# (1.5.3: a held throwable's free hand - the roll it needs crept past half a turn as the
+		# arm settled, so it was followed the long way round: the wrist wrung near 180 deg, then the
+		# forearm unwound at once. Past half a turn and a bit the short way round is taken.)
+		if fp and absf(angle)>PI+.35:angle-=signf(angle)*TAU
 		hero.set_meta("roll_"+side,angle)
-		var kept=clampf(angle,-TWIST_LIMIT,TWIST_LIMIT)
-		if before!=INF:kept=clampf(before+clampf(lerpf(before,kept,1.-exp(-hero.frame_dt*14.))-before,-9.*hero.frame_dt,9.*hero.frame_dt),-TWIST_LIMIT-.6,TWIST_LIMIT+.6) # (at most ~9 rad/s)
-		twist=Quaternion(Vector3.UP,kept);excess=Quaternion(Vector3.UP,angle-kept)
+		# (1.5.3, the user: a held throwable's wrist wrung like a sweet wrapper looking up - the hand
+		# there turns near half a turn against the arm; the forearm takes most of it, the wrist little)
+		var limit=THROW_TWIST_LIMIT if fp and bool(hero.get_meta("fp_carry_upper",false)) else TWIST_LIMIT
+		var kept=clampf(angle,-limit,limit)
+		if before!=INF:kept=clampf(before+clampf(lerpf(before,kept,1.-exp(-hero.frame_dt*14.))-before,-9.*hero.frame_dt,9.*hero.frame_dt),-limit-.6,limit+.6) # (at most ~9 rad/s)
+		# (1.5.3: holding a throwable the wrist takes at most THROW_WRIST_ROLL of the rest while the
+		# forearm comes round - the hands there need not land exactly, and more wrung the wrist)
+		var rest=angle-kept
+		if fp and bool(hero.get_meta("fp_carry_upper",false)):rest=clampf(rest,-THROW_WRIST_ROLL,THROW_WRIST_ROLL)
+		twist=Quaternion(Vector3.UP,kept);excess=Quaternion(Vector3.UP,rest)
 		if fp:hero.set_meta("kept_"+side,kept)
 	var swing=(twist.inverse()*excess.inverse()*local).normalized()
 	# q and -q are the same rotation: measure the short way round.
 	if swing.w<0.:swing=-swing
+	# (a held throwable's capped roll: what is left over is dropped, not bent into the wrist)
+	if fp and bool(hero.get_meta("fp_carry_upper",false)) and absf(swing.y)>.00001:
+		swing=(swing*Quaternion(0.,swing.y,0.,swing.w).normalized().inverse()).normalized()
+		if swing.w<0.:swing=-swing
 	var bend=swing.get_angle()
 	if bend>WRIST_LIMIT:swing=Quaternion.IDENTITY.slerp(swing,WRIST_LIMIT/bend)
 	lower_world=(lower_world*twist).normalized()

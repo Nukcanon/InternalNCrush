@@ -13,7 +13,7 @@ func _draw():
 		var point=HudLayout.position_for(key,amount)
 		var dimensions={"health":Vector2(259,98),"ammo":Vector2(263,116),"gear":Vector2(650,139),"time":Vector2(468,49)}[key]
 		draw_rect(Rect2(point,dimensions*amount),fill)
-		var content={"health":"MASON\nBLUE   100 HP","ammo":"VECTOR-24","gear":"1   2   3   4       F\nB 병과/장비    E 상호작용","time":"12         08:42         9"}[key]
+		var content={"health":"MASON\nBLUE   110 HP","ammo":"VECTOR-24","gear":"1   2   3   4       F\nB 병과/장비    E 상호작용","time":"12         08:42         9"}[key]
 		var index=0
 		for line in content.split("\n"):
 			draw_string(font,point+Vector2(12,(28+index*32))*amount,line,HORIZONTAL_ALIGNMENT_LEFT,-1,roundi((20 if key=="time" else 25)*amount),Color("77caff") if key=="health" else Color("f0f5f6"));index+=1
