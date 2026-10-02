@@ -749,7 +749,7 @@ def build(index):
             'vehicles': [], 'boats': boats, 'doors': doors, 'water_kind': bp.get('water_kind', 'river'), 'water_height': WATER_Y,
             'shallow': [[centred(p) for p in q.exterior.coords] for q in polys(shallow)] if shallow_cells else [], 'shallow_height': SHALLOW_SURFACE,
             'open_quays': [[round(x - ox, 4), round(z - oz, 4), round(x2 - ox, 4), round(z2 - oz, 4)] for x, z, x2, z2 in quay_lines(m, open_quays)],
-            'water_gates': [[round(g[0] - ox, 4), round(g[1] - oz, 4), round(g[2] - ox, 4), round(g[3] - oz, 4)] + list(g[4:]) for g in water_gates(m)],
+            'water_gates': [[round(g[0] - ox, 4), round(g[1] - oz, 4), round(g[2] - ox, 4), round(g[3] - oz, 4)] + list(g[4:]) for g in water_fences(m)],
             'water_boat': [], 'version': 15, 'grid': [''.join(row) for row in m.g], 'cell': CELL}
     spec = {'paths': [[list(p) for p in path] for path in paths], 'upper_path': [], 'lower_path': [], 'id': index + 1,
             'name': bp['name'], 'capacity': bp['capacity'], 'dimensions': [m.W, m.H], 'rectangle': False,
@@ -1073,110 +1073,36 @@ def water_safety(m, open_quays, props, spawns, targets):
     return out
 
 
-def water_gates(m):
-    """1.4.6 (the user: water must lead somewhere - out of the map, to the sea,
-    or into a drain - and nobody may leave through it). Barred openings in the
-    walls round the water, as world segments [x, z, x2, z2, nx, nz, bed, top,
-    kind] (n: from the water into the wall):
-      'outlet'  where deep water meets the map's outer wall (it flows on out
-                of the map, to the sea or the next canal): a tall barred arch;
-      'culvert' where a canal stops at a crossing and goes on beyond it (the
-                water passes under the street): a low barred opening;
-      'drain'   the ends of a pool that leads nowhere else, and the ends of a
-                shallow ditch along the outer wall: a barred drain."""
+def water_fences(m):
+    """1.4.6 (the user's choice): bars only between safe and deadly water - where
+    a shallow ditch lies one dry cell from deep water, its edge facing the deep
+    water gets a barred fence (nobody wades out toward the deadly water). Never
+    on the ditch's last open side. Segments [x, z, x2, z2, nx, nz, bed, top,
+    'fence'] (n: from the shallow water out over the fence)."""
     dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-
-    def outside(r, c):
-        return m.at(r, c) in ' R' or not (0 <= r < m.h and 0 <= c < m.w)
-
-    def perimeter(r, c, dr, dc):
-        a = m.at(r + dr, c + dc)
-        return outside(r + dr, c + dc) or (a == '#' and outside(r + 2 * dr, c + 2 * dc))
-
-    def side(r, c, dr, dc):
-        x0, z0, x1, z1 = c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL
-        return {(0, 1): (x1, z0, x1, z1), (0, -1): (x0, z0, x0, z1), (1, 0): (x0, z1, x1, z1), (-1, 0): (x0, z0, x1, z0)}[(dr, dc)]
-
+    shallow = set(m.cells('='))
+    deep = set(m.cells('~'))
     out = []
-    for ch in '~=':
-        deep = ch == '~'
-        cells = set(m.cells(ch))
-        seen = set()
-        for cell in sorted(cells):
-            if cell in seen:
+    for r, c in sorted(shallow):
+        if m.symmetric and m.canonical(r, c) != (r, c):
+            continue
+        for dr, dc in dirs:
+            n = (r + dr, c + dc)
+            if n in shallow or not m.walk(*n):
                 continue
-            comp, st = [], [cell]
-            seen.add(cell)
-            while st:
-                a = st.pop()
-                comp.append(a)
-                for d in dirs:
-                    b = (a[0] + d[0], a[1] + d[1])
-                    if b in cells and b not in seen:
-                        seen.add(b)
-                        st.append(b)
-            if m.symmetric and all(m.canonical(*p) != p for p in comp):
-                continue  # (its half-turn partner adds the mirrored pair)
-            gates = []
-            rs = [r for r, c in comp]
-            cs = [c for r, c in comp]
-            long_rows = max(rs) - min(rs) >= max(cs) - min(cs)
-            for r, c in comp:
-                for dr, dc in dirs:
-                    if (r + dr, c + dc) in cells:
-                        continue
-                    if perimeter(r, c, dr, dc):
-                        if deep:
-                            gates.append((r, c, dr, dc, 'outlet', WATER_BED, 1.7))
-                        continue  # (a shallow ditch drains at its ends, below)
-                    if deep:
-                        # water of the same canal again 1-3 cells straight on: it runs under the crossing
-                        if any((r + dr * k, c + dc * k) in cells for k in (2, 3, 4)):
-                            gates.append((r, c, dr, dc, 'culvert', WATER_BED, -.06))
-            if not deep:
-                # a ditch along the outer wall: one drain at each end (in the wall)
-                ends = sorted(comp, key=lambda p: (p[0], p[1]))
-                for r, c in {ends[0], ends[-1]}:
-                    for dr, dc in dirs:
-                        if (r + dr, c + dc) not in cells and perimeter(r, c, dr, dc):
-                            if not any(g[0] == r and g[1] == c for g in gates):
-                                gates.append((r, c, dr, dc, 'drain', SHALLOW_BAND, .95))
-                            break
-            elif not any(g[4] == 'outlet' for g in gates) and not any(g[4] == 'culvert' for g in gates):
-                # a pool that leads nowhere: drains at both ends of its long axis
-                axis = [(1, 0), (-1, 0)] if long_rows else [(0, 1), (0, -1)]
-                for dr, dc in axis:
-                    far = max(comp, key=lambda p: p[0] * dr + p[1] * dc)
-                    row = [p for p in comp if (p[0] * dr + p[1] * dc) == (far[0] * dr + far[1] * dc)]
-                    mid = sorted(row)[len(row) // 2]
-                    gates.append((mid[0], mid[1], dr, dc, 'drain', WATER_BED, -.06))
-            # A canal along the outer wall leaves it through ONE barred arch (the
-            # middle of each run of wall, at most two cells wide), not bars all along.
-            outlets = [g for g in gates if g[4] == 'outlet']
-            keep = []
-            for d in set((g[2], g[3]) for g in outlets):
-                line = sorted((g for g in outlets if (g[2], g[3]) == d), key=lambda g: (g[0], g[1]))
-                runs, run = [], []
-                for g in line:
-                    if run and abs(g[0] - run[-1][0]) + abs(g[1] - run[-1][1]) == 1 and (g[0] == run[-1][0] or g[1] == run[-1][1]):
-                        run.append(g)
-                    else:
-                        if run:
-                            runs.append(run)
-                        run = [g]
-                if run:
-                    runs.append(run)
-                for run in runs:
-                    mid = len(run) // 2
-                    keep += run if len(run) <= 3 else run[max(0, mid - 1):mid + 1]
-            gates = [g for g in gates if g[4] != 'outlet'] + keep
-            for r, c, dr, dc, kind, b, t in gates:
-                x0, z0, x1, z1 = side(r, c, dr, dc)
-                pairs = [(x0, z0, x1, z1, dc, dr)]
-                if m.symmetric and not any(m.mirror(*p) in comp for p in comp):
-                    pairs.append((m.W - x0, m.H - z0, m.W - x1, m.H - z1, -dc, -dr))
-                for px0, pz0, px1, pz1, nx, nz in pairs:
-                    out.append((px0, pz0, px1, pz1, nx, nz, b, t, kind))
+            beyond = [(n[0] + dr, n[1] + dc), (n[0] + dr + dc, n[1] + dc + dr), (n[0] + dr - dc, n[1] + dc - dr)]
+            if not any(b in deep for b in beyond):
+                continue
+            # keep a way out of the ditch: another open dry side somewhere on it
+            others = [(rr, cc, d2) for rr, cc in shallow for d2 in dirs
+                      if (rr + d2[0], cc + d2[1]) not in shallow and m.walk(rr + d2[0], cc + d2[1]) and (rr, cc, d2) != (r, c, (dr, dc))]
+            if not others:
+                continue
+            x0, z0, x1, z1 = c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL
+            seg = {(0, 1): (x1, z0, x1, z1), (0, -1): (x0, z0, x0, z1), (1, 0): (x0, z1, x1, z1), (-1, 0): (x0, z0, x1, z0)}[(dr, dc)]
+            out.append(seg + (dc, dr, SHALLOW_BAND, 1.15, 'fence'))
+            if m.symmetric and m.mirror(r, c) != (r, c):
+                out.append((m.W - seg[0], m.H - seg[1], m.W - seg[2], m.H - seg[3], -dc, -dr, SHALLOW_BAND, 1.15, 'fence'))
     return out
 
 

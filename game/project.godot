@@ -35,3 +35,7 @@ material_detail_enabled={
 "value": false
 }
 
+
+[compression]
+
+formats/zstd/compression_level=19
