@@ -74,6 +74,18 @@ var grounded_jump=false
 var shown_weapon=""
 var weapon_models={}
 var recoil=0.0
+# 1.4.9 (the user): the first-person firing animation. Its strength comes from
+# the gun's power (damage x pellets; launchers far stronger), its shake from low
+# stability. Visual only - the shot's spread and pattern are untouched.
+var kick=0.0 # per-shot envelope: 1 at a shot, then back to 0
+var kick_power=1.0
+var kick_unsteady=.3 # 0..1 from (100 - stability)
+var kick_side=0.0 # this shot's sideways throw, -1..1
+var scope_kick=Vector3.ZERO # scope overlay (Reticle): x,y offset and z size change, in scope radii
+const ROCKET_KICK_HOLD=.38 # a launcher shows its kick before it tips down to load
+var free_pin_blend=0.0 # 1.4.9: free arm with a throwable, 0 spread out .. 1 pin pose
+var throw_lines={} # 1.4.9: smoothed forearm lines (camera space) while a throwable is held
+var free_key_last=null # 1.4.9: the free hand's last key (view space), for easing
 var hit_recoil=0.0
 var hit_side=0.0
 var old_visual_pos=Vector3.ZERO
@@ -480,7 +492,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	if shown_weapon!=wid:shown_weapon=wid;build_gun(wid)
 	var w=Catalog.get_weapon(wid);var age=now-float(p.get("shot_time",-100.))
 	if float(p.get("shot_time",-100.))>seen_shot:show_shot(float(p.shot_time))
-	recoil=move_toward(recoil,0,dt*5.5);hit_recoil=move_toward(hit_recoil,0,dt*4);land_kick=lerpf(land_kick,0,1.-exp(-dt*12))
+	recoil=move_toward(recoil,0,dt*5.5);kick=move_toward(kick,0,dt*6./sqrt(maxf(1.,kick_power)));hit_recoil=move_toward(hit_recoil,0,dt*4);land_kick=lerpf(land_kick,0,1.-exp(-dt*12))
 	var speed=Vector2(velocity.x,velocity.z).length() if local or game.server else Vector2(net_velocity.x,net_velocity.z).length()
 	var grounded=is_on_floor() if local or game.server else net_grounded
 	var sprint=last_sprint if local or game.server else net_sprint
@@ -505,7 +517,7 @@ func visual(dt:float,p:Dictionary,now:float):
 		# down between the rockets of a tube-by-tube reload.
 		var loading=world_weapon.launcher and progress>=0.
 		var more=loading and bool(w.get("single_load",false)) and int(p.mag.get(wid,0))+1<int(w.get("mag",1))
-		launcher_tilt=move_toward(launcher_tilt,1. if loading and (progress<.86 or more) else 0.,dt*4.5)
+		launcher_tilt=move_toward(launcher_tilt,1. if loading and (progress<.86 or more) and now-seen_shot>ROCKET_KICK_HOLD else 0.,dt*4.5)
 		var tip=smoothstep(0.,1.,launcher_tilt)
 		# The launcher comes down in front of the chest, muzzle low and turned a
 		# little across the body, so the rear opening faces the support hand.
@@ -546,6 +558,15 @@ func visual(dt:float,p:Dictionary,now:float):
 	# ATLAS (semi_scope): a magnified look without optics; the gun leaves the view.
 	var semi_scoped=ads and bool(w.get("semi_scope",false)) and ads_blend>.9
 	camera.position.x=0.;camera.position.z=0.;camera.rotation=Vector3(aim_pitch,0,0);camera.position.y=lerpf(eye_height(false),eye_height(true),crouch_blend)-land_kick
+	# Firing animation (1.4.9): fk = this moment's kick (soft above one gun-unit),
+	# wobble = a quick shake that dies out, larger for unsteady guns.
+	var fk=kick_felt();var since=maxf(0.,now-seen_shot)
+	var wobble=sin(since*42.)*exp(-since*8.)*kick_unsteady*minf(fk,2.)
+	# Through optics (and the ATLAS look) the gun is not drawn: the scope picture
+	# jumps up, throws to the side, comes toward the eye and settles; the view
+	# kicks a little with it (the aim itself does not move).
+	if scoped or semi_scoped:camera.rotation+=Vector3(fk*.012,0,(kick_side*fk+wobble)*.01)
+	scope_kick=Vector3(kick_side*fk*(.05+.15*kick_unsteady)+wobble*.05,-fk*.16,fk*.07) if scoped else Vector3.ZERO
 	sprint_fov=move_toward(sprint_fov,1. if sprint else 0.,dt/.22)
 	camera.fov=lerpf(lerpf(82.,88.,smoothstep(0.,1.,sprint_fov)),SniperScope.fov(game.profile,w),ads_blend)
 	# View-model anchor: the right handle sits at this point in camera space at
@@ -581,8 +602,12 @@ func visual(dt:float,p:Dictionary,now:float):
 	# 1.4.5: in aim the kick pitches the gun much less (at .12 rad per unit the
 	# top of the gun rose over the sight and hid the target) and instead drives
 	# it back and a little down, so the sight line stays clear while firing.
-	var rotation_target=Vector3(recoil*lerpf(.34,ADS_KICK_PITCH,ads_blend),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob)+sin(shot_serial*2.3)*recoil*.025)+rotation_target_extra*(1.-ads_blend)
-	base+=Vector3(0,-ADS_KICK_DROP,ADS_KICK_BACK)*recoil*ads_blend
+	# 1.4.9: aimed, wide-spreading guns (machine guns, shotguns) kick harder
+	# (kick_ads_scale); a launcher kicks as hard aimed as at the hip.
+	var ka=0. if rocket else ads_blend;var am=kick_ads_scale(w)
+	var rotation_target=Vector3(fk*lerpf(.30,ADS_KICK_PITCH*am,ka),-.09 if sprint else -turn_sway*.012,-.05*motion*sin(bob))+rotation_target_extra*(1.-ads_blend)
+	rotation_target+=Vector3(0,kick_side*fk*lerpf(.03+.10*kick_unsteady,(.006+.03*kick_unsteady)*am,ka),(kick_side*fk+wobble)*lerpf(.04+.12*kick_unsteady,(.02+.06*kick_unsteady)*am,ka))
+	base+=Vector3(0,-ADS_KICK_DROP*am,0)*fk*ka
 	# 1.4.5: every gun keeps its barrel parallel to the aim line at the hip (the
 	# 1.4.4 turned-in, dipped hip angle made the muzzle visibly point below and
 	# left of the crosshair); only held gear still turns in a little.
@@ -656,10 +681,12 @@ func visual(dt:float,p:Dictionary,now:float):
 		base=path[0];rotation_target=path[1]
 	var swap=clampf((float(p.get("switch_until",0))-now)/.32,0,1);base.y-=swap*.32;rotation_target.z-=swap*.3
 	base.x-=turn_sway*.004*(1.-ads_blend*.85)
-	base.z+=recoil*(.105 if w.slot==1 else .155)*lerpf(1.,.38,ads_blend);base.y+=recoil*.025*(1.-ads_blend);base.y-=land_kick*.6
+	base.z+=fk*lerpf(.10 if w.slot==1 else .13,ADS_KICK_BACK*sqrt(am),ka);base.y+=fk*.025*(1.-ka);base.y-=land_kick*.6
 	base.x*=handedness;rotation_target.y*=handedness;rotation_target.z*=handedness
 	if throwing:gun.position=base;gun.rotation=rotation_target # the throw path is its own motion (no smoothing lag)
-	else:gun.position=gun.position.lerp(base,1.-exp(-dt*20));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22))
+	else:
+		var settle=.27 if now-float(p.get("throw_until",-100.))<.4 else 1. # (1.4.9: back from a throw's follow-through over ~0.3 s)
+		gun.position=gun.position.lerp(base,1.-exp(-dt*20*settle));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22*settle))
 	# The thrown item stays in the hand until the release point of the throw
 	# (the world projectile is hidden from its thrower until then,
 	# CombatFx.sync_grenades); third person hides it for the whole throw.
@@ -776,7 +803,20 @@ const STOCK_CONVERGE=1.2 # ...crossing the aim line nearer: the gun lies across 
 # Aimed recoil: pitch (rad per recoil unit), drop and push-back (m per unit).
 const ADS_KICK_PITCH=.035
 const ADS_KICK_DROP=.006
-const ADS_KICK_BACK=.025
+const ADS_KICK_BACK=.06 # (1.4.9: the whole aimed push-back - it was .025 plus 38% of the hip's)
+## 1.4.9: how hard a gun kicks in first person - its power per shot
+## (damage x pellets, a rifle round about 1), launchers far beyond any gun.
+static func kick_strength(w:Dictionary) -> float:
+	if bool(w.get("rocket",false)):return 3.2
+	return clampf(sqrt(float(w.get("damage",24))*float(w.get("pellets",1)))/5.,.75,2.6)
+## Aimed: guns whose rounds spread wide (machine guns, shotguns) kick harder.
+static func kick_ads_scale(w:Dictionary) -> float:
+	return 1.+clampf((float(w.get("spread",1.))-1.2)*.9,0.,2.) if not SniperScope.overlay(w) else 1.
+## This moment's kick: linear up to one rifle shot, softer above (a shotgun or a
+## sniper's full kick would otherwise throw the gun out of the view).
+func kick_felt() -> float:
+	var x=kick*kick_power
+	return x if x<=1. else 1.+(x-1.)*.6
 static func fp_forearms(hand:float,steep:bool=false,melee:bool=false,hold:String="rifle") -> Dictionary:
 	var f:Dictionary=FP_FOREARM_MELEE if melee else FP_FOREARM_STEEP if steep else FP_FOREARM_PISTOL if hold=="pistol" else FP_FOREARM_ITEM if hold=="item" else FP_FOREARM
 	return {"R":Vector3(f.R.x*hand,f.R.y,f.R.z),"L":Vector3(f.L.x*hand,f.L.y,f.L.z)}
@@ -794,7 +834,7 @@ const THROW_RELEASE=.55 # phase at which the grenade leaves the hand
 # from, so there is no jump at either end.
 # (Round 4: the hand turns down much less after the release; the wrist stayed
 # bent far below the forearm through the follow-through.)
-const THROW_KEYS=[[.0,Vector3.ZERO,Vector3.ZERO],[.26,Vector3(.34,.02,-.36),Vector3(1.05,-.30,-.40)],[.55,Vector3(.06,-.05,-.60),Vector3(-.20,.05,.05)],[.76,Vector3(-.02,-.30,-.50),Vector3(-.50,.20,.25)],[1.,Vector3.ZERO,Vector3.ZERO]]
+const THROW_KEYS=[[.0,Vector3.ZERO,Vector3.ZERO],[.26,Vector3(.34,.02,-.36),Vector3(1.05,-.30,-.40)],[.55,Vector3(.06,-.05,-.60),Vector3(-.20,.05,.05)],[.76,Vector3(-.02,-.30,-.50),Vector3(-.50,.20,.25)],[1.,Vector3(.06,-.40,-.44),Vector3(-.40,.18,.22)]] # (1.4.9: ends in the follow-through - the hand eases back to the hold after the throw instead of snapping back in its last 70 ms)
 static func throw_path(phase:float,start:Array=[THROW_HOLD,Vector3.ZERO]) -> Array:
 	var keys=[]
 	for k in THROW_KEYS:keys.append([float(k[0]),Vector3(start[0]) if Vector3(k[1])==Vector3.ZERO else Vector3(k[1]),Vector3(start[1]) if Vector3(k[2])==Vector3.ZERO else Vector3(k[2])])
@@ -853,9 +893,9 @@ static func free_key(k:Array) -> Transform3D:return Transform3D(free_frame(k[1],
 static func blend_key(a:Transform3D,b:Transform3D,t:float) -> Transform3D:
 	return Transform3D(Basis(a.basis.get_rotation_quaternion().slerp(b.basis.get_rotation_quaternion(),t)),a.origin.lerp(b.origin,t))
 var held_ring:MeshInstance3D
-func update_throw_hands(p:Dictionary,now:float,active:bool):
+func update_throw_hands(p:Dictionary,now:float,active:bool,dt:float=1./60.):
 	if not active:
-		view_body.free_hand={}
+		view_body.free_hand={};free_key_last=null
 		if is_instance_valid(held_ring):held_ring.visible=false
 		return
 	var cooking=p.get("cooking",0)>0;var throwing=float(p.get("throw_until",-100.))>now
@@ -882,8 +922,13 @@ func update_throw_hands(p:Dictionary,now:float,active:bool):
 			key=blend_key(Transform3D(pin.basis,pin.origin+PIN_DRAW),aim,smoothstep(PIN_PULL,COCK_TIME,age));curl="pinch" if age<PIN_PULL+.08 else "flat";in_hand=age<PIN_PULL+.12
 	elif throwing:
 		var phase=1.-(float(p.throw_until)-now)/THROW_TIME
-		key=blend_key(aim,down,smoothstep(.05,.55,phase)) if phase<.6 else blend_key(down,idle,smoothstep(.6,1.,phase))
+		# 1.4.9 (the user: the arms flapped): one sweep down through the throw; the
+		# hand comes back up after it (eased below), not down and up within 0.28 s.
+		key=blend_key(aim,down,smoothstep(.15,1.,phase))
 		curl="flat" if phase<.3 else "rest"
+	# Outside the pin pull (which must meet the ring) the free hand eases to its key.
+	if not cooking and free_key_last is Transform3D:key=blend_key(free_key_last,key,1.-exp(-dt*(16. if throwing else 7.)))
+	free_key_last=key
 	view_body.free_hand={"L":to_world.call(key),"curl_L":curl}
 	if is_instance_valid(ring):ring.visible=not cooking and not throwing or (cooking and age<PIN_REACH)
 	if in_hand:
@@ -1057,12 +1102,28 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	if item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p):
 		# (while the pin is pulled the elbow drops instead: the upper arm stays
 		# below the view, never half in it)
-		var pin=p.get("cooking",0)>0
-		var line:Vector3=FREE_ARM_PIN if pin else FREE_ARM_OUT;var out:Vector3=FREE_SHOULDER_PIN if pin else FREE_SHOULDER_OUT
+		# 1.4.9 (the user: the arms flapped on a throw): the free arm eases between its
+		# pin pose and its spread pose (it switched in one frame at the pin and again
+		# at the throw) and keeps the pin pose through the throw.
+		var pin=p.get("cooking",0)>0 or throwing
+		free_pin_blend=move_toward(free_pin_blend,1. if pin else 0.,dt*5.)
+		var pb=smoothstep(0.,1.,free_pin_blend)
+		var line:Vector3=FREE_ARM_OUT.lerp(FREE_ARM_PIN,pb);var out:Vector3=FREE_SHOULDER_OUT.lerp(FREE_SHOULDER_PIN,pb)
 		lines.L=Vector3(line.x*handedness,line.y,line.z)
 		var shoulders:Dictionary=Dictionary(view_body.get_meta("fp_shoulders",{})).duplicate()
 		if shoulders.has("L"):shoulders.L=Vector3(shoulders.L)+Vector3(out.x*handedness,out.y,out.z);view_body.set_meta("fp_shoulders",shoulders)
 	view_body.set_meta("fp_elbow_w",{"L":FREE_ELBOW_W} if item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p) else {})
+	# 1.4.9: a throwable's forearm lines follow their targets over a few frames
+	# (the throw's whip and its return to the hold no longer snap the elbow).
+	if item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p):
+		var ease=1.-exp(-dt*18.)
+		for side in ["R","L"]:
+			if not lines.has(side):continue
+			var target_line:Vector3=Vector3(lines[side]).normalized()
+			var held_line:Vector3=throw_lines.get(side,target_line)
+			held_line=held_line.slerp(target_line,ease).normalized() if held_line.angle_to(target_line)>.0001 else target_line
+			throw_lines[side]=held_line;lines[side]=held_line
+	else:throw_lines={}
 	view_body.set_meta("fp_forearm",lines)
 	# Round 8: a gun hand's forearm continues the hand (wrist straight); the
 	# hidden shoulder follows (HeroIK solve_arm, meta "fp_follow").
@@ -1073,7 +1134,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		var w=1.-FOLLOW_LOAD_BEND*smoothstep(0.,1.,load_hold)
 		follow=fp_follow_for(str(state.hold),state.hold=="pistol" and state.two_hands,float(handedness),w,view_weapon)
 	view_body.set_meta("fp_follow",follow)
-	update_throw_hands(p,now,item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p) and (p.get("cooking",0)>0 or throwing or p.slot==2))
+	update_throw_hands(p,now,item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p) and (p.get("cooking",0)>0 or throwing or p.slot==2),dt)
 	var _pt=Prof.now();view_body.drive(dt,state);Prof.add("actor_fp_drive",_pt)
 	place_held_ring()
 	if throwing and item_up and throw_start.has("wrist"):
@@ -1086,7 +1147,10 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 func show_shot(at:float) -> bool:
 	if at<=seen_shot:return false
 	seen_shot=at;shot_serial+=1;recoil=minf(1.8,recoil*.35+float(game.current_weapon(game.players[pid]).get("recoil_kick",1.)))
-	if GadgetLoadout.mounted(game.players[pid],bool(input_state.crouch)):recoil*=.4
+	var fired=game.current_weapon(game.players[pid])
+	kick_power=kick_strength(fired);kick_unsteady=clampf((100.-float(fired.get("stability",70)))/100.,0.,1.)
+	kick=minf(1.6,kick*.35+1.);kick_side=fposmod(sin(shot_serial*78.233+pid*12.9898)*43758.5453,1.)*2.-1.
+	if GadgetLoadout.mounted(game.players[pid],bool(input_state.crouch)):recoil*=.4;kick*=.4
 	if not game.current_weapon(game.players[pid]).get("rocket",false) and local and is_instance_valid(view_weapon) and is_instance_valid(game.combat_fx) and game.players.has(pid) and game.players[pid].slot<2:
 		var source=gun.to_global(Vector3(.09,.01,-.16))
 		game.combat_fx.eject_case(source,camera.global_basis.x,camera.global_basis.y,global_position.y,shot_serial+pid)

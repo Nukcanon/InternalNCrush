@@ -64,6 +64,17 @@ func run():
 	a.input_state.fire=true;a.input_state.trigger_seq=3;g.process_trigger(-1)
 	a.input_state.fire=false;g.process_trigger(-1)
 	expect(int(p.cooking)==0,"trigger seen up after being held throws even without the release command")
+	# 1.4.9 (the user: in practice a throwable stayed in the hand and killed him):
+	# an earlier throw going off must not end the next grenade's cooking.
+	g.clock+=.55;p.gadget_ready=0.;p.gadget_count=3
+	g.handle_command(-1,"trigger_press",{"seq":4})
+	var cooked=int(p.cooking);var earlier=g.grenades.filter(func(it):return not it.held)
+	expect(cooked>0 and earlier.size()>0,"a grenade is in the hand while an earlier one is out")
+	for it in earlier:it.pos=Vector3(400,50,400);it.velocity=Vector3.ZERO # (well away from the thrower)
+	g.clock=float(earlier[0].until)+.01;GrenadeLogic.tick(g,.016)
+	expect(int(p.cooking)==cooked,"the earlier grenade going off leaves the held one cooking")
+	g.handle_command(-1,"trigger_release",{"seq":4})
+	expect(g.grenades.filter(func(it):return it.id==cooked and not it.held).size()==1,"and the held one still leaves the hand")
 	g.queue_free();await process_frame
 	print("V146_FALL checks=%d failures=%d"%[checks,failures])
 	if failures==0:print("V146_FALL_PASS")

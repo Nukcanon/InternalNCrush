@@ -129,7 +129,7 @@ func run():
 	# still; the forearm line follows (standing under the cocked hand).
 	var hold=[Vector3(.21,-.25,-.46),Vector3(.1,0,0)]
 	var cook=Actor.throw_path(0.,hold);var cocked=Actor.throw_path(.26,hold)[0];var release=Actor.throw_path(Actor.THROW_RELEASE,hold)[0];var follow=Actor.throw_path(.76,hold)[0];var back=Actor.throw_path(1.,hold)
-	expect(cook[0].is_equal_approx(hold[0]) and cook[1].is_equal_approx(hold[1]) and back[0].distance_to(hold[0])<.01,"throw path starts and ends at the hold pose")
+	expect(cook[0].is_equal_approx(hold[0]) and cook[1].is_equal_approx(hold[1]) and back[0].y<hold[0].y-.1,"throw path starts at the hold pose and ends low in the follow-through (1.4.9: the hand then eases back to the hold)")
 	expect(cocked.y>hold[0].y+.2 and cocked.x>hold[0].x+.08 and cocked.z>hold[0].z+.05,"throw cocks up, out and back beside the head")
 	expect(release.z<cocked.z-.15 and release.y<cocked.y and follow.y<release.y-.15,"throw releases ahead and lower, then follows through down")
 	expect(Actor.throw_forearm(.26).y<-.8 and Actor.throw_forearm(.55).z>.4 and absf(Actor.throw_forearm(0.).angle_to(Actor.throw_forearm(1.)))<.01,"throwing forearm stands up when cocked and lies back at the release")

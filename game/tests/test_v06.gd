@@ -35,6 +35,13 @@ func run():
 	var g=load("res://scripts/game.gd").new();root.add_child(g);g.set_physics_process(false);g.server=true;g.phase="lobby";g.options.map_random=false;g.options.map=7;g.build_world();g.add_player(1,"motion","v06_host");g.local_id=1;var a=g.actors[1];a.set_local(true);a.visual(.016,g.players[1],g.clock)
 	var before=g.combat_fx.casings.size();expect(a.show_shot(100.),"new shot adds recoil");expect(not a.show_shot(100.),"snapshot and event do not duplicate shot effects")
 	expect(a.recoil>0 and g.combat_fx.casings.size()==before+1,"local shot emits a casing and a visible kick")
+	# 1.4.9 (the user): the first-person firing animation - stronger guns kick harder,
+	# launchers hardest, wide-spreading guns harder when aimed, unsteady guns shake more.
+	var W=func(id):return Catalog.get_weapon(id)
+	expect(a.kick>0. and a.kick_power>0.,"a shot starts the first-person kick")
+	expect(Actor.kick_strength(W.call("h4"))>Actor.kick_strength(W.call("e1")) and Actor.kick_strength(W.call("e1"))>Actor.kick_strength(W.call("a1")) and Actor.kick_strength(W.call("r2"))>Actor.kick_strength(W.call("r4")),"kick: launcher > shotgun > rifle, heavy sniper > marksman")
+	expect(Actor.kick_ads_scale(W.call("e1"))>1.5 and Actor.kick_ads_scale(W.call("h2"))>1.5 and Actor.kick_ads_scale(W.call("a1"))<1.1,"aimed: shotguns and machine guns kick harder than a rifle")
+	var spread_before=float(W.call("e1").spread);expect(spread_before==2.7,"the shot spread itself is unchanged")
 	for i in range(80):g.combat_fx.eject_case(Vector3.UP,Vector3.RIGHT,Vector3.UP,0,i)
 	expect(g.combat_fx.casings.size()==[18,40,CombatFX.MAX_CASINGS][GraphicsOptions.detail],"case pool remains bounded")
 	g.combat_fx._process(CombatFX.CASING_LIFETIME+.1);expect(g.combat_fx.casings.is_empty(),"casings disappear after their lifetime")

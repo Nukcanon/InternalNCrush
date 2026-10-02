@@ -34,7 +34,7 @@ static func tick(g:Node,dt:float):
 			if g.actors.has(id):item.pos=g.actors[id].muzzle_world()
 			if not g.players.has(id) or not g.players[id].alive:
 				item.held=false;item.velocity=Vector3.ZERO
-				if g.players.has(id):g.players[id].cooking=0
+				if g.players.has(id) and int(g.players[id].get("cooking",0))==int(item.id):g.players[id].cooking=0
 		else:
 			var steps=maxi(1,ceili(dt/.02));var step=dt/steps
 			for substep in range(steps):
@@ -53,7 +53,9 @@ static func tick(g:Node,dt:float):
 					if hit.normal.y>.6 and absf(item.velocity.y)<.6:item.velocity.y=0.
 				item.rotation=Vector3(item.get("rotation",Vector3.ZERO))+Vector3(item.velocity.z,1.,-item.velocity.x)*step*5.
 		if g.clock>=float(item.until):
-			if g.players.has(id):g.players[id].cooking=0
+			# (1.4.9: only the grenade still in the hand ends the cooking - an earlier
+			# throw going off had cleared the next one's, which then never left the hand)
+			if g.players.has(id) and int(g.players[id].get("cooking",0))==int(item.id):g.players[id].cooking=0
 			if item.get("kind","frag")=="frag":explode(g,item.pos,id,bool(item.get("cluster",false)))
 			else:
 				g.fields.append({"kind":"flash_pending" if item.kind=="flash" else "smoke","pos":item.pos,"starts":g.clock,"until":g.clock+(1. if item.kind=="flash" else AbilityBalance.SMOKE_DURATION),"team":g.players.get(id,{}).get("team",0),"owner":id,"deployed":false})

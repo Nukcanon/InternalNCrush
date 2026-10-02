@@ -430,6 +430,10 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	if wrist_basis and radius>.001:
 		var hand_dir:Vector3=target.basis.y.normalized()
 		var up:Vector3=hero.facing_basis().y.normalized()
+		# (1.4.9: first person measures "above the shoulder" in the camera's frame,
+		# so looking up or down no longer re-picks the elbow and swings the upper arm)
+		var fp_view=hero.get_meta("fp_camera",null) if fp else null
+		if fp_view is Camera3D and is_instance_valid(fp_view):up=fp_view.global_basis.y.normalized()
 		var side_axis=dir.cross(perp).normalized()
 		# First person: the elbows hang below and out (the arm is seen from the
 		# shoulder). Third person: the upper arm and forearm stay outside the torso.
@@ -440,7 +444,13 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		var torso=torso_frame(hero) if not fp else {}
 		var w_end=a+dir*d
 		var want:Quaternion=target.basis.get_rotation_quaternion()
-		var from_b:Vector3=(b-a).normalized();var wl_rot:Quaternion=wl.basis.get_rotation_quaternion()
+		var from_b:Vector3=(b-a).normalized();var wl_rot:Quaternion=wl.basis.get_rotation_quaternion();var fore:Vector3=c-b
+		# (1.4.9: first person - the view body does not pitch with the view, so the
+		# forearm's twist is judged as if it did; otherwise looking down flipped the
+		# elbow to another place on its circle and back)
+		if fp_view is Camera3D and is_instance_valid(fp_view):
+			var tilt:Quaternion=(fp_view.global_basis.orthonormalized()*hero.facing_basis().orthonormalized().inverse()).get_rotation_quaternion()
+			from_b=tilt*from_b;wl_rot=(tilt*wl_rot).normalized();fore=tilt*fore
 		# 12 samples round the circle, then three halving refinements (18
 		# evaluations; 1.4.1 used 32 through a lambda, the costliest part of a pose).
 		var best_angle=0.;var best_cost=INF
@@ -454,7 +464,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 				# 1.4.4: the forearm roll this elbow forces (the wrist cannot twist;
 				# a large roll wrings the forearm mesh).
 				var cq1=arc(from_b,(e-a).normalized())
-				var cq2=arc((e+cq1*(c-b)-e).normalized(),(w_end-e).normalized())
+				var cq2=arc((cq1*fore).normalized(),(w_end-e).normalized())
 				var cl=((cq2*cq1*wl_rot).normalized().inverse()*want).normalized()
 				if cl.w<0.:cl=-cl
 				var roll=absf(wrapf(2.*atan2(cl.y,cl.w),-PI,PI))
@@ -469,6 +479,11 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 		# Ease the elbow between frames (no popping between circle samples).
 		# Remembered in the hero's own frame so turning the body does not lag.
 		var key="elbow_"+side;var facing=hero.facing_basis()
+		# 1.4.9 (the user: a held throwable's upper arm shook): first person keeps it
+		# in the camera's frame - in the body's (yaw only) frame every look up or
+		# down left the elbow lagging and then swinging after the view.
+		var view_cam=hero.get_meta("fp_camera",null) if fp else null
+		if view_cam is Camera3D and is_instance_valid(view_cam):facing=view_cam.global_basis.orthonormalized()
 		if hero.frame_dt>0. and hero.has_meta(key):
 			var previous:Vector3=facing*Vector3(hero.get_meta(key))
 			if previous.length_squared()>.5:

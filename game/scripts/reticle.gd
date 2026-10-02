@@ -37,6 +37,9 @@ func _draw():
 	var scoped=ads and SniperScope.overlay(game.current_weapon(p)) and p.reload<=game.clock and a.ads_blend>.9
 	if scoped:
 		var radius=minf(size.x,size.y)*SniperScope.SCREEN_RADIUS
+		# 1.4.9: the firing kick moves the scope picture (Actor.scope_kick); the black
+		# around it still reaches past every edge.
+		center+=Vector2(a.scope_kick.x,a.scope_kick.y)*radius;radius*=1.+a.scope_kick.z
 		var reach=maxf(size.x,size.y)*2
 		for i in range(96):
 			var first=Vector2.from_angle(i*TAU/96.);var next=Vector2.from_angle((i+1)*TAU/96.)
