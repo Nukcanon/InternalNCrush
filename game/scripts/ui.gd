@@ -695,7 +695,7 @@ func gear():
 	var info_bar=info.get_v_scroll_bar();info_bar.visibility_changed.connect(func():info_inset.add_theme_constant_override("margin_right",16 if info_bar.visible else 0))
 	var info_box=VBoxContainer.new();info_box.size_flags_horizontal=Control.SIZE_EXPAND_FILL;info_box.add_theme_constant_override("separation",8);info_inset.add_child(info_box)
 	stat_graph=StatGraph.new()
-	gear_detail=label("",15,info_box);gear_detail.add_theme_font_size_override("font_size",14);gear_detail.modulate=UiSkin.INK;info_box.add_child(stat_graph)
+	gear_detail=label("",15,info_box);gear_detail.add_theme_font_size_override("font_size",20 if touch else 14);gear_detail.modulate=UiSkin.INK;info_box.add_child(stat_graph)
 	stack=outer
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);outer.add_child(actions);pin_actions(actions)
 	gear_submit=button("선택 적용",func():

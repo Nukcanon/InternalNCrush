@@ -4,24 +4,23 @@ const M=preload("res://scripts/mesh_factory.gd")
 const GATE_DARK=Color("15191d")
 const GATE_FRAME=Color("8b8f8a")
 const GATE_BAR=Color("4b5157")
-## 1.4.6 (the user): a barred fence at the edge of a shallow ditch facing the
-## deadly water close by - [x, z, x2, z2, nx, nz, bed, top, "fence"], n from the
-## shallow water out over the fence. All fences of a map go into one mesh (kit)
-## and one static body.
-static func water_fence(kit:DistrictFacade.Kit,body:StaticBody3D,g:Array):
+## 1.4.6 (the user): a barred grate in the water at the edge of a shallow ditch
+## facing the deadly water close by - from the ditch's bed to just under its
+## surface, never above the water (seen through the clear water; low enough
+## to step over, so no collision). [x, z, x2, z2, nx, nz, bed, top, "fence"],
+## n from the shallow water out over the grate. All grates of a map are one mesh.
+static func water_fence(kit:DistrictFacade.Kit,g:Array):
 	var u=Vector3(g[0],0,g[1]);var v=Vector3(g[2],0,g[3]);var n=Vector3(g[4],0,g[5]).normalized()
-	var length=u.distance_to(v);var low=float(g[6]);var top=float(g[7]);var centre=(u+v)*.5
+	var length=u.distance_to(v);var low=float(g[6]);var top=float(g[7]);var centre=(u+v)*.5-n*.05
 	var z=-n;var x=Vector3.UP.cross(z).normalized()
 	kit.xf=Transform3D(Basis(x,Vector3.UP,z),centre)
-	var post=.09
-	for s in [-1.,1.]:kit.box(Vector3(s*(length*.5-post*.5),(low+top+.06)*.5,0),Vector3(post,top+.06-low,post),GATE_FRAME,true)
-	kit.box(Vector3(0,top,0),Vector3(length,.06,.06),GATE_FRAME,true)
-	var count=maxi(2,int((length-post*2.)/.16))
-	for k in range(count+1):kit.box(Vector3(-length*.5+post+(length-post*2.)*k/count,(low+top)*.5,0),Vector3(.035,top-low,.035),GATE_BAR,true,false)
-	kit.box(Vector3(0,lerpf(low,top,.3),0),Vector3(length,.04,.04),GATE_BAR,true)
+	var post=.06
+	for s in [-1.,1.]:kit.box(Vector3(s*(length*.5-post*.5),(low+top)*.5,0),Vector3(post,top-low,post),GATE_FRAME,true)
+	kit.box(Vector3(0,top-.02,0),Vector3(length,.04,.05),GATE_FRAME,true)
+	var count=maxi(2,int((length-post*2.)/.12))
+	for k in range(count+1):kit.box(Vector3(-length*.5+post+(length-post*2.)*k/count,(low+top)*.5,0),Vector3(.025,top-low,.025),GATE_BAR,true,false)
+	kit.box(Vector3(0,lerpf(low,top,.45),0),Vector3(length,.025,.025),GATE_BAR,true)
 	kit.xf=Transform3D()
-	var shape=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(length,top-low+.06,.12);shape.shape=box
-	shape.transform=Transform3D(Basis(x,Vector3.UP,z),centre+Vector3.UP*(low+top+.06)*.5);body.add_child(shape)
 static func build(a:Node,plan:Dictionary):
 	var index=a.map_index
 	a.set_meta("plan_fronts",plan.get("fronts",[])) # access doors take the look of the buildings around them (DoorModels)
@@ -112,9 +111,9 @@ static func build(a:Node,plan:Dictionary):
 	# (build_v15.water_fences; the plan key keeps its first name).
 	var fences:Array=plan.get("water_gates",[])
 	if not fences.is_empty():
-		var fence_kit=DistrictFacade.Kit.new();var fence_body=StaticBody3D.new();fence_body.collision_layer=1;fence_body.collision_mask=0
-		var holder=Node3D.new();holder.name="WaterFences";a.architecture.add_child(holder);holder.add_child(fence_body)
-		for fence in fences:water_fence(fence_kit,fence_body,fence)
+		var fence_kit=DistrictFacade.Kit.new()
+		var holder=Node3D.new();holder.name="WaterFences";a.architecture.add_child(holder)
+		for fence in fences:water_fence(fence_kit,fence)
 		var mesh=MeshInstance3D.new();mesh.mesh=fence_kit.detail.commit();mesh.material_override=WorldSurface.material("detail",index,true);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;holder.add_child(mesh)
 	# open quay edges beside the boats: a yellow-and-black curb line
 	for q in plan.get("open_quays",[]):

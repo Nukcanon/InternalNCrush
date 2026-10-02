@@ -1076,7 +1076,7 @@ def water_safety(m, open_quays, props, spawns, targets):
 def water_fences(m):
     """1.4.6 (the user's choice): bars only between safe and deadly water - where
     a shallow ditch lies one dry cell from deep water, its edge facing the deep
-    water gets a barred fence (nobody wades out toward the deadly water). Never
+    water gets a barred grate under the water (never above its surface - the user). Never
     on the ditch's last open side. Segments [x, z, x2, z2, nx, nz, bed, top,
     'fence'] (n: from the shallow water out over the fence)."""
     dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]
@@ -1100,9 +1100,9 @@ def water_fences(m):
                 continue
             x0, z0, x1, z1 = c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL
             seg = {(0, 1): (x1, z0, x1, z1), (0, -1): (x0, z0, x0, z1), (1, 0): (x0, z1, x1, z1), (-1, 0): (x0, z0, x1, z0)}[(dr, dc)]
-            out.append(seg + (dc, dr, SHALLOW_BAND, 1.15, 'fence'))
+            out.append(seg + (dc, dr, SHALLOW_BAND, SHALLOW_SURFACE - .04, 'fence'))
             if m.symmetric and m.mirror(r, c) != (r, c):
-                out.append((m.W - seg[0], m.H - seg[1], m.W - seg[2], m.H - seg[3], -dc, -dr, SHALLOW_BAND, 1.15, 'fence'))
+                out.append((m.W - seg[0], m.H - seg[1], m.W - seg[2], m.H - seg[3], -dc, -dr, SHALLOW_BAND, SHALLOW_SURFACE - .04, 'fence'))
     return out
 
 
