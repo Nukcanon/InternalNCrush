@@ -102,7 +102,7 @@ body {
 #launch p {color:#bdd0d7;line-height:1.6;max-width:550px;}
 #fullscreen {position:fixed;top:max(6px,env(safe-area-inset-top,0));left:max(8px,env(safe-area-inset-left,0));z-index:5;padding:5px 12px;border:1px solid #78989c77;border-radius:0 0 6px 6px;background:#13293699;color:#d9eeee;font-size:12px;cursor:pointer;}
 #portrait {display:none;position:fixed;inset:0;z-index:30;background:#112631;color:white;place-content:center;text-align:center;font:20px system-ui;padding:30px;}
-@media (orientation:portrait) and (pointer:coarse) {#portrait{display:grid}}
+@media (orientation:portrait) and (pointer:coarse) {body.started #portrait{display:grid}}
 </style>
 		$GODOT_HEAD_INCLUDE
 	</head>
@@ -243,7 +243,10 @@ if(requestLock)canvasElement.requestPointerLock=function(...args){
 	} else {
 		setStatusMode('progress');
 		const startButton=document.getElementById('start');
-		startButton.onclick=()=>{document.getElementById('launch').remove();engine.startGame({
+		// 1.4.6 (the user): on a phone or tablet the start button itself turns the
+		// game full screen and locks it to landscape - the browser allows that only
+		// inside this click (the later call from the game could come too late).
+		startButton.onclick=()=>{if(navigator.maxTouchPoints>0&&window.incEnterFullscreen)window.incEnterFullscreen();document.body.classList.add('started');document.getElementById('launch').remove();engine.startGame({
 			'onProgress': function (current, total) {
 				if (current > 0 && total > 0) {
 					statusProgress.value = current;
