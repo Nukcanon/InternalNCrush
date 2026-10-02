@@ -6,27 +6,29 @@ const GATE_FRAME=Color("8b8f8a")
 const GATE_BAR=Color("4b5157")
 ## [x, z, x2, z2, nx, nz, bed, top, kind]: a barred opening in the wall at the
 ## segment, n pointing from the water into the wall.
-static func water_gate(a:Node,g:Array) -> AABB:
+## All the gates of a map go into one mesh (kit): separate boxes made the web
+## map caches too big.
+static func water_gate(kit:DistrictFacade.Kit,g:Array) -> AABB:
 	var u=Vector3(g[0],0,g[1]);var v=Vector3(g[2],0,g[3]);var n=Vector3(g[4],0,g[5]).normalized()
-	var along=(v-u).normalized();var length=u.distance_to(v);var kind=str(g[8])
+	var length=u.distance_to(v);var kind=str(g[8])
 	var margin=.35 if kind=="outlet" else .5;var top=float(g[7])
 	# (deep water is opaque: nothing is drawn far below its surface)
 	var low=maxf(float(g[6]),-.9);var width=length-margin*2.;var centre=(u+v)*.5
-	var across=func(w:float,h:float,d:float) -> Vector3:return Vector3(absf(along.x)*w+absf(n.x)*d,h,absf(along.z)*w+absf(n.z)*d)
+	# local frame: +Z out of the wall into the water, +Y up
+	var z=-n;var x=Vector3.UP.cross(z).normalized()
+	kit.xf=Transform3D(Basis(x,Vector3.UP,z),centre)
 	# the dark opening on the wall face, with a frame round it
-	M.box(a.architecture,centre-n*.01+Vector3.UP*(low+top)*.5,across.call(width,top-low,.02),GATE_DARK)
 	var frame=.22
-	for s in [-1.,1.]:M.box(a.architecture,centre+along*s*(width*.5+frame*.5)-n*.06+Vector3.UP*(low+top+frame)*.5,across.call(frame,top-low+frame,.14),GATE_FRAME)
-	M.box(a.architecture,centre-n*.06+Vector3.UP*(top+frame*.5),across.call(width+frame*2.,frame,.14),GATE_FRAME)
+	kit.box(Vector3(0,(low+top)*.5,.01),Vector3(width,top-low,.02),GATE_DARK)
+	for s in [-1.,1.]:kit.box(Vector3(s*(width*.5+frame*.5),(low+top+frame)*.5,.07),Vector3(frame,top-low+frame,.14),GATE_FRAME)
+	kit.box(Vector3(0,top+frame*.5,.07),Vector3(width+frame*2.,frame,.14),GATE_FRAME)
 	# the bars (vertical, with two cross bars) a little out in the water
-	var step=.18;var count=maxi(2,int(width/step))
-	for k in range(count+1):
-		var p=centre+along*(-width*.5+width*k/count)-n*.1
-		M.box(a.architecture,p+Vector3.UP*(low+top)*.5,Vector3(.045,top-low,.045),GATE_BAR)
-	for y in [lerpf(low,top,.35),lerpf(low,top,.8)]:
-		M.box(a.architecture,centre-n*.1+Vector3.UP*y,across.call(width,.05,.05),GATE_BAR)
+	var count=maxi(2,int(width/.24))
+	for k in range(count+1):kit.box(Vector3(-width*.5+width*k/count,(low+top)*.5,.1),Vector3(.05,top-low,.05),GATE_BAR,false,false)
+	for y in [lerpf(low,top,.35),lerpf(low,top,.8)]:kit.box(Vector3(0,y,.1),Vector3(width,.05,.05),GATE_BAR,false,false)
+	kit.xf=Transform3D()
 	# (its box, so no window or facade door is drawn over it)
-	var size:Vector3=across.call(width+frame*2.,top+frame-low,.4)
+	var size:Vector3=Vector3(absf(x.x)*(width+frame*2.)+absf(n.x)*.4,top+frame-low,absf(x.z)*(width+frame*2.)+absf(n.z)*.4)
 	return AABB(centre-n*.2+Vector3.UP*low-Vector3(size.x,0,size.z)*.5,size)
 static func build(a:Node,plan:Dictionary):
 	var index=a.map_index
@@ -118,7 +120,10 @@ static func build(a:Node,plan:Dictionary):
 	# barred openings where the water goes on - out through the outer wall
 	# (outlet), under a crossing (culvert) or into a drain (build_v15.water_gates).
 	var gate_boxes=[]
-	for gate in plan.get("water_gates",[]):gate_boxes.append(water_gate(a,gate))
+	var gate_kit=DistrictFacade.Kit.new()
+	for gate in plan.get("water_gates",[]):gate_boxes.append(water_gate(gate_kit,gate))
+	if not plan.get("water_gates",[]).is_empty():
+		var gates=MeshInstance3D.new();gates.name="WaterGates";gates.mesh=gate_kit.detail.commit();gates.material_override=WorldSurface.material("detail",index,true);gates.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;a.architecture.add_child(gates)
 	for box in gate_boxes:blockers.append([Transform3D.IDENTITY,box,false])
 	# open quay edges beside the boats: a yellow-and-black curb line
 	for q in plan.get("open_quays",[]):
