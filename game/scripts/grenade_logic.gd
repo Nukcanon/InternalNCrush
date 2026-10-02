@@ -63,7 +63,7 @@ static func tick(g:Node,dt:float):
 static func explode(g:Node,pos:Vector3,owner:int,cluster:bool=false):
 	var radius=10. if cluster else RADIUS;var power=145. if cluster else DAMAGE
 	if cluster:g.fields.append({"kind":"smoke","pos":pos,"starts":g.clock,"until":g.clock+3.,"team":g.players.get(owner,{}).get("team",0),"owner":owner,"deployed":false})
-	g.event_fx.rpc("explosion",pos,Vector3.ZERO,owner)
+	g.event_fx.rpc("explosion",pos,Vector3(radius,0,0),owner) # (1.5.1: the radius sizes the scorch)
 	for id in g.players:
 		if not g.players[id].alive:continue
 		var a=g.actors[id];var center=a.position+Vector3.UP*(.83 if a.input_state.crouch else 1.)*a.body_height/1.8

@@ -155,6 +155,33 @@ func throw_item(from:Vector3,to:Vector3):
 		if is_instance_valid(node):node.position=from.lerp(to,t)+Vector3.UP*sin(t*PI)*2.;node.rotation=Vector3(t*7,0,t*4),0.,1.,.35)
 	finish(node,.36)
 
+# 1.5.1 (the user: the ARC from a laser-weld recording): the beam's sound is a held
+# loop per shooter while its effects keep coming (every 0.08 s), not a short clip
+# re-started on top of itself.
+var laser_hums={}
+func laser_hum(game:Node,owner:int,at:Vector3):
+	var bank=game.get("audio_bank")
+	if not is_instance_valid(bank) or DisplayServer.get_name()=="headless":return
+	var near=owner==game.local_id
+	var item:Dictionary=laser_hums.get(owner,{})
+	if item.is_empty() or not is_instance_valid(item.player):
+		var stream=bank.loop_stream("laser_loop")
+		if stream==null:return
+		var volume=float(bank.catalog.get("laser_loop",{}).get("gain_db",-6.))
+		var player:Node
+		if near:player=AudioStreamPlayer.new()
+		else:player=AudioStreamPlayer3D.new();player.max_distance=GameAudio.audible_range("link_loop");player.unit_size=6.
+		player.stream=stream;player.volume_db=volume;add_child(player);player.play()
+		item={"player":player}
+		laser_hums[owner]=item
+	if item.player is AudioStreamPlayer3D:item.player.global_position=at
+	item.until=Time.get_ticks_msec()+160
+func update_laser_hums():
+	var now=Time.get_ticks_msec()
+	for owner in laser_hums.keys():
+		var item=laser_hums[owner]
+		if not is_instance_valid(item.player):laser_hums.erase(owner);continue
+		if now>int(item.until):item.player.queue_free();laser_hums.erase(owner)
 var casings:Array=[]
 var scuffs:Array=[]
 const MAX_CASINGS=72
@@ -182,6 +209,7 @@ func _process(dt:float):
 	for item in tracers:
 		if item.node.visible and stamp>=int(item.until):item.node.hide()
 	update_healing(dt)
+	update_laser_hums()
 	for item in casings.duplicate():
 		if not is_instance_valid(item.node):casings.erase(item);continue
 		item.age+=dt
@@ -210,6 +238,51 @@ func scuff(pos:Vector3):
 	node.material_override=glow(Color(.22,.25,.25,.28));add_child(node);scuffs.append(node)
 	var fade=node.create_tween();fade.tween_interval(3.5);fade.tween_property(node.material_override,"albedo_color:a",0.,1.);fade.tween_callback(node.queue_free)
 
+# 1.5.1 (the user): an explosion (rocket, grenade, planted bomb) leaves a black
+# scorch on the floor and the walls close by, which fades away after a while.
+# Flat quads (decals are not drawn by the Compatibility renderer).
+var scorches:Array=[]
+const MAX_SCORCHES=32
+const SCORCH_HOLD=20.
+const SCORCH_FADE=6.
+static var scorch_texture:ImageTexture
+static func scorch_image() -> ImageTexture:
+	if scorch_texture!=null:return scorch_texture
+	var n=128;var img=Image.create(n,n,false,Image.FORMAT_RGBA8);var noise=FastNoiseLite.new();noise.seed=1515;noise.frequency=.06;noise.fractal_octaves=3
+	for y in range(n):
+		for x in range(n):
+			var v=Vector2(x-n*.5+.5,y-n*.5+.5)/(n*.5);var r=v.length();var ang=atan2(v.y,v.x)
+			var edge=.62+.22*noise.get_noise_2d(cos(ang)*40.,sin(ang)*40.)+.1*sin(ang*7.)
+			var a=1.-smoothstep(edge*.55,edge,r)
+			a*=.78+.22*noise.get_noise_2d(x*1.6,y*1.6)
+			var core=1.-smoothstep(0.,.35,r)
+			img.set_pixel(x,y,Color(.05+.03*(1.-core),.045+.02*(1.-core),.04,clampf(a*(.72+.28*core),0.,1.)))
+	scorch_texture=ImageTexture.create_from_image(img);return scorch_texture
+func scorch(pos:Vector3,radius:float=6.):
+	# (the floor mark's width follows the blast radius: a grenade's 8 m about 5.5 m across)
+	var size=clampf(radius*.7,1.5,14.)
+	var space=get_world_3d().direct_space_state
+	var floor=space.intersect_ray(PhysicsRayQueryParameters3D.create(pos+Vector3.UP*.6,pos+Vector3.DOWN*2.5,1))
+	if not floor.is_empty():scorch_mark(floor.position,floor.normal,size)
+	var walls=0;var placed=[];var reach=clampf(radius*.45,1.2,7.)
+	for i in range(8):
+		if walls>=3:break
+		var dir=Vector3(cos(i*TAU/8.),0.,sin(i*TAU/8.));var from=pos+Vector3.UP*.5
+		var hit=space.intersect_ray(PhysicsRayQueryParameters3D.create(from,from+dir*reach,1))
+		if hit.is_empty() or absf(hit.normal.y)>.5 or placed.any(func(n):return n.dot(hit.normal)>.9):continue # (one mark per wall)
+		var near=1.-from.distance_to(hit.position)/reach
+		scorch_mark(hit.position,hit.normal,size*(.45+.4*near),.12);walls+=1;placed.append(hit.normal)
+func scorch_mark(at:Vector3,normal:Vector3,size:float,lift:float=.012):
+	while scorches.size()>=MAX_SCORCHES:
+		var old=scorches.pop_front()
+		if is_instance_valid(old):old.queue_free()
+	var node=MeshInstance3D.new();var plane=PlaneMesh.new();plane.size=Vector2(size,size);node.mesh=plane;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mat=StandardMaterial3D.new();mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;mat.albedo_texture=scorch_image();mat.cull_mode=BaseMaterial3D.CULL_DISABLED;mat.render_priority=1
+	node.material_override=mat;add_child(node)
+	var up=normal.normalized();var basis=Basis(Quaternion(Vector3.UP,up))*Basis(Vector3.UP,randf()*TAU)
+	node.global_transform=Transform3D(basis,at+up*(lift+scorches.size()*.0006)) # (walls: a little off - props such as shutters stand just proud of their collision)
+	scorches.append(node)
+	var fade=node.create_tween();fade.tween_interval(SCORCH_HOLD);fade.tween_property(mat,"albedo_color:a",0.,SCORCH_FADE);fade.tween_callback(node.queue_free)
 func temporary_light(pos:Vector3,color:Color,energy:float,radius:float,seconds:float):
 	# Eleven fixed map lights + five transient lights fit the per-surface budget.
 	# A muzzle flash must never evict a permanent light from a merged wall/floor.

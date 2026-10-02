@@ -160,6 +160,8 @@ func build(w:Dictionary,ink:bool=false):
 	for kind in look.get("attach",[]):
 		if kind=="dot":aim_point.position=Vector3(0,muzzle.position.y+.075,right_grip.position.z-.115)
 		elif kind=="scope":aim_point.position=Vector3(0,muzzle.position.y+.075,right_grip.position.z-.09)
+	# 1.5.1: the new sights (holographic, tube dot, prism, irons, carry handle, feed cover) give their own
+	if has_meta("sight_aim"):aim_point.position=Vector3(get_meta("sight_aim"))/base.scale
 	muzzles=[muzzle];dual_guns=[base]
 	# Launchers have vertical foregrips (both hands make a fist), as does the
 	# SMG whose support hand holds the magazine.

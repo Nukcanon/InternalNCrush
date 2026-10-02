@@ -6,7 +6,7 @@ static func cues(w:Dictionary,count:int,tactical:bool=false) -> Array:
 	# Revolvers: one round per cycle (the gate opens and closes in game.gd).
 	if style=="revolver":return [[.6,"shell_insert"]]
 	# DUET: each pistol out of view and back loaded in turn.
-	if style=="dual":return [[.02,"reload"],[.36,"magazine"],[.86,"magazine"]]
+	if style=="dual":return [[.02,"reload"],[.36,"pistol_magazine"],[.86,"pistol_magazine"]]
 	# 1.5.0 (the user): a pump gun loads one shell per cycle with no pump between -
 	# the pump sounds once when the loading ends (MagazineReload.finish).
 	if style=="shell" and bool(w.get("single_load",false)):return [[.66,"shell_insert"]]
@@ -19,7 +19,9 @@ static func cues(w:Dictionary,count:int,tactical:bool=false) -> Array:
 	# The new magazine seats at ReloadMotion.SEAT (the rounds come back then).
 	# 1.5.0 (the user): a pistol run dry has its slide locked back - the new magazine
 	# seats and the slide snaps forward (no rack at the end).
-	if style=="pistol" and not tactical:return [[.02,"reload"],[ReloadMotion.SEAT,"magazine"],[ReloadMotion.SEAT+.04,"action_close"]]
+	# (1.5.1, the user: a pistol's magazine seats with its own click, from their clip)
+	if style=="pistol" and not tactical:return [[.02,"reload"],[ReloadMotion.SEAT,"pistol_magazine"],[ReloadMotion.SEAT+.04,"action_close"]]
+	if style=="pistol":return [[.02,"reload"],[ReloadMotion.SEAT,"pistol_magazine"]]
 	return [[.02,"reload"],[ReloadMotion.SEAT,"magazine"]] if tactical else [[.02,"reload"],[ReloadMotion.SEAT,"magazine"],[.86,"bolt"]]
 static func tick(g:Node,id:int):
 	var p=g.players[id]

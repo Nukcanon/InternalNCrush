@@ -325,6 +325,7 @@ func build_world():
 		spectator_camera=Camera3D.new();spectator_camera.near=.1;spectator_camera.far=350;add_child(spectator_camera)
 func start_bot_match(selection:Dictionary):
 	ui.enter_play_fullscreen() # (1.4.7: at the start click, before the heavy loading - not when the HUD appears)
+	await cover_until_settled()
 	bot_start_loadout=selection.duplicate(true)
 	var _ph=Prof.now();host_game(OfflineMultiplayerPeer.new());Prof.add("start_host_game",_ph)
 	bot_start_loadout.clear()
@@ -344,6 +345,8 @@ func prime_first_frame():
 	# meshes on first use, 0.25 s here) happens behind a short cover, so the
 	# stall reads as the end of loading instead of a freeze in play.
 	if DisplayServer.get_name()=="headless":return
+	build_start_cover(START_COVER_FRAMES)
+func build_start_cover(frames:int):
 	if is_instance_valid(start_cover):start_cover.queue_free()
 	start_cover=CanvasLayer.new();start_cover.layer=60;add_child(start_cover)
 	var shade=ColorRect.new();shade.color=Color("101820");shade.set_anchors_preset(Control.PRESET_FULL_RECT);shade.mouse_filter=Control.MOUSE_FILTER_IGNORE;start_cover.add_child(shade)
@@ -352,7 +355,19 @@ func prime_first_frame():
 	# (1.4.7, the user: white and larger - it read too dark)
 	var label=Label.new();label.text="전투 준비 중…";label.theme=ui.theme;label.set_anchors_preset(Control.PRESET_FULL_RECT);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size",56);label.add_theme_color_override("font_color",Color.WHITE);label.add_theme_color_override("font_outline_color",Color("0b1218"));label.add_theme_constant_override("outline_size",6);start_cover.add_child(label);start_cover_label=label;start_cover_steady=0;label.visible=false
-	start_cover_frames=START_COVER_FRAMES;start_cover_size=get_viewport().get_visible_rect().size
+	start_cover_frames=frames;start_cover_size=get_viewport().get_visible_rect().size
+# 1.5.1 (the user: on the web the start froze a moment with a black band at the bottom):
+# the page goes full screen at the click and the map used to load in that same frame,
+# before the larger canvas was ever drawn. The cover goes up first and the load waits
+# (a few frames) until the canvas size holds.
+func cover_until_settled():
+	if dedicated or demo_mode or not OS.has_feature("web") or DisplayServer.get_name()=="headless":return
+	build_start_cover(240)
+	var last=get_viewport().get_visible_rect().size;var steady=0;var started=Time.get_ticks_msec()
+	while steady<3 and Time.get_ticks_msec()-started<800:
+		await get_tree().process_frame
+		var size=get_viewport().get_visible_rect().size
+		steady=steady+1 if size==last else 0;last=size
 var start_cover:CanvasLayer
 var start_cover_frames=0
 var start_cover_label:Label # 1.5.0 (the user: the cover jumped up and back down) - shown once the window size holds
@@ -361,7 +376,7 @@ var start_cover_size=Vector2.ZERO
 const START_COVER_FRAMES=4
 func host_game(transport:MultiplayerPeer=null):
 	if phase!="menu" or connection_busy:return
-	if transport==null and not dedicated:ui.enter_play_fullscreen()
+	if transport==null and not dedicated:ui.enter_play_fullscreen();await cover_until_settled()
 	R.sanitize_room(options)
 	if options.get("map_random",false):options.map=R.random_map(options)
 	reset_transport_state();stop_room_search()
@@ -1130,7 +1145,7 @@ func process_trigger(id:int):
 	var w=current_weapon(p);var mode=w.get("fire_mode","auto")
 	if w.get("single_load",false) and (pressed or held) and p.reload>0 and int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0:
 		p.reload=0.;MagazineReload.settle(self,p,w);MagazineReload.close_cylinder(self,id,w);p.trigger_until=clock+.55
-		if str(w.get("reload_style",""))=="shell":reload_sound.rpc(id,"bolt") # (1.5.0: the pump worked in the settle delay)
+		if str(w.get("reload_style",""))=="shell":reload_sound.rpc(id,"pump") # (1.5.0: the pump worked in the settle delay)
 	if pressed and p.reload<=0:p.trigger_until=clock+.55
 	if mode=="auto":
 		if held:fire(id)
@@ -1255,12 +1270,14 @@ func damage(target:int,amount:float,source:int,critical:bool=false,weapon_id:Str
 	var push=(actors[target].position-origin).normalized() if origin.distance_squared_to(actors[target].position)>.001 else Vector3.FORWARD
 	var point=hit_point if hit_point.is_finite() else actors[target].eye()-Vector3.UP*.35
 	if absorb>0:impact.rpc(point,push,false,int(p.team))
-	if amount>absorb:flesh_hit.rpc(point,push,amount-absorb,target,source)
+	# (1.5.1, the user: a stab makes one sound - the knife's or wrench's own, not also the hit ones)
+	var melee=weapon_id in ["knife","wrench"]
+	if amount>absorb:flesh_hit.rpc(point,push,amount-absorb,target,0 if melee else source)
 	hit_reaction.rpc(target,push)
 	if target==local_id:damage_notice(target,origin,amount,armored)
 	elif target>0 and target in multiplayer.get_peers():damage_notice.rpc_id(target,target,origin,amount,armored)
 	if source!=target:p.contributors[source]=clock
-	if source>0 and source!=target:feedback(source,"hit",("정밀 명중" if critical else "방어구 명중" if armored else "명중")+" · "+str(int(round(amount))))
+	if source>0 and source!=target:feedback(source,"hit_mute" if melee else "hit",("정밀 명중" if critical else "방어구 명중" if armored else "명중")+" · "+str(int(round(amount))))
 	if p.hp<=0:
 		impact.rpc(actors[target].position,push,true,int(p.team),int(p.role),randi()%5,actors[target].aim_yaw,bool(actors[target].input_state.crouch),target,actors[target].velocity,point)
 		BombLogic.drop(self,target)
@@ -1318,6 +1335,8 @@ func heal_target(id:int,tid:int,amount:float,weapon_heal:bool=false,visual:bool=
 func continuous_heal(id:int):
 	# Compatibility entry point; normal input uses delta-integrated MedicLink.tick.
 	MedicLink.tick(self,id,.1)
+const MEDKIT_RADIUS=10. # 1.5.1: the medic's kit - every ally this close
+const MEDKIT_HEAL=50.
 func heal_burst(id:int):
 	var p=players[id];var a=actors[id]
 	if not p.alive or p.role!=5 or p.primary not in ["m2","m3"] or p.slot!=0:return
@@ -1442,13 +1461,17 @@ func use_gadget(id:int):
 				if p.smoke<=0:feedback(id,"","연막탄 없음 · V로 섬광탄 선택");return
 				p.smoke-=1;effect.rpc("throw",a.muzzle_world(),end,id);fields.append({"kind":"smoke","pos":end,"starts":clock+.35,"until":clock+AbilityBalance.SMOKE_DURATION+.35,"team":p.team,"owner":id,"deployed":false})
 		5:
-			var tid=aim_player(id,4,true)
-			if tid==0:tid=id
-			if players[tid].hp>=R.max_hp(players[tid]):feedback(id,"","체력이 이미 가득 찼습니다.");return
-			heal_target(id,tid,25)
+			# 1.5.1 (the user): the kit heals every ally within 10 m (the medic too) by 50 at once
+			var hurt=[]
+			for tid in players:
+				var q=players[tid]
+				if q.alive and not enemies(p,q) and actors[tid].position.distance_to(a.position)<=MEDKIT_RADIUS and float(q.hp)<R.max_hp(q):hurt.append(tid)
+			if hurt.is_empty():feedback(id,"","체력이 이미 가득 찼습니다.");return
+			for tid in hurt:heal_target(id,tid,MEDKIT_HEAL,true) # (the full 50, also right after a hit)
+			effect.rpc("heal_area",a.position+Vector3.UP,a.position+Vector3.UP,id)
 	p.gadget_count-=1;p.gadget_ready=clock+.8;p.fire_ready=maxf(p.fire_ready,clock+.4)
 	if p.role!=4:event_fx.rpc("deploy",a.position,Vector3.ZERO,id)
-	feedback(id,"",["보호판 장착 · 내구도 25","상대 표식 · 6초","거치대 활성 · 15초 동안 정지 사격 정확도 증가","엄폐물 설치 완료","섬광탄 사용" if p.gadget==1 else "연막탄 전개 · 10초","응급 회복 +25"][int(p.role)])
+	feedback(id,"",["보호판 장착 · 내구도 25","상대 표식 · 6초","거치대 활성 · 15초 동안 정지 사격 정확도 증가","엄폐물 설치 완료","섬광탄 사용" if p.gadget==1 else "연막탄 전개 · 10초","응급 회복 · 10m 안 아군 +50"][int(p.role)])
 func remove_device(did:int):
 	devices.erase(did)
 	if device_nodes.has(did):device_nodes[did].queue_free();device_nodes.erase(did)
@@ -1773,9 +1796,9 @@ func feedback(id:int,sound:String,message:String,menu_notice=false):
 	elif id in multiplayer.get_peers():personal.rpc_id(id,sound,message,menu_notice)
 @rpc("authority","call_remote","reliable",0)
 func personal(sound:String,message:String,menu_notice=false):
-	if not sound.is_empty():play_sound(sound,Vector3.ZERO,false)
+	if not sound.is_empty() and sound!="hit_mute":play_sound(sound,Vector3.ZERO,false)
 	ui.notice(message,not menu_notice)
-	if sound in ["hit","confirm"]:ui.hit_until=Time.get_ticks_msec()+180
+	if sound in ["hit","hit_mute","confirm"]:ui.hit_until=Time.get_ticks_msec()+180
 func announce(message:String,important=true):
 	announcement.rpc(message,important)
 @rpc("authority","call_local","reliable",0)
@@ -1794,11 +1817,14 @@ func bomb_announcement(kind:String):
 @rpc("authority","call_local","unreliable",2)
 func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,shot_state:Dictionary={}):
 	if dedicated:return
+	# 1.5.1 (the user's pick): a rocket's blast has its own sound; it looks like any explosion
+	var rocket_blast=kind=="rocket_explosion"
+	if rocket_blast:kind="explosion"
 	if kind=="laser":
 		# Draw from the muzzle the viewer sees (the first-person view model for the
 		# shooter, the held weapon for others); the server origin sits at the eye.
 		var start=actors[owner].visual_muzzle() if actors.has(owner) and is_instance_valid(actors[owner]) else from
-		combat_fx.beam(start,to,false,true);play_sound("laser_fire",from,owner!=local_id);return
+		combat_fx.beam(start,to,false,true);combat_fx.laser_hum(self,owner,from);return # (1.5.1: a held hum while the beam fires)
 	if kind=="laser_vent":play_sound("laser_vent",from,owner!=local_id);return
 	if kind=="heal_area":
 		combat_fx.heal_area(from);play_sound("heal",from,owner!=local_id);return
@@ -1820,7 +1846,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 		return
 	if kind in ["grenade_throw","grenade_bounce"]:play_sound(kind.trim_prefix("grenade_"),from,owner!=local_id);return
 	if kind=="bomb_explosion":
-		combat_fx.explosion(from,true,maxf(2.5,to.x/3.),true)
+		combat_fx.explosion(from,true,maxf(2.5,to.x/3.),true);combat_fx.scorch(from,to.x)
 		play_sound("bomb_explosion",from,true)
 		if actors.has(local_id):actors[local_id].land_kick=.18
 		return
@@ -1832,6 +1858,7 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 	if kind=="turret_detect":play_sound("turret_detect",from,true);return
 	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_repair","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"door","skill":"skill","smoke":"smoke"}.get(kind,"")
 	if kind=="heal":sound="link_fire"
+	if rocket_blast:sound="rocket_explosion"
 	# 1.4.2: the beam's own connect sound and hum (HealingStream) replace the
 	# repeated short cue, except for the optional vocal alternative.
 	if kind in ["heal","repair"] and not audio_bank.profile.get("gunfire_reduction",false):sound=""
@@ -1851,6 +1878,8 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 		var color=Color("78e1cb") if players.has(owner) and players[owner].team==0 else Color("ffd190")
 		if kind=="skill" and players.has(owner):combat_fx.skill_burst(int(players[owner].role),from,color)
 		else:combat_fx.burst(kind,from,color)
+	# 1.5.1 (the user): a blast scorches the floor and walls, larger for a larger blast radius (to.x)
+	if kind=="explosion" and arena:combat_fx.scorch(from,to.x if to.x>0. else 6.)
 	if actors.has(owner) and kind=="shot":actors[owner].show_shot(shot_at if shot_at> -100 else clock)
 @rpc("authority","call_local","reliable",2)
 func event_fx(kind:String,from:Vector3,to:Vector3,owner:int):

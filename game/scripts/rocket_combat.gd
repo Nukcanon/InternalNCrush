@@ -30,7 +30,7 @@ static func tick(g:Node,rocket:Dictionary,dt:float):
 static func explode(g:Node,rocket:Dictionary,hit:Dictionary):
 	var radius=float(rocket.get("radius",RADIUS))
 	var pos:Vector3=hit.position+hit.normal*.06;var owner=int(rocket.owner)
-	g.event_fx.rpc("explosion",hit.position,Vector3.ZERO,owner)
+	g.event_fx.rpc("rocket_explosion",hit.position,Vector3(radius,0,0),owner) # (1.5.1: a rocket's own blast sound)
 	for id in g.players:
 		var p=g.players[id]
 		if not p.alive:continue

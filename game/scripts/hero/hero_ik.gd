@@ -498,7 +498,9 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	# 1.5.0: first person carries the upper arm on from last frame's (turned onto
 	# its new direction) and only eases toward the clip's roll - turned from the clip
 	# each frame, its roll jumped when the arm swept far (a throw's free arm).
-	if fp and hero.frame_dt>0. and hero.has_meta("upper_"+side):
+	# (1.5.1, the user: the hands on a gun trembled by a millimetre or two each frame -
+	# only a held throwable carries its upper arm on, Actor meta "fp_carry_upper")
+	if fp and hero.frame_dt>0. and hero.has_meta("upper_"+side) and bool(hero.get_meta("fp_carry_upper",false)):
 		var prev_u:Quaternion=hero.get_meta("upper_"+side)
 		var carried=(arc((prev_u*Vector3.UP).normalized(),(elbow-a).normalized())*prev_u).normalized()
 		upper_world=carried.slerp(upper_world,1.-exp(-hero.frame_dt*3.)).normalized()

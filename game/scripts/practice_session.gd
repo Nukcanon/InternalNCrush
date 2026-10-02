@@ -3,6 +3,7 @@ class_name PracticeSession
 const TARGETS=[Vector3(-7,.15,17),Vector3(0,.15,7),Vector3(7,.15,-3),Vector3(-7,.15,-23),Vector3(-25,4.35,0),Vector3(25,8.55,0),Vector3(0,12.75,-18),Vector3(7,.15,17),Vector3(-10,.15,30)]
 static func start(game):
 	game.ui.enter_play_fullscreen() # (1.4.7: at the click, before loading)
+	await game.cover_until_settled() # (1.5.1: web - the cover first, the load once the canvas size holds)
 	game.stop_room_search();game.options=Rules.default_options();game.options.merge({"practice":true,"map":31,"map_random":false,"map_rotation":false,"max_players":16,"bots":0,"infinite":true,"autoheal":true},true);game.server=true;game.local_id=1;game.phase="lobby";game.build_world();game.add_player(1,game.profile.nick,game.profile.token)
 	for i in range(TARGETS.size()):
 		var id=-i-1;game.add_player(id,"회복 연습" if i==8 else "이동 표적" if i in [1,3,5] else "방호 표적" if i==7 else "표적 %d"%(i+1),"training"+str(i))

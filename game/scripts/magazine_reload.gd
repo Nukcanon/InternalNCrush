@@ -41,7 +41,7 @@ static func finish(g:Node,id:int):
 	if not g.options.infinite:p.reserve[wid]=int(p.reserve.get(wid,0))-got
 	p.reload=0.;p.trigger_until=0.;p.reload_half=false
 	if w.get("single_load",false) and got>0 and int(p.mag[wid])<int(w.mag) and not g.actors[id].input_state.fire:g.begin_reload(id)
-	if p.reload<=0 and str(w.get("reload_style",""))=="shell" and w.get("single_load",false):g.reload_sound.rpc(id,"bolt") # (1.5.0: the pump, once, when the loading ends)
+	if p.reload<=0 and str(w.get("reload_style",""))=="shell" and w.get("single_load",false):g.reload_sound.rpc(id,"pump") # (1.5.0: the pump, once, when the loading ends; 1.5.1: its own sound)
 	if p.reload<=0:
 		# Full reload timings already include returning the gun to firing position.
 		# Only an early exit from a partial tube needs the extra settling delay.

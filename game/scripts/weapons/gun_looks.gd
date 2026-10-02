@@ -14,26 +14,26 @@ static func palette(main:Color,dark:Color,light:Color,wood:Color=WOOD) -> Dictio
 	return {"Grey":main,"Grey2":light,"LightGrey":light,"DarkGrey":dark,"Black":dark.darkened(.25),"Wood":wood,"DarkWood":wood.darkened(.3),"Red":Color("d9483b"),"DarkRed":Color("8e2a24"),"Green":Color("5a8a3a"),"DarkGreen":Color("355228")}
 # Looks keyed by weapon name (weapons.json "name").
 static var LOOKS={
-	"VECTOR-24":{"base":"AK","scale":1.058,"palette":palette(Color("64707e"),DARK,Color("9fb0bf"),Color("3a4552")),"attach":["dot","brake","fins"]},
-	"RAPID-9":{"base":"AK","scale":1.012,"palette":palette(Color("56606c"),DARK,Color("f2b233"),DARK),"attach":["dot","suppressor"]},
+	"VECTOR-24":{"base":"AK","scale":1.058,"palette":palette(Color("64707e"),DARK,Color("9fb0bf"),Color("3a4552")),"attach":["iron_flip","rail","quadrail","brake"]},
+	"RAPID-9":{"base":"AK","scale":1.012,"palette":palette(Color("56606c"),DARK,Color("f2b233"),DARK),"attach":["iron_ak","ribbed","roundguard","suppressor"]},
 	# ATLAS aims as a semi-sniper without optics (weapons.json "semi_scope").
-	"ATLAS":{"base":"AK","scale":1.116,"palette":palette(Color("7c6f5c"),DARK,Color("c9b08a")),"attach":["longbarrel","shroud"]},
-	"TRIAD":{"base":"AK","scale":1.093,"palette":palette(Color("3f4c5f"),DARK,Color("e36b4f"),DARK),"attach":["dot","flashhider","shortguard"]},
+	"ATLAS":{"base":"AK","scale":1.116,"palette":palette(Color("7c6f5c"),DARK,Color("c9b08a")),"attach":["iron_ghost","panels","shroud","longbarrel"]},
+	"TRIAD":{"base":"AK","scale":1.093,"palette":palette(Color("3f4c5f"),DARK,Color("e36b4f"),DARK),"attach":["iron","slope","shortguard","flashhider"]},
 	"SCOUT":{"base":"Sniper_2","scale":1.097,"palette":palette(Color("6b7d5a"),DARK,LIGHT,Color("8a6a44"))},
 	"MONOLITH":{"base":"Sniper","scale":1.,"palette":palette(Color("3e4652"),DARK,Color("8fa0b2"))},
-	"ECHO":{"base":"Sniper_2","scale":1.058,"palette":palette(Color("56627a"),DARK,Color("9fd0ff"),DARK),"attach":["suppressor"]},
+	"ECHO":{"base":"Sniper_2","scale":1.058,"palette":palette(Color("56627a"),DARK,Color("9fd0ff"),DARK),"attach":["sunshade","panels","suppressor"]},
 	"LARK":{"base":"AK","scale":1.209,"palette":palette(Color("8b8f99"),DARK,LIGHT,Color("6d4a2e")),"attach":["scope"]},
-	"KESTREL":{"base":"Sniper_2","scale":1.029,"palette":palette(Color("7a6a55"),DARK,Color("d7c29e")),"attach":["brake"]},
-	"ANCHOR":{"base":"AK","scale":1.14,"palette":palette(Color("4a5446"),DARK,Color("8d9a78"),DARK),"attach":["bipod","jacket","brake"]}, # (1.5.0: the loose ammo box in front of the magazine is gone - it hung in the air)
-	"BASTION":{"base":"AK","scale":1.186,"palette":palette(Color("3c3f47"),DARK,Color("a5a9b3"),DARK),"attach":["bipod","dot","fins","flashhider"]},
+	"KESTREL":{"base":"Sniper_2","scale":1.029,"palette":palette(Color("7a6a55"),DARK,Color("d7c29e")),"attach":["scopecaps","brake"]},
+	"ANCHOR":{"base":"AK","scale":1.14,"palette":palette(Color("4a5446"),DARK,Color("8d9a78"),DARK),"attach":["bipod","feedcover","jacket","brake"]}, # (1.5.0: the loose ammo box in front of the magazine is gone - it hung in the air)
+	"BASTION":{"base":"AK","scale":1.186,"palette":palette(Color("3c3f47"),DARK,Color("a5a9b3"),DARK),"attach":["bipod","carry","panels","fins","flashhider"]},
 	"PULSE":{"base":"Shotgun","scale":.816,"palette":palette(STEEL,DARK,LIGHT)},
 	"TIDAL":{"base":"Shotgun","scale":.755,"palette":palette(Color("4f6b86"),DARK,Color("9cc6e8"),DARK),"attach":["shotmag"]},
 	"FOLD":{"base":"ShortCannon","scale":1.139,"palette":palette(Color("6b5f58"),DARK,LIGHT)},
-	"SWIFT":{"base":"SMG","scale":1.103,"palette":palette(STEEL,DARK,LIGHT),"attach":["brake"]},
-	"FLUX":{"base":"SMG","scale":1.034,"palette":palette(Color("5b5374"),DARK,Color("b7a6f2")),"attach":["suppressor"]},
-	"LINE":{"base":"SMG","scale":1.172,"palette":palette(Color("4e5a52"),DARK,Color("a8c49a")),"attach":["dot","longbarrel","fins"]},
-	"HIVE":{"base":"SMG","scale":1.069,"palette":palette(Color("6e5a2f"),DARK,Color("f0c040")),"attach":["drum","flashhider"]},
-	"PIPER":{"base":"SMG","scale":1.138,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a")),"attach":["dot"]},
+	"SWIFT":{"base":"SMG","scale":1.103,"palette":palette(STEEL,DARK,LIGHT),"attach":["iron_flip","rail","brake"]},
+	"FLUX":{"base":"SMG","scale":1.034,"palette":palette(Color("5b5374"),DARK,Color("b7a6f2")),"attach":["iron","panels","suppressor"]},
+	"LINE":{"base":"SMG","scale":1.172,"palette":palette(Color("4e5a52"),DARK,Color("a8c49a")),"attach":["iron_ghost","ribbed","roundguard","fins"]},
+	"HIVE":{"base":"SMG","scale":1.069,"palette":palette(Color("6e5a2f"),DARK,Color("f0c040")),"attach":["iron_ak","drum","flashhider"]},
+	"PIPER":{"base":"SMG","scale":1.138,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a")),"attach":["iron_dots"]},
 	"SIDE":{"base":"Pistol","scale":1.,"palette":palette(STEEL,DARK,LIGHT,DARK)},
 	"CHIME":{"base":"Revolver","scale":1.,"palette":palette(Color("8a8f98"),DARK,LIGHT)},
 	"SPARK":{"base":"Pistol","scale":1.05,"palette":palette(Color("5a6270"),DARK,Color("7fd0ff"),DARK),"attach":["comp","extmag"]}, # (1.5.0: it looked just like SIDE - a compensator and an extended magazine for the machine pistol)
@@ -84,6 +84,17 @@ static func attach(gun:GunModel,l:Dictionary):
 		MeshFactory.merge_children(guard)
 		for mesh in guard.get_children():
 			if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# 1.5.1: receiver anchors (gun space) - its top, its front end and half width
+	var base_name=str(l.get("base",""));var sz=gun.base.scale.z
+	var rt=top+float({"AK":.08,"SMG":.05,"Sniper_2":.07}.get(base_name,.05))*gun.base.scale.y
+	var front_z=grip_z+float({"AK":-.39,"SMG":-.35}.get(base_name,-.35))*sz
+	var half_w=float({"AK":.034,"SMG":.024,"Sniper_2":.034}.get(base_name,.03))*gun.base.scale.x
+	# a gun given its own sight loses the base's sight block (base units, tools/_probe_profile)
+	const OWN_SIGHTS=["holo","tubedot","acog","iron","iron_ak","iron_flip","iron_ghost","iron_dots","carry","feedcover"]
+	const BASE_SIGHT={"AK":AABB(Vector3(-.036,.074,-.62),Vector3(.072,.056,.08)),"SMG":AABB(Vector3(-.026,.054,-.38),Vector3(.052,.022,.05))}
+	if BASE_SIGHT.has(base_name) and l.get("attach",[]).any(func(k):return k in OWN_SIGHTS):
+		var old_sight=gun.split_part(BASE_SIGHT[base_name],"BaseSight")
+		if old_sight:old_sight.visible=false
 	for kind in l.get("attach",[]):
 		var part=Node3D.new();part.name="Attach_"+kind;gun.add_child(part)
 		match kind:
@@ -214,6 +225,159 @@ static func attach(gun:GunModel,l:Dictionary):
 				var m:Vector3=gun.muzzle.position*gun.base.scale
 				MeshFactory.box(part,m+Vector3(0,.004,.26),Vector3(.06,.06,.2),dark.lightened(.1),Vector3.ZERO,.4)
 				for k in range(5):MeshFactory.box(part,m+Vector3(0,.036,.18+k*.04),Vector3(.064,.006,.014),accent.darkened(.25),Vector3.ZERO,.2)
+			# 1.5.1 (the user: guns of a role still looked alike - only the barrel differed):
+			# sights, receiver covers and handguards. The trigger, grip, stock and magazine
+			# stay as they are (the hands are fitted to them). A sight sets the aim point.
+			"holo":
+				var z=grip_z-.11*sz
+				MeshFactory.box(part,Vector3(0,rt+.008,z),Vector3(.034,.016,.08),dark,Vector3.ZERO,.4)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.019,rt+.036,z-.004),Vector3(.006,.042,.05),dark,Vector3.ZERO,.3)
+				MeshFactory.box(part,Vector3(0,rt+.058,z-.004),Vector3(.044,.006,.05),dark,Vector3.ZERO,.3)
+				MeshFactory.box(part,Vector3(.024,rt+.014,z+.022),Vector3(.01,.012,.026),accent,Vector3.ZERO,.3)
+				gun.set_meta("sight_aim",Vector3(0,rt+.034,z))
+			"tubedot":
+				var z=grip_z-.10*sz
+				MeshFactory.box(part,Vector3(0,rt+.01,z),Vector3(.026,.02,.05),dark,Vector3.ZERO,.4)
+				MeshFactory.cylinder(part,Vector3(0,rt+.04,z),.021,.1,dark,Vector3(PI/2,0,0),-1.,14)
+				MeshFactory.cylinder(part,Vector3(0,rt+.04,z-.052),.024,.012,accent.darkened(.2),Vector3(PI/2,0,0),-1.,14)
+				MeshFactory.cylinder(part,Vector3(.024,rt+.04,z),.008,.014,dark,Vector3(0,0,PI/2),-1.,10)
+				gun.set_meta("sight_aim",Vector3(0,rt+.04,z))
+			"acog":
+				var z=grip_z-.10*sz
+				MeshFactory.box(part,Vector3(0,rt+.012,z),Vector3(.03,.024,.07),dark,Vector3.ZERO,.4)
+				MeshFactory.box(part,Vector3(0,rt+.042,z),Vector3(.042,.036,.07),dark.lightened(.06),Vector3.ZERO,.5)
+				MeshFactory.cylinder(part,Vector3(0,rt+.044,z-.055),.026,.045,dark,Vector3(PI/2,0,0),-1.,14)
+				MeshFactory.cylinder(part,Vector3(0,rt+.044,z+.045),.017,.03,dark,Vector3(PI/2,0,0),-1.,12)
+				MeshFactory.box(part,Vector3(0,rt+.064,z-.01),Vector3(.006,.008,.05),accent,Vector3.ZERO,.2)
+				ScopeVisual.lens_disc(part,Vector3(0,rt+.044,z+.0605),Vector3(0,0,1),.015,"OcularGlass")
+				ScopeVisual.lens_disc(part,Vector3(0,rt+.044,z-.0785),Vector3(0,0,-1),.023,"ObjectiveGlass")
+				gun.set_meta("sight_aim",Vector3(0,rt+.044,z))
+			"iron":
+				# a rear aperture over the grip and a front post with guards on the barrel
+				var zr=grip_z+.01*sz;var zf=front_z-.06*sz
+				MeshFactory.box(part,Vector3(0,rt+.01,zr),Vector3(.03,.02,.03),dark,Vector3.ZERO,.3)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.011,rt+.032,zr),Vector3(.007,.026,.012),dark,Vector3.ZERO,.2)
+				MeshFactory.cylinder(part,Vector3(0,top,zf),.02,.03,dark,Vector3(PI/2,0,0),-1.,10)
+				MeshFactory.box(part,Vector3(0,(top+rt+.03)*.5,zf),Vector3(.012,rt+.03-top,.016),dark,Vector3.ZERO,.2)
+				MeshFactory.box(part,Vector3(0,rt+.036,zf),Vector3(.004,.014,.004),accent,Vector3.ZERO,.1)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.013,rt+.034,zf),Vector3(.004,.024,.012),dark,Vector3.ZERO,.2)
+				gun.set_meta("sight_aim",Vector3(0,rt+.032,zr))
+			"carry":
+				# a carry handle over the receiver with its own rear sight, and a tall front post
+				var z0=grip_z+.02*sz;var z1=grip_z-.17*sz;var h=rt+.055;var zf=front_z-.06*sz
+				for z in [z0,z1]:MeshFactory.box(part,Vector3(0,(rt+h)*.5,z),Vector3(.022,h-rt,.02),dark,Vector3.ZERO,.3)
+				MeshFactory.box(part,Vector3(0,h,(z0+z1)*.5),Vector3(.026,.014,z0-z1+.02),dark,Vector3.ZERO,.4)
+				MeshFactory.box(part,Vector3(0,h+.016,z0),Vector3(.02,.018,.012),dark,Vector3.ZERO,.2)
+				MeshFactory.cylinder(part,Vector3(0,top,zf),.022,.03,dark,Vector3(PI/2,0,0),-1.,10)
+				MeshFactory.box(part,Vector3(0,(top+h+.02)*.5,zf),Vector3(.012,h+.02-top,.016),dark,Vector3.ZERO,.2)
+				gun.set_meta("sight_aim",Vector3(0,h+.018,z0))
+			"feedcover":
+				# a machine gun's hinged feed cover on the receiver, its rear sight on top
+				var z=grip_z-.20*sz;var zf=front_z-.06*sz
+				MeshFactory.box(part,Vector3(0,rt+.018,z),Vector3(.086,.04,.2*sz),dark.lightened(.08),Vector3.ZERO,.45)
+				MeshFactory.cylinder(part,Vector3(0,rt+.01,z-.105*sz),.012,.09,dark,Vector3(0,0,PI/2),-1.,10)
+				MeshFactory.box(part,Vector3(0,rt+.03,z+.105*sz),Vector3(.03,.018,.016),accent.darkened(.2),Vector3.ZERO,.3)
+				for k in range(4):MeshFactory.box(part,Vector3(0,rt+.039,z-.06*sz+k*.04*sz),Vector3(.07,.004,.012),dark.darkened(.3),Vector3.ZERO,.1)
+				MeshFactory.box(part,Vector3(0,rt+.052,z+.08*sz),Vector3(.022,.026,.012),dark,Vector3.ZERO,.2)
+				MeshFactory.cylinder(part,Vector3(0,top,zf),.022,.03,dark,Vector3(PI/2,0,0),-1.,10)
+				MeshFactory.box(part,Vector3(0,(top+rt+.07)*.5,zf),Vector3(.012,rt+.07-top,.016),dark,Vector3.ZERO,.2)
+				gun.set_meta("sight_aim",Vector3(0,rt+.062,z+.08*sz))
+			"rail":
+				# an accessory rail along the receiver top, ahead of the sight
+				var z0=grip_z-.17*sz;var z1=front_z+.01*sz;var length=z0-z1
+				MeshFactory.box(part,Vector3(0,rt+.005,(z0+z1)*.5),Vector3(.024,.01,length),dark,Vector3.ZERO,.2)
+				for k in range(int(length/.022)):MeshFactory.box(part,Vector3(0,rt+.012,z0-.011-k*.022),Vector3(.028,.006,.01),accent.darkened(.3),Vector3.ZERO,.1)
+			"ribbed":
+				# a ribbed dust cover over the front of the receiver
+				var z0=grip_z-.17*sz;var z1=front_z+.01*sz;var length=z0-z1
+				MeshFactory.box(part,Vector3(0,rt+.004,(z0+z1)*.5),Vector3(half_w*1.9,.014,length),dark.lightened(.1),Vector3.ZERO,.5)
+				for k in range(int(length/.03)):MeshFactory.box(part,Vector3(0,rt+.012,z0-.015-k*.03),Vector3(half_w*2.,.008,.009),dark.darkened(.3),Vector3.ZERO,.1)
+			"panels":
+				# vented side plates on the receiver (above the magazine, clear of the hands)
+				var z=(grip_z+front_z)*.5-.03*sz;var length=(grip_z-front_z)*.55
+				var side=float({"AK":.05,"SMG":.035}.get(base_name,.04))*gun.base.scale.x
+				for sx in [-1.,1.]:
+					MeshFactory.box(part,Vector3(sx*(side+.003),rt-.035,z),Vector3(.006,.04,length),accent.darkened(.15),Vector3.ZERO,.4)
+					for k in range(3):MeshFactory.box(part,Vector3(sx*(side+.0065),rt-.035,z-length*.3+k*length*.3),Vector3(.003,.02,.03),dark.darkened(.3),Vector3.ZERO,.1)
+			"slope":
+				# an angled cover over the front of the receiver
+				var main:Color=l.get("palette",{}).get("Grey",STEEL)
+				MeshFactory.box(part,Vector3(0,rt-.006,front_z+.075*sz),Vector3(half_w*2.05,.034,.15*sz),main.darkened(.1),Vector3(.2,0,0),.5)
+				MeshFactory.box(part,Vector3(0,rt+.012,front_z+.12*sz),Vector3(half_w*1.4,.006,.05),accent.darkened(.2),Vector3(.2,0,0),.2)
+			"quadrail":
+				# a square railed handguard round the barrel, ahead of the receiver
+				var z=front_z-.11*sz
+				MeshFactory.box(part,Vector3(0,top+.004,z),Vector3(.056,.056,.22*sz),dark.lightened(.08),Vector3.ZERO,.4)
+				for r in [Vector3(0,.031,0),Vector3(0,-.023,0),Vector3(.031,.004,0),Vector3(-.031,.004,0)]:
+					var size=Vector3(.016,.008,.2*sz) if r.x==0. else Vector3(.008,.016,.2*sz)
+					MeshFactory.box(part,Vector3(0,top,z)+r,size,dark,Vector3.ZERO,.1)
+			"roundguard":
+				# a slim round handguard with long slots
+				var z=front_z-.11*sz
+				MeshFactory.cylinder(part,Vector3(0,top+.004,z),.031,.22*sz,dark.lightened(.1),Vector3(PI/2,0,0),-1.,14)
+				for k in range(3):
+					for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.03,top+.004,z-.06*sz+k*.06*sz),Vector3(.004,.01,.04),dark.darkened(.4),Vector3.ZERO,.1)
+			"sunshade":
+				# sniper scope: a long sun shade on the objective and large turrets
+				# (Sniper_2 scope, base units: axis y .12, objective front z -.603, ocular z -.307)
+				var y=.12*gun.base.scale.y;var zo=-.603*sz;var zm=-.47*sz
+				MeshFactory.cylinder(part,Vector3(0,y,zo-.05),.048*sz,.1,dark,Vector3(PI/2,0,0),-1.,16)
+				MeshFactory.cylinder(part,Vector3(0,y,zo-.1),.05*sz,.012,accent.darkened(.2),Vector3(PI/2,0,0),-1.,16)
+				MeshFactory.cylinder(part,Vector3(0,y+.058*sz,zm),.02,.034,accent.darkened(.2),Vector3.ZERO,-1.,12)
+				MeshFactory.cylinder(part,Vector3(.058*sz,y,zm),.02,.034,accent.darkened(.2),Vector3(0,0,PI/2),-1.,12)
+			"scopecaps":
+				# sniper scope: flip-up lens caps, open
+				var y=.12*gun.base.scale.y;var zo=-.603*sz;var zr=-.307*sz
+				MeshFactory.cylinder(part,Vector3(0,y,zo-.008),.05*sz,.016,dark,Vector3(PI/2,0,0),-1.,16)
+				MeshFactory.box(part,Vector3(0,y+.085*sz,zo-.03),Vector3(.09*sz,.09*sz,.008),accent.darkened(.1),Vector3(-.35,0,0),.4)
+				MeshFactory.cylinder(part,Vector3(0,y,zr+.008),.04*sz,.016,dark,Vector3(PI/2,0,0),-1.,14)
+				MeshFactory.box(part,Vector3(0,y+.07*sz,zr+.03),Vector3(.07*sz,.07*sz,.008),accent.darkened(.1),Vector3(.35,0,0),.4)
+			# 1.5.1 round 2 (the user: only snipers, DMRs and the ARC carry scopes - every other
+			# gun has iron sights): iron sight styles, so guns of a role still differ.
+			"iron_ak":
+				# a tangent leaf with a V notch on the receiver, a hooded round post on the barrel
+				var zr=grip_z-.22*sz;var zf=front_z-.06*sz;var h=rt+.03
+				MeshFactory.box(part,Vector3(0,rt+.006,zr),Vector3(.03,.012,.05),dark,Vector3.ZERO,.3)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.011,rt+.022,zr-.02),Vector3(.012,.022,.006),dark,Vector3.ZERO,.2)
+				MeshFactory.cylinder(part,Vector3(0,top,zf),.02,.03,dark,Vector3(PI/2,0,0),-1.,10)
+				MeshFactory.box(part,Vector3(0,(top+h)*.5,zf),Vector3(.006,h-top,.008),dark,Vector3.ZERO,.1)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.014,(top+h+.01)*.5,zf),Vector3(.004,h+.01-top,.014),dark,Vector3.ZERO,.1)
+				MeshFactory.box(part,Vector3(0,h+.012,zf),Vector3(.032,.004,.014),dark,Vector3.ZERO,.1)
+				gun.set_meta("sight_aim",Vector3(0,h,zr))
+			"iron_flip":
+				# low folding rail sights, raised: an aperture leaf at the back, a winged post in front
+				var zr=grip_z+.0*sz;var zf=front_z+.03*sz;var h=rt+.036
+				for z in [zr,zf]:MeshFactory.box(part,Vector3(0,rt+.008,z),Vector3(.026,.016,.026),dark,Vector3.ZERO,.3)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.01,h,zr),Vector3(.005,.026,.005),dark,Vector3.ZERO,.1)
+				MeshFactory.box(part,Vector3(0,h+.012,zr),Vector3(.025,.004,.005),dark,Vector3.ZERO,.1)
+				MeshFactory.box(part,Vector3(0,h-.012,zr),Vector3(.025,.004,.005),dark,Vector3.ZERO,.1)
+				MeshFactory.box(part,Vector3(0,(rt+.016+h)*.5,zf),Vector3(.005,h-rt-.016,.006),dark,Vector3.ZERO,.1)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.012,rt+.026,zf),Vector3(.004,.022,.016),dark,Vector3(0,0,-sx*.35),.1)
+				gun.set_meta("sight_aim",Vector3(0,h,zr))
+			"iron_ghost":
+				# a thick ghost ring between tall guards, a square post in a box guard
+				var zr=grip_z+.0*sz;var zf=front_z-.05*sz;var h=rt+.034
+				MeshFactory.box(part,Vector3(0,rt+.008,zr),Vector3(.044,.016,.03),dark,Vector3.ZERO,.3)
+				for sx in [-1.,1.]:
+					MeshFactory.box(part,Vector3(sx*.0145,h,zr),Vector3(.009,.038,.01),dark,Vector3.ZERO,.1)
+					MeshFactory.box(part,Vector3(sx*.026,h+.004,zr),Vector3(.006,.05,.024),dark.lightened(.1),Vector3.ZERO,.2)
+				for sy in [-1.,1.]:MeshFactory.box(part,Vector3(0,h+sy*.0145,zr),Vector3(.02,.009,.01),dark,Vector3.ZERO,.1)
+				MeshFactory.cylinder(part,Vector3(0,top,zf),.021,.03,dark,Vector3(PI/2,0,0),-1.,10)
+				MeshFactory.box(part,Vector3(0,(top+h)*.5,zf),Vector3(.007,h-top,.007),dark,Vector3.ZERO,.1)
+				for sx in [-1.,1.]:MeshFactory.box(part,Vector3(sx*.016,(top+h+.012)*.5,zf),Vector3(.005,h+.012-top,.02),dark,Vector3.ZERO,.1)
+				MeshFactory.box(part,Vector3(0,h+.014,zf),Vector3(.037,.005,.02),dark,Vector3.ZERO,.1)
+				gun.set_meta("sight_aim",Vector3(0,h,zr))
+			"iron_dots":
+				# a low notch and post with bright dots (the medic's SMG)
+				var zr=grip_z-.02*sz;var zf=front_z-.04*sz;var h=rt+.022
+				MeshFactory.box(part,Vector3(0,rt+.006,zr),Vector3(.03,.012,.026),dark,Vector3.ZERO,.3)
+				for sx in [-1.,1.]:
+					MeshFactory.box(part,Vector3(sx*.01,h-.002,zr),Vector3(.01,.016,.01),dark,Vector3.ZERO,.1)
+					MeshFactory.box(part,Vector3(sx*.01,h+.002,zr+.0052),Vector3(.004,.004,.001),accent,Vector3.ZERO,0.)
+				MeshFactory.cylinder(part,Vector3(0,top,zf),.019,.026,dark,Vector3(PI/2,0,0),-1.,10)
+				MeshFactory.box(part,Vector3(0,(top+h)*.5,zf),Vector3(.007,h-top,.008),dark,Vector3.ZERO,.1)
+				MeshFactory.box(part,Vector3(0,h-.003,zf+.0045),Vector3(.004,.004,.001),accent,Vector3.ZERO,0.)
+				gun.set_meta("sight_aim",Vector3(0,h,zr))
 			"coils":
 				for i in range(3):
 					var ring=MeshFactory.cylinder(part,Vector3(0,top,left_z-.11-i*.07),.032,.022,Color("c79bff"),Vector3(PI/2,0,0),-1.,12)

@@ -179,4 +179,4 @@ static func blast(game:Node,rocket:Dictionary,hit:Dictionary,exclude:Array):
 	for struck in game.devices.keys():
 		var device=game.devices[struck];var point=device.pos+Vector3.UP*.6;var distance=point.distance_to(at)
 		if distance<ROCKET_RADIUS and game.clear_line(at+normal*.08,point,[game.device_nodes[struck].get_rid()] if game.device_nodes.has(struck) else []):game.damage_device(struck,ROCKET_DAMAGE*clampf(1.-distance/ROCKET_RADIUS,.2,1.),int(rocket.owner))
-	game.event_fx.rpc("explosion",at,Vector3.ZERO,rocket.owner)
+	game.event_fx.rpc("rocket_explosion",at,Vector3(ROCKET_RADIUS,0,0),rocket.owner) # (1.5.1: a rocket's own blast sound)

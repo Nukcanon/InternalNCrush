@@ -47,7 +47,7 @@ func run():
 	expect(mc.contains('g.effect.rpc("melee_repair",origin,hit.position,id)\n\t\t\tif gain>0.:') or mc.contains('g.effect.rpc("melee_repair",origin,hit.position,id)\r\n\t\t\tif gain>0.:'),"the clang plays on every friendly turret hit, the repair text only when it repaired")
 	# --- Sounds ------------------------------------------------------------------
 	var manifest=JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio_manifest.json"))
-	expect(float(manifest.reload.duration)>.3 and float(manifest.rocket_insert.duration)>.6 and float(manifest.wrench_repair.duration)>.5,"recorded reload / rocket / clang clips replaced the synthetic ones")
+	expect(float(manifest.reload.duration)>.3 and float(manifest.rocket_insert.duration)>.6 and float(manifest.wrench_repair.duration)>.3,"recorded reload / rocket / clang clips replaced the synthetic ones (1.5.1: the friendly-turret hit is the user's 0.4 s impact-wrench burst)")
 	# --- Muzzle on the aim line, LINK range, killcam view model ------------------
 	var ac=FileAccess.get_file_as_string("res://scripts/actor.gd")
 	expect(not ac.contains("rotation_target.x-=(.0 if throwable") and ac.contains("rotation_target.y+=(HIP_YAW_GEAR if gadget_up else 0.)"),"guns keep the barrel parallel to the aim at the hip (no dip, no turn-in)")

@@ -38,6 +38,14 @@ func _ready():
 	for i in range(8):var player=AudioStreamPlayer.new();add_child(player);feedback_voices.append(player)
 	for i in range(12):var player=AudioStreamPlayer3D.new();add_child(player);movement_voices.append(player)
 	for i in range(8):var player=AudioStreamPlayer3D.new();add_child(player);blast_voices.append(player)
+## 1.5.1: a clip with recorded alternatives ("variants": n in the manifest, files key_v1..)
+## plays one of them at random (the hurt voices).
+func variant_stream(key:String) -> AudioStream:
+	var n=int(catalog[key].get("variants",1))
+	if n>1:
+		var k=randi()%n
+		if k>0 and streams.has(key+"_v%d"%k):return streams[key+"_v%d"%k]
+	return streams[key]
 func play(key:String,where:Vector3,world:bool,gain=0.):
 	if DisplayServer.get_name()=="headless":return
 	if not streams.has(key):return
@@ -52,7 +60,7 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 		if is_instance_valid(listener) and listener.global_position.distance_to(where)>audible_range(key):return
 	var candidates=spatial if world else feedback_voices if key in FEEDBACK else local
 	if world and key.begins_with("step_"):candidates=movement_voices
-	elif world and key in ["explosion","bomb_explosion","flash","smoke"]:candidates=blast_voices
+	elif world and key in ["explosion","rocket_explosion","bomb_explosion","flash","smoke"]:candidates=blast_voices
 	var voice=candidates[serial%candidates.size()];serial+=1
 	# Retrigger pain per received hit without stacking multiple full vocal phrases.
 	if key in ["hurt","armor_hurt","hurt_female","armor_hurt_female"]:
@@ -71,7 +79,7 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 		if matching.size()>=2:
 			matching.sort_custom(func(a,b):return int(a.get_meta("vocal_serial",0))<int(b.get_meta("vocal_serial",0)))
 			voice=matching[0]
-	voice.stop();voice.stream=vocal_streams[vocal] if use_vocal else streams[key]
+	voice.stop();voice.stream=vocal_streams[vocal] if use_vocal else variant_stream(key)
 	voice.set_meta("vocal_family",vocal if use_vocal else "");voice.set_meta("vocal_serial",serial)
 	voice.set_meta("pain",key in ["hurt","armor_hurt","hurt_female","armor_hurt_female"])
 	voice.set_meta("cue",key)
@@ -84,7 +92,7 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 	if world:
 		voice.position=where;voice.max_distance=audible_range(key);voice.unit_size=7. if audible_range(key)<=40. else 12.
 		voice.attenuation_model=AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
-		if key in ["explosion","bomb_explosion","flash","smoke"]:voice.unit_size=20.
+		if key in ["explosion","rocket_explosion","bomb_explosion","flash","smoke"]:voice.unit_size=20.
 	if world and key=="bomb_beep":voice.unit_size=16.;voice.pitch_scale=1.
 	if key in ["bomb_planted","bomb_dropped","bomb_defused","win_blue","win_orange"]:voice.pitch_scale=1.
 	if world and key=="bomb_defuse":voice.max_distance=16.;voice.unit_size=3.;voice.pitch_scale=1.
@@ -98,7 +106,7 @@ func _next_announcement():
 	announcer.stream=streams[key];announcer.pitch_scale=1.;announcer.volume_db=float(catalog[key].gain_db)
 	announcer.play();played.emit(key,false)
 static func audible_range(key:String) -> float:
-	if key in ["explosion","bomb_explosion","flash","smoke"]:return 220.
+	if key in ["explosion","rocket_explosion","bomb_explosion","flash","smoke"]:return 220.
 	if key=="bomb_beep":return 90.
 	if key.begins_with("gun_") or key in ["rocket_launch","skill","turret_detect"]:return 160.
 	return 40.

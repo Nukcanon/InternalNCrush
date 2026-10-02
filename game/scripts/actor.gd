@@ -509,8 +509,23 @@ func headless_pose(p:Dictionary):
 	pose_dt+=1./60.;pose_frame+=1
 	if (pose_frame+absi(pid))%HEADLESS_POSE_INTERVAL==0 or character.held!=held:
 		character.drive(pose_dt,pose_state(p,game.clock,progress,false));pose_dt=0.
+# 1.5.1 (the user): the medic's invulnerability and the heavy's shield are heard round the
+# hero while they last (the user's clips, kept quiet), by everyone near.
+var skill_hums={}
+func update_skill_hums(p:Dictionary,now:float):
+	for pair in [["invulnerable_loop",float(p.get("invulnerable",0))>now],["shield_loop",float(p.get("shield",0))>now]]:
+		var key:String=pair[0];var on:bool=pair[1] and bool(p.get("alive",false));var player=skill_hums.get(key)
+		if on and not is_instance_valid(player):
+			var bank=game.get("audio_bank")
+			if not is_instance_valid(bank) or DisplayServer.get_name()=="headless":continue
+			var stream=bank.loop_stream(key)
+			if stream==null:continue
+			player=AudioStreamPlayer3D.new();player.stream=stream;player.volume_db=float(bank.catalog.get(key,{}).get("gain_db",-13.))
+			player.unit_size=4.;player.max_distance=30.;player.position=Vector3.UP;add_child(player);player.play();skill_hums[key]=player
+		elif not on and is_instance_valid(player):player.queue_free();skill_hums.erase(key)
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
+	update_skill_hums(p,now)
 	if not p.alive:tag.hide();health_tag.hide();return
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);view_mirror.scale.x=1. # (mirrored again once the view is solved, end of visual)
 	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
@@ -729,6 +744,10 @@ func visual(dt:float,p:Dictionary,now:float):
 		var path=throw_path(throw_phase,[throw_start.position,throw_start.rotation])
 		base=path[0];rotation_target=path[1]
 	var swap=clampf((float(p.get("switch_until",0))-now)/.32,0,1);base.y-=swap*.32;rotation_target.z-=swap*.3
+	# 1.5.1 (the user: after a throw the next grenade sat in the middle-left): the hand
+	# dips out of view after the follow-through and comes back up with the next one
+	# (it showed in the hand at once while the arm crept back from the follow-through).
+	var redraw=after_throw(p,now) if throwable else 0.;base.y-=redraw*.32;rotation_target.z-=redraw*.3
 	base.x-=turn_sway*.004*(1.-ads_blend*.85)
 	base.z+=fk*lerpf(.10 if w.slot==1 else .13,ADS_KICK_BACK*sqrt(am),ka);base.y+=fk*.025*(1.-ka);base.y-=land_kick*.6
 	base.x*=view_hand;rotation_target.y*=view_hand;rotation_target.z*=view_hand
@@ -737,7 +756,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	# for a frame, dropped and rose again.
 	if throwing or snap_mount:gun.position=base;gun.rotation=rotation_target;snap_mount=false # (the throw path is its own motion: no smoothing lag)
 	else:
-		var settle=.27 if now-float(p.get("throw_until",-100.))<.4 else 1. # (1.4.9: back from a throw's follow-through over ~0.3 s)
+		var settle=.6 if now-float(p.get("throw_until",-100.))<REDRAW_TIME else 1. # (1.4.9: back from a throw's follow-through, not snapping; 1.5.1: down and up again)
 		gun.position=gun.position.lerp(base,1.-exp(-dt*20*settle));gun.rotation=gun.rotation.lerp(rotation_target,1.-exp(-dt*22*settle))
 	# The thrown item stays in the hand until the release point of the throw
 	# (the world projectile is hidden from its thrower until then,
@@ -745,7 +764,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	for carried in [view_item,gadget_world]:
 		if is_instance_valid(carried):
 			var payload=cached_child(carried,"Payload")
-			if payload:payload.visible=not throwing or (carried==view_item and throw_phase<THROW_RELEASE)
+			if payload:payload.visible=(not throwing or (carried==view_item and throw_phase<THROW_RELEASE)) and not (carried==view_item and after_throw(p,now)>0. and now-float(p.get("throw_until",-100.))<REDRAW_TIME*.55)
 	item_model.visible=GadgetLoadout.held_visible(p,now) and (p.slot>=2 or cooking or throwing or p.get("placing","")!="") and not MeleeCombat.shown(p,now)
 	if is_instance_valid(view_weapon):
 		view_weapon.visible=p.slot<2 and (p.slot!=0 or p.get("owned_primary",true)) and not scoped and not semi_scoped and not cooking and not throwing and p.get("placing","")=="" and not MeleeCombat.shown(p,now)
@@ -878,6 +897,13 @@ static func fp_forearms(hand:float,steep:bool=false,melee:bool=false,hold:String
 const THROW_HOLD=Vector3(.21,-.25,-.46)
 const THROW_TIME=.28 # GrenadeLogic.release: throw_until = clock + .28
 const THROW_RELEASE=.55 # phase at which the grenade leaves the hand
+# 1.5.1: after a throw the hand goes down out of view and comes back up with the next
+# throwable over this long (the next one shows once the hand is down).
+const REDRAW_TIME=.5
+static func after_throw(p:Dictionary,now:float) -> float:
+	var t=now-float(p.get("throw_until",-100.))
+	if t<0. or t>=REDRAW_TIME:return 0.
+	return 1.-smoothstep(REDRAW_TIME*.45,REDRAW_TIME,t) # (held down, then up)
 # Overhand throw (view space, right-handed) as other shooters animate it: from
 # the hold the arm draws back and up so the hand is cocked beside the head
 # (grenade behind the hand, fist pointing up), then whips forward past the
@@ -1171,6 +1197,7 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		var shoulders:Dictionary=Dictionary(view_body.get_meta("fp_shoulders",{})).duplicate()
 		if shoulders.has("L"):shoulders.L=Vector3(shoulders.L)+Vector3(out.x*view_hand,out.y,out.z);view_body.set_meta("fp_shoulders",shoulders)
 	view_body.set_meta("fp_elbow_w",{"L":FREE_ELBOW_W} if item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p) else {})
+	view_body.set_meta("fp_carry_upper",item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p)) # (1.5.1: guns keep the clip's upper arm - carried on, their hands trembled)
 	# 1.4.9: a throwable's forearm lines follow their targets over a few frames
 	# (the throw's whip and its return to the hold no longer snap the elbow).
 	if item_up and not melee_up and not bomb_up and GrenadeLogic.equipped(p):
