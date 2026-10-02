@@ -42,7 +42,7 @@ var move_blend=0.
 var ads_blend=0.
 var aim_progress=0.
 var handedness=1
-# 1.4.10: first person always solves as right-handed (view_mirror draws it mirrored)
+# 1.5.0: first person always solves as right-handed (view_mirror draws it mirrored)
 const view_hand=1
 var view_mirror:Node3D
 var crouch_blend=0.
@@ -75,7 +75,7 @@ var bob=0.0
 var step_clock=0.0
 var grounded_jump=false
 var shown_weapon=""
-var ik_hold_key="" # 1.4.10: what is held, to restart the arm's carried pose on a change
+var ik_hold_key="" # 1.5.0: what is held, to restart the arm's carried pose on a change
 var snap_mount=false
 var weapon_models={}
 var recoil=0.0
@@ -89,7 +89,7 @@ var kick_side=0.0 # this shot's sideways throw, -1..1
 var scope_kick=Vector3.ZERO # scope overlay (Reticle): x,y offset and z size change, in scope radii
 const ROCKET_KICK_HOLD=.38 # a launcher shows its kick before it tips down to load
 var free_pin_blend=0.0 # 1.4.9: free arm with a throwable, 0 spread out .. 1 pin pose
-# 1.4.10 shell loading (pump guns): one cycle follows another (shell_chain), and
+# 1.5.0 shell loading (pump guns): one cycle follows another (shell_chain), and
 # when the loading ends - the last shell in, or a shot cutting it - the pump is
 # worked once (shell_pump_at; ReloadMotion.pump_stroke).
 var shell_chain=false
@@ -103,7 +103,7 @@ func note_shell_loading(t:float,now:float):
 		shell_last_t=-1.;shell_chain=false
 		var w=game.current_weapon(game.players.get(pid,{})) if game.players.has(pid) else {}
 		if str(w.get("reload_style",""))=="shell" and bool(w.get("single_load",false)):shell_pump_at=now
-## 1.4.10 (the user): a slide pistol's slide - back for a moment on each shot,
+## 1.5.0 (the user): a slide pistol's slide - back for a moment on each shot,
 ## locked back when empty, forward again as the new magazine seats.
 func slide_amount(p:Dictionary,now:float,t:float,w:Dictionary) -> float:
 	if str(w.get("reload_style",""))!="pistol" or bool(w.get("dual",false)):return 0.
@@ -157,7 +157,7 @@ func _ready():
 	# 1.4.4: the view model (gun, hands, arms, held gear) lives in a view space
 	# VIEW_DEPTH times larger and farther: the same size on screen with less
 	# perspective stretch (shooters draw it with a narrower field of view).
-	# 1.4.10 (the user: a left-handed setting - mirror the right hand's): first person is
+	# 1.5.0 (the user: a left-handed setting - mirror the right hand's): first person is
 	# solved right-handed and drawn through this mirror (x flipped for a left hand).
 	view_mirror=Node3D.new();view_mirror.name="ViewMirror";camera.add_child(view_mirror)
 	view_space=Node3D.new();view_space.name="ViewSpace";view_space.scale=Vector3.ONE*VIEW_DEPTH;view_mirror.add_child(view_space)
@@ -254,7 +254,7 @@ func muzzle_world() -> Vector3:
 	var desired=desired_muzzle()
 	var hit=game.ray(eye(),desired,[get_rid()],1|4|8)
 	return hit.position+hit.normal*.03 if not hit.is_empty() else desired
-# 1.4.10: a point taken off the view model while it is solved unmirrored, where it is drawn
+# 1.5.0: a point taken off the view model while it is solved unmirrored, where it is drawn
 func view_to_world(at:Vector3) -> Vector3:
 	if handedness>0 or view_mirror.scale.x<0.:return at
 	var l=camera.to_local(at);l.x=-l.x;return camera.to_global(l)
@@ -428,7 +428,7 @@ func pose_state(p:Dictionary,now:float,progress:float,item_visible:bool) -> Dict
 	if p.is_empty():return s
 	# Reload hand work needs the chambered-round rule and the tube count.
 	s.reload_tactical=bool(p.get("reload_tactical",false));s.rounds=int(p.get("mag",{}).get(p.primary if p.slot==0 else p.secondary,0))
-	# 1.4.10 shell loading: the tube's size and the shells left (last shell -> pump),
+	# 1.5.0 shell loading: the tube's size and the shells left (last shell -> pump),
 	# whether this cycle follows another, and the time since loading ended
 	var held_w=game.current_weapon(p);s.capacity=int(held_w.get("mag",99));s.reserve=99 if game.options.get("infinite",false) else int(p.get("reserve",{}).get(p.primary if p.slot==0 else p.secondary,0))
 	note_shell_loading(progress,now);s.reload_chain=shell_chain;s.pump=now-shell_pump_at
@@ -732,7 +732,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	base.x-=turn_sway*.004*(1.-ads_blend*.85)
 	base.z+=fk*lerpf(.10 if w.slot==1 else .13,ADS_KICK_BACK*sqrt(am),ka);base.y+=fk*.025*(1.-ka);base.y-=land_kick*.6
 	base.x*=view_hand;rotation_target.y*=view_hand;rotation_target.z*=view_hand
-	# 1.4.10 (the user: switching to a throwable its hand shook): a new hold starts at its
+	# 1.5.0 (the user: switching to a throwable its hand shook): a new hold starts at its
 	# own lowered switch pose - eased from the old gun's place, the grenade showed there
 	# for a frame, dropped and rose again.
 	if throwing or snap_mount:gun.position=base;gun.rotation=rotation_target;snap_mount=false # (the throw path is its own motion: no smoothing lag)
@@ -938,7 +938,7 @@ const FREE_DOWN=[Vector3(-.30,-.58,-.36),Vector3(.15,-.35,-1.),Vector3(0.,1.,0.)
 const PIN_FINGERS=Vector3(.7,.65,-.15)
 const PIN_THUMB=Vector3(0.,1.,.2)
 const PIN_DRAW=Vector3(-.12,-.07,.03)
-# 1.4.10 (the user: the pulling hand sank into the throwable): the hand comes from below
+# 1.5.0 (the user: the pulling hand sank into the throwable): the hand comes from below
 # left, the index hooking the ring, drawn back toward the camera and a little left - the
 # user's pick among the probe_pin_hand.gd shots
 const PIN_SIDE=Vector3(-.05,-.015,.05)
@@ -991,7 +991,7 @@ func update_throw_hands(p:Dictionary,now:float,active:bool,dt:float=1./60.):
 	if is_instance_valid(ring):ring.visible=not cooking and not throwing or (cooking and age<PIN_REACH)
 	if in_hand:
 		if not is_instance_valid(held_ring) and is_instance_valid(ring):
-			held_ring=MeshInstance3D.new();held_ring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;view_mirror.add_child(held_ring) # (1.4.10: drawn through the left-hand mirror with the view)
+			held_ring=MeshInstance3D.new();held_ring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;view_mirror.add_child(held_ring) # (1.5.0: drawn through the left-hand mirror with the view)
 	if is_instance_valid(held_ring):
 		held_ring.visible=in_hand
 		if is_instance_valid(ring) and in_hand:
@@ -999,7 +999,7 @@ func update_throw_hands(p:Dictionary,now:float,active:bool,dt:float=1./60.):
 			if held_ring.mesh!=ring.mesh:held_ring.mesh=ring.mesh;held_ring.material_override=ring.get_surface_override_material(0)
 			held_ring.set_meta("size",absf(ring.global_basis.get_scale().x));held_ring.set_meta("centre",ring_centre(ring))
 # View-space length from the free hand's wrist to its pinch (thumb and index tips).
-const PINCH_REACH=.097 # (1.4.10, the user: the pulling hand went too far into the grenade - it pinches from a little further out)
+const PINCH_REACH=.097 # (1.5.0, the user: the pulling hand went too far into the grenade - it pinches from a little further out)
 # The pulled ring hangs from the free hand's pinch (after the hand is solved).
 func place_held_ring():
 	if not is_instance_valid(held_ring) or not held_ring.visible:return

@@ -1,4 +1,4 @@
-# Internal N Crush 1.4.10
+# Internal N Crush 1.5
 
 맵, 소리, 무기 동작을 한꺼번에 손본 업데이트입니다. · 2026-10-02
 

@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10 (the user: switching to a throwable, the hand holding it shakes for an instant):
+# 1.5.0 (the user: switching to a throwable, the hand holding it shakes for an instant):
 # the grenade hand and the throwable in camera space, frame by frame, from a gun to the
 # throwable slot. Args: role=N shots
 var g:Node

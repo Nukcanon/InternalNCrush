@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10 (the user: windows, bands and things on the side of a pillar where no
+# 1.5.0 (the user: windows, bands and things on the side of a pillar where no
 # wall stands): every facade front (plan fronts and the gate fronts) is probed
 # along its length - just in front of it, a short ray back into the wall must
 # hit something. Prints FRONT_FLOAT lines (map, place, flags) and a total.

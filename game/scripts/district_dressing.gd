@@ -21,7 +21,7 @@ static func water_fence(kit:DistrictFacade.Kit,g:Array):
 	for k in range(count+1):kit.box(Vector3(-length*.5+post+(length-post*2.)*k/count,(low+top)*.5,0),Vector3(.025,top-low,.025),GATE_BAR,true,false)
 	kit.box(Vector3(0,lerpf(low,top,.45),0),Vector3(length,.025,.025),GATE_BAR,true)
 	kit.xf=Transform3D()
-## 1.4.10 (the user): deep water is fenced by iron bars, too high to jump or
+## 1.5.0 (the user): deep water is fenced by iron bars, too high to jump or
 ## climb over, on the quay's low curb (build_v15 "railings": [ux, uz, vx, vz,
 ## y at u, y at v, nx, nz], n into the walkway). Posts and rails are one mesh,
 ## the bars one panel per run cut out by shaders/railing_bars.gdshader (a
@@ -151,7 +151,7 @@ static func build(a:Node,plan:Dictionary):
 		for fence in fences:water_fence(fence_kit,fence)
 		var mesh=MeshInstance3D.new();mesh.mesh=fence_kit.detail.commit();mesh.material_override=WorldSurface.material("detail",index,true);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;holder.add_child(mesh)
 	railings(a,plan.get("railings",[]))
-	# 1.4.10 (the user): tall walls across part of a long straight lane out of a
+	# 1.5.0 (the user): tall walls across part of a long straight lane out of a
 	# spawn (build_v15.baffles: [x, y, z, sx, sz, h]) - no grenades lobbed down it.
 	for b in plan.get("baffles",[]):
 		var wall_node=a.box(Vector3(b[0],float(b[1])+float(b[5])*.5,b[2]),Vector3(b[3],b[5],b[4]),Color("8d9598"))

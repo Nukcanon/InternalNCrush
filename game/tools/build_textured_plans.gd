@@ -49,7 +49,7 @@ func run():
 		for level in range(3):
 			for mesh in meshes:
 				var kind=mesh.get_meta("kind")
-				# 1.4.10 (the user: the map view did not look like the map from above): no roofs -
+				# 1.5.0 (the user: the map view did not look like the map from above): no roofs -
 				# every walkable floor (rooms under ceilings too) seen straight down; buildings stay dark.
 				mesh.visible=kind in (["ground","indoor","plaza","stair_ramp","shallowbed","water","water_shallow","wall","perimeter","quay_edge","stair_detail"] if level==0 else ["upper","wall","perimeter"] if level==1 else ["lower","waterbed","tunnel"])
 			for frame in range(3):await process_frame

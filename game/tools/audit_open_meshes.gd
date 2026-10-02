@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10 (the user: railings and boats with faces missing - check every object
+# 1.5.0 (the user: railings and boats with faces missing - check every object
 # and map model for unclosed meshes): every prop kind (PropCatalog), boat kind
 # (BoatModels) and gun is built alone; edges used by one triangle only (after
 # welding at 2 mm) are open edges. Prints OPEN lines (kind, open edge length

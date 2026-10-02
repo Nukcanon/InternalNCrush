@@ -23,7 +23,7 @@ static func input(game,id:int):
 static func tick(game):
 	if not game.players.has(1):return
 	var p=game.players[1];var a=game.actors[1]
-	# 1.4.10 (the user): gear refills by itself anywhere on the range, 2 s after
+	# 1.5.0 (the user): gear refills by itself anywhere on the range, 2 s after
 	# the last one is used up (not while one is still in the hand).
 	var left=GrenadeLogic.remaining(p) if GrenadeLogic.equipped(p) else int(p.get("gadget_count",0))
 	var spent=GadgetLoadout.count(p)>0 and left<=0 and int(p.get("cooking",0))==0

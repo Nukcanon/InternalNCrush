@@ -770,7 +770,7 @@ static func build(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 			for x in [-.75,.75]:P.cyl(k,Vector3(x,.75,.38),Vector3(x,1.8,.42),.02,DARK_WOOD,5)
 			return AABB(Vector3(-1.2,0,-.45),Vector3(2.,1.8,.9))
 		"warning_sign":
-			# 1.4.10 (the user): a triangular drowning warning - a black-rimmed yellow
+			# 1.5.0 (the user): a triangular drowning warning - a black-rimmed yellow
 			# triangle, a figure with both arms up over three wavy lines - on the front
 			# (+z, the walkway side); the post stands behind the panel; no text plate.
 			var ink=Color("1f2428");var yellow=Color("f2c230")

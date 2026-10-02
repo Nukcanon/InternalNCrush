@@ -1,4 +1,4 @@
-// 1.4.10: the vertical bars of a deep-water railing, drawn on one panel per run
+// 1.5.0: the vertical bars of a deep-water railing, drawn on one panel per run
 // (UV.x: metres along the run, UV.y: metres up) - only the bars are kept, the gaps
 // between them are cut out. One quad per run instead of a mesh per bar (the map
 // caches stay small; headless bakes keep no MultiMesh data).

@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10 previews: barred railings and the drowning sign at deep water, the lane
+# 1.5.0 previews: barred railings and the drowning sign at deep water, the lane
 # walls out of a spawn, a boat's bow. validation/v150/<name>.jpg. Run windowed.
 var g:Node
 var out="res://../validation/v150/"

@@ -201,7 +201,7 @@ func build(w:Dictionary,ink:bool=false):
 		var mount=Node3D.new();mount.name="GaugeMount";mount.position=right_grip.position*base.scale+Vector3(0,.178,.02);add_child(mount) # 1.4.5: top of the receiver behind the rail
 		var gauge=LaserGauge.new();gauge.name="HeatGauge";mount.add_child(gauge)
 	name="Gun_"+str(w.get("name","?"))
-## 1.4.10 (the user: the hand pumped but the pump stayed put): on the pump-action
+## 1.5.0 (the user: the hand pumped but the pump stayed put): on the pump-action
 ## shotgun base the fore-end (and the tube inside it) becomes its own part,
 ## "Pump", which set_pump() slides back along the gun. The baked base has it
 ## merged into the body: its triangles (base-local box under the barrel,
@@ -209,7 +209,7 @@ func build(w:Dictionary,ink:bool=false):
 const PUMP_BOX=AABB(Vector3(-.04,-.1,-.985),Vector3(.08,.088,.21))
 const PUMP_TRAVEL=.09 # gun-node metres of a full stroke
 var pump:Node3D
-## 1.4.10 (the user): a slide pistol's slide - it cycles on each shot, locks back
+## 1.5.0 (the user): a slide pistol's slide - it cycles on each shot, locks back
 ## when the pistol runs dry and runs forward when the new magazine seats.
 const SLIDE_BOX=AABB(Vector3(-.025,-.006,-.235),Vector3(.05,.08,.29))
 const SLIDE_TRAVEL=.032
@@ -305,7 +305,7 @@ var pair_swing_amount=0.
 var pair_toe=0.
 func pair_swing_offset(i:int) -> Vector3:
 	var s=pair_swing_amount*(1. if i==0 else -1.)
-	# 1.4.10 (the user: like carrying something while running): a pistol swinging
+	# 1.5.0 (the user: like carrying something while running): a pistol swinging
 	# forward also moves out from the body, up to 6.5 cm at the front of its swing,
 	# and comes back in as it swings back (right pistol out to +x, left to -x).
 	var outward=.065*clampf(s/.05,0.,1.)*(1. if i==0 else -1.)

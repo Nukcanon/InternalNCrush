@@ -16,7 +16,7 @@ static func view(actor:Node,p:Dictionary,now:float):
 		if is_instance_valid(actor.bomb_view):actor.bomb_view.hide()
 		return
 	if not is_instance_valid(actor.bomb_view):
-		var model=Node3D.new();model.name="BombHandling";actor.view_mirror.add_child(model) # (1.4.10: mirrored with the view for a left hand);actor.bomb_view=model
+		var model=Node3D.new();model.name="BombHandling";actor.view_mirror.add_child(model) # (1.5.0: mirrored with the view for a left hand);actor.bomb_view=model
 		var payload=Node3D.new();payload.name="Payload";model.add_child(payload);BombLogic.model(payload);payload.scale=Vector3.ONE*.52
 		# The left hand lies on top of the case's side band, fingers over its far
 		# edge (a grip shape); the right hand is a wrist target whose index finger

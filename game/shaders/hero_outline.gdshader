@@ -15,7 +15,7 @@ void vertex() {
 	if (dot(smooth_n, smooth_n) < 0.0001) smooth_n = NORMAL;
 	vec4 view_pos = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
 	vec3 view_n = normalize(MODELVIEW_NORMAL_MATRIX * smooth_n);
-	// world size of one pixel at this depth (1.4.10: an orthographic camera - the
+	// world size of one pixel at this depth (1.5.0: an orthographic camera - the
 	// gear screen previews and thumbnails - has no depth term; with it the line
 	// came out several times too thick there)
 	bool ortho = PROJECTION_MATRIX[3][3] > 0.5;

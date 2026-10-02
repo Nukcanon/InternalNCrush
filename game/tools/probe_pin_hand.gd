@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10 (the user: the pin-pulling hand sinks into the throwable): how deep the free
+# 1.5.0 (the user: the pin-pulling hand sinks into the throwable): how deep the free
 # hand's joints (and points along its palm and finger bones) go into the throwable's
 # body during the pin pull, frame by frame. Args: role=N gadget=N shots
 # (the body is taken as a cylinder round its AABB - the lever widens it, so depths read high)

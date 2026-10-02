@@ -34,7 +34,7 @@ func run():
 		var idle=ReloadMotion.support(gun,{"reload":-1.,"shot":5.})
 		expect(not mid.is_empty() and mid.position.is_finite(),"reload hand work mid-reload: "+w.name)
 		expect(idle.is_empty(),"support hand back on the grip when idle: "+w.name)
-		# (1.4.10, the user: a slide pistol run dry has its slide locked back and the seated magazine sends it forward - no rack at the end)
+		# (1.5.0, the user: a slide pistol run dry has its slide locked back and the seated magazine sends it forward - no rack at the end)
 		if w.kind=="gun" and not w.get("rocket",false) and not w.get("laser",false) and w.reload_style not in ["shell","break","box","pistol"]:
 			var racking=ReloadMotion.support(gun,{"reload":.9,"reload_tactical":false,"rounds":0});var tactical=ReloadMotion.support(gun,{"reload":.9,"reload_tactical":true,"rounds":0})
 			expect(racking.position.y>tactical.position.y-.001 and racking.position!=tactical.position,"run-dry reload racks the bolt, tactical reload does not: "+w.name)

@@ -167,7 +167,7 @@ seat_r=lowpass(sample('rd_metal_slam01',.82,.45),1100)
 write('rocket_insert',mix(.72,(drag,.70,0),(seat_r,.80,.40),(lowpass(sample('rd_metal_close01',.9,.3),600),.25,.42)),gain=0)
 # A proper clang (metal hit with a ringing sheet tail) for wrench hits on a turret.
 write('wrench_repair',mix(.62,(sample('rd_metal_hit03',1.05,.40),.95,0),(highpass(sample('rd_metal_sheet06',1.15,.6),700),.45,.01)),gain=0)
-# 1.4.10: gunshots, rockets, explosions, grenade and reload clicks remade (wins over the above)
+# 1.5.0: gunshots, rockets, explosions, grenade and reload clicks remade (wins over the above)
 exec((root/'tools/combat_audio_v150.py').read_text(encoding='utf-8'))
 (root/'assets/audio_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print('AUDIO_BUILT',len(manifest),'sample-based clips;',sum(k.startswith('gun_') for k in manifest),'distinct weapon mixes')

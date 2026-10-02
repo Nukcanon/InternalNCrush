@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10 (the user): a pump shotgun loading shells back to back - the hand stays
+# 1.5.0 (the user): a pump shotgun loading shells back to back - the hand stays
 # down at the shells between them and works the pump once after the last; a shot
 # cutting the loading works the pump in its short delay; the pump itself slides.
 # Frames every 0.1 s through the real server reload (validation/shell-chain/).

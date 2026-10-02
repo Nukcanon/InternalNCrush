@@ -348,14 +348,14 @@ func prime_first_frame():
 	start_cover=CanvasLayer.new();start_cover.layer=60;add_child(start_cover)
 	var shade=ColorRect.new();shade.color=Color("101820");shade.set_anchors_preset(Control.PRESET_FULL_RECT);shade.mouse_filter=Control.MOUSE_FILTER_IGNORE;start_cover.add_child(shade)
 	# (1.4.7: past every edge, so a window/fullscreen resize mid-cover never shows a bar)
-	shade.offset_left=-1200;shade.offset_top=-1200;shade.offset_right=1200;shade.offset_bottom=1200 # (1.4.10: wide - a window growing to full screen never shows past it)
+	shade.offset_left=-1200;shade.offset_top=-1200;shade.offset_right=1200;shade.offset_bottom=1200 # (1.5.0: wide - a window growing to full screen never shows past it)
 	# (1.4.7, the user: white and larger - it read too dark)
 	var label=Label.new();label.text="전투 준비 중…";label.theme=ui.theme;label.set_anchors_preset(Control.PRESET_FULL_RECT);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size",56);label.add_theme_color_override("font_color",Color.WHITE);label.add_theme_color_override("font_outline_color",Color("0b1218"));label.add_theme_constant_override("outline_size",6);start_cover.add_child(label);start_cover_label=label;start_cover_steady=0;label.visible=false
 	start_cover_frames=START_COVER_FRAMES;start_cover_size=get_viewport().get_visible_rect().size
 var start_cover:CanvasLayer
 var start_cover_frames=0
-var start_cover_label:Label # 1.4.10 (the user: the cover jumped up and back down) - shown once the window size holds
+var start_cover_label:Label # 1.5.0 (the user: the cover jumped up and back down) - shown once the window size holds
 var start_cover_steady=0
 var start_cover_size=Vector2.ZERO
 const START_COVER_FRAMES=4
@@ -552,7 +552,7 @@ func spawn(id:int):
 	p.placing="";p.invul_select=0.;p.invulnerable=0.;p.dash=0.;p.dash_recovery=0.;p.shield=0.;p.slow=0.;p.mark=0.;p.reveal_to={}
 	# 1.4.2: only bots are sometimes left-handed (variety in third person); a
 	# player's own hands no longer swap sides from one life to the next.
-	# (1.4.10: a player keeps the left-handed setting, Game.hand_setting / the "hand" command)
+	# (1.5.0: a player keeps the left-handed setting, Game.hand_setting / the "hand" command)
 	if id<0:p.hand=-1 if randf()<.12 else 1
 	else:p.hand=hand_setting() if id==local_id else int(p.get("hand",1))
 	a.reset_view(0. if options.get("practice",false) else open_yaw(best,atan2(best.x,best.z) if Vector2(best.x,best.z).length()>1. else 0.));p.fire_ready=clock+.3;p.burst_left=0;p.fire_prev=false;p.trigger_until=0.;p.trigger_seen=int(a.input_state.get("trigger_seq",0));p.slot=0 if p.get("owned_primary",true) else 1;p.link_target=0;p.link_fx_ready=0.;p.melee_started=-100.;p.melee_ready=0.;p.melee_step=MeleeCombat.STEPS;p.step_distance=0.;p.step_index=0;p.gait=0.;p.bloom=0.;p.spray_index=0;p.spray_phase=0.;p.shot_time=-100.;p.switch_until=clock+.3;equip_ammo(p)
@@ -832,7 +832,7 @@ func _process(dt:float):
 		var now_size=get_viewport().get_visible_rect().size
 		if now_size!=start_cover_size:start_cover_size=now_size;start_cover_frames=maxi(start_cover_frames,3);start_cover_steady=0
 		else:start_cover_steady+=1
-		# (1.4.10) the words only once the size has held - laid out mid-resize they jumped
+		# (1.5.0) the words only once the size has held - laid out mid-resize they jumped
 		if is_instance_valid(start_cover_label):start_cover_label.visible=start_cover_steady>=2
 		if start_cover_steady<2:start_cover_frames=maxi(start_cover_frames,1)
 		if start_cover_frames==0 and is_instance_valid(start_cover):start_cover.queue_free()
@@ -948,7 +948,7 @@ func handle_command(id:int,action:String,data:Dictionary):
 	if not players.has(id) or (not action.ends_with("_release") and not rate_limit(id,"cmd_"+action,.08)):return
 	var p=players[id]
 	match action:
-		"hand":p.hand=-1 if bool(data.get("left",false)) else 1 # 1.4.10: the player's left-handed setting
+		"hand":p.hand=-1 if bool(data.get("left",false)) else 1 # 1.5.0: the player's left-handed setting
 		"bot_add":RosterControls.add_bot(self,id,int(data.get("team",0)))
 		"bot_remove":RosterControls.remove_bot(self,id,int(data.get("target",0)))
 		"start":
@@ -1130,7 +1130,7 @@ func process_trigger(id:int):
 	var w=current_weapon(p);var mode=w.get("fire_mode","auto")
 	if w.get("single_load",false) and (pressed or held) and p.reload>0 and int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0:
 		p.reload=0.;MagazineReload.settle(self,p,w);MagazineReload.close_cylinder(self,id,w);p.trigger_until=clock+.55
-		if str(w.get("reload_style",""))=="shell":reload_sound.rpc(id,"bolt") # (1.4.10: the pump worked in the settle delay)
+		if str(w.get("reload_style",""))=="shell":reload_sound.rpc(id,"bolt") # (1.5.0: the pump worked in the settle delay)
 	if pressed and p.reload<=0:p.trigger_until=clock+.55
 	if mode=="auto":
 		if held:fire(id)
@@ -1682,7 +1682,7 @@ func snapshot(s:Dictionary):receive_state(s)
 func receive_state(s:Dictionary):
 	if server or arena==null:return
 	var _t=Time.get_ticks_usec();receive_state_body(s);prof_add("receive",_t)
-# 1.4.10 (the user): the left-handed setting - mirrored first person, gun and throws in the left hand.
+# 1.5.0 (the user): the left-handed setting - mirrored first person, gun and throws in the left hand.
 func hand_setting() -> int:return -1 if bool(profile.get("left_handed",false)) else 1
 var hand_sent_ms=-100000
 func apply_hand():

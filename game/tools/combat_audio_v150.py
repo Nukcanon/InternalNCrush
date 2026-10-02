@@ -1,4 +1,4 @@
-"""1.4.10 combat audio (the user's reference videos, analysed for their character
+"""1.5.0 combat audio (the user's reference videos, analysed for their character
 only - nothing from them is used): gunshots with a hard transient, a mid-range
 body and an outdoor echo tail; deep rocket launches and explosions with long
 rumbles; a roaring rocket flight; metallic reload clicks from the recorded CC0

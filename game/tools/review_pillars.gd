@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10 (the user: windows and bands beside a pillar where no wall stands): views
+# 1.5.0 (the user: windows and bands beside a pillar where no wall stands): views
 # of the covered-room pillars (plan "supports" with a side) from the open
 # ground in front of them. validation/pillars/mapXX_N.jpg. Run windowed.
 var g:Node

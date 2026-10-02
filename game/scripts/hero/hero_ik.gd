@@ -495,7 +495,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var elbow=centre+perp*radius
 	var q1=arc((b-a).normalized(),(elbow-a).normalized())
 	var upper_world=(q1*wu.basis.get_rotation_quaternion()).normalized()
-	# 1.4.10: first person carries the upper arm on from last frame's (turned onto
+	# 1.5.0: first person carries the upper arm on from last frame's (turned onto
 	# its new direction) and only eases toward the clip's roll - turned from the clip
 	# each frame, its roll jumped when the arm swept far (a throw's free arm).
 	if fp and hero.frame_dt>0. and hero.has_meta("upper_"+side):
@@ -506,7 +506,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var c1=elbow+q1*(c-b)
 	var q2=arc((c1-elbow).normalized(),(a+dir*d-elbow).normalized())
 	var lower_world=(q2*q1*wl.basis.get_rotation_quaternion()).normalized()
-	# 1.4.10: first person bends the forearm off the upper arm (an elbow bends less
+	# 1.5.0: first person bends the forearm off the upper arm (an elbow bends less
 	# than half a turn) - from the clip's own forearm the turn needed came near half
 	# a turn while the free hand swept down on a throw, and the arm spun about itself.
 	if fp:lower_world=(arc((upper_world*Vector3.UP).normalized(),(a+dir*d-elbow).normalized())*upper_world).normalized()
@@ -530,7 +530,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	else:
 		twist=twist.normalized()
 		var angle=wrapf(2.*atan2(twist.y,twist.w),-PI,PI)
-		# 1.4.10 (the user: the throwing arm twisted and trembled): near half a turn
+		# 1.5.0 (the user: the throwing arm twisted and trembled): near half a turn
 		# the roll flipped between +180 and -180 deg from one frame to the next, and a
 		# hand turned at once (a new grenade in the grip, the free hand coming back)
 		# spun the whole forearm in one frame. First person measures the roll against
@@ -613,7 +613,7 @@ static func fingers_of(hero:HeroCharacter,side:String) -> Array:
 			if n.begins_with(finger):out.append([i,finger,int(n.substr(finger.length(),1))]);break
 	finger_bones[key]=out;return out
 static var chain_cache={}
-# 1.4.10 (the user: switching to a throwable, its hand shook): the first-person arm
+# 1.5.0 (the user: switching to a throwable, its hand shook): the first-person arm
 # carries its upper arm and forearm roll on from last frame (solve_arm) - across a
 # change of what is held that dragged the old hold's arm in for about a second.
 # A new hold starts from its own clip.

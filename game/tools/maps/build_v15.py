@@ -42,7 +42,7 @@ PARAPET = 0.95
 PILLAR_SIDE = 0.42   # 1.4.5: square pillars under the building mass over covered-room openings
 PILLAR_INSET = 0.21  # flush in the opening's corner (deeper, it closed 4 m passages for bots)
 PARAPET_T = 0.25
-# 1.4.10 (the user): deep water is fenced by 1.7 m iron bars on a low curb - a
+# 1.5.0 (the user): deep water is fenced by 1.7 m iron bars on a low curb - a
 # move + jump (0.82 m) plus a mantle (0.8 m in the air) no longer clears it.
 CURB = 0.15
 RAILING = 1.7
@@ -596,7 +596,7 @@ def build(index):
     openings = []
     solid_points = set()  # corners touched by a building wall (they carry the mass above)
     rail_push = {}  # corner -> push (x, z) off the parapets inside the cell at that corner
-    railings = []  # 1.4.10: barred railings along deep water [u, v, d, hu, hv]
+    railings = []  # 1.5.0: barred railings along deep water [u, v, d, hu, hv]
 
     def rail_edge(u, v, d):
         n = (-d[1], -d[0])  # into the walkable cell, where the parapet's thickness lies
@@ -833,7 +833,7 @@ def build(index):
     props += wall_decor(m, index)
     props += water_safety(m, open_quays, props, spawns, targets)
     m.decor_count = len(props) - decor_count
-    # (1.4.10) nothing stands where a lane wall stands
+    # (1.5.0) nothing stands where a lane wall stands
     clear_of = lambda x, z, pad: not any(abs(x - b[2]) < b[5] * .5 + pad and abs(z - b[3]) < b[6] * .5 + pad for b in walls_across)
     props = [p for p in props if clear_of(p[0] + ox, p[1] + oz, .9)]
 
@@ -954,7 +954,7 @@ def parapet(emit, wall, u, v, d, hu, hv, height=PARAPET):
     emit([(iu[0], hu, iu[1]), (iu[0], hu + top, iu[1]), (iv[0], hv + top, iv[1])], 'trim')
     emit([(u[0], hu + top, u[1]), (v[0], hv + top, v[1]), (iu[0], hu + top, iu[1])], 'trim')
     emit([(v[0], hv + top, v[1]), (iv[0], hv + top, iv[1]), (iu[0], hu + top, iu[1])], 'trim')
-    # 1.4.10 (the user: open models): both ends closed - where a parapet run
+    # 1.5.0 (the user: open models): both ends closed - where a parapet run
     # stopped, its end showed the hollow inside (inside a run the caps are hidden).
     for p, ip, h in ((u, iu, hu), (v, iv, hv)):
         emit([(p[0], h, p[1]), (ip[0], h, ip[1]), (ip[0], h + top, ip[1])], 'trim')
@@ -1250,7 +1250,7 @@ def water_safety(m, open_quays, props, spawns, targets):
 
 
 def baffles(m, spawns, targets=()):
-    """1.4.10 (the user): where a straight lane runs from a spawn toward the enemy
+    """1.5.0 (the user): where a straight lane runs from a spawn toward the enemy
     side for 8 cells (32 m) and more, tall walls stand across part of it - at
     12 m and 28 m out (and 44 m on very long lanes), on alternate sides, as high
     as two storeys (to the ceiling indoors) - so grenades can't be lobbed down

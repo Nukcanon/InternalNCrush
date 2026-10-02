@@ -24,7 +24,7 @@ static var LOOKS={
 	"ECHO":{"base":"Sniper_2","scale":1.058,"palette":palette(Color("56627a"),DARK,Color("9fd0ff"),DARK),"attach":["suppressor"]},
 	"LARK":{"base":"AK","scale":1.209,"palette":palette(Color("8b8f99"),DARK,LIGHT,Color("6d4a2e")),"attach":["scope"]},
 	"KESTREL":{"base":"Sniper_2","scale":1.029,"palette":palette(Color("7a6a55"),DARK,Color("d7c29e")),"attach":["brake"]},
-	"ANCHOR":{"base":"AK","scale":1.14,"palette":palette(Color("4a5446"),DARK,Color("8d9a78"),DARK),"attach":["bipod","jacket","brake"]}, # (1.4.10: the loose ammo box in front of the magazine is gone - it hung in the air)
+	"ANCHOR":{"base":"AK","scale":1.14,"palette":palette(Color("4a5446"),DARK,Color("8d9a78"),DARK),"attach":["bipod","jacket","brake"]}, # (1.5.0: the loose ammo box in front of the magazine is gone - it hung in the air)
 	"BASTION":{"base":"AK","scale":1.186,"palette":palette(Color("3c3f47"),DARK,Color("a5a9b3"),DARK),"attach":["bipod","dot","fins","flashhider"]},
 	"PULSE":{"base":"Shotgun","scale":.816,"palette":palette(STEEL,DARK,LIGHT)},
 	"TIDAL":{"base":"Shotgun","scale":.755,"palette":palette(Color("4f6b86"),DARK,Color("9cc6e8"),DARK),"attach":["shotmag"]},
@@ -36,7 +36,7 @@ static var LOOKS={
 	"PIPER":{"base":"SMG","scale":1.138,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a")),"attach":["dot"]},
 	"SIDE":{"base":"Pistol","scale":1.,"palette":palette(STEEL,DARK,LIGHT,DARK)},
 	"CHIME":{"base":"Revolver","scale":1.,"palette":palette(Color("8a8f98"),DARK,LIGHT)},
-	"SPARK":{"base":"Pistol","scale":1.05,"palette":palette(Color("5a6270"),DARK,Color("7fd0ff"),DARK),"attach":["comp","extmag"]}, # (1.4.10: it looked just like SIDE - a compensator and an extended magazine for the machine pistol)
+	"SPARK":{"base":"Pistol","scale":1.05,"palette":palette(Color("5a6270"),DARK,Color("7fd0ff"),DARK),"attach":["comp","extmag"]}, # (1.5.0: it looked just like SIDE - a compensator and an extended magazine for the machine pistol)
 	"RIVET":{"base":"Revolver_Small","scale":1.,"palette":palette(Color("d9a93a"),DARK,Color("f3d27a"),DARK)},
 	"TRIO":{"base":"Pistol","scale":1.02,"palette":palette(Color("6a4f63"),DARK,Color("f08fb8"),DARK)},
 	"FEATHER":{"base":"Pistol","scale":.98,"palette":palette(MEDIC_WHITE,Color("55606a"),MEDIC_GREEN,Color("55606a"))},
@@ -63,7 +63,7 @@ static func hold_kind(w:Dictionary) -> String:
 	if bool(look(w).get("shoulder",false)):return "shoulder"
 	return "rifle"
 # Small rounded attachments in the cartoon style, placed relative to markers.
-const MUZZLE_GAIN=.012 # 1.4.10: how far a muzzle device reaches past the bare muzzle
+const MUZZLE_GAIN=.012 # 1.5.0: how far a muzzle device reaches past the bare muzzle
 static func attach(gun:GunModel,l:Dictionary):
 	var accent:Color=l.get("palette",{}).get("Grey2",LIGHT)
 	var dark:Color=l.get("palette",{}).get("DarkGrey",DARK)
@@ -99,7 +99,7 @@ static func attach(gun:GunModel,l:Dictionary):
 			"box":
 				MeshFactory.box(part,Vector3(0,top-.13,left_z+.12),Vector3(.075,.11,.1),accent.darkened(.25),Vector3.ZERO,.35)
 			"drum":
-				# 1.4.10 (the user: a part not joined to the gun): the drum is the magazine's
+				# 1.5.0 (the user: a part not joined to the gun): the drum is the magazine's
 				# own lower end (a drum magazine), on the magazine node so it reloads with it
 				if is_instance_valid(gun.magazine):
 					part.queue_free()
@@ -165,7 +165,7 @@ static func attach(gun:GunModel,l:Dictionary):
 					for mesh in ext.get_children():
 						if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(gun.outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					continue
-			# 1.4.10 (the user: guns of a role differed only by colour) - muzzle and barrel
+			# 1.5.0 (the user: guns of a role differed only by colour) - muzzle and barrel
 			# parts, each joined to the barrel. Muzzle devices sit back over the barrel and reach only
 			# MUZZLE_GAIN past it (the gun lengths keep their class/damage order, test_v142).
 			"suppressor":

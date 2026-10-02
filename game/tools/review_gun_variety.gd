@@ -1,5 +1,5 @@
 extends SceneTree
-## 1.4.10: guns of one role side by side (left side, 3/4 view) to check they differ in shape.
+## 1.5.0: guns of one role side by side (left side, 3/4 view) to check they differ in shape.
 const OUT="res://../validation/gun-variety/"
 const GROUPS=[["VECTOR-24","RAPID-9","ATLAS","TRIAD"],["SCOUT","ECHO","KESTREL","LARK"],["ANCHOR","BASTION","SWIFT","FLUX"],["LINE","HIVE","PIPER","SIDE","SPARK"]]
 func _initialize():call_deferred("run")

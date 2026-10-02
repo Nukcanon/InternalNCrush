@@ -1,5 +1,5 @@
 extends SceneTree
-# 1.4.10: first-person reload frames (magazine guns and shotguns) at fixed
+# 1.5.0: first-person reload frames (magazine guns and shotguns) at fixed
 # progress steps - a sheet per weapon in validation/reload-fp/<id>.jpg.
 # Args: optional comma list of weapon ids. Run windowed.
 var g:Node

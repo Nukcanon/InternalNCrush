@@ -178,7 +178,7 @@ func run():
 	expect(Actor.FP_FOREARM.R.z>.9 and Actor.FP_SHOULDER.rifle.R.z>.4,"firing forearm line runs back along the barrel from a shoulder behind the hand")
 	p.hand=-1;a.handedness=-1
 	for i in range(40):a.visual(1./30.,p,g.clock)
-	expect(a.view_mirror.scale.x<0. and a.gun.position.x>.28,"left-handed: the rifle is drawn to the left (1.4.10: solved right-handed, mirrored view; x %.2f)"%a.gun.position.x)
+	expect(a.view_mirror.scale.x<0. and a.gun.position.x>.28,"left-handed: the rifle is drawn to the left (1.5.0: solved right-handed, mirrored view; x %.2f)"%a.gun.position.x)
 	p.hand=1;a.handedness=1
 	# A frag grenade is held up at the lower right, stays in the hand through the
 	# cock and leaves at the release point; the world projectile is hidden from

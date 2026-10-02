@@ -331,7 +331,7 @@ static func split_ring(mesh:Mesh,kind:String) -> Array:
 				body.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,sa);body.surface_set_material(s,mesh.surface_get_material(s))
 			var ra=mesh.surface_get_arrays(target);ra[Mesh.ARRAY_INDEX]=ring_idx
 			ring_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,ra);ring_mesh.surface_set_material(0,mesh.surface_get_material(target))
-			# 1.4.10: the ring mesh shares the whole surface's vertices, so its AABB is the
+			# 1.5.0: the ring mesh shares the whole surface's vertices, so its AABB is the
 			# grenade's - the hand pinched the grenade's middle. Its own centre is kept here.
 			ring_mesh.set_meta("ring_centre",Vector3(boxes[ring_root].get_center()))
 			result=[body,ring_mesh]

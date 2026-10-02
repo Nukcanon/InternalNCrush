@@ -338,7 +338,7 @@ func sync_rockets(rockets:Array):
 			if i>=rocket_nodes.size():rocket_nodes.append(n)
 			else:rocket_nodes[i]=n
 		var n=rocket_nodes[i];n.position=rockets[i].pos
-		# 1.4.10 (the user: a launcher's rocket left from the middle of the screen):
+		# 1.5.0 (the user: a launcher's rocket left from the middle of the screen):
 		# the shooter sees his own rocket leave the drawn launcher's muzzle, joining
 		# the true flight (from the eye-side muzzle point) over its first 6 m.
 		var g=get_parent();var owner=int(rockets[i].get("owner",0))

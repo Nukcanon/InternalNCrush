@@ -372,7 +372,7 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 				banner(kit,(x0+x1)*.5,level+bottom+storey-.3,hs)
 		if style.get("cornice",false) and s>0 and not indoor:
 			sloped_band(kit,x0,x1,y0,y1,bottom,bottom+.14,.1,trim)
-	# (1.4.10, the user: windows and bands between the pillars of an opening: an
+	# (1.5.0, the user: windows and bands between the pillars of an opening: an
 	# indoor wall's clerestory and trim are measured from the floor - the wall
 	# over an opening has neither)
 	if indoor and not over:
@@ -916,7 +916,7 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 	# A wall above an opening (covered room, gate): ornaments start above the
 	# opening instead of hanging across it.
 	if p.from>0.:low+=p.from;top-=p.from;crown-=p.from
-	# 1.4.10 (the user: bands, lockers and windows beside the pillars where no wall
+	# 1.5.0 (the user: bands, lockers and windows beside the pillars where no wall
 	# stands): an indoor style's extras are furniture standing on the floor - on the
 	# wall above an opening they hung across the opening between its pillars.
 	if p.from>0. and indoor:return
