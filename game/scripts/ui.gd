@@ -244,7 +244,7 @@ func button(text:String,callback:Callable,parent:Node=null) -> Button:
 		UiSkin.paint(b,"stop")
 		if parent==null and is_instance_valid(panel_body) and is_instance_valid(panel_scroll) and screen!="menu":pin_actions(b)
 	return b
-func confirm_navigation(callback:Callable,destination:String,title:="",text:="",ok:=""):
+func confirm_navigation(callback:Callable,destination:String,title:="",text:="",ok:="",ok_is_go:=false):
 	if is_instance_valid(navigation_confirm):return
 	navigation_confirm=ConfirmationDialog.new();navigation_confirm.title=title if title!="" else "이동 확인"
 	navigation_confirm.dialog_text=text if text!="" else ("메인메뉴로 이동할까요?" if destination=="메인메뉴" else "이전 화면으로 돌아갈까요?")
@@ -253,12 +253,13 @@ func confirm_navigation(callback:Callable,destination:String,title:="",text:="",
 		var dialog=navigation_confirm;navigation_confirm=null;dialog.queue_free();callback.call())
 	navigation_confirm.canceled.connect(func():navigation_confirm.queue_free();navigation_confirm=null)
 	# Title and text are final before the window opens: it appears at its fitted size.
-	DialogStyle.apply(navigation_confirm,theme,true);DialogStyle.popup(navigation_confirm)
+	# (1.4.10, the user: entering the practice range is the green "go" button, staying the coral one)
+	DialogStyle.apply(navigation_confirm,theme,not ok_is_go);DialogStyle.popup(navigation_confirm)
 func confirm_room_leave():
 	if is_instance_valid(navigation_confirm):return
 	confirm_navigation(func():game.request_leave(),"메인메뉴","방 나가기","현재 방에서 나가 메인메뉴로 이동할까요?","나가기")
 func confirm_practice():
-	confirm_navigation(func():clear_panel();PracticeSession.start(game),"연습장","연습장","연습장으로 이동하시겠습니까?","연습장 입장")
+	confirm_navigation(func():clear_panel();PracticeSession.start(game),"연습장","연습장","연습장으로 이동하시겠습니까?","연습장 입장",true)
 func option(title:String,items:Array,selected:int,callback:Callable=Callable(),parent:Node=null) -> OptionButton:
 	var row=HBoxContainer.new();(parent if parent else stack).add_child(row);var l=Label.new();l.text=title;l.custom_minimum_size.x=155;row.add_child(l)
 	var b=OptionButton.new();b.size_flags_horizontal=Control.SIZE_EXPAND_FILL

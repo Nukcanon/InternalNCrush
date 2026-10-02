@@ -150,6 +150,7 @@ func build(w:Dictionary,ink:bool=false):
 			var local:AABB=relative(m,magazine)*m.get_aabb()
 			box=local if box.size==Vector3.ZERO else box.merge(local)
 		mag_height=maxf(.03,box.size.y*base.scale.y)
+	split_pump()
 	for mesh in base.find_children("*","MeshInstance3D",true,false):paint(mesh)
 	double_sided_magazine()
 	if w.get("laser",false) and is_instance_valid(magazine) and not look.has("tool"):batteries()
@@ -200,6 +201,55 @@ func build(w:Dictionary,ink:bool=false):
 		var mount=Node3D.new();mount.name="GaugeMount";mount.position=right_grip.position*base.scale+Vector3(0,.178,.02);add_child(mount) # 1.4.5: top of the receiver behind the rail
 		var gauge=LaserGauge.new();gauge.name="HeatGauge";mount.add_child(gauge)
 	name="Gun_"+str(w.get("name","?"))
+## 1.4.10 (the user: the hand pumped but the pump stayed put): on the pump-action
+## shotgun base the fore-end (and the tube inside it) becomes its own part,
+## "Pump", which set_pump() slides back along the gun. The baked base has it
+## merged into the body: its triangles (base-local box under the barrel,
+## measured on shotgun.scn) are moved to a second mesh.
+const PUMP_BOX=AABB(Vector3(-.04,-.1,-.985),Vector3(.08,.088,.21))
+const PUMP_TRAVEL=.09 # gun-node metres of a full stroke
+var pump:Node3D
+## 1.4.10 (the user): a slide pistol's slide - it cycles on each shot, locks back
+## when the pistol runs dry and runs forward when the new magazine seats.
+const SLIDE_BOX=AABB(Vector3(-.025,-.006,-.235),Vector3(.05,.08,.29))
+const SLIDE_TRAVEL=.032
+var slide:Node3D
+func split_pump():
+	if str(look.get("base",""))=="Pistol" and str(spec.get("reload_style",""))=="pistol" and not spec.get("dual",false):slide=split_part(SLIDE_BOX,"Slide")
+	if str(look.get("base",""))=="Shotgun" and str(spec.get("reload_style",""))=="shell" and bool(spec.get("single_load",false)):pump=split_part(PUMP_BOX,"Pump")
+## Moves the base mesh's triangles inside `box` (base-local) to a part of their
+## own under a holder node (returned) that can slide along the gun.
+func split_part(box:AABB,part_name:String) -> Node3D:
+	var holder:Node3D=null
+	for m in base.find_children("*","MeshInstance3D",true,false):
+		if m.mesh==null or (is_instance_valid(magazine) and (m==magazine or magazine.is_ancestor_of(m))):continue
+		var to_base:Transform3D=relative(m,base)
+		var body=ArrayMesh.new();var part=ArrayMesh.new();var moved=0
+		for s in range(m.mesh.get_surface_count()):
+			var arrays=m.mesh.surface_get_arrays(s);var v:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+			var idx:PackedInt32Array=arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX]!=null else PackedInt32Array(range(v.size()))
+			var keep=PackedInt32Array();var take=PackedInt32Array()
+			for t in range(0,idx.size(),3):
+				var inside=box.has_point(to_base*v[idx[t]]) and box.has_point(to_base*v[idx[t+1]]) and box.has_point(to_base*v[idx[t+2]])
+				var into=take if inside else keep
+				into.append(idx[t]);into.append(idx[t+1]);into.append(idx[t+2])
+			moved+=take.size()
+			for pair in [[body,keep],[part,take]]:
+				if pair[1].is_empty():continue
+				var a=arrays.duplicate();a[Mesh.ARRAY_INDEX]=pair[1]
+				pair[0].add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,a)
+				pair[0].surface_set_material(pair[0].get_surface_count()-1,m.mesh.surface_get_material(s))
+		if moved==0:continue
+		m.mesh=body
+		if holder==null:holder=Node3D.new();holder.name=part_name+"Holder";m.get_parent().add_child(holder)
+		# placed through base space (no reparent: the gun may not be in the tree yet)
+		var piece=MeshInstance3D.new();piece.name=part_name;piece.mesh=part;holder.add_child(piece);piece.transform=relative(holder,base).affine_inverse()*to_base
+	return holder
+func set_slide(amount:float):
+	if is_instance_valid(slide):slide.position=Vector3(0,0,SLIDE_TRAVEL*clampf(amount,0.,1.)/maxf(.01,base.scale.z))
+## Pump stroke 0..1 (1 = pulled fully back toward the shooter).
+func set_pump(amount:float):
+	if is_instance_valid(pump):pump.position=Vector3(0,0,PUMP_TRAVEL*clampf(amount,0.,1.)/maxf(.01,base.scale.z))
 func grip(side:String) -> Node3D:return right_grip if side=="R" else left_grip
 ## The laser rifle runs on two D-size cells (as in 1.3): the box magazine of
 ## the base model is replaced by a pair of yellow cells with red terminals on a
@@ -255,7 +305,11 @@ var pair_swing_amount=0.
 var pair_toe=0.
 func pair_swing_offset(i:int) -> Vector3:
 	var s=pair_swing_amount*(1. if i==0 else -1.)
-	return Vector3(0,s*.35,-s)
+	# 1.4.10 (the user: like carrying something while running): a pistol swinging
+	# forward also moves out from the body, up to 6.5 cm at the front of its swing,
+	# and comes back in as it swings back (right pistol out to +x, left to -x).
+	var outward=.065*clampf(s/.05,0.,1.)*(1. if i==0 else -1.)
+	return Vector3(outward,s*.35,-s)
 func set_pair_swing(amount:float):
 	pair_swing_amount=amount
 	if dual_guns.size()<2 or dual_rest.size()<2:return

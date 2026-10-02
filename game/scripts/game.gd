@@ -348,13 +348,15 @@ func prime_first_frame():
 	start_cover=CanvasLayer.new();start_cover.layer=60;add_child(start_cover)
 	var shade=ColorRect.new();shade.color=Color("101820");shade.set_anchors_preset(Control.PRESET_FULL_RECT);shade.mouse_filter=Control.MOUSE_FILTER_IGNORE;start_cover.add_child(shade)
 	# (1.4.7: past every edge, so a window/fullscreen resize mid-cover never shows a bar)
-	shade.offset_left=-64;shade.offset_top=-64;shade.offset_right=64;shade.offset_bottom=64
+	shade.offset_left=-1200;shade.offset_top=-1200;shade.offset_right=1200;shade.offset_bottom=1200 # (1.4.10: wide - a window growing to full screen never shows past it)
 	# (1.4.7, the user: white and larger - it read too dark)
 	var label=Label.new();label.text="전투 준비 중…";label.theme=ui.theme;label.set_anchors_preset(Control.PRESET_FULL_RECT);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size",56);label.add_theme_color_override("font_color",Color.WHITE);label.add_theme_color_override("font_outline_color",Color("0b1218"));label.add_theme_constant_override("outline_size",6);shade.add_child(label)
+	label.add_theme_font_size_override("font_size",56);label.add_theme_color_override("font_color",Color.WHITE);label.add_theme_color_override("font_outline_color",Color("0b1218"));label.add_theme_constant_override("outline_size",6);start_cover.add_child(label);start_cover_label=label;start_cover_steady=0;label.visible=false
 	start_cover_frames=START_COVER_FRAMES;start_cover_size=get_viewport().get_visible_rect().size
 var start_cover:CanvasLayer
 var start_cover_frames=0
+var start_cover_label:Label # 1.4.10 (the user: the cover jumped up and back down) - shown once the window size holds
+var start_cover_steady=0
 var start_cover_size=Vector2.ZERO
 const START_COVER_FRAMES=4
 func host_game(transport:MultiplayerPeer=null):
@@ -826,7 +828,11 @@ func _process(dt:float):
 		# (1.4.7: the window was still growing to full screen - the cover stays
 		# until its size has held for a few frames, so no unpainted band shows)
 		var now_size=get_viewport().get_visible_rect().size
-		if now_size!=start_cover_size:start_cover_size=now_size;start_cover_frames=maxi(start_cover_frames,3)
+		if now_size!=start_cover_size:start_cover_size=now_size;start_cover_frames=maxi(start_cover_frames,3);start_cover_steady=0
+		else:start_cover_steady+=1
+		# (1.4.10) the words only once the size has held - laid out mid-resize they jumped
+		if is_instance_valid(start_cover_label):start_cover_label.visible=start_cover_steady>=2
+		if start_cover_steady<2:start_cover_frames=maxi(start_cover_frames,1)
 		if start_cover_frames==0 and is_instance_valid(start_cover):start_cover.queue_free()
 	if phase=="menu" or not render_actors or not is_physics_processing():return
 	render_update(dt)
@@ -1121,6 +1127,7 @@ func process_trigger(id:int):
 	var w=current_weapon(p);var mode=w.get("fire_mode","auto")
 	if w.get("single_load",false) and (pressed or held) and p.reload>0 and int(p.mag.get(p.primary if p.slot==0 else p.secondary,0))>0:
 		p.reload=0.;MagazineReload.settle(self,p,w);MagazineReload.close_cylinder(self,id,w);p.trigger_until=clock+.55
+		if str(w.get("reload_style",""))=="shell":reload_sound.rpc(id,"bolt") # (1.4.10: the pump worked in the settle delay)
 	if pressed and p.reload<=0:p.trigger_until=clock+.55
 	if mode=="auto":
 		if held:fire(id)

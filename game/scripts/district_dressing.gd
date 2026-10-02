@@ -21,6 +21,41 @@ static func water_fence(kit:DistrictFacade.Kit,g:Array):
 	for k in range(count+1):kit.box(Vector3(-length*.5+post+(length-post*2.)*k/count,(low+top)*.5,0),Vector3(.025,top-low,.025),GATE_BAR,true,false)
 	kit.box(Vector3(0,lerpf(low,top,.45),0),Vector3(length,.025,.025),GATE_BAR,true)
 	kit.xf=Transform3D()
+## 1.4.10 (the user): deep water is fenced by iron bars, too high to jump or
+## climb over, on the quay's low curb (build_v15 "railings": [ux, uz, vx, vz,
+## y at u, y at v, nx, nz], n into the walkway). Posts and rails are one mesh,
+## the bars one panel per run cut out by shaders/railing_bars.gdshader (a
+## MultiMesh lost its bars in the headless bakes); each run blocks movement only (layer 64 - shots,
+## grenades and rockets pass between the bars).
+const RAILING_HEIGHT=1.7
+const RAILING_LAYER=64 # (16 and 32 are the defusal spawn barriers)
+static func railings(a:Node,list:Array):
+	if list.is_empty():return
+	var holder=Node3D.new();holder.name="Railings";a.architecture.add_child(holder)
+	var kit=DistrictFacade.Kit.new()
+	var panels=SurfaceTool.new();panels.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var body=StaticBody3D.new();body.collision_layer=RAILING_LAYER;body.collision_mask=0;holder.add_child(body)
+	for r in list:
+		var n=Vector3(r[6],0,r[7]).normalized()
+		var u=Vector3(r[0],r[4],r[1])+n*.12;var v=Vector3(r[2],r[5],r[3])+n*.12
+		var along=v-u;var length=Vector2(along.x,along.z).length()
+		if length<.2:continue
+		var x=Vector3(along.x,0,along.z).normalized();var z=x.cross(Vector3.UP).normalized()
+		var base=(u.y+v.y)*.5;var centre=(u+v)*.5
+		kit.xf=Transform3D(Basis(x,Vector3.UP,z),Vector3(centre.x,base,centre.z))
+		for s in [-1.,1.]:kit.box(Vector3(s*(length*.5-.035),RAILING_HEIGHT*.5,0),Vector3(.07,RAILING_HEIGHT,.07),GATE_FRAME,true) # posts
+		for y in [RAILING_HEIGHT-.03,RAILING_HEIGHT*.55,.12]:kit.box(Vector3(0,y,0),Vector3(length,.05,.05),GATE_FRAME,true) # top, middle and foot rails
+		# the bars: one panel from post to post (RailingBars shader keeps the bars)
+		var p0=Vector3(centre.x,base,centre.z)-x*(length*.5-.07);var p1=Vector3(centre.x,base,centre.z)+x*(length*.5-.07);var top=Vector3.UP*RAILING_HEIGHT
+		var w=length-.14
+		for q in [[p0,0.,0.],[p1,w,0.],[p1+top,w,RAILING_HEIGHT],[p0,0.,0.],[p1+top,w,RAILING_HEIGHT],[p0+top,0.,RAILING_HEIGHT]]:
+			panels.set_normal(z);panels.set_uv(Vector2(q[1],q[2]));panels.add_vertex(q[0])
+		var shape=CollisionShape3D.new();var box=BoxShape3D.new();box.size=Vector3(length,RAILING_HEIGHT,.12);shape.shape=box
+		shape.transform=Transform3D(Basis(x,Vector3.UP,z),Vector3(centre.x,base+RAILING_HEIGHT*.5,centre.z));body.add_child(shape)
+	kit.xf=Transform3D()
+	var frame=MeshInstance3D.new();frame.name="RailingFrame";frame.mesh=kit.detail.commit();frame.material_override=WorldSurface.material("detail",a.map_index,true);frame.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;holder.add_child(frame)
+	var bars=MeshInstance3D.new();bars.name="RailingBars";bars.mesh=panels.commit();bars.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var shader=ShaderMaterial.new();shader.shader=load("res://shaders/railing_bars.gdshader");shader.set_shader_parameter("bar_color",GATE_BAR);bars.material_override=shader;holder.add_child(bars)
 static func build(a:Node,plan:Dictionary):
 	var index=a.map_index
 	a.set_meta("plan_fronts",plan.get("fronts",[])) # access doors take the look of the buildings around them (DoorModels)
@@ -115,6 +150,16 @@ static func build(a:Node,plan:Dictionary):
 		var holder=Node3D.new();holder.name="WaterFences";a.architecture.add_child(holder)
 		for fence in fences:water_fence(fence_kit,fence)
 		var mesh=MeshInstance3D.new();mesh.mesh=fence_kit.detail.commit();mesh.material_override=WorldSurface.material("detail",index,true);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;holder.add_child(mesh)
+	railings(a,plan.get("railings",[]))
+	# 1.4.10 (the user): tall walls across part of a long straight lane out of a
+	# spawn (build_v15.baffles: [x, y, z, sx, sz, h]) - no grenades lobbed down it.
+	for b in plan.get("baffles",[]):
+		var wall_node=a.box(Vector3(b[0],float(b[1])+float(b[5])*.5,b[2]),Vector3(b[3],b[5],b[4]),Color("8d9598"))
+		wall_node.set_meta("lane_wall",true)
+		for mesh in wall_node.get_children():
+			if mesh is MeshInstance3D:mesh.material_override=WorldSurface.material("wall",index)
+		# a cap along its top
+		M.box(a.architecture,Vector3(b[0],float(b[1])+float(b[5])+.06,b[2]),Vector3(float(b[3])+.12,.12,float(b[4])+.12),Color("6f777a"))
 	# open quay edges beside the boats: a yellow-and-black curb line
 	for q in plan.get("open_quays",[]):
 		var u=Vector2(q[0],q[1]);var v=Vector2(q[2],q[3]);var n=int(u.distance_to(v)/.5)

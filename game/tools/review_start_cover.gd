@@ -11,7 +11,7 @@ func run():
 	g.start_bot_match({"role":0,"primary":"a1","secondary":"pistol","armor":0,"gadget":1,"team":-1})
 	for i in range(900):
 		await RenderingServer.frame_post_draw
-		if is_instance_valid(g.start_cover):
+		if is_instance_valid(g.start_cover) and is_instance_valid(g.start_cover_label) and g.start_cover_label.visible:
 			root.get_texture().get_image().save_png(out+"cover.png")
 			print("START_COVER saved frame %d size %s"%[i,str(root.get_visible_rect().size)])
 			break

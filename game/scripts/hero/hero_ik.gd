@@ -495,9 +495,21 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	var elbow=centre+perp*radius
 	var q1=arc((b-a).normalized(),(elbow-a).normalized())
 	var upper_world=(q1*wu.basis.get_rotation_quaternion()).normalized()
+	# 1.4.10: first person carries the upper arm on from last frame's (turned onto
+	# its new direction) and only eases toward the clip's roll - turned from the clip
+	# each frame, its roll jumped when the arm swept far (a throw's free arm).
+	if fp and hero.frame_dt>0. and hero.has_meta("upper_"+side):
+		var prev_u:Quaternion=hero.get_meta("upper_"+side)
+		var carried=(arc((prev_u*Vector3.UP).normalized(),(elbow-a).normalized())*prev_u).normalized()
+		upper_world=carried.slerp(upper_world,1.-exp(-hero.frame_dt*3.)).normalized()
+	if fp:hero.set_meta("upper_"+side,upper_world)
 	var c1=elbow+q1*(c-b)
 	var q2=arc((c1-elbow).normalized(),(a+dir*d-elbow).normalized())
 	var lower_world=(q2*q1*wl.basis.get_rotation_quaternion()).normalized()
+	# 1.4.10: first person bends the forearm off the upper arm (an elbow bends less
+	# than half a turn) - from the clip's own forearm the turn needed came near half
+	# a turn while the free hand swept down on a throw, and the arm spun about itself.
+	if fp:lower_world=(arc((upper_world*Vector3.UP).normalized(),(a+dir*d-elbow).normalized())*upper_world).normalized()
 	var wrist_world:Quaternion
 	if wrist_basis:wrist_world=target.basis.get_rotation_quaternion()
 	else:
@@ -518,8 +530,33 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	else:
 		twist=twist.normalized()
 		var angle=wrapf(2.*atan2(twist.y,twist.w),-PI,PI)
+		# 1.4.10 (the user: the throwing arm twisted and trembled): near half a turn
+		# the roll flipped between +180 and -180 deg from one frame to the next, and a
+		# hand turned at once (a new grenade in the grip, the free hand coming back)
+		# spun the whole forearm in one frame. First person measures the roll against
+		# last frame's forearm itself (the solve's own base turns with the elbow), takes
+		# the way round nearest it and follows over a few frames; the wrist takes the
+		# rest meanwhile. Third person keeps the way round nearest its last roll.
+		var before=INF
+		if fp and hero.frame_dt>0. and hero.has_meta("fore_"+side):
+			# (last frame's forearm, swung onto this frame's forearm axis, so only its roll differs)
+			var prev:Quaternion=Quaternion(hero.get_meta("fore_"+side))
+			prev=(arc((prev*Vector3.UP).normalized(),(lower_world*Vector3.UP).normalized())*prev).normalized()
+			var rel:Quaternion=(lower_world.inverse()*prev).normalized()
+			if rel.w<0.:rel=-rel
+			before=wrapf(2.*atan2(rel.y,rel.w),-PI,PI)
+			# (unwrapped near the roll it was kept at: past half a turn it must not fold over)
+			var last_kept=float(hero.get_meta("kept_"+side,before))
+			while before-last_kept>PI:before-=TAU
+			while before-last_kept<-PI:before+=TAU
+		var near=before if before!=INF else float(hero.get_meta("roll_"+side,angle))
+		while angle-near>PI:angle-=TAU
+		while angle-near<-PI:angle+=TAU
+		hero.set_meta("roll_"+side,angle)
 		var kept=clampf(angle,-TWIST_LIMIT,TWIST_LIMIT)
+		if before!=INF:kept=clampf(before+clampf(lerpf(before,kept,1.-exp(-hero.frame_dt*14.))-before,-9.*hero.frame_dt,9.*hero.frame_dt),-TWIST_LIMIT-.6,TWIST_LIMIT+.6) # (at most ~9 rad/s)
 		twist=Quaternion(Vector3.UP,kept);excess=Quaternion(Vector3.UP,angle-kept)
+		if fp:hero.set_meta("kept_"+side,kept)
 	var swing=(twist.inverse()*excess.inverse()*local).normalized()
 	# q and -q are the same rotation: measure the short way round.
 	if swing.w<0.:swing=-swing
@@ -527,6 +564,7 @@ static func solve_arm(hero:HeroCharacter,side:String,target:Transform3D,weight:f
 	if bend>WRIST_LIMIT:swing=Quaternion.IDENTITY.slerp(swing,WRIST_LIMIT/bend)
 	lower_world=(lower_world*twist).normalized()
 	wrist_world=(lower_world*excess*swing).normalized()
+	if fp:hero.set_meta("fore_"+side,lower_world)
 	if fp:hero.set_meta("fp_twist_"+side,twist.get_angle()) # review tools: forearm roll taken (rad)
 	var parent_world=hero.bone_world(shoulder).basis.get_rotation_quaternion()
 	set_world(sk,upper,parent_world,upper_world,weight)

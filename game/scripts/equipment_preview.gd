@@ -43,7 +43,8 @@ func display(kind:int,role:int,team:int,weapon:String,gadget:int=0,armor_level:i
 		for i in range(4):c.drive(.05,{"pitch":-.08,"hold":hold})
 		model.rotation.y=-.35;camera.position=Vector3(0,1.25,-4);camera.look_at(Vector3(0,1.15,0));camera.size=2.05
 	elif kind==1:
-		var gun=GunModel.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),true);gun.rotation.y=PI/2+(.55 if weapon=="remote" else 0.);camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0))
+		var gun=GunModel.new();model.add_child(gun);gun.build(Catalog.get_weapon(weapon),true);gun.rotation.y=PI/2+(.55 if weapon=="remote" else .5 if weapon=="dual_pistols" else 0.);camera.position=Vector3(0,.4,-3);camera.look_at(Vector3(0,0,0))
+		# (1.4.10, the user: DUET turned further toward the viewer so both pistols read)
 		var meshes=gun.find_children("*","MeshInstance3D",true,false);var bounds=AABB();var first=true
 		for mesh in meshes:
 			var box=mesh.global_transform*mesh.get_aabb()

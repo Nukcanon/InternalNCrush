@@ -229,6 +229,11 @@ static func build(a:Node,index:int):
 					candidate.y=possible[0]
 					var distance=candidate.distance_squared_to(midpoint)
 					if distance>=best or not a.navigation_clear(candidate):continue
+					# (1.4.10: not at a lane wall - they are built later, by the dressing)
+					var walled=false
+					for b in plan.get("baffles",[]):
+						if absf(candidate.x-float(b[0]))<float(b[3])*.5+3. and absf(candidate.z-float(b[2]))<float(b[4])*.5+3.:walled=true;break
+					if walled:continue
 					var clear=true
 					for side in [Vector3.LEFT,Vector3.RIGHT,Vector3.FORWARD,Vector3.BACK]:
 						if not a.navigation_clear(candidate+side*1.2):clear=false;break

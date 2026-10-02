@@ -42,6 +42,10 @@ PARAPET = 0.95
 PILLAR_SIDE = 0.42   # 1.4.5: square pillars under the building mass over covered-room openings
 PILLAR_INSET = 0.21  # flush in the opening's corner (deeper, it closed 4 m passages for bots)
 PARAPET_T = 0.25
+# 1.4.10 (the user): deep water is fenced by 1.7 m iron bars on a low curb - a
+# move + jump (0.82 m) plus a mantle (0.8 m in the air) no longer clears it.
+CURB = 0.15
+RAILING = 1.7
 WATER_Y = -0.7
 # 1.4.6 (the user): deep water is 2 m or more and deadly; nothing between
 # 0.5 m and 2 m; shallow water (0.5 m at most) is safe and walkable.
@@ -592,6 +596,7 @@ def build(index):
     openings = []
     solid_points = set()  # corners touched by a building wall (they carry the mass above)
     rail_push = {}  # corner -> push (x, z) off the parapets inside the cell at that corner
+    railings = []  # 1.4.10: barred railings along deep water [u, v, d, hu, hv]
 
     def rail_edge(u, v, d):
         n = (-d[1], -d[0])  # into the walkable cell, where the parapet's thickness lies
@@ -646,9 +651,10 @@ def build(index):
                         # (a yellow-and-black curb stone, no parapet) to board it.
                         wall(v, u, WATER_BED, WATER_BED, hv, hu, 'wall')
                         continue
-                    wall(v, u, WATER_BED, WATER_BED, hv + PARAPET, hu + PARAPET, 'wall')
+                    wall(v, u, WATER_BED, WATER_BED, hv + CURB, hu + CURB, 'wall')
                     rail_edge(u, v, d)
-                    parapet(emit, wall, u, v, d, hu, hv)
+                    parapet(emit, wall, u, v, d, hu, hv, CURB)
+                    railings.append((u, v, d, hu, hv))
                     continue
                 if other in 'R#H' or other in INDOOR:
                     top = m.top.get((nr, nc), 7.2)
@@ -798,6 +804,7 @@ def build(index):
     if None in spawns or None in targets:
         raise SystemExit('map %d: missing spawn/objective markers' % index)
 
+    walls_across = baffles(m, spawns, [t for t in targets + [marker('A'), marker('B'), marker('C')] if t])
     props = []
     trees = []
     kinds = bp.get('props', {})
@@ -826,6 +833,9 @@ def build(index):
     props += wall_decor(m, index)
     props += water_safety(m, open_quays, props, spawns, targets)
     m.decor_count = len(props) - decor_count
+    # (1.4.10) nothing stands where a lane wall stands
+    clear_of = lambda x, z, pad: not any(abs(x - b[2]) < b[5] * .5 + pad and abs(z - b[3]) < b[6] * .5 + pad for b in walls_across)
+    props = [p for p in props if clear_of(p[0] + ox, p[1] + oz, .9)]
 
     # Loose (movable) props against walls on quiet ground, in partner pairs.
     # Every map gets 6-10 (barrels, crates, cones), spread at least 3 cells apart,
@@ -862,6 +872,8 @@ def build(index):
             continue
         # (1.4.6) never where a door leaf swings
         if any(math.dist((x - ox, z - oz), (dd[0], dd[1])) < 3.2 for dd in doors):
+            continue
+        if not clear_of(x, z, 1.2):
             continue
         taken.append((r, c))
         loose.append([round(x - ox, 4), round(z - oz, 4), m.level.get((r, c), 0.)])
@@ -907,6 +919,8 @@ def build(index):
             'shallow': [[centred(p) for p in q.exterior.coords] for q in polys(shallow)] if shallow_cells else [], 'shallow_height': SHALLOW_SURFACE,
             'open_quays': [[round(x - ox, 4), round(z - oz, 4), round(x2 - ox, 4), round(z2 - oz, 4)] for x, z, x2, z2 in quay_lines(m, open_quays)],
             'water_gates': [[round(g[0] - ox, 4), round(g[1] - oz, 4), round(g[2] - ox, 4), round(g[3] - oz, 4)] + list(g[4:]) for g in water_fences(m)],
+            'railings': [[round(u[0] - ox, 4), round(u[1] - oz, 4), round(v[0] - ox, 4), round(v[1] - oz, 4), round(hu + CURB, 4), round(hv + CURB, 4), -d[1], -d[0]] for u, v, d, hu, hv in railings],
+            'baffles': [[round(b[2] - ox, 4), round(b[4], 4), round(b[3] - oz, 4), round(b[5], 4), round(b[6], 4), round(b[7], 4)] for b in walls_across if not any(math.dist((b[2] - ox, b[3] - oz), (dd[0], dd[1])) < 3.5 for dd in doors)],
             'water_boat': [], 'version': 15, 'grid': [''.join(row) for row in m.g], 'cell': CELL}
     spec = {'paths': [[list(p) for p in path] for path in paths], 'upper_path': [], 'lower_path': [], 'id': index + 1,
             'name': bp['name'], 'capacity': bp['capacity'], 'dimensions': [m.W, m.H], 'rectangle': False,
@@ -927,12 +941,12 @@ def front(m, u, v, y0, y1, frm, top, lot, flags, style):
     return f
 
 
-def parapet(emit, wall, u, v, d, hu, hv):
+def parapet(emit, wall, u, v, d, hu, hv, height=PARAPET):
     # Inner face and cap of a parapet standing on the higher (left) side of u->v.
     nx, nz = -d[1], -d[0]  # into the walkable cell
     # Caps of perpendicular parapets share their corner square: lift the ones
     # running along z by 4 mm so the corner never z-fights.
-    top = PARAPET + (.004 if abs(v[0] - u[0]) < 1e-6 else 0.)
+    top = height + (.004 if abs(v[0] - u[0]) < 1e-6 else 0.)
     iu = (u[0] + nx * PARAPET_T, u[1] + nz * PARAPET_T)
     iv = (v[0] + nx * PARAPET_T, v[1] + nz * PARAPET_T)
     wall(u, v, 0, 0, 0, 0, 'trim')
@@ -940,6 +954,11 @@ def parapet(emit, wall, u, v, d, hu, hv):
     emit([(iu[0], hu, iu[1]), (iu[0], hu + top, iu[1]), (iv[0], hv + top, iv[1])], 'trim')
     emit([(u[0], hu + top, u[1]), (v[0], hv + top, v[1]), (iu[0], hu + top, iu[1])], 'trim')
     emit([(v[0], hv + top, v[1]), (iv[0], hv + top, iv[1]), (iu[0], hu + top, iu[1])], 'trim')
+    # 1.4.10 (the user: open models): both ends closed - where a parapet run
+    # stopped, its end showed the hollow inside (inside a run the caps are hidden).
+    for p, ip, h in ((u, iu, hu), (v, iv, hv)):
+        emit([(p[0], h, p[1]), (ip[0], h, ip[1]), (ip[0], h + top, ip[1])], 'trim')
+        emit([(p[0], h, p[1]), (ip[0], h + top, ip[1]), (p[0], h + top, p[1])], 'trim')
 
 
 DEFAULT_KINDS = {'c': 'crate_stack', 'b': 'barrier_single', 's': 'sacktrench', 'k': 'vehicle_hatch', 'o': 'container_small', 'p': 'pillar',
@@ -1229,6 +1248,79 @@ def water_safety(m, open_quays, props, spawns, targets):
                     break  # one lifebuoy per stretch of water; signs repeat every 30 m along it
     return out
 
+
+def baffles(m, spawns, targets=()):
+    """1.4.10 (the user): where a straight lane runs from a spawn toward the enemy
+    side for 8 cells (32 m) and more, tall walls stand across part of it - at
+    12 m and 28 m out (and 44 m on very long lanes), on alternate sides, as high
+    as two storeys (to the ceiling indoors) - so grenades can't be lobbed down
+    the lane into the spawn, and its straight sight line is broken. Each wall
+    leaves at least 1.8 m to walk past. Returns [r, c, x, z, y, sx, sz, h] (grid
+    metres, not yet centred)."""
+    out = []
+    marks = ('T', 'D') if m.cells('T') else ('S', 'N')
+    blocks = [sorted(m.cells(ch)) for ch in marks]
+    walk = lambda r, c: m.at(r, c) in WALK and (r, c) not in m.stairs and m.at(r, c) != '='
+    for team, block in enumerate(blocks):
+        if not block:
+            continue
+        enemy = blocks[1 - team]
+        er = sum(r for r, _ in enemy) / len(enemy); sr = sum(r for r, _ in block) / len(block)
+        ec = sum(c for _, c in enemy) / len(enemy); sc = sum(c for _, c in block) / len(block)
+        d = (1 if er > sr else -1, 0) if abs(er - sr) >= abs(ec - sc) else (0, 1 if ec > sc else -1)
+        best = None
+        starts = set(block) | {(r + a, c + b) for r, c in block for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))}
+        for r0, c0 in sorted(starts):
+            if not (walk(r0, c0) or m.at(r0, c0) in marks):
+                continue
+            n, r, c = 0, r0, c0
+            while walk(r + d[0], c + d[1]) or m.at(r + d[0], c + d[1]) in marks:
+                r += d[0]; c += d[1]; n += 1
+            if best is None or n > best[0]:
+                best = (n, r0, c0)
+        if best is None or best[0] < 8:
+            continue
+        n, r0, c0 = best
+        across = (d[1], d[0])  # perpendicular (r, c) step
+        side = 1
+        for k in [3, 7, 11][:1 + (n >= 10) + (n >= 15)]:
+            placed = False
+            for kk in (k, k + 1, k - 1):
+                r, c = r0 + d[0] * kk, c0 + d[1] * kk
+                if not walk(r, c) or m.at(r, c) in COVER or m.at(r, c) in 'SNTDABC':
+                    continue
+                y = m.level.get((r, c), 0.)
+                lo = hi = 0  # corridor extent across (cells) at this level
+                while walk(r - across[0] * (lo + 1), c - across[1] * (lo + 1)) and abs(m.level.get((r - across[0] * (lo + 1), c - across[1] * (lo + 1)), 0.) - y) < .05:
+                    lo += 1
+                while walk(r + across[0] * (hi + 1), c + across[1] * (hi + 1)) and abs(m.level.get((r + across[0] * (hi + 1), c + across[1] * (hi + 1)), 0.) - y) < .05:
+                    hi += 1
+                cells = lo + hi + 1
+                if cells > 3:
+                    continue  # an open square, not a lane
+                width_m = cells * CELL
+                wall_w = min(width_m - 1.8, max(2.2, width_m * .55))
+                # anchored to one side of the lane (alternating), centred along the cell
+                x0, z0 = m.centre(r, c)
+                edge_off = (hi + .5) * CELL if side > 0 else -(lo + .5) * CELL  # from this cell's centre to the lane side
+                # off a railing or parapet edge (deep water, a drop) it stands 0.3 m in,
+                # not through the bars; against a building it stands flush
+                br, bc = (r + across[0] * (hi + 1), c + across[1] * (hi + 1)) if side > 0 else (r - across[0] * (lo + 1), c - across[1] * (lo + 1))
+                inset = .3 if m.at(br, bc) == '~' or walk(br, bc) else 0.
+                mid_off = edge_off - side * (inset + wall_w * .5)
+                x = x0 + across[1] * mid_off
+                z = z0 + across[0] * mid_off
+                indoor = m.at(r, c) in INDOOR
+                h = ROOM_CEILING if indoor else 6.0
+                sx, sz = (wall_w, .4) if across[1] else (.4, wall_w)
+                if any(math.dist((x, z), t) < 7. for t in targets):
+                    continue  # never at an objective (a bomb site stood under one)
+                out.append([r, c, x, z, y, sx, sz, h])
+                placed = True
+                break
+            if placed:
+                side = -side
+    return out
 
 def water_fences(m):
     """1.4.6 (the user's choice): bars only between safe and deadly water - where

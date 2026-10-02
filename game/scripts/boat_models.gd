@@ -114,7 +114,7 @@ static func cyl_shape(r:float,h:float) -> CylinderShape3D:
 ## Plan outline (x, z) of the deck edge, convex, counter-clockwise.
 static func plan(L:float,B:float,bow:float,blunt:bool) -> Array:
 	var out=[]
-	var n=8
+	var n=12 # (1.4.10: the hull's own sections - with 8 the deck's edge cut inside the hull's rim and left slits)
 	# starboard side stern -> bow
 	for i in range(n+1):
 		var x=-L*.5+L*i/n
@@ -167,11 +167,11 @@ static func hull(k:DistrictFacade.Kit,L:float,B:float,deck_h:float,draft:float,b
 	for j in range(rows.size()-1):
 		var a=Vector3(x0,tp[j].y,-tp[j].x);var b=Vector3(x0,tp[j].y,tp[j].x);var c=Vector3(x0,tp[j+1].y,tp[j+1].x);var d=Vector3(x0,tp[j+1].y,-tp[j+1].x)
 		P.quad(k,a,b,c,d,Vector3.LEFT,rows[j][2])
-	if blunt:
-		var x1=L*.5;var w1=half_width(x1,L,B,bow,blunt)
-		for j in range(rows.size()-1):
-			var a=Vector3(x1,tp[j].y,-w1*float(rows[j][1]));var b=Vector3(x1,tp[j].y,w1*float(rows[j][1]));var c=Vector3(x1,tp[j+1].y,w1*float(rows[j+1][1]));var d=Vector3(x1,tp[j+1].y,-w1*float(rows[j+1][1]))
-			P.quad(k,a,b,c,d,Vector3.RIGHT,rows[j][2])
+	# (1.4.10, the user: a seam down a boat's bow): a pointed bow ends a few cm
+	# wide - its stem face is closed too, not only a blunt bow's
+	for j in range(rows.size()-1):
+		var a:Vector3=prev[j]*Vector3(1,1,-1);var b:Vector3=prev[j];var c:Vector3=prev[j+1];var d:Vector3=prev[j+1]*Vector3(1,1,-1)
+		P.quad(k,a,b,c,d,Vector3.RIGHT,rows[j][2])
 static func deck(k:DistrictFacade.Kit,outline:Array,y:float,col:Color):
 	var c=Vector3(0,y+.004,0)
 	for i in range(outline.size()):

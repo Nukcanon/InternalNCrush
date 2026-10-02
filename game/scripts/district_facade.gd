@@ -288,7 +288,7 @@ static func build(a:Node,plan:Dictionary) -> Array:
 			node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			if pair[2]=="FacadeDetail":node.visibility_range_end=90.;node.visibility_range_end_margin=8.
 			a.architecture.add_child(node)
-	a.set_meta("facade_style",style_name(index));a.set_meta("facade_tiles",kits.size())
+	a.set_meta("facade_style",style_name(index));a.set_meta("facade_tiles",kits.size());a.set_meta("facade_fronts",plan.get("fronts",[])) # (audit_fronts.gd)
 	return fixtures
 
 static func pick(list:Array,hs:int):
@@ -372,7 +372,10 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 				banner(kit,(x0+x1)*.5,level+bottom+storey-.3,hs)
 		if style.get("cornice",false) and s>0 and not indoor:
 			sloped_band(kit,x0,x1,y0,y1,bottom,bottom+.14,.1,trim)
-	if indoor:
+	# (1.4.10, the user: windows and bands between the pillars of an opening: an
+	# indoor wall's clerestory and trim are measured from the floor - the wall
+	# over an opening has neither)
+	if indoor and not over:
 		interior(kit,style,p,x0,x1,y0,y1,level,top,hs,fixtures)
 	# Top edge.
 	roof_edge(kit,style,ex0,ex1,minf(y0,y1)+crown,trim,wall,hs)
@@ -913,6 +916,10 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 	# A wall above an opening (covered room, gate): ornaments start above the
 	# opening instead of hanging across it.
 	if p.from>0.:low+=p.from;top-=p.from;crown-=p.from
+	# 1.4.10 (the user: bands, lockers and windows beside the pillars where no wall
+	# stands): an indoor style's extras are furniture standing on the floor - on the
+	# wall above an opening they hung across the opening between its pillars.
+	if p.from>0. and indoor:return
 	# Continuous window bands (industrial) per upper storey.
 	if str(style.win[0])=="band" and not indoor and w>2.:
 		for s in range(1 if p.from<=0. else 0,floors):

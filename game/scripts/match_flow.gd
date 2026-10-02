@@ -23,7 +23,7 @@ static func protected_spawn(game:Node,id:int) -> bool:
 	var pos:Vector3=game.actors[id].position
 	return spawn_rect(game,int(game.players[id].team)).has_point(Vector2(pos.x,pos.z))
 static func preparation(game,id:int):
-	var actor=game.actors[id];actor.collision_mask=1|4|8
+	var actor=game.actors[id];actor.collision_mask=1|4|8|DistrictDressing.RAILING_LAYER
 	if int(game.options.mode)!=4 or not DefusalLayout.enabled(int(game.options.map)):return
 	var team=int(game.players[id].team);var enemy_rect=spawn_rect(game,1-team).grow(1.2)
 	actor.collision_mask|=16 if team==1 else 32

@@ -34,9 +34,13 @@ func run():
 		var idle=ReloadMotion.support(gun,{"reload":-1.,"shot":5.})
 		expect(not mid.is_empty() and mid.position.is_finite(),"reload hand work mid-reload: "+w.name)
 		expect(idle.is_empty(),"support hand back on the grip when idle: "+w.name)
-		if w.kind=="gun" and not w.get("rocket",false) and not w.get("laser",false) and w.reload_style not in ["shell","break","box"]:
+		# (1.4.10, the user: a slide pistol run dry has its slide locked back and the seated magazine sends it forward - no rack at the end)
+		if w.kind=="gun" and not w.get("rocket",false) and not w.get("laser",false) and w.reload_style not in ["shell","break","box","pistol"]:
 			var racking=ReloadMotion.support(gun,{"reload":.9,"reload_tactical":false,"rounds":0});var tactical=ReloadMotion.support(gun,{"reload":.9,"reload_tactical":true,"rounds":0})
 			expect(racking.position.y>tactical.position.y-.001 and racking.position!=tactical.position,"run-dry reload racks the bolt, tactical reload does not: "+w.name)
+		if w.reload_style=="pistol" and not w.get("dual",false):
+			var dry=ReloadMotion.support(gun,{"reload":.9,"reload_tactical":false,"rounds":0});var tac=ReloadMotion.support(gun,{"reload":.9,"reload_tactical":true,"rounds":0})
+			expect(dry.position.distance_to(tac.position)<.002,"run-dry pistol reload ends without a slide rack: "+w.name)
 		gun.free()
 	var pump=GunModel.new();root.add_child(pump);pump.build(Catalog.get_weapon("e1"),false)
 	var stroke=ReloadMotion.support(pump,{"reload":-1.,"shot":.25});expect(not stroke.is_empty() and stroke.position.z>pump.left_grip.position.z*pump.base.scale.z,"pump shotgun works the slide after a shot")

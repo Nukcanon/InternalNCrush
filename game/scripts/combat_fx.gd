@@ -337,7 +337,17 @@ func sync_rockets(rockets:Array):
 			var flame=M.sphere(n,Vector3(0,0,.27),Vector3(.12,.12,.26),Color("ffb143"));flame.material_override=glow(Color("ffb143"))
 			if i>=rocket_nodes.size():rocket_nodes.append(n)
 			else:rocket_nodes[i]=n
-		var n=rocket_nodes[i];n.position=rockets[i].pos;n.look_at(n.position+rockets[i].velocity)
+		var n=rocket_nodes[i];n.position=rockets[i].pos
+		# 1.4.10 (the user: a launcher's rocket left from the middle of the screen):
+		# the shooter sees his own rocket leave the drawn launcher's muzzle, joining
+		# the true flight (from the eye-side muzzle point) over its first 6 m.
+		var g=get_parent();var owner=int(rockets[i].get("owner",0))
+		if rockets[i].has("origin") and bool(rockets[i].get("launcher",false)) and g.actors.has(owner):
+			var origin:Vector3=rockets[i].origin
+			if not n.has_meta("origin") or Vector3(n.get_meta("origin"))!=origin:n.set_meta("origin",origin);n.set_meta("drawn_from",g.actors[owner].visual_muzzle())
+			var join=clampf(1.-Vector3(rockets[i].pos).distance_to(origin)/6.,0.,1.)
+			n.position+=(Vector3(n.get_meta("drawn_from"))-origin)*smoothstep(0.,1.,join)
+		n.look_at(n.position+rockets[i].velocity)
 		if Time.get_ticks_msec()>=int(n.get_meta("flight_sound",0)):
 			n.set_meta("flight_sound",Time.get_ticks_msec()+500)
 			get_parent().play_sound("rocket_flight",n.global_position,true)

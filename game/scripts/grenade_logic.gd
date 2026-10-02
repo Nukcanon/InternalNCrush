@@ -15,7 +15,7 @@ static func begin(g:Node,id:int,source:String="key") -> bool:
 	if p.role==4 and int(p.gadget) in [0,1]:
 		if p.gadget==1:p.flash_count=maxi(0,int(p.flash_count)-1)
 		else:p.smoke=maxi(0,int(p.smoke)-1)
-	g.feedback(id,"bolt","안전핀 해제 · 2.5초 · 놓으면 투척")
+	g.feedback(id,"pin","안전핀 해제 · 2.5초 · 놓으면 투척")
 	return true
 static func release(g:Node,id:int):
 	if not g.players.has(id):return

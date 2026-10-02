@@ -17,8 +17,8 @@ func run():
 		var p={"role":3,"gadget":variant};GadgetLoadout.reset(p);expect(p.gadget_count==4-variant,"cover stock per type")
 	for id in ["e1","m3"]:
 		var events=ReloadAudio.cues(Catalog.get_weapon(id),5)
-		expect(events.filter(func(e):return e[1]=="shell_insert").size()==5,"one sound per loaded shell")
-		expect(events[-1][1]=="bolt","shell-fed action finishes after inserts")
+		expect(events.filter(func(e):return e[1]=="shell_insert").size()==1,"one shell insert per loading cycle (1.4.10: a pump gun loads one shell per cycle)")
+		expect(not events.any(func(e):return e[1]=="bolt"),"the pump sounds once when the loading ends, not in each cycle (MagazineReload.finish)")
 	expect(not ReloadAudio.cues(Catalog.get_weapon("e3"),2).any(func(e):return e[1]=="bolt"),"break-action has no fictitious charging handle")
 	for id in ["a1","r2","pistol"]:expect(ReloadAudio.cues(Catalog.get_weapon(id),10)[1][1]=="magazine","magazine insertion cue")
 	var holder=Node3D.new();root.add_child(holder)

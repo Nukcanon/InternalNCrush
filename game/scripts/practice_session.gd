@@ -23,6 +23,13 @@ static func input(game,id:int):
 static func tick(game):
 	if not game.players.has(1):return
 	var p=game.players[1];var a=game.actors[1]
+	# 1.4.10 (the user): gear refills by itself anywhere on the range, 2 s after
+	# the last one is used up (not while one is still in the hand).
+	var left=GrenadeLogic.remaining(p) if GrenadeLogic.equipped(p) else int(p.get("gadget_count",0))
+	var spent=GadgetLoadout.count(p)>0 and left<=0 and int(p.get("cooking",0))==0
+	if spent and float(p.get("gear_refill_at",0.))<=0.:p.gear_refill_at=game.clock+2.
+	elif not spent:p.gear_refill_at=0.
+	if spent and game.clock>=float(p.gear_refill_at):GadgetLoadout.reset(p);p.gear_refill_at=0.
 	if p.alive and a.position.z>30. and absf(a.position.x)<12. and game.clock>float(p.get("refit_ready",0)):
 		# (1.4.8, the user: no automatic reload here - the reserve is infinite, an empty
 		# magazine is reloaded by hand; the spawn stands in this zone, so it refilled

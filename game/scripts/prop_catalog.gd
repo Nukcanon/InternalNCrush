@@ -770,19 +770,34 @@ static func build(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 			for x in [-.75,.75]:P.cyl(k,Vector3(x,.75,.38),Vector3(x,1.8,.42),.02,DARK_WOOD,5)
 			return AABB(Vector3(-1.2,0,-.45),Vector3(2.,1.8,.9))
 		"warning_sign":
-			# post and a yellow warning panel: waves over a sinking figure (both faces)
-			P.cyl(k,Vector3.ZERO,Vector3(0,2.1,0),.04,Color("6a7278"),8)
-			k.box(Vector3(0,1.75,0),Vector3(.68,.56,.03),Color("1f2428"),true)
-			k.box(Vector3(0,1.75,0),Vector3(.62,.5,.035),Color("f2c230"),true)
-			k.box(Vector3(0,1.17,0),Vector3(.66,.3,.03),Color("f4f4f0"),true) # text plate (DistrictProps adds the words)
-			for f in [1.,-1.]:
-				k.xf=Transform3D(Basis(Vector3.UP,0. if f>0 else PI),Vector3.ZERO)
-				for i in range(3):k.box(Vector3(0,1.58+i*.04,.02),Vector3(.5,.018,.006),Color("2f6fb8"),true) # waves
-				k.disc(Vector3(0,1.87,.022),.055,Color("1f2428"),8) # head
-				k.box(Vector3(0,1.73,.02),Vector3(.05,.18,.006),Color("1f2428"),true) # body
-				for side in [-1.,1.]:k.box(Vector3(side*.09,1.8,.02),Vector3(.14,.03,.006),Color("1f2428"),true) # arms up
-			k.xf=Transform3D()
-			return AABB(Vector3(-.36,0,-.08),Vector3(.72,2.1,.16))
+			# 1.4.10 (the user): a triangular drowning warning - a black-rimmed yellow
+			# triangle, a figure with both arms up over three wavy lines - on the front
+			# (+z, the walkway side); the post stands behind the panel; no text plate.
+			var ink=Color("1f2428");var yellow=Color("f2c230")
+			P.cyl(k,Vector3(0,0,-.045),Vector3(0,1.98,-.045),.035,Color("6a7278"),8)
+			var tri_plate=func(base:float,side:float,z0:float,z1:float,col:Color):
+				var hgt=side*.866;var pts=[Vector3(-side*.5,base,0),Vector3(side*.5,base,0),Vector3(0,base+hgt,0)]
+				P.tri(k,pts[0]+Vector3(0,0,z1),pts[1]+Vector3(0,0,z1),pts[2]+Vector3(0,0,z1),Vector3.BACK,Vector3.BACK,Vector3.BACK,col)
+				P.tri(k,pts[0]+Vector3(0,0,z0),pts[1]+Vector3(0,0,z0),pts[2]+Vector3(0,0,z0),Vector3.FORWARD,Vector3.FORWARD,Vector3.FORWARD,col)
+				for e in range(3):
+					var p0:Vector3=pts[e];var p1:Vector3=pts[(e+1)%3];var out=(p1-p0).cross(Vector3.BACK).normalized()
+					P.quad(k,p0+Vector3(0,0,z0),p1+Vector3(0,0,z0),p1+Vector3(0,0,z1),p0+Vector3(0,0,z1),out,col)
+			tri_plate.call(1.38,.80,-.01,.02,ink) # rim (the panel itself)
+			tri_plate.call(1.425,.66,.02,.024,yellow) # face
+			tri_plate.call(1.425,.66,-.014,-.01,yellow) # back face (seen from the water side)
+			var z=.027
+			k.disc(Vector3(0,1.75,z),.038,ink,10) # head
+			k.box(Vector3(0,1.655,z),Vector3(.05,.1,.004),ink,true) # body rising from the water
+			for s in [-1.,1.]:
+				var sh=Vector3(s*.022,1.69,z);var hand=Vector3(s*.095,1.81,z);var across=(hand-sh).cross(Vector3.BACK).normalized()*.012
+				P.quad(k,sh-across,hand-across,hand+across,sh+across,Vector3.BACK,ink) # arms up
+			for row in range(3):
+				var y=1.47+row*.045;var half=.2-row*.025;var n=10
+				for i in range(n):
+					var x0=-half+2.*half*i/n;var x1=-half+2.*half*(i+1)/n
+					var y0=y+sin(x0*38.)*.011;var y1=y+sin(x1*38.)*.011
+					P.quad(k,Vector3(x0,y0-.008,z),Vector3(x1,y1-.008,z),Vector3(x1,y1+.008,z),Vector3(x0,y0+.008,z),Vector3.BACK,ink) # a wavy line
+			return AABB(Vector3(-.41,0,-.08),Vector3(.82,2.08,.13))
 		"lifebuoy_stand":
 			P.cyl(k,Vector3.ZERO,Vector3(0,1.5,0),.05,Color("c93f3f"),8)
 			P.cbox(k,Vector3(0,1.15,-.06),Vector3(.7,.75,.08),Color("c93f3f"),.02) # backboard

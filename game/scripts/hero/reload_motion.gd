@@ -58,6 +58,9 @@ static func mag_travel(gun:GunModel,t:float) -> Vector3:
 	# depends on the magazine's length, so it differs a little per gun)
 	var drop=mag_drop(t);var h=float(gun.mag_height)
 	var clear=smoothstep(0.,.35,drop);var away=smoothstep(.3,1.,drop)
+	# (1.4.10, the user: the new magazine came in too low) on the way in it is back
+	# under the well early and rises straight up from there
+	if t>IN_START:clear=smoothstep(0.,.5,drop);away=smoothstep(.55,1.,drop)
 	return Vector3(-(.55*h+.08)*away,-MAG_CLEAR*h*clear-OFF_VIEW*away,(.45*h+OFF_BACK)*away)
 const OFF_VIEW=.6 # (the user: lower the hand further if needed - out of view on every gun)
 const OFF_BACK=.34 # toward the body: the first-person arm can reach there (below the view)
@@ -67,7 +70,7 @@ static func mag_lean(t:float) -> float:
 	return .35*smoothstep(.3,1.,mag_drop(t))
 ## True while the support hand carries the magazine (it moves with the hand).
 static func carrying(t:float) -> bool:return t>=DETACH and t<=SEAT
-const MAG_CLEAR=1.35
+const MAG_CLEAR=1.05 # (1.4.10, the user: the magazine sat too low under the gun - just clear of the well, then away)
 static func hand(position:Vector3,style:String,shape:Dictionary={},basis:Basis=Basis.IDENTITY) -> Dictionary:
 	return {"position":position,"style":style,"shape":shape,"basis":basis}
 # Magazine centre (gun space) and grip shape (handle frame, base units).
@@ -83,7 +86,9 @@ static func magazine(gun:GunModel,scale:Vector3,fallback:Vector3) -> Array:
 	var centre:Vector3=gun.mag_rest*box.get_center()
 	var half=(box.size*.5).clamp(Vector3(.008,.02,.012),Vector3(.03,.07,.05))*scale.x
 	# The hand closes round the upper half (near the magazine well).
-	var upper=centre+Vector3(0,box.size.y*.18,0)
+	# 1.4.10 (the user: hold it so the magazine sticks up out of the hand toward the
+	# well): the hand closes round the lower part, the magazine standing above it.
+	var upper=centre-Vector3(0,box.size.y*.22,0)
 	return [upper*scale,{"half":half,"round":minf(half.x,.012)}]
 ## Where the round being loaded is (gun space) and whether it shows, for the
 ## shell, break and revolver cycles; the hand holds it there.
@@ -115,6 +120,16 @@ static func round_point(gun:GunModel,t:float) -> Array:
 	return [Vector3.ZERO,false]
 ## Support-hand grip for the current reload state, in the gun node's space:
 ## {position, basis, style, shape}. Returns {} when the ordinary grip applies.
+## Pump-action stroke (0..1, 1 = pulled back): after each shot, and (1.4.10)
+## once when shell loading ends - after the last shell or when a shot cuts it
+## ("pump": seconds since that end, Actor tracks it).
+const PUMP_TIME=.34
+static func pumping(s:Dictionary) -> bool:
+	return float(s.get("shot",99.))<.42 or float(s.get("pump",99.))<PUMP_TIME
+static func pump_stroke(s:Dictionary) -> float:
+	var after_shot=sin(clampf((float(s.get("shot",99.))-.08)/PUMP_TIME,0.,1.)*PI)
+	var after_load=sin(clampf(float(s.get("pump",99.))/PUMP_TIME,0.,1.)*PI)
+	return maxf(after_shot,after_load)
 static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 	var t=float(s.get("reload",-1.))
 	var w=gun.spec;var style=str(w.get("reload_style","rifle"))
@@ -128,10 +143,10 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 	var top=gun.muzzle.position.y*scale.y+.05
 	var home=hand(fore,fore_style,fore_shape,fore_basis)
 	if t<0.:
-		# Pump-action shells: the support hand works the slide after each shot.
-		if style=="shell" and w.get("single_load",false) and float(s.get("shot",99.))<.42:
-			var age=float(s.get("shot",99.));var stroke=sin(clampf((age-.08)/.34,0.,1.)*PI)
-			home.position=fore+Vector3(0,0,.09*stroke);return home
+		# Pump-action shells: the support hand works the slide after each shot,
+		# and (1.4.10) once after the last shell or when a shot cuts the loading.
+		if style=="shell" and w.get("single_load",false) and pumping(s):
+			home.position=fore+Vector3(0,0,.09*pump_stroke(s));return home
 		return {}
 	if style=="dual":return {}
 	var tactical=bool(s.get("reload_tactical",false))
@@ -146,8 +161,9 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			var slide=Vector3(-(mag_shape.half.x+.014),top-.03,grip.z-.05)
 			if t<.16:return hand(approach.lerp(mag,smoothstep(0.,.16,t)),"pistol",mag_shape)
 			if t<RACK:return hand(mag+mag_travel(gun,t),"pistol",mag_shape)
-			if tactical:return hand(mag.lerp(approach,smoothstep(RACK,1.,t)),"pistol",mag_shape)
-			return rack(mag,slide,approach,t,.06,hand(approach,"pistol",mag_shape),mag_shape,knob)
+			# (1.4.10, the user: no rack at the end - the slide was locked back and runs
+			# forward by itself as the magazine seats)
+			return hand(mag.lerp(approach,smoothstep(RACK,1.,t)),"pistol",mag_shape)
 		"shell","break","revolver":
 			# The hand carries the round along its path and lets go at the port.
 			var r=round_point(gun,t);var at:Vector3=r[0]
@@ -168,8 +184,16 @@ static func support(gun:GunModel,s:Dictionary) -> Dictionary:
 			# they were hidden inside the hand).
 			elif style in ["shell","break"]:
 				at+=Vector3(.003,-.073,.058);cartridge={"half":Vector3(.0095,.0095,.06),"round":.0095}
+			# 1.4.10 (the user: shell, pump, down for a shell, pump...): shells loaded one
+			# after another go in back to back - each cycle after the first starts down
+			# at the shells, and only the last one returns the hand to the pump.
+			var shell_chain=style=="shell" and bool(s.get("reload_chain",false))
+			var last=style!="shell" or int(s.get("rounds",0))+1>=int(s.get("capacity",99)) or int(s.get("reserve",99))<=1
+			var fetch:Vector3=round_point(gun,0.)[0]+Vector3(.003,-.073,.058)
+			if shell_chain:start=fetch
 			if t<lead:return hand(start.lerp(at,smoothstep(0.,lead,t)),"hold",cartridge)
 			var done=.78 if style=="shell" else .76 if style=="break" else .8
+			if style=="shell" and not last and t>=done:return hand(at.lerp(fetch,smoothstep(done,1.,t)),"hold",cartridge)
 			if t<done:return hand(at,"hold",cartridge)
 			if style=="revolver" and t<1.:return hand(at.lerp(start,smoothstep(done,1.,t)),"hold",cartridge)
 			return hand(at.lerp(fore,smoothstep(done,1.,t)),back_style,back_shape,fore_basis)

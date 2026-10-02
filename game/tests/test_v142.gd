@@ -114,7 +114,11 @@ func run():
 	expect(ordered,"gun lengths follow class and damage %s"%str(lengths.map(func(l):return l.map(func(x):return snappedf(x,.01)))))
 	# Support hands: AK bases hold the magazine, Sniper_2 bases a real forend.
 	var vector=GunModel.new();root.add_child(vector);vector.build(Catalog.get_weapon("a1"),false)
-	var mag_centre=ReloadMotion.magazine(vector,vector.base.scale,Vector3.ZERO)[0]
+	# (1.4.10: ReloadMotion.magazine()[0] is now the reload hold low on the magazine - measure the magazine's own centre)
+	var mag_box=AABB()
+	for mm in vector.magazine.find_children("*","MeshInstance3D",true,false)+([vector.magazine] if vector.magazine is MeshInstance3D else []):
+		if mm.visible and mm.mesh:var lb=GunModel.relative(mm,vector.magazine)*mm.get_aabb();mag_box=lb if mag_box.size==Vector3.ZERO else mag_box.merge(lb)
+	var mag_centre=(vector.mag_rest*mag_box.get_center())*vector.base.scale
 	expect(vector.left_grip.position.distance_to(mag_centre/vector.base.scale.x)<.08,"AK-base support hand closes round the magazine")
 	vector.free()
 	var scout=GunModel.new();root.add_child(scout);scout.build(Catalog.get_weapon("r1"),false)

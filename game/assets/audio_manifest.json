@@ -3,261 +3,261 @@
     "file": "res://assets/audio/gun_a1.wav",
     "category": "combat",
     "gain_db": -6.11,
-    "sha256": "054d6dd453a49a1406c66739be902c46f5467f0ba2a317e3e936f0967714676d",
+    "sha256": "0116b3b7e41bb45d29c2b21479ff4bc0791fa2e1c834095a2102a80034ea3273",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.9,
     "family": "rifle"
   },
   "gun_a2": {
     "file": "res://assets/audio/gun_a2.wav",
     "category": "combat",
     "gain_db": -6.43,
-    "sha256": "033ba3cda488a1f4d2c5b1721fcc6ba308266d574f2ecbf0e34e9a046998cc81",
+    "sha256": "2bd33a8caf83a34a14511f7dbf17fc0143a4ef1fd02467546b6a2599a063c5f4",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.9,
     "family": "rifle"
   },
   "gun_a3": {
     "file": "res://assets/audio/gun_a3.wav",
     "category": "combat",
     "gain_db": -5.47,
-    "sha256": "c15c8b991e511faa044fef59f58e8cea8c906fa7de12ddca5fa48eb31401311c",
+    "sha256": "1f368630e8b7bf2aaa4a34a372513f2553e02dc76b77a0f3e91b94721753c957",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.9,
     "family": "rifle"
   },
   "gun_a4": {
     "file": "res://assets/audio/gun_a4.wav",
     "category": "combat",
     "gain_db": -5.79,
-    "sha256": "b6ece6cbea277d2253ea1506a6637e4fb7c86eb9d1c1bcedb8af7648fd803a66",
+    "sha256": "ba039a5eb61415efc7d2b3fe364d0dd80fed12f15dd8f1edfee36431d4d539bf",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.9,
     "family": "rifle"
   },
   "gun_r1": {
     "file": "res://assets/audio/gun_r1.wav",
     "category": "combat",
     "gain_db": -2.55,
-    "sha256": "861744a36520c449c00d23ba0bb0a70cd512ade7f4d6ed8a5d64e2a0ef7e787f",
+    "sha256": "583a1b50c7677227b78834650187cd52e1616f4a3415ecefa5382ed7efb95b09",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.86,
+    "duration": 1.6,
     "family": "sniper"
   },
   "gun_r2": {
     "file": "res://assets/audio/gun_r2.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "123452077aa3a139dc2f8ead3b3a1c226d9e443943e9e5234f589eaf5e92703e",
+    "sha256": "494444609efdd0ded714a40806d4fb9638bdabd5e9a1945af4f5b3ac6962a1ad",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.86,
+    "duration": 1.6,
     "family": "sniper"
   },
   "gun_r3": {
     "file": "res://assets/audio/gun_r3.wav",
     "category": "combat",
     "gain_db": -4.71,
-    "sha256": "74664f0c133f4052d1f2eb101e3ff8e7dd8bb10121f4214f264542909047c0bc",
+    "sha256": "799d6409e4e608043e670e72d933d5be4c3755914755554f6ffe9a2778516cd7",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.6,
+    "duration": 1.15,
     "family": "dmr"
   },
   "gun_r4": {
     "file": "res://assets/audio/gun_r4.wav",
     "category": "combat",
     "gain_db": -5.6,
-    "sha256": "601b177357e11e18c1cd3220fb322242ee4c2d556963fc58a73778b18eef698e",
+    "sha256": "2e7a571d1e171f4038873bf190d5053591c398fe16f1bfcb400a7962197c427d",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.6,
+    "duration": 1.15,
     "family": "dmr"
   },
   "gun_r5": {
     "file": "res://assets/audio/gun_r5.wav",
     "category": "combat",
     "gain_db": -4.84,
-    "sha256": "aaf3a1faf64e9a7acfbab7ce8360e3e8662ca5e891026c99b74ee01b5068e720",
+    "sha256": "e64690ddea1daacc17a9a5c39bee13c84b732726296875b29b24e78edd64b545",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.6,
+    "duration": 1.15,
     "family": "dmr"
   },
   "gun_h1": {
     "file": "res://assets/audio/gun_h1.wav",
     "category": "combat",
     "gain_db": -5.98,
-    "sha256": "4e6fc8d212f85d0ddca839763ba89636fd02d8aea2a6dee60b0ebb4e822003a7",
+    "sha256": "78cda5ccd63750142fab6afa8fc30a5dc3bb0683e7fb0c51489caa7b9467fd4f",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.8,
     "family": "machinegun"
   },
   "gun_h2": {
     "file": "res://assets/audio/gun_h2.wav",
     "category": "combat",
     "gain_db": -5.79,
-    "sha256": "f9cfae3ec0eef3bb16fc2fc75ba9617d372b567c25632ac63a0e3b4b161ae17c",
+    "sha256": "66b29e1fb373ec991cb00f557428688c08e03726b3cd22e3a99f6e988c5af055",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.8,
     "family": "machinegun"
   },
   "gun_e1": {
     "file": "res://assets/audio/gun_e1.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "bb41d7122959baee6cf6dc0c2c5e05c3a20d5d63eb8d9199d556d82170090470",
+    "sha256": "27bc69759f465d90a19308afa2526735d529289aae99d8a41c2696e856c92a07",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.66,
+    "duration": 1.25,
     "family": "shotgun"
   },
   "gun_e2": {
     "file": "res://assets/audio/gun_e2.wav",
     "category": "combat",
     "gain_db": -1.34,
-    "sha256": "75ef657b29a471d8e851bd4b90cb59a9675c6adebeb168f51e0b1982e8eb78d8",
+    "sha256": "1f4fb4f91000465afb3e271c81bccdef65be883abba903397d92edbcc0609061",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.66,
+    "duration": 1.25,
     "family": "shotgun"
   },
   "gun_e3": {
     "file": "res://assets/audio/gun_e3.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "a89d954deac833ab5bd9190970b60a492d66e52b2db7aabbcac6f03b12688654",
+    "sha256": "4be3ca6130328e688be214d5a30ff860067aebbcc379226d81556c49378cfc4d",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.66,
+    "duration": 1.25,
     "family": "shotgun"
   },
   "gun_c1": {
     "file": "res://assets/audio/gun_c1.wav",
     "category": "combat",
     "gain_db": -6.36,
-    "sha256": "977e3ef8267be69a5c9cd8d58d1d602561a6573d7ad7c27c1903682031fa132c",
+    "sha256": "bb4d9549f408300cfbe0a02585976f3619fd75e4397c429b5290725dbc7f0be1",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.7,
     "family": "smg"
   },
   "gun_c2": {
     "file": "res://assets/audio/gun_c2.wav",
     "category": "combat",
     "gain_db": -6.55,
-    "sha256": "e65d43f04d67706617f5a7f186b0beb521bef6dcd96fea0bd25d9fd56542ebff",
+    "sha256": "30df2c2cee21140b721f8636909e54c6f736fbf96735cc15861116bb5bd9fa70",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.7,
     "family": "smg"
   },
   "gun_c3": {
     "file": "res://assets/audio/gun_c3.wav",
     "category": "combat",
     "gain_db": -6.17,
-    "sha256": "c0eb15d649f6e9e09d2d1fd4d8aa95ac5ad53d7fceafeacdd4794c149e538bcb",
+    "sha256": "d6cf18039f620132c7c93137b32ee12b40a4869937ec77b41e6faf2c1a9b8059",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.7,
     "family": "smg"
   },
   "gun_c4": {
     "file": "res://assets/audio/gun_c4.wav",
     "category": "combat",
     "gain_db": -6.43,
-    "sha256": "ca0fec51f975af9275f75810d3344163ed8a7aae26e467aebeb4429d36211ff5",
+    "sha256": "6f0d026aa80dc08c8d0257a3003c48a1847c313c0503c07933867cc19f23e72e",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.7,
     "family": "smg"
   },
   "gun_m2": {
     "file": "res://assets/audio/gun_m2.wav",
     "category": "combat",
     "gain_db": -6.24,
-    "sha256": "d0f81a1eb319aa3717d0c1b2a7aef7dcb4f96a3045bbe770a3cd61829eae5b15",
+    "sha256": "43ed70cb2cd1c735de2e9c50429d3e15c133ef0d69c367e6cd359829b4882496",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.7,
     "family": "medic_rifle"
   },
   "gun_pistol": {
     "file": "res://assets/audio/gun_pistol.wav",
     "category": "combat",
     "gain_db": -6.05,
-    "sha256": "124d31befb40c56b290d1689a6a278ea08f034188e19c8ef6069a1dc9ac9b06c",
+    "sha256": "c5d4ed22740eeb5a5ab54f7b43ff7fe5e2dade8e9cf1b7aef69c2e8c920672bb",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.75,
     "family": "pistol"
   },
   "gun_heavy_pistol": {
     "file": "res://assets/audio/gun_heavy_pistol.wav",
     "category": "combat",
     "gain_db": -4.71,
-    "sha256": "da68b94efb932f75b36703e446548ad082862d2dbbb7d0f58b95fb9593759b3b",
+    "sha256": "5830cb55ed7be9966087e02796b7b2d14e72e8629231af7d7ca52557b8131dad",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 1.0,
     "family": "revolver"
   },
   "gun_auto_pistol": {
     "file": "res://assets/audio/gun_auto_pistol.wav",
     "category": "combat",
     "gain_db": -6.68,
-    "sha256": "c5cd31af1da9e94766c7cbc4808acc331e23476c2f0a836b2320d17bcdb813cf",
+    "sha256": "dfedcd5ece0763508a723452bc546e122df957888905e95ce034ed126f94878c",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.75,
     "family": "pistol"
   },
   "gun_eng_pistol": {
     "file": "res://assets/audio/gun_eng_pistol.wav",
     "category": "combat",
     "gain_db": -5.79,
-    "sha256": "e60bc63fff5a722d2d6a535be1c8b2a48a35105d98bf89d1dbf8e4a994866bf7",
+    "sha256": "aec3fb11e3ad0a66e0554f54fffe28a11b27351a71eded739d4c1d47cb1b0e5f",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.75,
     "family": "pistol"
   },
   "gun_burst_pistol": {
     "file": "res://assets/audio/gun_burst_pistol.wav",
     "category": "combat",
     "gain_db": -6.55,
-    "sha256": "803fa5ae0818df4a6f3d26b294c775a112b9f1629c23ac53ad0e50a9334c8c4e",
+    "sha256": "519371ffcada0c97751f29336d6485039a85c37e6c5cd4a820f1d07ffd837b93",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.75,
     "family": "pistol"
   },
   "gun_med_pistol": {
     "file": "res://assets/audio/gun_med_pistol.wav",
     "category": "combat",
     "gain_db": -6.24,
-    "sha256": "89610e6e31e2ef1d029738e87e5d271af8827c69db7856be3c77a502bd7ee332",
+    "sha256": "3d52135f46ca344d7025abd0bf31f749fb7b7b9bfddb475c1ce121cbc81c3525",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.75,
     "family": "pistol"
   },
   "gun_m3": {
     "file": "res://assets/audio/gun_m3.wav",
     "category": "combat",
     "gain_db": 0,
-    "sha256": "8b3ea159c785df5b151e07eeffcb2f0d6006a4aa78f2e618aa088766567f6b07",
+    "sha256": "8e93a076ed3c546f347fd48cde8d21f3096e63edd7961424ecdcefbe69eda4be",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.58,
+    "duration": 1.0,
     "family": "medic_shotgun"
   },
   "gun_h4": {
     "file": "res://assets/audio/gun_h4.wav",
     "category": "combat",
-    "gain_db": 1,
-    "sha256": "24c9654d7952bb1fe90db0c68012806ba81d280ba3aaa87cdf533a01cf37552e",
+    "gain_db": 2,
+    "sha256": "0021a95b5d208d0468eae0445fa8df4d137b066ea1e68b351f6420aecb9d9f2d",
     "license": "CC0-1.0",
-    "duration": 0.8,
+    "duration": 2.6,
     "family": "rocket"
   },
   "gun_dual_pistols": {
     "file": "res://assets/audio/gun_dual_pistols.wav",
     "category": "combat",
     "gain_db": -6.05,
-    "sha256": "e134fbd066a69378a48b015f916ad904581a8526722c855c969517e070bd7717",
+    "sha256": "7953fe973d480e6206a16536e8b8086fc0594c90146c13ab084091ab2c260a31",
     "license": "CC-BY-SA-3.0",
-    "duration": 0.38,
+    "duration": 0.75,
     "family": "pistol"
   },
   "gun_h5": {
     "file": "res://assets/audio/gun_h5.wav",
     "category": "combat",
-    "gain_db": -1,
-    "sha256": "0053a733d57a8e96b33a2e845168e96f46d152450a665a34a3977959d348aa1e",
+    "gain_db": 1,
+    "sha256": "f7a7e4d6761fb2d368c9bb96b86f2a4846c11609c0d956869f2acf7de1a662f2",
     "license": "CC0-1.0",
-    "duration": 0.8,
+    "duration": 2.6,
     "family": "rocket"
   },
   "gun_h6": {
@@ -441,41 +441,41 @@
     "file": "res://assets/audio/reload.wav",
     "category": "combat",
     "gain_db": -1,
-    "sha256": "b79af6ea48ac66456263e2b9a4b1a7a47bb961f3c387984c38d1dbe0599cbcfe",
+    "sha256": "a89f0e5c1fb45b7831d75795b1923cf6a67a946a4f6dca3001ca3d156385a26c",
     "license": "CC0-1.0",
-    "duration": 0.36
+    "duration": 0.34
   },
   "magazine": {
     "file": "res://assets/audio/magazine.wav",
     "category": "combat",
     "gain_db": -1,
-    "sha256": "2384ac3bfcd265f28fb9c60f1da445a63f3f674d1440bb14e0ef08be5d1dac50",
+    "sha256": "58e2c134f8a352295f861cf9b4821c25860602790d0692f14fd203687032016a",
     "license": "CC0-1.0",
-    "duration": 0.38
+    "duration": 0.32
   },
   "bolt": {
     "file": "res://assets/audio/bolt.wav",
     "category": "combat",
-    "gain_db": 0,
-    "sha256": "7b5dab81ceccb36c88c6c8bcf2e5bf89bc8fb7e1f209185a69eb8b402774c3e1",
+    "gain_db": -2,
+    "sha256": "62ef1917b8b90fab5cb4ff23330e3791a1ddf881db0b6a3c65045cd7409b6ef4",
     "license": "CC0-1.0",
-    "duration": 0.18
+    "duration": 0.599
   },
   "action_close": {
     "file": "res://assets/audio/action_close.wav",
     "category": "combat",
-    "gain_db": 0,
-    "sha256": "a19026674e42ba8c72cbc7cda7292a020a94fe9da224bdfbc3885ea7b35a3768",
+    "gain_db": -3,
+    "sha256": "8df8c8a7308b0db8870125a195767b8164d70ff9de2616f854f8a7364817c4a7",
     "license": "CC0-1.0",
-    "duration": 0.11
+    "duration": 0.252
   },
   "shell_insert": {
     "file": "res://assets/audio/shell_insert.wav",
     "category": "combat",
-    "gain_db": 0,
-    "sha256": "57a852677f2fc4a43d0e53f2320a0ae5a0ca301b8d29665c7421607f476eddc3",
+    "gain_db": -2,
+    "sha256": "7ed93712de9adc41f6c31f3bbdb1e400e46d47a08cb8ba77eea7e8c286a5b5fc",
     "license": "CC0-1.0",
-    "duration": 0.22
+    "duration": 0.34
   },
   "rocket_insert": {
     "file": "res://assets/audio/rocket_insert.wav",
@@ -609,17 +609,17 @@
     "file": "res://assets/audio/bomb_explosion.wav",
     "category": "combat",
     "gain_db": 5,
-    "sha256": "317ec4219d62a5b438e13371b6a668ddf7de5f067c54c36f83d036bb88172973",
+    "sha256": "40816df7d5a9c22c3c4eb57207e7ce707a91b73128dc16641cd35be0f4005283",
     "license": "CC0-1.0",
-    "duration": 3.6
+    "duration": 4.2
   },
   "explosion": {
     "file": "res://assets/audio/explosion.wav",
     "category": "combat",
     "gain_db": 4,
-    "sha256": "7ee8410a6e77f89cc26d037dc97910b855181fcf91d08665d17e5a7317dc4234",
+    "sha256": "8404a0584b1e118eae3c563fa760e26019b9a56828a0a3cb3d77d47ce0c4770e",
     "license": "CC0-1.0",
-    "duration": 2.1
+    "duration": 3.2
   },
   "flash": {
     "file": "res://assets/audio/flash.wav",
@@ -680,18 +680,18 @@
   "throw": {
     "file": "res://assets/audio/throw.wav",
     "category": "combat",
-    "gain_db": 1,
-    "sha256": "92bd03973535450b3ac4cbc43d4200682bd60990c0bbb3697e14c616721091de",
+    "gain_db": 0,
+    "sha256": "a17c50f211cfc0360a53a4528c3565fa05c2a083bbe0ef1835a2cea98582dbc5",
     "license": "CC0-1.0",
-    "duration": 0.18
+    "duration": 0.32
   },
   "bounce": {
     "file": "res://assets/audio/bounce.wav",
     "category": "combat",
     "gain_db": -1,
-    "sha256": "b3af348320093fe61cd6de999c1de4372faee93cbe8c204f2d7fc84004ab3bf2",
+    "sha256": "b7fc7768cbe19affbbd46c19240eddd9e452c74b814f9784cc6c2fa284897e2e",
     "license": "CC0-1.0",
-    "duration": 0.34
+    "duration": 0.3
   },
   "melee_flesh": {
     "file": "res://assets/audio/melee_flesh.wav",
@@ -760,10 +760,10 @@
   "rocket_flight": {
     "file": "res://assets/audio/rocket_flight.wav",
     "category": "combat",
-    "gain_db": -1,
-    "sha256": "68f371b43d8a799d1051d60aa2378efb72c28fc8d6c1bb92bc94e9983d5ede32",
+    "gain_db": -2,
+    "sha256": "086caa5bbc7cd99896b0f2a4fb5ffdc6716145c26b4aa3faaac2cc10a8c9bf6d",
     "license": "CC0-1.0",
-    "duration": 0.7
+    "duration": 0.62
   },
   "laser_fire": {
     "file": "res://assets/audio/laser_fire.wav",
@@ -852,6 +852,14 @@
     "category": "combat",
     "gain_db": -8,
     "sha256": "83f4a3805f2e42d521a87d9e500df226380ec6e9b01403fbb5b538c537c568f2",
+    "license": "CC0-1.0",
+    "duration": 0.3
+  },
+  "pin": {
+    "file": "res://assets/audio/pin.wav",
+    "category": "combat",
+    "gain_db": -4,
+    "sha256": "17c0d993961af84d903f51b9e2175ab0d991d6f56606942cd46ba932592d098b",
     "license": "CC0-1.0",
     "duration": 0.3
   }

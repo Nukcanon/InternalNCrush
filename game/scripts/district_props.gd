@@ -69,12 +69,7 @@ static func build(node:Node3D,kind:String,index:int,ordinal:int) -> AABB:
 			var pool=MeshInstance3D.new();var disc=CylinderMesh.new();disc.top_radius=1.3;disc.bottom_radius=1.3;disc.height=.01;disc.radial_segments=24;disc.rings=1
 			pool.mesh=disc;pool.position.y=.43;pool.material_override=WaterSurface.material_kind("shallow");pool.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			pool.set_meta("no_collision",true);node.add_child(pool)
-		if kind=="warning_sign":
-			# the words on both faces of the plate
-			for face in [1.,-1.]:
-				var label=Label3D.new();label.text="깊은 물 · 익사 위험";label.font=load("res://assets/fonts/DoHyeon-Regular.ttf");label.font_size=40;label.pixel_size=.0042
-				label.modulate=Color("c22a22");label.outline_size=0;label.double_sided=false;label.position=Vector3(0,1.17,.018*face);label.rotation.y=0. if face>0 else PI
-				node.add_child(label)
+		# (1.4.10: the drowning sign carries no text plate any more - a pictogram only)
 		return pbox
 	if kind.begins_with("vehicle_"):
 		# Parked vehicles (original transport set) as hard cover, length along local X.

@@ -74,7 +74,9 @@ func run():
 	heard.clear();g.players[1].role=3;g.players[1].primary="e1";g.players[1].slot=0;g.players[1].mag.e1=3;g.players[1].reserve.e1=20;g.players[1].reload=0.
 	g.begin_reload(1);var began=g.clock
 	for i in range(1,101):g.clock=began+Catalog.get_weapon("e1").reload*i/100.;ReloadAudio.tick(g,1)
-	expect(heard.count("shell_insert")==int(g.players[1].reload_count) and heard.count("bolt")==1 and not "magazine" in heard,"shell reload sounds follow each insertion and finish with one action")
+	expect(heard.count("shell_insert")==1 and heard.count("bolt")==0 and not "magazine" in heard,"one shell insert per loading cycle, no pump mid-loading")
+	heard.clear();g.players[1].mag.e1=4;MagazineReload.finish(g,1)
+	expect(heard.count("bolt")==1,"the tube full, the pump sounds once")
 	g.players[1].reload=0.;g.players[1].placing="";g.players[1].protect=0.;g.players[1].invulnerable=0.;g.players[1].alive=true
 	g.players[2].alive=false;g.players[2].respawn=1e9
 	var a=g.actors[1];a.position=Vector3(0,.02,0);a.velocity=Vector3.ZERO;a.input_state.crouch=false;a.input_state.z=-1.;a.input_state.sprint=false
