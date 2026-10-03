@@ -16,7 +16,7 @@ def main():
     shutil.copytree(SOURCE, STAGE, ignore=shutil.ignore_patterns('.godot', '*.glb', '*.scn', '*.uid', '__pycache__'))
     # Selected small CC0 models are needed while baking the shared map geometry.
     # Packed arenas embed their mesh/material data; source GLBs stay export-excluded.
-    for pack in ['industrial', 'car', 'nature', 'watercraft', 'district_original', 'transport_original', 'doors_original', 'places_original', 'windows_original', 'windows_web', 'trees_original', 'setdress_original']:
+    for pack in ['industrial', 'car', 'nature', 'watercraft', 'district_original', 'transport_original', 'doors_original', 'places_original', 'windows_original', 'windows_web', 'trees_original', 'setdress_original', 'statues']:  # (1.5.4: pillar statues)
         models = SOURCE / 'assets/models' / pack
         if models.exists():
             shutil.copytree(models, STAGE / 'assets/models' / pack, dirs_exist_ok=True)
