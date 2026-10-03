@@ -52,7 +52,7 @@ func run():
 	expect(heard.is_empty(),"other players' contact impacts remain private")
 	g.players[1].role=3;g.players[1].skill_ready=0.;g.actors[1].position=Vector3(20,0,20);g.actors[1].reset_view(0.);g.players[1].placing="turret"
 	await physics_frame;await physics_frame
-	heard.clear();expect(Deployment.confirm(g,1) and "deploy" in heard,"confirmed placement plays deployment audio")
+	heard.clear();expect(Deployment.confirm(g,1) and "engineer_deploy" in heard,"confirmed placement plays deployment audio") # (1.5.4: its own machine start-up sound)
 	await create_timer(.2).timeout
 	var samples=capture.get_buffer(capture.get_frames_available());var peak=0.
 	for sample in samples:peak=maxf(peak,maxf(absf(sample.x),absf(sample.y)))

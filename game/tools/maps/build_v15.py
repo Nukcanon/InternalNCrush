@@ -1084,7 +1084,7 @@ def build(index):
             if r == 0: far.append(box(c * CELL, -300., (c + 1) * CELL, 0.))
             if r == m.h - 1: far.append(box(c * CELL, m.H, (c + 1) * CELL, m.H + 300.))
         if far:
-            sea = unary_union(far).buffer(.01).simplify(.05)
+            sea = unary_union(far)   # (cell-aligned boxes merge exactly; a buffer left slivers at the far corners)
             floor(sea, lambda x, z: WATER_BED, 'seabed')   # (seen, never walked on: no collision)
             floor(sea, lambda x, z: WATER_Y, 'water')
         for r, c in water_cells:
