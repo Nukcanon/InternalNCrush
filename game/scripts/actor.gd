@@ -64,6 +64,7 @@ const SPRINT_OUT=.15
 var load_hold=0. # 0..1 steady loading pose of round-by-round reloads
 var pair_swing=0. # 1.4.5: DUET sprint arm swing blend
 const PAIR_SWING=.05 # metres each way
+const PLATE_APPLY=.6 # 1.5.4: seconds to press a plate on (both hands to the chest, then down)
 const HIP_YAW_GEAR=.13 # held gear (not guns) still turns in a little at the hip
 const PAIR_HIP=.54 # DUET: the pair's spacing at the hip (drawn together to PAIR_AIM when aiming); 1.4.5: wider (was .40)
 const PAIR_AIM=.36
@@ -405,6 +406,11 @@ func update_spread(dt:float,now:float):
 	var target=Aim.spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),GadgetLoadout.mounted(p,bool(input_state.crouch)),velocity.y,aim_progress)
 	if p.get("slide_until",0)>now:target+=2.3
 	spread_angle=lerpf(spread_angle,target,1.-exp(-dt*(18 if target>spread_angle else 13.)))
+## 1.5.4: the cone of a round after the first in a spray (AimModel.FOLLOW_CONE) - the T
+## pattern carries it, the crosshair's full spread only seeds the first round.
+func follow_spread(p:Dictionary,w:Dictionary) -> float:
+	var cone=Aim.follow_spread(w,Vector2(velocity.x,velocity.z).length(),bool(input_state.ads),bool(input_state.crouch),last_sprint,is_on_floor(),float(p.get("bloom",0)),GadgetLoadout.mounted(p,bool(input_state.crouch)),velocity.y,aim_progress)
+	return minf(spread_angle,cone+(2.3 if p.get("slide_until",0)>game.clock else 0.))
 func update_melee(p:Dictionary,now:float):
 	var shown=MeleeCombat.shown(p,now)
 	if shown and (not is_instance_valid(melee_world) or melee_role!=int(p.role)):
@@ -524,9 +530,25 @@ func update_skill_hums(p:Dictionary,now:float):
 			player=AudioStreamPlayer3D.new();player.stream=stream;player.volume_db=float(bank.catalog.get(key,{}).get("gain_db",-13.))
 			player.unit_size=4.;player.max_distance=GameAudio.audible_range(key) if key=="shield_loop" else 30.;player.position=Vector3.UP;add_child(player);player.play();skill_hums[key]=player
 		elif not on and is_instance_valid(player):player.queue_free();skill_hums.erase(key)
+# 1.5.4 (the user): the end of a timed skill has its own sound (the second half of the user's
+# reveal clip), and the heavy's bipod gives a double metal clack when it takes hold (crouching
+# with it fitted). Both from the synced state, so every client hears them.
+var skill_was_on=null
+var bipod_was_on=null
+func update_status_sounds(p:Dictionary,now:float):
+	var skill_on=bool(p.get("alive",false)) and float(p.get("skill_until",0))>now
+	var bipod_on=bool(p.get("alive",false)) and GadgetLoadout.mounted(p,bool(input_state.crouch))
+	var quiet=DisplayServer.get_name()=="headless" or (is_instance_valid(game.kill_replay) and game.kill_replay.active)
+	if skill_was_on==true and not skill_on and bool(p.get("alive",false)) and not quiet:game.play_sound("skill_end",global_position,pid!=game.local_id)
+	if bipod_was_on==false and bipod_on and not quiet:game.play_sound("bipod",global_position,pid!=game.local_id)
+	skill_was_on=skill_on;bipod_was_on=bipod_on
 func visual(dt:float,p:Dictionary,now:float):
 	visible=p.alive and not (is_instance_valid(game.kill_replay) and game.kill_replay.active);set_team(int(p.team));ensure_character()
-	update_skill_hums(p,now)
+	update_skill_hums(p,now);update_status_sounds(p,now)
+	# (1.5.4: the bipod gadget shows clamped on the primary - GunModel.set_bipod)
+	var bipod=int(p.get("role",0))==2 and int(p.get("gadget",-1))==0 and GadgetLoadout.has_item(p)
+	for held_gun in [view_weapon,world_weapon]:
+		if is_instance_valid(held_gun) and held_gun is GunModel:held_gun.set_bipod(bipod and int(p.get("slot",0))==0)
 	if not p.alive:tag.hide();health_tag.hide();return
 	handedness=int(p.get("hand",1));character.scale.x=float(handedness);view_mirror.scale.x=1. # (mirrored again once the view is solved, end of visual)
 	protected_visual.visible=p.alive and maxf(float(p.get("protect",0)),float(p.get("invulnerable",0)))>now
@@ -689,7 +711,7 @@ func visual(dt:float,p:Dictionary,now:float):
 	# 1.4.5 DUET: no sprint tilt; the two pistols swing like running arms instead
 	# (one forward and up while the other goes back and down, 5 cm each way).
 	pair_swing=lerpf(pair_swing,1. if sprint and dual else 0.,1.-exp(-dt*8.))
-	if is_instance_valid(view_weapon) and view_weapon.dual_guns.size()>1 and (pair_swing>.001 or view_weapon.pair_swing_amount!=0.):view_weapon.set_pair_swing(sin(bob)*PAIR_SWING*pair_swing*(1.-ads_blend))
+	if is_instance_valid(view_weapon) and view_weapon.dual_guns.size()>1 and (pair_swing>.001 or view_weapon.pair_run!=0.):view_weapon.set_pair_swing(pair_swing*(1.-ads_blend),bob) # (1.5.4: carried muzzle up and pumped by turns)
 	# (nor for held gear: a cover plate or kit drawn while sprinting sat skewed)
 	if sprint and not dual and not gadget_up:base+=Vector3(.075,-.055,.055);rotation_target+=Vector3(-.2,.3,.23)
 	var reload_style=str(w.get("reload_style",""))
@@ -744,6 +766,13 @@ func visual(dt:float,p:Dictionary,now:float):
 			throw_start={"until":float(p.throw_until),"position":Vector3(gun.position.x*view_hand,gun.position.y,gun.position.z),"rotation":Vector3(gun.rotation.x,gun.rotation.y*view_hand,gun.rotation.z*view_hand),"frame":gun.global_transform}
 		var path=throw_path(throw_phase,[throw_start.position,throw_start.rotation])
 		base=path[0];rotation_target=path[1]
+	# 1.5.4 (the user): putting the plate on - both hands bring it in against the chest,
+	# then lower out of the view (the next one comes back up with the hold's easing)
+	var plate_age=now-float(p.get("plate_at",-100.))
+	if int(p.role)==0 and int(p.gadget)==0 and int(p.slot)==2 and plate_age>=0. and plate_age<PLATE_APPLY:
+		# (up a little into the view, in to the chest standing upright, then the hands drop)
+		var t=plate_age/PLATE_APPLY;var lift=smoothstep(0.,.3,t)*(1.-smoothstep(.3,.6,t));var press=smoothstep(.25,.6,t);var away=smoothstep(.6,1.,t)
+		base+=Vector3(-.04,.07,.04)*lift+Vector3(-.03,-.16,.28)*press+Vector3(0,-.30,0)*away;rotation_target+=Vector3(.55,0,0)*press
 	var swap=clampf((float(p.get("switch_until",0))-now)/.32,0,1);base.y-=swap*.32;rotation_target.z-=swap*.3
 	# 1.5.1 (the user: after a throw the next grenade sat in the middle-left): the hand
 	# dips out of view after the follow-through and comes back up with the next one
@@ -1122,7 +1151,8 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 	var carried:Node3D=bomb_view if bomb_up else null if melee_up or (item_up and throwing) else view_item if item_up else view_weapon
 	# 1.4.4 melee: the tool rides the hand; the arm is swung to a wrist point.
 	if melee_up:
-		var wrist:Vector3=MeleeVisual.swing_wrist(now-float(p.get("melee_started",-100.)))
+		var age=now-float(p.get("melee_started",-100.))
+		var wrist:Vector3=MeleeVisual.swing_wrist(age)
 		# The fist continues the forearm, which comes in from the lower right at
 		# a shallow angle (FP_FOREARM_MELEE); the blade leaves the fist on the
 		# thumb side, pointing UP and a little forward (a hammer grip with the
@@ -1131,13 +1161,26 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 		# Left-handed: the frame is mirrored like a gun's handles (a reflected basis).
 		# 1.4.5: the wrench is carried with its head tilted further forward.
 		var thumb:Vector3=(Vector3(0,.70,-.71) if melee_view.tool else Vector3(0,.9,-.44)).normalized()
+		var swinging=age>=0. and age<MeleeCombat.DURATION
+		# 1.5.4 (the user's clip): the knife has its own swing - the arm, the blade's angle and
+		# the free fist move as in a Counter-Strike slash (MeleeVisual.knife_swing)
+		var knife:Dictionary=MeleeVisual.knife_swing(age) if not melee_view.tool else {}
+		if not knife.is_empty():
+			wrist=knife.wrist;dir=-Vector3(knife.forearm).normalized();thumb=Vector3(knife.blade).normalized()
+			swinging=age>=0. and age<MeleeVisual.KNIFE_SWING_TIME
 		var x:Vector3=-(thumb-dir*dir.dot(thumb)).normalized()
 		var basis=Basis(x,dir,x.cross(dir).normalized())
 		if view_hand<0:basis=Basis.from_scale(Vector3(-1,1,1))*basis;wrist.x=-wrist.x
 		var at:Transform3D=view_space.global_transform*Transform3D(basis,wrist)
-		var age=now-float(p.get("melee_started",-100.))
-		var swinging=age>=0. and age<MeleeCombat.DURATION
 		view_body.wrist_override={"R":Transform3D(at.basis.orthonormalized(),at.origin),"capture_R":not swinging,"rigid_R":swinging,"tool_R":melee_view.handle_shape()}
+		if not knife.is_empty():
+			# the free fist, low left of the middle, knuckles up and forward
+			var free_dir:Vector3=-Vector3(FP_FOREARM_MELEE.L).normalized();var free_thumb:Vector3=Vector3(.35,.85,-.40).normalized()
+			var fx:Vector3=(free_thumb-free_dir*free_dir.dot(free_thumb)).normalized()
+			var free_basis=Basis(fx,free_dir,fx.cross(free_dir).normalized());var free_at:Vector3=knife.free
+			if view_hand<0:free_basis=Basis.from_scale(Vector3(-1,1,1))*free_basis;free_at.x=-free_at.x
+			var fat:Transform3D=view_space.global_transform*Transform3D(free_basis,free_at)
+			view_body.wrist_override.L=Transform3D(fat.basis.orthonormalized(),fat.origin);view_body.wrist_override.curl_L="fist"
 		if is_instance_valid(view_body.held):view_body.hold(null)
 	elif item_up and throwing:
 		# 1.4.4 throw: the hand keeps its hold on the grenade (its wrist frame in
@@ -1164,8 +1207,13 @@ func update_view_body(dt:float,p:Dictionary,now:float,progress:float):
 			# The view body's weapon frame follows the view mount (gun space), so
 			# the item keeps its gun-space transform; the frame itself may still
 			# be stale on a freshly built body.
-			var local=gun.global_transform.affine_inverse()*carried.global_transform
-			view_body.hold(carried);carried.transform=local
+			# 1.5.4 (the user: the gadget rose after every gun <-> gadget switch): an item held
+			# before is still in the weapon frame with its gun-space transform - re-reading it
+			# against the mount (where the frame may not be this frame) added an offset each time.
+			if carried.get_parent()==view_body.weapon_frame:view_body.hold(carried)
+			else:
+				var local=gun.global_transform.affine_inverse()*carried.global_transform
+				view_body.hold(carried);carried.transform=local
 	var yaw=Basis(Vector3.UP,aim_yaw)
 	# View-model convention: a slightly larger body and a compact gun keep both
 	# hands on long rifles with the short cartoon arms.

@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Rules
-const VERSION = "1.5.3"
+const VERSION = "1.5.4"
 const MAPS = ["항구", "조선소", "제철소", "연구소", "사막 기지", "운하", "중앙역", "구시가지", "정비 공장", "산동네", "과수원", "발전소", "분수 광장", "물류 창고", "실험 단지", "폐공장", "고층 빌딩", "재래시장", "채석장", "요새", "원전", "수로교", "도서관", "폐선장", "수도원", "용광로", "온실", "지하 금고", "해안 기지", "서버 센터", "산성", "훈련장"]
 const MAP_PLAYERS = [32,32,16,16,16,32,16,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,8,8,12,12,12,12,12,12,16]
 static func maps_for_size(count:int,mode:int=-1) -> Array:
@@ -21,7 +21,8 @@ const REGEN_DELAY = 10.0
 const REGEN_RATE = 1.0
 const SPAWN_PROTECTION = 1.5
 # 1.4.3: a respawned player may fire back after one second (still protected).
-const SPAWN_ATTACK_DELAY = 1.0
+# (1.5.4, the user: at once - the protection itself stays)
+const SPAWN_ATTACK_DELAY = 0.0
 static func attack_blocked_until(p:Dictionary) -> float:return float(p.get("protect",0))-(SPAWN_PROTECTION-SPAWN_ATTACK_DELAY)
 static var PORT:int = clampi(int(OS.get_environment("INC_TEST_PORT")),1024,65533) if OS.has_environment("INC_TEST_PORT") else 27888
 static var DISCOVERY:int = PORT+1

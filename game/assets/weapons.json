@@ -46,7 +46,7 @@
     "spray_height": 2.3,
     "spray_frequency": 2.5,
     "spray_seed": 0.0,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 36.69
   },
   "a2": {
@@ -147,7 +147,7 @@
     "spray_height": 2.75,
     "spray_frequency": 2.2,
     "spray_seed": 0.74,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 34.69
   },
   "a4": {
@@ -198,7 +198,7 @@
     "spray_height": 2.35,
     "spray_frequency": 2.0,
     "spray_seed": 1.11,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 37.28
   },
   "r1": {
@@ -248,7 +248,7 @@
     "spray_height": 2.8,
     "spray_frequency": 1.8,
     "spray_seed": 1.48,
-    "spray_direction": -1,
+    "spray_direction": 1,
     "pattern_recovery": 31.65,
     "scope_steps": [
       4,
@@ -416,7 +416,7 @@
     "spray_height": 2.3,
     "spray_frequency": 2.7,
     "spray_seed": 2.59,
-    "spray_direction": -1,
+    "spray_direction": 1,
     "pattern_recovery": 34.86,
     "structure_damage_scale": 0.6
   },
@@ -514,12 +514,14 @@
     "max_range": 220,
     "recoil_kick": 0.89,
     "spray_build_seconds": 1.7,
-    "spray_width": 1.85,
-    "spray_height": 2.55,
+    "spray_width": 2.5,
+    "spray_height": 3.315,
     "spray_frequency": 2.1,
     "spray_seed": 3.33,
-    "spray_direction": 1,
-    "pattern_recovery": 32.51
+    "spray_direction": -1,
+    "pattern_recovery": 32.51,
+    "spray_swing": 0.85,
+    "spray_cross": 1.55
   },
   "h2": {
     "name": "BASTION",
@@ -564,12 +566,14 @@
     "max_range": 220,
     "recoil_kick": 0.93,
     "spray_build_seconds": 1.85,
-    "spray_width": 2.15,
-    "spray_height": 2.8,
+    "spray_width": 2.9,
+    "spray_height": 3.64,
     "spray_frequency": 1.8,
     "spray_seed": 3.7,
     "spray_direction": -1,
-    "pattern_recovery": 30.11
+    "pattern_recovery": 30.11,
+    "spray_swing": 0.85,
+    "spray_cross": 1.55
   },
   "e1": {
     "name": "PULSE",
@@ -618,7 +622,7 @@
     "spray_height": 2.3,
     "spray_frequency": 2.0,
     "spray_seed": 4.07,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 37.5,
     "pellet_core_angle": 0.18,
     "pellet_core_fraction": 0.6,
@@ -671,7 +675,7 @@
     "spray_height": 2.5,
     "spray_frequency": 2.4,
     "spray_seed": 4.44,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 35.11,
     "pellet_core_angle": 0.18,
     "pellet_core_fraction": 0.6
@@ -876,7 +880,7 @@
     "spray_height": 2.4,
     "spray_frequency": 2.8,
     "spray_seed": 5.92,
-    "spray_direction": -1,
+    "spray_direction": 1,
     "pattern_recovery": 34.61
   },
   "c4": {
@@ -1062,7 +1066,7 @@
     "spray_height": 1.85,
     "spray_frequency": 2.5,
     "spray_seed": 7.4,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 33.68
   },
   "heavy_pistol": {
@@ -1213,7 +1217,7 @@
     "spray_height": 2.12,
     "spray_frequency": 3.01,
     "spray_seed": 8.51,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 34.16,
     "single_load": true,
     "repair_per_hit": 8,
@@ -1405,7 +1409,7 @@
     "spray_height": 2.3,
     "spray_frequency": 2.0,
     "spray_seed": 4.07,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 37.5,
     "recoil": 0.0
   },
@@ -1456,7 +1460,7 @@
     "spray_height": 2.3,
     "spray_frequency": 2.0,
     "spray_seed": 4.07,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 37.5,
     "heal_per_pellet": 6,
     "heal_cap": 30,
@@ -1512,7 +1516,7 @@
     "spray_height": 2.55,
     "spray_frequency": 2.1,
     "spray_seed": 3.33,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 32.51,
     "rocket": true,
     "description": "직격 총피해 80 · 폭발 70~20 · 반경 9 m · 사격 간격 1.8초 · 장전 1.4초",
@@ -1567,7 +1571,7 @@
     "spray_height": 1.85,
     "spray_frequency": 2.5,
     "spray_seed": 7.4,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 33.68,
     "dual": true
   },
@@ -1618,7 +1622,7 @@
     "spray_height": 2.55,
     "spray_frequency": 2.1,
     "spray_seed": 3.33,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 32.51,
     "rocket": true,
     "description": "4발 로켓런처 · 직격 45 · 폭발 33~11 · 반경 7 m · 사격 간격 1초 · 1발씩 장전 · 장전 중 사격 가능",
@@ -1675,7 +1679,7 @@
     "spray_height": 0,
     "spray_frequency": 2.1,
     "spray_seed": 3.33,
-    "spray_direction": 1,
+    "spray_direction": -1,
     "pattern_recovery": 32.51,
     "laser": true,
     "description": "보라색 연속 레이저 · 60~120 DPS · 3초에 최대 피해 · 방어구 피해 +30% · 3초 연속 발사 시 과열 · 과열·중단 모두 최대 열에서 2초 냉각 · 배터리당 6초 · 아군 설치물 초당 30 수리"

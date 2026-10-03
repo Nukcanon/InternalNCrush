@@ -36,22 +36,7 @@ static func tick(g:Node,dt:float):
 				item.held=false;item.velocity=Vector3.ZERO
 				if g.players.has(id) and int(g.players[id].get("cooking",0))==int(item.id):g.players[id].cooking=0
 		else:
-			var steps=maxi(1,ceili(dt/.02));var step=dt/steps
-			for substep in range(steps):
-				item.velocity.y-=16.*step
-				var end:Vector3=item.pos+item.velocity*step
-				var excluded=[g.actors[id].get_rid()] if g.actors.has(id) and g.clock-float(item.released)<.3 else []
-				var hit=g.ray(item.pos,end+item.velocity.normalized()*.09,excluded)
-				if hit.is_empty():item.pos=end
-				else:
-					item.pos=hit.position+hit.normal*.095
-					var normal_speed=item.velocity.dot(hit.normal)
-					if absf(normal_speed)>1.2 and g.clock>=float(item.get("bounce_ready",0.)):
-						item.bounce_ready=g.clock+.12;g.event_fx.rpc("grenade_bounce",item.pos,Vector3.ZERO,id)
-					var tangent=item.velocity-hit.normal*normal_speed
-					item.velocity=tangent*exp(-step*1.1)-hit.normal*normal_speed*.35
-					if hit.normal.y>.6 and absf(item.velocity.y)<.6:item.velocity.y=0.
-				item.rotation=Vector3(item.get("rotation",Vector3.ZERO))+Vector3(item.velocity.z,1.,-item.velocity.x)*step*5.
+			if not bool(item.get("resting",false)):settle(g,item,id,dt)
 		if g.clock>=float(item.until):
 			# (1.4.9: only the grenade still in the hand ends the cooking - an earlier
 			# throw going off had cleared the next one's, which then never left the hand)
@@ -77,3 +62,35 @@ static func explode(g:Node,pos:Vector3,owner:int,cluster:bool=false):
 	for prop in g.arena.props.values():
 		var offset=prop.global_position-pos
 		if offset.length()<radius and g.clear_line(pos,prop.global_position,[prop.get_rid()]):prop.hit(prop.global_position,offset.normalized(),power*(1.-offset.length()/radius))
+# 1.5.4 (the user: throwables bounced too far and too often): friction - each ground bounce
+# keeps half its sliding speed, rolling dies out within a second, and on about one level
+# (drops under DROP_FRESH) it stops bouncing at its BOUNCES-th touch and rolls out; a drop of more than
+# that mid-way gives it two or three bounces more, by the height.
+const BOUNCES=3
+const DROP_FRESH=.5
+static func settle(g:Node,item:Dictionary,id:int,dt:float):
+	var steps=maxi(1,ceili(dt/.02));var step=dt/steps
+	for substep in range(steps):
+		item.velocity.y-=16.*step
+		var end:Vector3=item.pos+item.velocity*step
+		var excluded=[g.actors[id].get_rid()] if g.actors.has(id) and g.clock-float(item.released)<.3 else []
+		var hit=g.ray(item.pos,end+item.velocity.normalized()*.09,excluded)
+		if hit.is_empty():item.pos=end
+		else:
+			item.pos=hit.position+hit.normal*.095
+			var normal_speed=item.velocity.dot(hit.normal)
+			var ground=hit.normal.y>.6
+			if absf(normal_speed)>1.2 and g.clock>=float(item.get("bounce_ready",0.)):
+				item.bounce_ready=g.clock+.12;g.event_fx.rpc("grenade_bounce",item.pos,Vector3.ZERO,id)
+				if ground:
+					var level=float(item.get("bounce_y",INF))
+					if level==INF:item.bounces_left=BOUNCES
+					elif level-hit.position.y>DROP_FRESH:item.bounces_left=2 if level-hit.position.y<1.5 else 3;item.rolling=false
+					item.bounce_y=hit.position.y;item.bounces_left=int(item.get("bounces_left",BOUNCES))-1
+					if int(item.bounces_left)<=0:item.rolling=true # (its last bounce: from here it rolls out)
+			var tangent=item.velocity-hit.normal*normal_speed
+			if ground and absf(normal_speed)>1.2:tangent*=.5 # (a bounce bites)
+			item.velocity=tangent*exp(-step*(6. if ground else 1.1))-hit.normal*normal_speed*(0. if ground and bool(item.get("rolling",false)) else .35)
+			if ground and absf(item.velocity.y)<.6:item.velocity.y=0.
+			if ground and item.velocity.length()<.15:item.velocity=Vector3.ZERO;item.resting=true;return
+		item.rotation=Vector3(item.get("rotation",Vector3.ZERO))+Vector3(item.velocity.z,1.,-item.velocity.x)*step*5.

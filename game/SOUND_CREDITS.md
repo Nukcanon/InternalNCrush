@@ -54,7 +54,7 @@ Shotgun shell/rack recordings: zer0_sol, Shotgun Reload Sound effects, https://o
 
 ## 1.4.2 hit marker, melee and slide
 
-- **Kenney — RPG Audio; Impact Sounds.** https://kenney.nl/assets/rpg-audio and https://kenney.nl/assets/impact-sounds. CC0 1.0 (same notice as `assets/AUDIO_KENNEY_LICENSE.txt`). The source OGGs used are kept as mono 44.1 kHz PCM in `tools/foley/k_*.wav`: knife slices, chop, knife draw, cloth, metal pot/click, metal/tin/wood/soft/punch impacts and a concrete footstep.
+- **Kenney — RPG Audio; Impact Sounds.** https://kenney.nl/assets/rpg-audio and https://kenney.nl/assets/impact-sounds. CC0 1.0 (same notice as `assets/AUDIO_KENNEY_LICENSE.txt`). The source OGGs used are kept as mono 44.1 kHz PCM in `tools/foley/k_*.wav`: knife slices, chop, knife draw, cloth, metal pot/click, metal/tin/wood/soft/punch impacts and a concrete footstep. Since 1.5.4 also the door open/close and creak recordings, for the hinged access doors.
 
 `hit`, `confirm`, `knife_swing`, `wrench_swing`, `knife_flesh`, `knife_wall`, `wrench_flesh`, `wrench_repair`, `wrench_wall` and `slide` are rebuilt from those recordings plus generated air/friction noise (trimming, filtering, fades and layering in `tools/combat_audio_refresh.py`). The hit marker is now a short unpitched tap instead of a ringing tone. All ten mixes are CC0-1.0.
 

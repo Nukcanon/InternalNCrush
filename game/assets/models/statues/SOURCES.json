@@ -1,0 +1,22 @@
+{
+    "license":  "CC0-1.0",
+    "creator":  "Quaternius",
+    "models":  [
+                   {
+                       "name":  "horse_statue",
+                       "page":  "https://poly.pizza/m/AK9CmjFnL6",
+                       "file":  "https://static.poly.pizza/55b0aa03-543c-439d-a7d7-f0ac4c23578f.glb"
+                   },
+                   {
+                       "name":  "fox_statue",
+                       "page":  "https://poly.pizza/m/abxyXID5EA",
+                       "file":  "https://static.poly.pizza/9a765c68-38b8-40a8-95a2-892b44ef8b46.glb"
+                   },
+                   {
+                       "name":  "stag_statue",
+                       "page":  "https://poly.pizza/m/cKloIsNcT8",
+                       "file":  "https://static.poly.pizza/a44b71cc-0a88-4fa6-a89e-833f46fd19c2.glb"
+                   }
+               ],
+    "source":  "https://poly.pizza"
+}

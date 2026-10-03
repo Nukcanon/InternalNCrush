@@ -728,7 +728,9 @@ func solve_hands(s:Dictionary):
 			# A handguard beyond the support arm's reach (long guns held from the
 			# shoulder) is taken further back along the gun, in 1 cm steps so the
 			# grip caches stay warm. 1.4.4: first person too, from its fixed shoulder.
-			if held is GunModel:
+			# (1.5.4, the user: running with DUET the left fingers left the gun - a pistol pair's
+			# left hand holds its own pistol; sliding it along the gun took it off the grip)
+			if held is GunModel and held.dual_guns.size()<2:
 				var shoulder=bone_world(bone["UpperArm.L"]).origin;var reach=arm_length("L")*.97
 				# First person: at most FP_SLIDE back along a handguard (the hand
 				# stays on the front half), and hardly at all off a vertical grip

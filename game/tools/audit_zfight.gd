@@ -4,7 +4,7 @@ extends SceneTree
 # overlapping by more than MIN_AREA. Builds each map as the bake does and
 # prints ZFIGHT lines (location, the two sources). Args: map indices.
 const MIN_AREA=.02
-const SLAB=.006
+var SLAB=.006 # (--slab=0.015: also near-coplanar layers, which flicker from afar)
 var found=0
 func _initialize():call_deferred("run")
 func label(m:Node) -> String:
@@ -21,6 +21,8 @@ func label(m:Node) -> String:
 	return "%s<%s>[%s]"%[str(m.get_parent().name),str(m.name),kind]
 func run():
 	var maps=Array(OS.get_cmdline_user_args()).filter(func(x):return str(x).is_valid_int()).map(func(x):return int(x))
+	for arg in OS.get_cmdline_user_args():
+		if str(arg).begins_with("--slab="):SLAB=float(str(arg).trim_prefix("--slab="))
 	if maps.is_empty():maps=range(32)
 	Catalog.load_all()
 	for index in maps:

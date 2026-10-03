@@ -107,7 +107,7 @@ void fragment(){float core=pow(abs(dot(normalize(NORMAL),normalize(VIEW))),3.);A
 	quad.material=cross_mat
 	var ramp=Gradient.new();ramp.set_color(0,Color(1,1,1,0.));ramp.add_point(.18,Color(1,1,1,.95));ramp.set_color(ramp.get_point_count()-1,Color(1,1,1,0.));crosses.color_ramp=ramp
 	crosses.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(crosses)
-## Connect sound and the looping hum (the owner and the healed ally hear it
+## The looping hum (the owner and the healed ally hear it
 ## unpositioned; everyone else hears it at the muzzle).
 func begin(game:Node,owner:int,target:int,repairing:bool):
 	if started:return
@@ -115,7 +115,7 @@ func begin(game:Node,owner:int,target:int,repairing:bool):
 	var bank=game.get("audio_bank")
 	if not is_instance_valid(bank) or DisplayServer.get_name()=="headless":return
 	var near=owner==game.local_id or target==game.local_id
-	bank.play("link_start",global_position,not near)
+	# (1.5.4, the user: no electronic "beep" on connecting - LINK and FIX start with the hum alone)
 	var stream=bank.loop_stream("repair_loop" if repairing else "link_loop")
 	if stream==null or bank.profile.get("gunfire_reduction",false):return
 	var data=bank.catalog.get("repair_loop" if repairing else "link_loop",{})
@@ -126,9 +126,8 @@ func begin(game:Node,owner:int,target:int,repairing:bool):
 		var player=AudioStreamPlayer3D.new();player.stream=stream;player.volume_db=volume;player.max_distance=GameAudio.audible_range("repair_loop" if repairing else "link_loop");player.unit_size=5.;hum=player
 	add_child(hum);hum.play()
 func end(game:Node,owner:int,target:int):
-	if not started or not is_instance_valid(game):return
-	var bank=game.get("audio_bank")
-	if is_instance_valid(bank):bank.play("link_stop",global_position,not (owner==game.local_id or target==game.local_id))
+	# (1.5.4, the user: no falling "pew" when a link ends either - the hum just stops with the node)
+	pass
 func draw_link(from:Vector3,to:Vector3,dt:float,repairing:bool,aim:Vector3=Vector3.ZERO):
 	clock+=dt;var camera=get_viewport().get_camera_3d();var direction=(to-from).normalized();var distance=from.distance_to(to)
 	var follow=1.-exp(-dt*9.)

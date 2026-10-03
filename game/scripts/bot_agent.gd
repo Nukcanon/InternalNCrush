@@ -234,7 +234,7 @@ func navigate(destination:Vector3,dt:float):
 		# around. The movement ray also works when aiming at an enemy elsewhere.
 		var door=hit.collider.get_meta("door") if hit.collider.has_meta("door") else null
 		if door is InteractiveDoor and game.server:
-			if not door.opened:door.toggle(game.actors);game.effect.rpc("door",door.global_position,Vector3.ZERO,id)
+			if not door.opened:door.toggle(game.actors,game.actors[id].global_position);game.effect.rpc(("door_swing_open" if door.opened else "door_swing_close") if door.swing else "door",door.global_position,Vector3.ZERO,id)
 			return
 		var found=false
 		for angle in [.65,-.65,1.2,-1.2]:
@@ -312,9 +312,13 @@ func utilities():
 						a.aim_yaw=float(a.input_state.yaw)+angle;a.aim_pitch=0.
 						if Deployment.candidate(game,id,"turret").valid:game.use_skill(id);break
 				if p.gadget_count>0 and visible_target:
-					for angle in [PI/2,-PI/2,PI,0.]:
-						a.aim_yaw=float(a.input_state.yaw)+angle;a.aim_pitch=0.
-						if Deployment.candidate(game,id,"cover").valid:game.use_gadget(id);break
+					# (1.5.4: builds keep clear of each other - more directions and a nearer spot are tried)
+					var placed=false
+					for pitch in [0.,-.45]:
+						for angle in [PI/2,-PI/2,PI,0.,PI/4,-PI/4,PI*.75,-PI*.75]:
+							a.aim_yaw=float(a.input_state.yaw)+angle;a.aim_pitch=pitch
+							if Deployment.candidate(game,id,"cover").valid:game.use_gadget(id);placed=true;break
+						if placed:break
 		4:
 			if visible_target and a.position.distance_to(last_known)>17:
 				var end=a.eye()+a.direction()*18;var friend_close=false

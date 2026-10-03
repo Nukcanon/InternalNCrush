@@ -27,7 +27,7 @@ func run():
 	expect(g.kick_player(1,4) and not g.players.has(4),"host can kick during combat")
 	var p=g.players[1];g.clock=100.;g.spawn(1);p.fire_ready=0.;p.switch_until=0.;p.role=0;p.skill_ready=0.;p.gadget_ready=0.;p.armor=0.;var rounds=p.mag[p.primary];var gadgets=p.gadget_count
 	g.fire(1);g.use_skill(1);g.use_gadget(1)
-	expect(p.mag[p.primary]==rounds and p.skill_ready==0 and p.gadget_count==gadgets,"spawn protection blocks fire, skills, and gadgets")
+	expect(p.mag[p.primary]<rounds and p.protect>g.clock,"1.5.4: a respawned player may fire at once, still protected")
 	g.players[3].team=1-p.team;g.damage(1,40,3);expect(p.hp==Rules.max_hp(p),"protected player cannot take damage")
 	g.clock+=Rules.SPAWN_PROTECTION+.01;g.fire(1)
 	expect(p.mag[p.primary]<rounds,"weapon works as soon as protection expires")

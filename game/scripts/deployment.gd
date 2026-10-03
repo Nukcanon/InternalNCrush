@@ -1,4 +1,4 @@
-class_name Deployment
+﻿class_name Deployment
 extends RefCounted
 
 static func candidate(game:Node,id:int,kind:String) -> Dictionary:
@@ -33,6 +33,13 @@ static func basis_on_ground(game:Node,pos:Vector3,yaw:float,kind:String) -> Basi
 # Only the placer's own body blocks a build next to them: the build box
 # must clear the capsule by this much.
 const SELF_CLEARANCE=.35
+const DEVICE_GAP=.4
+## A build's ground footprint (x/z, grown by margin) as a polygon.
+static func footprint(pos:Vector3,yaw:float,kind:String,margin:float) -> PackedVector2Array:
+	var h=size(kind)*.5+Vector3(margin,0,margin);var out=PackedVector2Array()
+	for c in [Vector3(-h.x,0,-h.z),Vector3(h.x,0,-h.z),Vector3(h.x,0,h.z),Vector3(-h.x,0,h.z)]:
+		var q=pos+Basis(Vector3.UP,yaw)*c;out.append(Vector2(q.x,q.z))
+	return out
 
 # Map layout rules: inside the arena, not in water; 1.4.4: the plant sites are
 # kept clear only in bomb mode (a build on the site would block the bomb).
@@ -54,6 +61,14 @@ static func allowed(game:Node,pos:Vector3,yaw:float,kind:String,id:int) -> bool:
 	query.shape=shape;query.transform=Transform3D(Basis(Vector3.UP,yaw),pos+Vector3.UP*(size(kind).y*.5+.04));query.collision_mask=15
 	query.exclude=[game.actors[id].get_rid()]
 	if not game.get_world_3d().direct_space_state.intersect_shape(query,1).is_empty():return false
+	# 1.5.4 (the user: a turret and a cover could stand in each other): every build keeps
+	# DEVICE_GAP clear of the others' footprints, whatever its collision does while it grows
+	# (the placer's own turret is not counted - placing a new one replaces it).
+	var mine=footprint(pos,yaw,kind,DEVICE_GAP)
+	for d in game.devices.values():
+		if kind=="turret" and str(d.kind)=="turret" and int(d.owner)==id:continue
+		if absf(float(d.pos.y)-pos.y)>2.:continue
+		if not Geometry2D.intersect_polygons(mine,footprint(d.pos,float(d.get("yaw",0.)),str(d.kind),0.)).is_empty():return false
 	# The placer's own body (excluded from the query above): no build on top of
 	# or overlapping the player.
 	var a=game.actors[id]
@@ -113,7 +128,7 @@ static func confirm(game:Node,id:int) -> bool:
 	if kind=="turret":p.skill_ready=game.clock+AbilityBalance.COOLDOWNS[3]
 	else:p.gadget_count-=1;p.gadget_ready=game.clock+.8
 	p.placing="";p.fire_ready=game.clock+.35;p.builds=int(p.get("builds",0))+1
-	game.event_fx.rpc("deploy",preview.pos,Vector3.ZERO,id)
+	game.event_fx.rpc("engineer_deploy",preview.pos,Vector3.ZERO,id) # (1.5.4, the user: machines starting up, from their robot clip)
 	game.feedback(id,"","포탑 설치 · 가까이에서 F로 업그레이드" if kind=="turret" else "엄폐물 설치 시작")
 	return true
 

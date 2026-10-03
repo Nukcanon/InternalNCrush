@@ -20,7 +20,7 @@ func _init(owner_ui:Node):
 	ui=owner_ui
 
 func show():
-	ui.make_panel("내부망 로비",1100);ui.screen="join"
+	ui.make_panel("내부망(LAN) 로비",1100);ui.screen="join"
 	# Only the room list scrolls; the title, connection status and actions stay visible.
 	ui.stack.reparent(ui.panel_body);ui.panel_body.move_child(ui.stack,0)
 	ui.panel_scroll.queue_free();ui.panel_scroll=null

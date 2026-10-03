@@ -81,16 +81,18 @@ func run():
 	cover.queue_free();await physics_frame;await physics_frame;p.fire_ready=0.;p.spray_phase=0.;p.bloom=0.;g.fire(1)
 	expect(target.hp<100.,"unobstructed muzzle reaches target")
 	g.disconnected(2)
-	actor.position=Vector3(0,.1,g.arena.bounds.y-7);actor.input_state.fire=false;actor.input_state.sprint=false;actor.input_state.x=0.;actor.input_state.z=0.
+	# (1.5.4: the maps grew a margin round their new outlines - a spawn point is open ground on every map)
+	var ground:Vector3=g.arena.spawn_points[0][0] if g.arena.spawn_points[0] is Array else g.arena.spawn_points[0]
+	actor.position=ground+Vector3.UP*.1;actor.input_state.fire=false;actor.input_state.sprint=false;actor.input_state.x=0.;actor.input_state.z=0.
 	for i in range(30):actor.simulate(.016,g.clock,false);await physics_frame
 	actor.velocity=Vector3(0,0,-7.);p.slide_ready=0.
 	expect(g.begin_slide(1),"double-shift command starts grounded moving slide")
 	expect(not g.begin_slide(1),"slide cooldown blocks repeat")
 	actor.position.y+=5.;actor.velocity=Vector3.UP;actor.move_and_slide();p.slide_ready=0.
 	expect(not g.begin_slide(1),"airborne slide rejected")
-	var fx=CombatFX.new();g.add_child(fx);var body=HeroRagdoll.new();fx.add_child(body);body.build(null,Vector3(0,6.,g.arena.bounds.y-7),Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
+	var fx=CombatFX.new();g.add_child(fx);var body=HeroRagdoll.new();fx.add_child(body);body.build(null,ground+Vector3.UP*6.,Vector3.FORWARD,0,0,0.,false,Vector3.ZERO)
 	var initial=body.bodies[0].position.y
 	for i in range(150):await physics_frame
-	expect(body.bodies[0].position.y<initial-3. and body.bodies[0].position.y>-.8,"airborne ragdoll falls onto ground")
+	expect(body.bodies[0].position.y<initial-3. and body.bodies[0].position.y>ground.y-.8,"airborne ragdoll falls onto ground")
 	g.leave_game();g.free();await process_frame
 	print("V102_RESULT ",checks-failures,"/",checks);quit(1 if failures else 0)

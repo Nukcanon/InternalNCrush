@@ -27,15 +27,47 @@ var vertical_map=false
 var props_authoritative=false
 var props={}
 var doors={}
-func add_door(pos:Vector3,yaw:float=0.,opening:float=InteractiveDoor.WIDTH):
-	var door=InteractiveDoor.new();add_child(door);var id=doors.size()+1;door.build(self,id,pos,yaw,opening);doors[id]=door
+func add_door(pos:Vector3,yaw:float=0.,opening:float=InteractiveDoor.WIDTH,swing:bool=false,id:int=0):
+	var door=InteractiveDoor.new();add_child(door)
+	if id<=0:id=doors.size()+1
+	door.build(self,id,pos,yaw,opening,swing);doors[id]=door
+## 1.5.4 (the user: a sliding door was set where its leaves had nowhere to go): at bake time,
+## once the physics space holds the walls, each sliding door checks that wall fills the
+## pocket beside the opening on both sides (where its leaf ends up); otherwise it becomes a
+## hinged door. Returns how many changed.
+func classify_doors() -> int:
+	var space=get_world_3d().direct_space_state;var changed=0
+	for id in doors.keys():
+		var door:InteractiveDoor=doors[id]
+		if door.swing:continue
+		var exclude=[]
+		for leaf in door.leaves:exclude.append(leaf.get_rid())
+		var pocket=true
+		for side in [-1.,1.]:
+			var solid=0;var total=0
+			for k in range(4):
+				var x=side*(door.opening_width*.5+.22+k*(door.opening_width*.5-.22)/3.)
+				# Down from just under the lintel: inside a wall or building (solid boxes and the
+				# baked triangle-mesh blocks alike) nothing - or something above head height - is
+				# met; over open ground, a parapet, a fence or water the ray lands low.
+				var top=door.global_transform*Vector3(x,2.6,0.)
+				var query=PhysicsRayQueryParameters3D.create(top,top+Vector3.DOWN*6.6,1,exclude);query.hit_from_inside=true
+				var hit=space.intersect_ray(query)
+				total+=1
+				if hit.is_empty() or float(hit.position.y)>door.global_position.y+2.2:solid+=1
+			if solid<total:pocket=false
+		if pocket:continue
+		var pos=door.position;var yaw=door.rotation.y;var opening=door.opening_width
+		doors.erase(id);remove_child(door);door.free()
+		add_door(pos,yaw,opening,true,id);changed+=1
+	return changed
 func door_states() -> Array:
 	var states=[]
-	for door in doors.values():states.append({"id":door.door_id,"open":door.opened,"progress":door.progress})
+	for door in doors.values():states.append({"id":door.door_id,"open":door.opened,"progress":door.progress,"dir":door.swing_dir})
 	return states
 func receive_doors(states:Array):
 	for state in states:
-		if doors.has(int(state.id)):doors[int(state.id)].opened=state.open;doors[int(state.id)].progress=state.progress;doors[int(state.id)].apply_pose()
+		if doors.has(int(state.id)):doors[int(state.id)].opened=state.open;doors[int(state.id)].progress=state.progress;doors[int(state.id)].swing_dir=float(state.get("dir",1.));doors[int(state.id)].apply_pose()
 var architecture:Node3D
 var chunk_count=0
 var bake_geometry=false

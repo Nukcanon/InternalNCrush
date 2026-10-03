@@ -1,6 +1,6 @@
 class_name ArenaCache
 extends RefCounted
-const REVISION=169 # 1.5.0: barred railings at deep water, lane walls out of spawns, triangular drowning signs, no furniture over openings, closed parapet ends; 168: 1.4.7: spawns moved out of each other's sight (no screen walls), coplanar facade/roof/prop faces separated; 167: 1.4.6: grates between shallow and deep water stay under the water; 166: fences, 165: gates, ditches along the outer walls; 164: 1.4.6: windows/doors clear of props and walls, flat shallow pools, fountain water, signs on every deep stretch; 162: water rules (deep 2.2 m deadly / shallow .22 m), boats, regional looks, prop catalog; before: 1.4.5: remodelled vehicles / drums / casks / cable drums / water tank (PropModels); before: spawn screens, pipes above window heads, broken panes rarer, laundry posts, pillars under covered-room masses
+const REVISION=171 # 1.5.4: sliding doors without wall to slide into are hinged doors; 170: 1.5.4: lane walls removed and spawns moved into corners out of sight, 5 cm deep trims, pillars clear of opening trims; 169: 1.5.0: barred railings at deep water, lane walls out of spawns, triangular drowning signs, no furniture over openings, closed parapet ends; 168: 1.4.7: spawns moved out of each other's sight (no screen walls), coplanar facade/roof/prop faces separated; 167: 1.4.6: grates between shallow and deep water stay under the water; 166: fences, 165: gates, ditches along the outer walls; 164: 1.4.6: windows/doors clear of props and walls, flat shallow pools, fountain water, signs on every deep stretch; 162: water rules (deep 2.2 m deadly / shallow .22 m), boats, regional looks, prop catalog; before: 1.4.5: remodelled vehicles / drums / casks / cable drums / water tank (PropModels); before: spawn screens, pipes above window heads, broken panes rarer, laundry posts, pillars under covered-room masses
 const FIELDS=["district_surfaces","water_rect","has_water","spawn_points","ffa_spawns","sites","zones","obstacles","map_index","indoors","bounds","playable_polygon","walk_surfaces","floor_holes","navigation_goals","navigation_blocks","vertical_map","chunk_count"]
 static func restore(arena:Node,index:int) -> bool:
 	var path="res://assets/arenas/complete/map_%02d.scn"%index
@@ -17,7 +17,7 @@ static func restore(arena:Node,index:int) -> bool:
 	for item in state.supplies:arena.supplies.append({"pos":item.pos,"ready":0.,"node":arena.get_node(item.path)})
 	for item in state.props:
 		var prop=InteractiveProp.new();prop.configure(item.id,item.kind,arena.props_authoritative);prop.transform=item.transform;arena.add_child(prop);arena.props[item.id]=prop
-	for item in state.doors:arena.add_door(item.pos,item.yaw,float(item.get("opening",InteractiveDoor.WIDTH)))
+	for item in state.doors:arena.add_door(item.pos,item.yaw,float(item.get("opening",InteractiveDoor.WIDTH)),bool(item.get("swing",false)),int(item.get("id",0)))
 	arena.set_meta("navigation_cache",source.get_meta("navigation_cache"))
 	if arena.has_meta("district"):DistrictLayout.validate_spawns(arena)
 	source.free();GraphicsOptions.apply_world(arena)
@@ -33,7 +33,7 @@ static func save(arena:Node,path:String) -> Error:
 	for i in range(arena.supplies.size()):arena.supplies[i].node.name="Supply_%d"%i
 	for item in arena.supplies:state.supplies.append({"pos":item.pos,"path":arena.get_path_to(item.node)})
 	for prop in arena.props.values():state.props.append({"id":prop.prop_id,"kind":prop.kind,"transform":prop.transform})
-	for door in arena.doors.values():state.doors.append({"pos":door.position,"yaw":door.rotation.y,"opening":door.opening_width})
+	for door in arena.doors.values():state.doors.append({"pos":door.position,"yaw":door.rotation.y,"opening":door.opening_width,"swing":door.swing,"id":door.door_id})
 	for child in arena.get_children():
 		if child is InteractiveProp or child is InteractiveDoor or child.is_queued_for_deletion():continue
 		source.add_child(child.duplicate())

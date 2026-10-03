@@ -180,7 +180,7 @@ static func build(a:Node,index:int):
 		if group.kind=="water_shallow":
 			visual.material_override=WaterSurface.material_kind("shallow")
 			visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		if group.kind in ["water","water_shallow","stair_detail"]:continue
+		if group.kind in ["water","water_shallow","stair_detail","seabed"]:continue
 		var collision=CollisionShape3D.new();var shape=ConcavePolygonShape3D.new();shape.set_faces(mesh.get_faces());shape.backface_collision=true;collision.shape=shape;body.add_child(collision)
 	# Vertical fascia gives elevated paths visible thickness without changing cover.
 	var edges=SurfaceTool.new();edges.begin(Mesh.PRIMITIVE_TRIANGLES);var edge_count=0
@@ -194,8 +194,17 @@ static func build(a:Node,index:int):
 				var normal=(w-v).cross(Vector3.DOWN).normalized()
 				# (1.4.7, the user: two materials in one plane flickered - the fascia sat
 				# exactly on the wall faces below raised paths; it now stands 1.5 cm off)
-				var off=normal*.015
-				for point in [v,w,v+Vector3.DOWN*.18,w,w+Vector3.DOWN*.18,v+Vector3.DOWN*.18]:edges.set_normal(normal);edges.add_vertex(point+off)
+				# (1.5.4, the user: thin bands with no depth flickered where they met things -
+				# the fascia is a 5 cm deep strip now: front, underside and both ends)
+				var off=normal*.05;var drop=Vector3.DOWN*.18;var back=normal*.005
+				for point in [v,w,v+drop,w,w+drop,v+drop]:edges.set_normal(normal);edges.add_vertex(point+off)
+				for point in [v+drop+back,v+drop+off,w+drop+off,v+drop+back,w+drop+off,w+drop+back]:edges.set_normal(Vector3.DOWN);edges.add_vertex(point)
+				var along=(w-v).normalized()
+				for end in [[v,-along],[w,along]]:
+					var e:Vector3=end[0];var n:Vector3=end[1]
+					var quad=[e+back,e+drop+back,e+drop+off,e+back,e+drop+off,e+off]
+					if n.dot((w-v))<0.:quad=[e+back,e+drop+off,e+drop+back,e+back,e+off,e+drop+off]
+					for point in quad:edges.set_normal(n);edges.add_vertex(point)
 				edge_count+=1
 	if edge_count>0:
 		edges.index();var fascia=MeshInstance3D.new();fascia.mesh=edges.commit();fascia.material_override=WorldSurface.material("trim",index);a.architecture.add_child(fascia)

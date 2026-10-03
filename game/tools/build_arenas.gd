@@ -25,6 +25,9 @@ func run():
 		for i in range(2):await physics_frame
 		var settled=DistrictProps.settle_props(arena)
 		if settled[0]+settled[1]>0:print("ARENA_PROPS_SETTLED ",index," moved=",settled[0]," removed=",settled[1])
+		# 1.5.4: sliding doors with no wall beside them to slide into become hinged doors
+		var hinged=arena.classify_doors()
+		if hinged>0:print("ARENA_DOORS_HINGED ",index," ",hinged,"/",arena.doors.size())
 		MeshFactory.own_recursive(arena.architecture,arena.architecture)
 		var packed=PackedScene.new();var result=packed.pack(arena.architecture)
 		if result==OK:result=ResourceSaver.save(packed,"res://assets/arenas/geometry/map_%02d.scn"%index,ResourceSaver.FLAG_COMPRESS)

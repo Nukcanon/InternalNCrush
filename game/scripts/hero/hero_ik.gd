@@ -1008,6 +1008,14 @@ static func apply_grip(hero:HeroCharacter,side:String,handle:Transform3D,style:S
 		if hero.finger_memory.has(b) and blend<1.:target=Quaternion(hero.finger_memory[b]).normalized().slerp(target.normalized(),blend)
 		hero.finger_memory[b]=target
 		sk.set_bone_pose_rotation(b,sk.get_bone_pose_rotation(b).normalized().slerp(target.normalized(),weight))
+	# 1.5.4 (the user: on the held plate the thumbs bent down over its edge): a grip may lay
+	# its thumb out straight, along the face beside the fingers (shape "thumb_flat")
+	if bool(shape.get("thumb_flat",false)):
+		for entry in fingers_of(hero,side):
+			if entry[1]=="Thumb":
+				# (straight, its base turned in so it lies across the face toward the other hand)
+				var lay:Quaternion=straight(hero,entry[0])*(Quaternion(Vector3.RIGHT,-.9) if int(entry[2])<=1 else Quaternion.IDENTITY)
+				hero.finger_memory.erase(entry[0]);sk.set_bone_pose_rotation(entry[0],sk.get_bone_pose_rotation(entry[0]).normalized().slerp(lay.normalized(),weight))
 # 1.4.4 round 6: fingers closed round a handle that rides the hand itself (the
 # melee tools): the handle lies along the fist's thumb axis through `centre`
 # (wrist-bone space), with the given half extents (metres: radius, half

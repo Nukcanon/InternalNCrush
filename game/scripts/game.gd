@@ -945,6 +945,26 @@ func medic_count(team:int) -> int:
 	for p in players.values():
 		if p.team==team and p.role==5:n+=1
 	return n
+## Whether player id may not become a medic now: the team's medics (and teammates waiting to
+## respawn as one) already fill R.medic_cap. (1.5.4, the user: refusing the class must show in
+## the gear panel as a warning and keep that panel open - it was a passing notice at respawn)
+func medic_full(id:int,role:int) -> bool:
+	var p=players.get(id,{})
+	if p.is_empty() or role!=5 or int(p.role)==5 or not options.classes:return false
+	var n=medic_count(p.team)
+	for tid in players:
+		var q=players[tid]
+		if tid!=id and q.team==p.team and int(q.role)!=5 and int(q.get("pending_loadout",{}).get("role",-1))==5:n+=1
+	return n>=R.medic_cap(team_count(p.team))
+func medic_full_text(team:int) -> String:
+	return "이 팀의 메딕 정원(%d명)이 찼습니다.\n팀 인원 4명까지 1명, 이후 3명마다 1명씩 늘어납니다.\n다른 병과를 선택하세요."%R.medic_cap(team_count(team))
+## Server -> the player: a refused loadout, shown as a warning over the gear panel (kept open).
+func gear_refused(id:int,title:String,message:String):
+	if id==local_id:show_gear_refusal(title,message)
+	elif id>0 and id in multiplayer.get_peers():show_gear_refusal.rpc_id(id,title,message)
+@rpc("authority","call_remote","reliable",0)
+func show_gear_refusal(title:String,message:String):
+	if is_instance_valid(ui):ui.gear_warning(title,message)
 func team_count(team:int) -> int:
 	var n=0
 	for p in players.values():
@@ -1049,6 +1069,7 @@ func apply_loadout(id:int,d:Dictionary):
 		if RedeployRules.wait_seconds(self,p)>0.:feedback(id,"","즉시 적용은 %.1f초 후 다시 사용할 수 있습니다."%RedeployRules.wait_seconds(self,p),true);return
 		if not d.get("redeploy_confirmed",false):feedback(id,"","사망 및 부활 횟수 소모를 먼저 확인하세요.",true);return
 		if not valid_loadout(p,d):return
+		if medic_full(id,int(d.get("role",p.role))):gear_refused(id,"메딕 정원 초과",medic_full_text(p.team));return
 		# Purchases still require the team's spawn and an open buy window.
 		if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","구매 시간 안에 팀 시작 위치에서 변경할 수 있습니다.",true);return
 		p.redeploy_ready=clock+RedeployRules.COOLDOWN;p.protect=0.;p.invulnerable=0.;p.pending_loadout={}
@@ -1061,6 +1082,7 @@ func apply_loadout(id:int,d:Dictionary):
 	if int(options.mode)==4 and not DefusalEconomy.can_buy(self,id):feedback(id,"","현재 장비를 구매할 수 없습니다. 구매 시간과 생존 상태를 확인하세요.",true);return
 	if int(options.mode)==4 and DefusalEconomy.replacement(p,d) and not d.get("confirmed",false):feedback(id,"","기존 장비 교체를 먼저 확인하세요.",true);return
 	if not valid_loadout(p,d):feedback(id,"","이 병과에서 선택할 수 없는 무기입니다.",true);return
+	if medic_full(id,int(d.get("role",p.role))):gear_refused(id,"메딕 정원 초과",medic_full_text(p.team));return
 	if phase not in ["lobby","buy"] and int(options.mode)!=4 and not options.get("practice",false):
 		p.pending_loadout=d.duplicate();loadout_accepted(id)
 		feedback(id,"","선택 예약 완료 · 다음 부활"+(" / 다음 라운드 구매 시간" if int(options.mode)==4 else "")+"에 적용됩니다.",true);return
@@ -1193,7 +1215,8 @@ func fire(id:int):
 		RocketCombat.launch(self,id,w)
 		if int(p.mag[wid])==0:begin_reload(id)
 		return
-	var spread=a.spread_angle
+	# (1.5.4: the first round of a spray lands anywhere in the crosshair's cone, the rest follow the T)
+	var spread=a.spread_angle if float(p.get("spray_phase",0))<.5 else a.follow_spread(p,w)
 	var spray=AimModel.current_spray(w,p,a.aim_progress,bool(a.input_state.crouch))
 	if GadgetLoadout.mounted(p,bool(a.input_state.crouch)):spray*=.4
 	p.shot_time=clock;p.spray_phase=float(p.get("spray_phase",0))+1.;p.spray_index=int(p.spray_phase);p.bloom=minf(float(w.get("bloom_max",1.2)),float(p.get("bloom",0))+float(w.get("shot_bloom",.12)))
@@ -1364,6 +1387,16 @@ func continuous_heal(id:int):
 	MedicLink.tick(self,id,.1)
 const MEDKIT_RADIUS=10. # 1.5.1: the medic's kit - every ally this close
 const MEDKIT_HEAL=50.
+## Every hurt ally (the medic too) within MEDKIT_RADIUS - the kit heals them all, and the
+## slot is usable when there is one. (1.5.4, the user: the kit stayed grey with a hurt ally
+## near - the button still asked for an ally aimed at within 4 m)
+func medkit_targets(id:int) -> Array:
+	var hurt=[];var p=players.get(id,{})
+	if p.is_empty() or not actors.has(id):return hurt
+	for tid in players:
+		var q=players[tid]
+		if q.alive and actors.has(tid) and not enemies(p,q) and actors[tid].position.distance_to(actors[id].position)<=MEDKIT_RADIUS and float(q.hp)<R.max_hp(q):hurt.append(tid)
+	return hurt
 func heal_burst(id:int):
 	var p=players[id];var a=actors[id]
 	if not p.alive or p.role!=5 or p.primary not in ["m2","m3"] or p.slot!=0:return
@@ -1420,7 +1453,7 @@ func grant_invulnerability(id:int,target:int):
 	var recipients=[id]
 	if target!=0 and target!=id:recipients.append(target)
 	for tid in recipients:
-		var q=players[tid];q.invulnerable=clock+6.;q.cleanse=clock+6.;q.slow=0.;q.mark=0.;q.reveal_to={};q.flash=0.
+		var q=players[tid];q.invulnerable=clock+6.;q.skill_until=clock+6.;q.cleanse=clock+6.;q.slow=0.;q.mark=0.;q.reveal_to={};q.flash=0.
 		feedback(tid,"heal","무적 보호 · 6초");effect.rpc("skill",actors[tid].position,Vector3.ZERO,id)
 	p.invul_select=0.;p.skill_ready=clock+AbilityBalance.COOLDOWNS[5]
 func use_skill(id:int):
@@ -1451,6 +1484,8 @@ func use_skill(id:int):
 			p.invul_select=clock+10.;p.invul_pressed=clock;p.fire_prev=true;p.trigger_seen=int(a.input_state.get("trigger_seq",0))
 			feedback(id,"","아군 클릭: 함께 6초 무적 · 빈 곳 클릭: 자신만 보호")
 			return
+	# (1.5.4, the user: a skill sounds when it starts and again when it ends - Actor.update_status_sounds)
+	p.skill_until=clock+[5.,4.,6.,0.,float(AbilityBalance.DURATIONS[4]),6.][int(p.role)]
 	effect.rpc("skill",a.position,Vector3.ZERO,id)
 	feedback(id,"",["기동: 5초 고속이동 / 3초 빠른이동","하드비트센서 · 4초","방호 · 6초 / 전방 피해 85% 감소","설치 위치 선택","둔화 구역 · 반경 15m / 65% 둔화","무적 보호"][int(p.role)])
 func use_gadget(id:int):
@@ -1467,7 +1502,7 @@ func use_gadget(id:int):
 	match int(p.role):
 		0:
 			if float(p.get("plate",0))>0:feedback(id,"","하나의 보호판만 사용할 수 있습니다.");return
-			p.plate=25.
+			p.plate=25.;p.plate_at=clock # (1.5.4: the first-person hands press it on - Actor.PLATE_APPLY)
 		1:
 			var tid=aim_player(id,160,false)
 			if tid==0:feedback(id,"","표식할 상대를 조준하세요.");return
@@ -1489,15 +1524,12 @@ func use_gadget(id:int):
 				p.smoke-=1;effect.rpc("throw",a.muzzle_world(),end,id);fields.append({"kind":"smoke","pos":end,"starts":clock+.35,"until":clock+AbilityBalance.SMOKE_DURATION+.35,"team":p.team,"owner":id,"deployed":false})
 		5:
 			# 1.5.1 (the user): the kit heals every ally within 10 m (the medic too) by 50 at once
-			var hurt=[]
-			for tid in players:
-				var q=players[tid]
-				if q.alive and not enemies(p,q) and actors[tid].position.distance_to(a.position)<=MEDKIT_RADIUS and float(q.hp)<R.max_hp(q):hurt.append(tid)
+			var hurt=medkit_targets(id)
 			if hurt.is_empty():feedback(id,"","체력이 이미 가득 찼습니다.");return
 			for tid in hurt:heal_target(id,tid,MEDKIT_HEAL,true) # (the full 50, also right after a hit)
-			effect.rpc("heal_area",a.position+Vector3.UP,a.position+Vector3.UP,id)
+			effect.rpc("heal_area",a.position+Vector3.UP,a.position+Vector3.UP,id,-100.,{"kit":true})
 	p.gadget_count-=1;p.gadget_ready=clock+.8;p.fire_ready=maxf(p.fire_ready,clock+.4)
-	if p.role!=4:event_fx.rpc("deploy",a.position,Vector3.ZERO,id)
+	if p.role not in [4,5]:event_fx.rpc("plate_on" if p.role==0 else "deploy",a.position,Vector3.ZERO,id) # (1.5.4: the plate has its own short strap-on sound)
 	feedback(id,"",["보호판 장착 · 내구도 25","상대 표식 · 6초","거치대 활성 · 15초 동안 정지 사격 정확도 증가","엄폐물 설치 완료","섬광탄 사용" if p.gadget==1 else "연막탄 전개 · 10초","응급 회복 · 10m 안 아군 +50"][int(p.role)])
 func remove_device(did:int):
 	devices.erase(did)
@@ -1560,7 +1592,7 @@ func interact(id:int,dt:float):
 	var door=InteractiveDoor.target(self,id) if BombLogic.action(self,id).is_empty() else null
 	if door:
 		if not p.get("use_prev",false):
-			if door.toggle(actors):effect.rpc("door",door.global_position,Vector3.ZERO,id)
+			if door.toggle(actors,actors[id].global_position):effect.rpc(("door_swing_open" if door.opened else "door_swing_close") if door.swing else "door",door.global_position,Vector3.ZERO,id)
 			else:feedback(id,"","통로에 사람이 있어 닫을 수 없습니다.")
 		return
 	if int(options.mode)!=4 or phase!="combat":return
@@ -1851,10 +1883,14 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 		# Draw from the muzzle the viewer sees (the first-person view model for the
 		# shooter, the held weapon for others); the server origin sits at the eye.
 		var start=actors[owner].visual_muzzle() if actors.has(owner) and is_instance_valid(actors[owner]) else from
-		combat_fx.beam(start,to,false,true);combat_fx.laser_hum(self,owner,from);return # (1.5.1: a held hum while the beam fires)
+		if actors.has(owner):combat_fx.laser_beam(self,owner,to)
+		else:combat_fx.beam(start,to,false,true)
+		combat_fx.laser_hum(self,owner,from);return # (1.5.1: a held hum while the beam fires)
 	if kind=="laser_vent":play_sound("laser_vent",from,owner!=local_id);return
 	if kind=="heal_area":
-		combat_fx.heal_area(from);play_sound("heal",from,owner!=local_id);return
+		combat_fx.heal_area(from)
+		# (1.5.4, the user: the kit starts with its own healing chime, not the old cue)
+		play_sound("medkit" if shot_state.get("kit",false) else "heal",from,owner!=local_id);return
 	if kind=="shield_block":play_sound("shield_block",from,true);return
 	if kind=="heal_plus":
 		for point in shot_state.get("points",[]):combat_fx.heal_plus(point)
@@ -1884,7 +1920,8 @@ func effect(kind:String,from:Vector3,to:Vector3,owner:int,shot_at:float=-100.,sh
 			p.shot_time=shot_at;p.bloom=shot_state.bloom;p.spray_phase=shot_state.spray_phase;p.spray_index=int(p.spray_phase)
 	if kind=="shot" and is_instance_valid(kill_replay):kill_replay.record_shot(from,to,owner)
 	if kind=="turret_detect":play_sound("turret_detect",from,true);return
-	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_repair","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","door":"door","skill":"skill","smoke":"smoke"}.get(kind,"")
+	var sound={"turret_break":"explosion","cover_break":"explosion","melee_flesh":"melee_flesh","melee_repair":"wrench_repair","repair":"heal","heal":"heal","flash":"flash","explosion":"explosion","deploy":"deploy","engineer_deploy":"engineer_deploy","plate_on":"plate_on","door":"door","door_swing_open":"door_swing_open","door_swing_close":"door_swing_close","skill":"skill","smoke":"smoke"}.get(kind,"")
+	if sound.begins_with("door_swing") and is_instance_valid(audio_bank) and not audio_bank.streams.has(sound):sound="door"
 	if kind=="heal":sound="link_fire"
 	if rocket_blast:sound="rocket_explosion"
 	# 1.4.2: the beam's own connect sound and hum (HealingStream) replace the

@@ -26,7 +26,8 @@ static func label(p:Dictionary) -> String:
 	if frag(p):return "파편 수류탄"
 	if int(p.role)==4:return "섬광탄" if int(p.gadget)==1 else "연막탄"
 	return Rules.GADGETS[int(p.role)]
-static func mounted(p:Dictionary,crouch:bool) -> bool:return has_item(p) and int(p.role)==2 and int(p.gadget)==0 and crouch and int(p.slot)<2
+# (1.5.4, the user: the bipod sits under the primary - the sidearm gets none of its effect)
+static func mounted(p:Dictionary,crouch:bool) -> bool:return has_item(p) and int(p.role)==2 and int(p.gadget)==0 and crouch and int(p.slot)==0
 static func passive(p:Dictionary) -> bool:return int(p.gadget)==9 or (int(p.role) in [1,2] and int(p.gadget)==0)
 static func has_item(p:Dictionary) -> bool:
 	if not bool(p.get("owned_gadget",true)) or int(p.gadget)<0:return false

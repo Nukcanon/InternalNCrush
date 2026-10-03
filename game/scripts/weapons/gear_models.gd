@@ -178,6 +178,7 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false,pull
 			for y in [-.1,.03]:M.box(pivot,Vector3(0,y,.03),Vector3(.2,.02,.012),edge,Vector3.ZERO,.3)
 			M.merge_children(pivot)
 			right=Vector3(.14,.02,-.06);left=Vector3(-.14,.02,-.06);two=true;grip=sides("pistol",Vector3(.012,.1,.03))
+			for s in grip:grip[s].shape.thumb_flat=true # (1.5.4, the user: thumbs out to the side, not bent down over the edge)
 		1:
 			# Marker: rugged tablet with antenna and glowing screen.
 			# 1.4.6 (the user): the screen faces the holder - on the near (+Z) face,
@@ -226,7 +227,9 @@ static func held(parent:Node3D,role:int,variant:int,turret_carry:bool=false,pull
 # Bipod (1.4.5): the clamp's top centre at `at`, k = size. Deployed: legs down
 # and splayed with a little forward rake; folded: legs forward along the barrel
 # (the guns that carry one, GunLooks "bipod").
-static func bipod(parent:Node3D,at:Vector3,k:float,dark:Color,steel:Color,accent:Color,folded:bool):
+# fold_back: folded legs lie back along the barrel (a bipod near the muzzle, 1.5.4); splay: how far
+# folded legs part (wide enough to pass either side of a launcher's front grip)
+static func bipod(parent:Node3D,at:Vector3,k:float,dark:Color,steel:Color,accent:Color,folded:bool,fold_back:=false,splay:=.07):
 	# clamp on the rail: block, jaw lip, QD lever on the right, tension knob on the left
 	M.box(parent,at+Vector3(0,-.018,0)*k,Vector3(.058,.03,.068)*k,dark,Vector3.ZERO,.45)
 	M.box(parent,at+Vector3(0,-.004,0)*k,Vector3(.066,.008,.072)*k,steel,Vector3.ZERO,.3)
@@ -237,7 +240,8 @@ static func bipod(parent:Node3D,at:Vector3,k:float,dark:Color,steel:Color,accent
 	M.box(parent,pivot+Vector3(0,.006,0)*k,Vector3(.07,.02,.04)*k,steel,Vector3.ZERO,.4)
 	M.cylinder(parent,pivot,.011*k,.088*k,dark,Vector3(0,0,PI/2),-1.,10)
 	for side in [-1.,1.]:
-		var rot=Vector3(PI/2-.12,0,side*.07) if folded else Vector3(-.16,0,side*.42)
+		var rot=Vector3((PI/2-.12)*(-1. if fold_back else 1.),0,side*.07) if folded else Vector3(-.16,0,side*.42)
+		if folded:rot.z=side*splay
 		var d=Basis.from_euler(rot)*Vector3.DOWN
 		var root=pivot+Vector3(side*.03,0,0)*k
 		# outer tube, lock collar, inner leg with notches, rubber foot

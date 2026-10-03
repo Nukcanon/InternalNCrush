@@ -194,6 +194,8 @@ func _draw():
 		if not ready:color=Color(.22,.23,.24,.72)
 		elif action=="skill":color=HudSymbols.GOLD
 		elif action=="auto_fire" and game.profile.get("touch_auto_fire",false):color=Color(.18,.48,.54,.75)
+		# (1.5.4, the user: the interact button blinks softly yellow while it would do something)
+		if action=="use" and ready and not held.get(action,false) and ActionState.can_interact(game,game.local_id):color=color.lerp(HudSymbols.GOLD,.5+.5*sin(Time.get_ticks_msec()*.0055))
 		if action=="fire":screen_circle(rect.get_center(),rect.size.x*.5,color,true)
 		else:draw_style_box(plate(color),rect)
 		var title=labels.get(action,"");var font_size=26

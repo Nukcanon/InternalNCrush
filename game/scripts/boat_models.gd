@@ -9,7 +9,9 @@ extends RefCounted
 const P=preload("res://scripts/prop_models.gd")
 const DECK=.75 # deck above the water line: flush with a quay at 0 over water at -0.7 (+.05)
 const SIZES={"narrowboat":Vector2(11.,2.3),"houseboat":Vector2(9.,3.4),"launch":Vector2(6.5,2.4),"fishing":Vector2(9.,3.2),"tug":Vector2(8.,3.4),
-	"lighter":Vector2(12.,4.2),"patrol":Vector2(9.5,3.),"workboat":Vector2(6.,2.4),"wreck":Vector2(9.,3.2),"punt":Vector2(4.5,1.5)}
+	"lighter":Vector2(12.,4.2),"patrol":Vector2(9.5,3.),"workboat":Vector2(6.,2.4),"wreck":Vector2(9.,3.2),"punt":Vector2(4.5,1.5),
+	# 1.5.4 (the user: boats far bigger - people walk about inside them): walk-in deckhouses
+	"ferry":Vector2(20.,6.),"freighter":Vector2(24.,7.),"trawler":Vector2(15.,5.),"barge":Vector2(18.,4.6)}
 const WOOD=Color("9a6a42")
 const GLASS=Color("2f4656")
 const DARK=Color("2a3036")
@@ -22,14 +24,16 @@ static func build(k:DistrictFacade.Kit,kind:String,hs:int,gap:int) -> Array:
 		"houseboat":[[Color("e8e4da"),Color("3f7fbf")],[Color("d9b45a"),Color("5a7a5a")]],"launch":[[WHITE,Color("2f5f9f")],[Color("c9503a"),WHITE]],
 		"fishing":[[Color("2f5f9f"),Color("e8523f")],[Color("e8a03a"),Color("2f3f5a")]],"tug":[[Color("c93f3f"),Color("2a3036")],[Color("2a3036"),Color("e0b53a")]],
 		"lighter":[[Color("4a5866"),Color("c9a03a")],[Color("7a4a3a"),Color("2a3036")]],"patrol":[[Color("7f8a92"),Color("2a3036")]],
-		"workboat":[[Color("e0b53a"),Color("2a3036")],[Color("3f7a52"),WHITE]],"wreck":[[Color("6a4a3a"),Color("5a6a6a")]],"punt":[[WOOD,DARK]]}
+		"workboat":[[Color("e0b53a"),Color("2a3036")],[Color("3f7a52"),WHITE]],"wreck":[[Color("6a4a3a"),Color("5a6a6a")]],"punt":[[WOOD,DARK]],
+		"ferry":[[WHITE,Color("2f5f9f")],[WHITE,Color("c9503a")]],"freighter":[[Color("2f4f6f"),Color("c9503a")],[Color("5a3a2f"),Color("e0b53a")]],
+		"trawler":[[Color("2f6f9f"),Color("e8523f")],[Color("e8a03a"),Color("2f3f5a")]],"barge":[[Color("3f4a52"),Color("e0b53a")],[Color("6a3a2f"),Color("d8d4c4")]]}
 	var pal:Array=palettes.get(kind,[[WHITE,DARK]])[absi(hs)%palettes.get(kind,[[WHITE,DARK]]).size()]
 	var hull_col:Color=pal[0];var trim:Color=pal[1]
 	var draft=.55 if kind=="punt" else .9
-	var bow=L*(.12 if kind in ["lighter","punt","narrowboat"] else .28)
-	hull(k,L,B,DECK,draft,bow,hull_col if kind!="wreck" else Color("6a4a3a"),trim,kind in ["lighter","punt"])
+	var bow=L*(.12 if kind in ["lighter","punt","narrowboat","barge"] else .2 if kind in ["ferry","freighter"] else .28)
+	hull(k,L,B,DECK,draft,bow,hull_col if kind!="wreck" else Color("6a4a3a"),trim,kind in ["lighter","punt","barge"])
 	var deck_col=WOOD if kind in ["narrowboat","houseboat","punt","fishing"] else Color("8a9298") if kind in ["patrol","tug","workboat"] else Color("6f6a5f")
-	var outline=plan(L,B,bow,kind in ["lighter","punt"])
+	var outline=plan(L,B,bow,kind in ["lighter","punt","barge"])
 	deck(k,outline,DECK,deck_col)
 	# walkable deck: the plan outline as one convex slab
 	var pts=PackedVector3Array()
@@ -106,7 +110,66 @@ static func build(k:DistrictFacade.Kit,kind:String,hs:int,gap:int) -> Array:
 		"punt":
 			P.cyl(k,Vector3(-1.,DECK+.05,.3),Vector3(1.9,DECK+.2,.4),.03,WOOD.lightened(.1),5) # pole
 			k.box(Vector3(0,DECK+.15,0),Vector3(.5,.1,B-.2),WOOD,true) # seat
+		"ferry":
+			# a long passenger saloon with doors both sides, benches inside, a bridge on top
+			deckhouse(k,shapes,Vector3(-1.,DECK,0),Vector3(11.,2.5,B-1.4),WHITE,trim,[-3.,2.])
+			for i in range(4):
+				for side in [-1.,1.]:k.box(Vector3(-5.+i*2.6,DECK+.25,side*(B*.5-1.25)),Vector3(1.6,.5,.5),trim.darkened(.25),true) # benches
+			k.box(Vector3(2.5,DECK+2.5+.75,0),Vector3(2.6,1.5,B-2.4),WHITE,true)
+			shapes.append(box_shape(Vector3(2.5,DECK+2.5+.75,0),Vector3(2.6,1.5,B-2.4)))
+			k.box(Vector3(3.83,DECK+3.45,0),Vector3(.02,.5,B-2.8),GLASS,true)
+		"freighter":
+			# containers forward (cover), a walk-in bridge house aft with a funnel
+			for i in range(3):
+				for side in [-1.,1.]:
+					var c=Vector3(1.5+i*2.8,DECK,side*1.55)
+					k.box(c+Vector3(0,1.3,0),Vector3(2.6,2.6,2.4),Color(["c9503a","2f6fb8","3f7f5f","e0a02f"][(absi(hs)+i+int(side))%4]),true)
+					shapes.append(box_shape(c+Vector3(0,1.3,0),Vector3(2.6,2.6,2.4)))
+			deckhouse(k,shapes,Vector3(-7.5,DECK,0),Vector3(6.,2.6,B-1.2),WHITE,trim,[-1.])
+			P.lathe(k,Vector3(-9.6,DECK+2.7,0),Basis(),[[0.,0.],[.55,0.],[.55,2.2,trim],[.6,2.3],[0.,2.3]],hull_col.darkened(.2),10) # funnel
+		"trawler":
+			deckhouse(k,shapes,Vector3(-3.,DECK,0),Vector3(5.,2.4,B-1.2),WHITE,trim,[0.])
+			P.cyl(k,Vector3(2.5,DECK,0),Vector3(2.5,DECK+5.,0),.08,DARK,6) # mast
+			P.cyl(k,Vector3(2.5,DECK+3.6,0),Vector3(6.,DECK+2.2,0),.05,DARK,6) # boom
+			for i in range(3):PropCatalog.crate(k,Vector3(4.+(i%2)*.8,DECK,-B*.25+(i/2)*.7),Vector3(.7,.45,.6),Color("2f6fb8"))
+			for i in range(3):shapes.append(box_shape(Vector3(4.+(i%2)*.8,DECK+.22,-B*.25+(i/2)*.7),Vector3(.7,.45,.6)))
+		"barge":
+			# a long open hold with cargo to hide behind, a small wheelhouse aft you can enter
+			for i in range(4):
+				k.box(Vector3(-2.+i*2.6,DECK+.6,(i%2-.5)*1.4),Vector3(1.8,1.2,1.4),WOOD.darkened(.05*i),true)
+				shapes.append(box_shape(Vector3(-2.+i*2.6,DECK+.6,(i%2-.5)*1.4),Vector3(1.8,1.2,1.4)))
+			deckhouse(k,shapes,Vector3(-6.4,DECK,0),Vector3(3.6,2.3,B-1.2),hull_col.lightened(.3),trim,[0.])
 	return shapes
+## 1.5.4: a deckhouse players walk into - four walls with a doorway in each long side at
+## each `doors` offset (x), windows above the waist, a roof; collision for walls and roof only.
+static func deckhouse(k:DistrictFacade.Kit,shapes:Array,base:Vector3,s:Vector3,col:Color,trim:Color,doors:Array):
+	var t=.12;var door_w=1.3;var door_h=2.1
+	for side in [-1.,1.]:
+		var z=base.z+side*(s.z*.5-t*.5)
+		# wall pieces between the doorways
+		var cuts=[base.x-s.x*.5]
+		for d in doors:cuts.append(base.x+float(d)-door_w*.5);cuts.append(base.x+float(d)+door_w*.5)
+		cuts.append(base.x+s.x*.5)
+		for i in range(0,cuts.size(),2):
+			var x0=cuts[i];var x1=cuts[i+1]
+			if x1-x0<.05:continue
+			k.box(Vector3((x0+x1)*.5,base.y+s.y*.5,z),Vector3(x1-x0,s.y,t),col,true)
+			shapes.append(box_shape(Vector3((x0+x1)*.5,base.y+s.y*.5,z),Vector3(x1-x0,s.y,t)))
+			var n=maxi(1,int((x1-x0)/1.2))
+			for w in range(n):
+				var wx=x0+(x1-x0)*(w+.5)/n
+				k.box(Vector3(wx,base.y+s.y*.66,z+side*(t*.5+.012)),Vector3((x1-x0)/n*.7,.6,.024),GLASS,true)
+		for d in doors:
+			var x=base.x+float(d)
+			k.box(Vector3(x,base.y+door_h+(s.y-door_h)*.5,z),Vector3(door_w,s.y-door_h,t),col,true) # lintel
+			shapes.append(box_shape(Vector3(x,base.y+door_h+(s.y-door_h)*.5,z),Vector3(door_w,s.y-door_h,t)))
+	for end in [-1.,1.]:
+		var x=base.x+end*(s.x*.5-t*.5)
+		k.box(Vector3(x,base.y+s.y*.5,base.z),Vector3(t,s.y,s.z-2.*t),col,true)
+		shapes.append(box_shape(Vector3(x,base.y+s.y*.5,base.z),Vector3(t,s.y,s.z-2.*t)))
+		k.box(Vector3(x+end*(t*.5+.012),base.y+s.y*.66,base.z),Vector3(.024,.6,s.z*.7),GLASS,true)
+	k.box(Vector3(base.x,base.y+s.y+.08,base.z),Vector3(s.x+.3,.16,s.z+.3),trim,true) # roof
+	shapes.append(box_shape(Vector3(base.x,base.y+s.y+.08,base.z),Vector3(s.x+.3,.16,s.z+.3)))
 static func box_shape(c:Vector3,s:Vector3) -> Array:
 	var b=BoxShape3D.new();b.size=s;return [b,Transform3D(Basis(),c)]
 static func cyl_shape(r:float,h:float) -> CylinderShape3D:
@@ -205,7 +268,7 @@ static func cabin(k:DistrictFacade.Kit,shapes:Array,base:Vector3,s:Vector3,col:C
 	P.cbox(k,base+Vector3(0,s.y*.5,0),s,col,.06)
 	k.box(base+Vector3(0,s.y+.06,0),Vector3(s.x+.2,.12,s.z+.2),trim,true) # roof
 	for side in [-1.,1.]:
-		var z=side*(s.z*.5+.006)
+		var z=side*(s.z*.5+.025)
 		var n=maxi(1,int(s.x/1.1))
 		for i in range(n):
 			var x=base.x-s.x*.5+s.x*(i+.5)/n

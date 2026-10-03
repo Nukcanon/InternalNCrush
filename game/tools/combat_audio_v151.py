@@ -181,3 +181,9 @@ def rms(values):return math.sqrt(sum(v*v for v in values)/max(1,len(values)))
 before=rms(written('switch'))
 swap=mix(.32,(clipped(onset(sample('k_cloth1',1.3)),.16,.05),.45,0),(clipped(onset(sample('mag_release_z',.9)),.14,.04),.6,.09))
 write('switch',[v*before/max(1e-6,rms(swap)) for v in swap],gain=kept_gain('switch'))
+
+# --- 1.5.4 ---------------------------------------------------------------------------
+# putting the armour plate on (the user's own clip: clothes dropping), at the level the old deploy cue had
+clothes=faded(fit(sample('user_clothes_drop'),.7),.002,.15)
+level=rms(written('deploy'))
+write('plate_on',[v*level/max(1e-6,rms(clothes))*1.4 for v in clothes],gain=kept_gain('deploy'))

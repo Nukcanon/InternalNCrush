@@ -137,9 +137,7 @@ func run():
 	expect(hands.all(func(h):return h==1),"a player's hands never swap sides between lives")
 	var gp=g.players[1];var ga=g.actors[1]
 	g.spawn(1)
-	expect(not g.can_attack(gp),"no attack right after respawning")
-	g.clock+=Rules.SPAWN_ATTACK_DELAY+.01
-	expect(g.can_attack(gp) and float(gp.protect)>g.clock,"attack allowed after one second, still protected")
+	expect(g.can_attack(gp) and float(gp.protect)>g.clock,"1.5.4: attack allowed right after respawning, still protected")
 	g.clock+=5.
 	expect(is_equal_approx(BombLogic.radius(g),2.*minf(30.,minf(g.arena.bounds.x,g.arena.bounds.y)*.4)),"bomb blast reach doubled")
 	expect(is_equal_approx(TurretLogic.range_for(g,4),TurretLogic.range_for(g,1)*1.3),"each turret upgrade adds a tenth of the level-1 range")

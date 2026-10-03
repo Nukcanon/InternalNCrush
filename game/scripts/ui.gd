@@ -318,8 +318,8 @@ func build_main_actions():
 	if OS.has_feature("web"):
 		button("온라인 로비",internet_menu)
 	else:
-		button("내부망 로비",join_menu)
-		button("인터넷 로비",internet_menu)
+		button("내부망(LAN) 접속",join_menu)
+		button("인터넷(WAN) 접속",internet_menu)
 	stack.add_child(HSeparator.new());label("연습",23)
 	var practice_actions=HBoxContainer.new();practice_actions.add_theme_constant_override("separation",10);stack.add_child(practice_actions)
 	button("봇 전투",practice_menu,practice_actions).size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -373,13 +373,28 @@ func training_menu():
 func practice_menu():
 	make_panel("봇 전투");screen="practice"
 	WeaponRules.build(self)
-	if int(game.options.bots) not in [3,5,7,15,31]:game.options.bots=7
 	option("난이도",["하 · 반응과 조준을 완화","중 · 목표와 지원 역할 수행","상 · 빠른 반응, 사격·후퇴 판단 강화"],game.options.get("bot_difficulty",2),func(i):game.options.bot_difficulty=i)
-	option("봇 인원",["3명","5명","7명","15명","31명"],maxi(0,[3,5,7,15,31].find(game.options.bots)),func(i):game.options.bots=[3,5,7,15,31][i])
+	# (1.5.4, the user: with room for two the bot count still offered 3 and more - it only offers
+	# up to the room's size less the player now, and follows the room size)
+	var bot_count=option("봇 인원",[],0)
+	var fill_bots=func():
+		var choices=[1,3,5,7,11,15,23,31].filter(func(n):return n<=int(game.options.max_players)-1)
+		if choices.is_empty():choices=[1]
+		var wanted=int(game.options.bots) if int(game.options.bots)>0 else 7;var pick=choices[0] # (none chosen yet: seven, as before)
+		for n in choices:
+			if n<=wanted:pick=n
+		game.options.bots=pick;bot_count.clear()
+		for n in choices:bot_count.add_item("%d명"%n,n)
+		bot_count.select(choices.find(pick))
+	bot_count.item_selected.connect(func(i):game.options.bots=bot_count.get_item_id(i))
 	option("게임 모드",Rules.MODES,game.options.mode,func(i):
 		game.options.mode=i;ModeOptions.refresh(self)
-		if map_refresh.is_valid():map_refresh.call())
+		if map_refresh.is_valid():map_refresh.call()
+		fill_bots.call())
 	map_selector()
+	var capacity:OptionButton=stack.find_child("PlayerCapacity",true,false)
+	if capacity:capacity.item_selected.connect(func(_i):fill_bots.call())
+	fill_bots.call()
 	ModeOptions.install(self)
 	var actions=HBoxContainer.new();actions.add_theme_constant_override("separation",12);stack.add_child(actions)
 	button("경기 시작",func():
@@ -728,6 +743,7 @@ func confirm_redeploy():
 	var wait=RedeployRules.wait_seconds(game,p)
 	if wait>0.:notice("즉시 적용은 %.1f초 후 다시 사용할 수 있습니다."%wait);return
 	var selection=selected_loadout()
+	if game.medic_full(game.local_id,int(selection.get("role",p.role))):gear_warning("메딕 정원 초과",game.medic_full_text(p.team));return
 	var dialog=ConfirmationDialog.new();dialog.title="사망 후 즉시 적용"
 	dialog.dialog_text="시작 위치로 돌아가 선택한 장비를 적용하시겠습니까?" if game.options.get("practice",false) else RedeployRules.warning(int(game.options.mode))
 	dialog.ok_button_text="확인 · 적용";dialog.cancel_button_text="취소";root.add_child(dialog)
@@ -735,10 +751,18 @@ func confirm_redeploy():
 	dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);DialogStyle.popup(dialog)
 func submit_loadout():
 	var selection=selected_loadout();var p=game.players[game.local_id]
+	if game.medic_full(game.local_id,int(selection.get("role",p.role))):gear_warning("메딕 정원 초과",game.medic_full_text(p.team));return
 	if int(game.options.mode)==4 and DefusalEconomy.replacement(p,selection):
 		var dialog=ConfirmationDialog.new();dialog.title="구매 장비 변경";dialog.dialog_text="병과를 변경하면 구매한 장비를 잃습니다. 선택한 장비로 변경하시겠습니까?" if int(selection.role)!=int(p.role) else "현재 장비를 교체하고 새 장비를 구매하시겠습니까?"
 		root.add_child(dialog);dialog.confirmed.connect(func():selection.confirmed=true;game.command("loadout",selection);dialog.queue_free());dialog.canceled.connect(dialog.queue_free);DialogStyle.apply(dialog,theme);DialogStyle.popup(dialog)
 	else:game.command("loadout",selection)
+## 1.5.4 (the user): a refused class change is a warning dialog over the gear panel, which
+## stays open (or opens again) so another class can be picked.
+func gear_warning(title:String,message:String):
+	if screen!="gear" and game.players.has(game.local_id):gear()
+	var dialog=AcceptDialog.new();dialog.title=title;dialog.dialog_text=message;dialog.ok_button_text="병과 다시 선택"
+	root.add_child(dialog);dialog.confirmed.connect(dialog.queue_free);dialog.canceled.connect(dialog.queue_free)
+	DialogStyle.apply(dialog,theme);DialogStyle.popup(dialog)
 func economy_box(parent:Node,title:String,color:Color) -> Label:
 	var box=PanelContainer.new();box.custom_minimum_size=Vector2(158,66);parent.add_child(box)
 	box.add_theme_stylebox_override("panel",UiSkin.box(UiSkin.CARD_A,UiSkin.INK,3,5,14,Vector4(12,5,12,5)))
@@ -984,7 +1008,8 @@ func refresh():
 	bomb_hint.position.y=280 if TouchControls.supported() else 490
 	cash_hint.visible=int(game.options.mode)==4;cash_hint.text="%d 크레딧"%int(p.cash);cash_hint.position.y=190 if TouchControls.supported() else 530
 	var door=InteractiveDoor.target(game,game.local_id) if p.alive and bomb_action.is_empty() else null
-	interaction_hint.text="[ E ]  문 닫기" if door and door.opened else "[ E ]  문 열기" if door else ""
+	var use_key="상호작용 버튼 · " if TouchControls.supported() else "[ E ]  " # (1.5.4, the user: phones have no E key)
+	interaction_hint.text=use_key+("문 닫기" if door and door.opened else "문 열기") if door else ""
 	interaction_hint.visible=door!=null
 	var upgrade_target=TurretSelection.target(game,game.local_id)
 	upgrade_hint.text=TurretSelection.caption(game,game.local_id,upgrade_target,TouchControls.supported())
@@ -1072,7 +1097,7 @@ func internet_menu(auto_connect=true):
 	# One public room list for web and Windows. Same-network grouping by
 	# external IP was unreliable (school/DMZ/VPN), so every room is listed.
 	game.internet.scope="internet"
-	make_panel("온라인 로비",980);screen="internet"
+	make_panel("온라인 로비" if OS.has_feature("web") else "외부망(WAN) 로비",980);screen="internet" # (1.5.4: the download build names the networks)
 	var service=game.internet
 	var footer=HBoxContainer.new();footer.add_theme_constant_override("separation",12);stack.add_child(footer);pin_actions(footer)
 	# Server label, address and connect button share one row.
@@ -1214,7 +1239,7 @@ func build_touch_main_actions():
 	stack=VBoxContainer.new();stack.add_theme_constant_override("separation",14);panel.add_child(stack)
 	label("INTERNAL N CRUSH",38)
 	var nick=LineEdit.new();nick.text=game.profile.nick;nick.placeholder_text="닉네임";nick.max_length=20;nick.custom_minimum_size.y=64;nick.text_changed.connect(func(t):game.profile.nick=t;game.save_profile());stack.add_child(nick)
-	var network_actions=[["온라인 로비",internet_menu]] if OS.has_feature("web") else [["내부망 로비",join_menu],["인터넷 로비",internet_menu]]
+	var network_actions=[["온라인 로비",internet_menu]] if OS.has_feature("web") else [["내부망(LAN) 접속",join_menu],["인터넷(WAN) 접속",internet_menu]]
 	for items in [network_actions,[["봇 전투",practice_menu],["연습장",confirm_practice]],[["환경 설정",settings],["게임 페이지",func():OS.shell_open("https://nukcanon.github.io/nukcanon/internal-n-crush.html")]]]:
 		var row=HBoxContainer.new();row.add_theme_constant_override("separation",16);stack.add_child(row)
 		for item in items:button(item[0],item[1],row).size_flags_horizontal=Control.SIZE_EXPAND_FILL

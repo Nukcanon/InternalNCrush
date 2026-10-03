@@ -62,7 +62,16 @@ func _draw():
 		if size.x>200:
 			var text_pos=p+Vector2(10,5);text_pos.x=clampf(text_pos.x,4.,size.x-18.);text_pos.y=clampf(text_pos.y,18.,size.y-30.)
 			draw_string(ThemeDB.fallback_font,text_pos,(["A","C","B"] if plan.targets.size()==3 else ["A","B"])[i],HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("ffe4a5"))
-	for i in range(plan.spawns.size()):draw_circle(project(plan.spawns[i]),5. if size.x>200 else 2.,Color("55bfff") if i==0 else Color("ff9a54"))
+	# 1.5.4 (the user): the starting points larger, with their team written beside them
+	for i in range(plan.spawns.size()):
+		var at=project(plan.spawns[i]);var tint=Color("55bfff") if i==0 else Color("ff9a54")
+		if size.x>200:
+			draw_circle(at,12.,Color("101820"));draw_circle(at,10.,tint)
+			var label="Blue" if i==0 else "Orange";var label_pos=at+Vector2(15,6)
+			label_pos.x=clampf(label_pos.x,4.,size.x-64.);label_pos.y=clampf(label_pos.y,18.,size.y-30.)
+			draw_string(ThemeDB.fallback_font,label_pos+Vector2(1,1),label,HORIZONTAL_ALIGNMENT_LEFT,-1,17,Color("101820"))
+			draw_string(ThemeDB.fallback_font,label_pos,label,HORIZONTAL_ALIGNMENT_LEFT,-1,17,tint.lightened(.35))
+		else:draw_circle(at,3.,tint)
 	if size.x>200:draw_string(ThemeDB.fallback_font,Vector2(12,size.y-12),"%d × %d m"%[plan.dimensions[0],plan.dimensions[1]],HORIZONTAL_ALIGNMENT_LEFT,-1,15,Color("e5edf1"))
 func zoom_at(factor:float,pivot:Vector2):
 	var old=zoom;zoom=clampf(zoom*factor,1.,8.);pan=pivot-size*.5-(pivot-size*.5-pan)*(zoom/old);queue_redraw()

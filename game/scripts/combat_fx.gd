@@ -64,13 +64,15 @@ func finish(node:Node3D,seconds:float):
 	var tween=node.create_tween();tween.tween_interval(seconds);tween.tween_callback(node.queue_free)
 func ring(parent:Node3D,radius:float,color:Color) -> MeshInstance3D:
 	var node=MeshInstance3D.new();var mesh=TorusMesh.new();mesh.inner_radius=maxf(.01,radius-.06);mesh.outer_radius=radius;mesh.rings=32;mesh.ring_segments=6;node.mesh=mesh;node.material_override=glow(color);node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;parent.add_child(node);return node
+func ensure_tracers():
+	if tracer_mesh==null:
+		tracer_mesh=CylinderMesh.new();tracer_mesh.height=1.;tracer_mesh.top_radius=1.;tracer_mesh.bottom_radius=1.;tracer_mesh.radial_segments=6
+		tracer_materials=[glow(Color(1,.81,.40,.72)),glow(Color(.3,1,.73,.85)),glow(Color(.72,.16,1.,.94))]
 func beam(from:Vector3,to:Vector3,heal=false,laser=false):
 	var length=from.distance_to(to)
 	if length<.02:return
 	# Fixed geometry and a bounded pool avoid per-shot mesh uploads and tweens.
-	if tracer_mesh==null:
-		tracer_mesh=CylinderMesh.new();tracer_mesh.height=1.;tracer_mesh.top_radius=1.;tracer_mesh.bottom_radius=1.;tracer_mesh.radial_segments=6
-		tracer_materials=[glow(Color(1,.81,.40,.72)),glow(Color(.3,1,.73,.85)),glow(Color(.72,.16,1.,.94))]
+	ensure_tracers()
 	var now=Time.get_ticks_msec();var available=-1
 	for offset in range(tracers.size()):
 		var candidate=(tracer_cursor+offset)%tracers.size()
@@ -176,6 +178,37 @@ func laser_hum(game:Node,owner:int,at:Vector3):
 		laser_hums[owner]=item
 	if item.player is AudioStreamPlayer3D:item.player.global_position=at
 	item.until=Time.get_ticks_msec()+160
+# 1.5.4 (the user: the ARC's beam trailed the gun when turning fast - each effect, every
+# 0.08 s, drew a fixed beam that stayed put): one beam per shooter, kept while its effects
+# keep coming and re-aimed every frame from the gun's muzzle along the shooter's aim.
+var live_lasers={}
+func laser_beam(game:Node,owner:int,end:Vector3):
+	var item:Dictionary=live_lasers.get(owner,{})
+	if item.is_empty() or not is_instance_valid(item.node):
+		ensure_tracers()
+		var node=MeshInstance3D.new();node.mesh=tracer_mesh;node.material_override=tracer_materials[2];node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(node)
+		item={"node":node,"game":game};live_lasers[owner]=item
+	item.end=end;item.until=Time.get_ticks_msec()+140
+	aim_laser(owner,item)
+func aim_laser(owner:int,item:Dictionary):
+	var game=item.game;var node:MeshInstance3D=item.node;var from:Vector3;var to:Vector3=item.end
+	if is_instance_valid(game) and game.actors.has(owner) and is_instance_valid(game.actors[owner]) and game.players.has(owner):
+		var a=game.actors[owner];from=a.visual_muzzle()
+		var eye:Vector3=a.eye();var direction:Vector3=a.direction();var reach=float(game.current_weapon(game.players[owner]).get("max_range",100.))
+		# (the shooter's own view: along the camera itself, so the beam ends on the crosshair)
+		if owner==game.local_id and a.get("camera") is Camera3D and is_instance_valid(a.camera):eye=a.camera.global_position;direction=-a.camera.global_basis.z.normalized()
+		to=game.ray(eye,eye+direction*reach,[a.get_rid()]).get("position",eye+direction*reach)
+	else:from=to
+	var length=from.distance_to(to)
+	if length<.02:node.hide();return
+	node.position=(from+to)*.5;node.quaternion=Quaternion(Vector3.UP,(to-from)/length);node.scale=Vector3(.024,length,.024);node.show()
+func update_live_lasers():
+	var now=Time.get_ticks_msec()
+	for owner in live_lasers.keys():
+		var item=live_lasers[owner]
+		if not is_instance_valid(item.node):live_lasers.erase(owner);continue
+		if now>int(item.until):item.node.queue_free();live_lasers.erase(owner);continue
+		aim_laser(owner,item)
 func update_laser_hums():
 	var now=Time.get_ticks_msec()
 	for owner in laser_hums.keys():
@@ -210,6 +243,7 @@ func _process(dt:float):
 		if item.node.visible and stamp>=int(item.until):item.node.hide()
 	update_healing(dt)
 	update_laser_hums()
+	update_live_lasers()
 	for item in casings.duplicate():
 		if not is_instance_valid(item.node):casings.erase(item);continue
 		item.age+=dt

@@ -22,8 +22,10 @@ func run():
 	expect(AimModel.spread(w,0,false,false,false,true,.5)>standing,"sustained firing bloom widens the cone")
 	expect(AimModel.spread(w,0,true,true,false,true,0)<standing,"crouch and ADS improve accuracy")
 	expect(AimModel.spread(w,0,false,false,false,false,0,false,6)>AimModel.spread(w,0,false,false,false,false,0,false,0) and AimModel.spread(w,0,false,false,false,false,0,false,0)>standing,"jump apex is more accurate than ascent but worse than standing")
-	var early=AimModel.spray_offset(w,1);var left=AimModel.spray_offset(w,23);var right=AimModel.spray_offset(w,13)
-	expect(absf(early.x)<.1 and early.y>0. and left.x< -1 and right.x>1 and left.y>early.y and right.y>early.y,"weapon recoil rises into both lateral directions")
+	# (1.5.4, the user: a CS "T" spray - it climbs, sweeps to the gun's own side, then across to the other)
+	var early=AimModel.spray_offset(w,1);var side=float(w.get("spray_direction",1.));var mag=int(w.mag)
+	var mid=AimModel.spray_offset(w,int(mag*.6));var last=AimModel.spray_offset(w,mag-1)
+	expect(absf(early.x)<.1 and early.y>0. and mid.x*side>1. and last.x*side< -1. and mid.y>early.y and last.y>early.y,"weapon recoil climbs, then sweeps to its side and across to the other")
 	var inside=true
 	for i in range(100):
 		var d=AimModel.cone_direction(Vector3.FORWARD,2.,i/99.,i*.37)

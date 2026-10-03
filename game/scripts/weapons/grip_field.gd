@@ -41,15 +41,20 @@ static func contact(gun:Node3D,handle:Transform3D) -> Dictionary:
 	if entry.is_empty():return {}
 	var g:Transform3D=gun.global_transform
 	var to_gun=g.affine_inverse()*Transform3D(handle.basis.orthonormalized(),handle.origin)
-	# A pair (DUET) was baked at GunModel.PAIR_SPACING; the second pistol may be
-	# held wider or nearer in play, so a handle on it is mapped back by that shift.
+	# A pair (DUET) was baked at rest (GunModel.PAIR_SPACING, toed in); in play each pistol
+	# is moved and turned (wider or nearer, the sprint pump), so a handle is mapped back
+	# through its own pistol's pose. (1.5.4, the user: running, the left hand let go of its
+	# pistol - only the shift was mapped back, not the raised and leaning pistol)
 	var pair:Array=gun.get("dual_guns") if gun.get("dual_guns")!=null else []
 	if pair.size()>1 and is_instance_valid(gun.get("left_grip")):
-		var shift:Vector3=Vector3(pair[1].position)-Vector3(-GunModel.PAIR_SPACING,0,.02)
-		if shift.length_squared()>.000001:
-			var left_local:Vector3=g.affine_inverse()*gun.left_grip.global_position
-			var right_local:Vector3=g.affine_inverse()*gun.right_grip.global_position
-			if to_gun.origin.distance_to(left_local)<to_gun.origin.distance_to(right_local):to_gun.origin-=shift
+		var left_local:Vector3=g.affine_inverse()*gun.left_grip.global_position
+		var right_local:Vector3=g.affine_inverse()*gun.right_grip.global_position
+		var i=1 if to_gun.origin.distance_to(left_local)<to_gun.origin.distance_to(right_local) else 0
+		var pistol:Node3D=pair[i];var side=1. if i==0 else -1.
+		var toe=atan2(GunModel.PAIR_SPACING*.5,GunModel.PAIR_CONVERGE/maxf(.01,absf(pistol.scale.x)))
+		var rest=Transform3D(Basis(Vector3.UP,toe*side)*Basis.from_scale(pistol.scale),Vector3.ZERO if i==0 else Vector3(-GunModel.PAIR_SPACING,0,.02))
+		var now:Transform3D=GunModel.relative(pistol,gun)
+		to_gun=rest*now.affine_inverse()*to_gun
 	# A handle moved away from the baked grips (third-person reach) has no field.
 	var covered=false
 	for box in entry.boxes:

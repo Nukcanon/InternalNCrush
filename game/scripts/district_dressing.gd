@@ -75,7 +75,7 @@ static func build(a:Node,plan:Dictionary):
 		for mesh in body.get_children():
 			if mesh is MeshInstance3D:mesh.material_override=WorldSurface.material("trim",index)
 		M.box(a.architecture,Vector3(pos.x,base+.10,pos.z),Vector3(side+.2,.20,side+.2),Color("8c9696"))
-		M.box(a.architecture,Vector3(pos.x,support[2]-.145,pos.z),Vector3(side+.37,.25,side+.22),Color("687982")) # (1.4.7: top 1.5 cm under the shaft's - no shared plane)
+		M.box(a.architecture,Vector3(pos.x,support[2]-.145,pos.z),Vector3(side+.14,.25,side+.14),Color("687982")) # (1.4.7: top 1.5 cm under the shaft's - no shared plane; 1.5.4: overhang cut so it stays clear of the opening's trim)
 	# Decorative fa챌ades are separate from tactical collision/cover. Their
 	# visibility can change with quality without revealing players behind walls.
 	var fixtures=[]
@@ -213,9 +213,16 @@ static func build(a:Node,plan:Dictionary):
 			for m in node.get_children():
 				if m is MeshInstance3D:blockers.append([node.transform,m.get_aabb(),false])
 	for door in a.doors.values():
+		var reach=0.;var top=2.4
 		for leaf in door.leaves:
 			for cs in leaf.get_children():
-				if cs is CollisionShape3D and cs.shape is BoxShape3D and cs.is_inside_tree():blockers.append([cs.global_transform,AABB(-cs.shape.size*.5,cs.shape.size),false])
+				if cs is CollisionShape3D and cs.shape is BoxShape3D and cs.is_inside_tree():
+					blockers.append([cs.global_transform,AABB(-cs.shape.size*.5,cs.shape.size),false])
+					var at:Vector3=cs.global_position-door.global_position;at.y=0.
+					reach=maxf(reach,at.length()+maxf(cs.shape.size.x,cs.shape.size.z)*.5);top=maxf(top,cs.global_position.y-door.global_position.y+cs.shape.size.y*.5)
+		# 1.5.4 (the user: a window and a door overlapped): a leaf swung open lies against the
+		# wall beside the door - no window is drawn anywhere in the sweep of its leaves
+		if reach>0.:blockers.append([Transform3D(Basis(),door.global_position),AABB(Vector3(-reach,0,-reach),Vector3(reach*2.,top,reach*2.)),false])
 	# ...nor where a pillar, a low wall or a crossing wall of the map stands.
 	if a.is_inside_tree():
 		var stack:Array=[a]

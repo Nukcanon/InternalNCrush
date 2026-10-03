@@ -194,6 +194,12 @@ class Kit:
 	var detail:SurfaceTool
 	var xf:=Transform3D()
 	var tris=0
+	# 1.5.4: facade kits keep overlapping street-facing layers LAYER_GAP apart (place_layer)
+	var separate=false
+	var inner=false
+	func lift(x0:float,x1:float,y0:float,y1:float,z:float,col:Color) -> float:
+		if not separate or inner:return z
+		return DistrictFacade.place_layer(xf,minf(x0,x1),maxf(x0,x1),minf(y0,y1),maxf(y0,y1),z,col)
 	func _init():
 		skin=SurfaceTool.new();skin.begin(Mesh.PRIMITIVE_TRIANGLES)
 		detail=SurfaceTool.new();detail.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -204,21 +210,27 @@ class Kit:
 		for p in [bl,tl,br,br,tl,tr]:st.set_color(col);st.set_normal(n);st.add_vertex(xf*p)
 		tris+=2
 	func quad(p:Vector3,ex:Vector3,ey:Vector3,col:Color,st:SurfaceTool=null):
+		if separate and not inner and is_zero_approx(ex.z) and is_zero_approx(ey.z):
+			p.z=lift(p.x,p.x+ex.x+ey.x,p.y,p.y+ex.y+ey.y,p.z,col)
 		quad4(st if st else detail,p,p+ex,p+ex+ey,p+ey,col)
 	# Axis-aligned box (local frame); the back face is omitted (it sits on the wall).
 	func box(c:Vector3,s:Vector3,col:Color,back:=false,bottom:=true):
 		var h=s*.5
+		if separate and not inner:c.z+=lift(c.x-h.x,c.x+h.x,c.y-h.y,c.y+h.y,c.z+h.z,col)-(c.z+h.z)
+		var was=inner;inner=true
 		quad(c+Vector3(-h.x,-h.y,h.z),Vector3(s.x,0,0),Vector3(0,s.y,0),col)
 		quad(c+Vector3(-h.x,h.y,h.z),Vector3(s.x,0,0),Vector3(0,0,-s.z),col.lightened(.06))
 		if bottom:quad(c+Vector3(-h.x,-h.y,-h.z),Vector3(s.x,0,0),Vector3(0,0,s.z),col.darkened(.12))
 		quad(c+Vector3(-h.x,-h.y,-h.z),Vector3(0,0,s.z),Vector3(0,s.y,0),col.darkened(.06))
 		quad(c+Vector3(h.x,-h.y,h.z),Vector3(0,0,-s.z),Vector3(0,s.y,0),col.darkened(.06))
 		if back:quad(c+Vector3(h.x,-h.y,-h.z),Vector3(-s.x,0,0),Vector3(0,s.y,0),col.darkened(.1))
+		inner=was
 	# Wall-hugging box: from the wall plane (z=0) out to depth.
 	func slab(x0:float,x1:float,y0:float,y1:float,depth:float,col:Color,z0:=0.):
 		box(Vector3((x0+x1)*.5,(y0+y1)*.5,z0+depth*.5),Vector3(x1-x0,y1-y0,depth),col)
 	# Flat disc (n-gon) facing the street.
 	func disc(c:Vector3,r:float,col:Color,sides:=8):
+		c.z=lift(c.x-r,c.x+r,c.y-r,c.y+r,c.z,col)
 		for i in range(sides):
 			var a=TAU*i/sides;var b=TAU*(i+1)/sides
 			var p=c+Vector3(cos(a)*r,sin(a)*r,0);var q=c+Vector3(cos(b)*r,sin(b)*r,0)
@@ -227,6 +239,7 @@ class Kit:
 			tris+=1
 	# Half disc (arch head) above y, radius r.
 	func arch(cx:float,y:float,z:float,r:float,col:Color,sides:=6):
+		z=lift(cx-r,cx+r,y,y+r,z,col)
 		for i in range(sides):
 			var a=PI*i/sides;var b=PI*(i+1)/sides
 			var c=Vector3(cx,y,z);var p=c+Vector3(cos(a)*r,sin(a)*r,0);var q=c+Vector3(cos(b)*r,sin(b)*r,0)
@@ -245,6 +258,7 @@ class Kit:
 				tris+=1
 	# Arch ring (frame) of thickness t.
 	func arch_ring(cx:float,y:float,z:float,r:float,t:float,col:Color,sides:=6):
+		z=lift(cx-r-t,cx+r+t,y,y+r+t,z,col)
 		for i in range(sides):
 			var a=PI*i/sides;var b=PI*(i+1)/sides
 			var c=Vector3(cx,y,z)
@@ -252,9 +266,46 @@ class Kit:
 			var q0=c+Vector3(cos(a)*(r+t),sin(a)*(r+t),0);var q1=c+Vector3(cos(b)*(r+t),sin(b)*(r+t),0)
 			quad4(detail,p0,q0,q1,p1,col)
 
+## 1.5.4 (the user: flat things on walls flicker on every map): the game draws with the
+## compatibility renderer (24-bit depth, camera near .08 m), so two coloured layers less than
+## ~1.5 cm apart shimmer from mid range. Every street-facing face a facade kit draws is
+## registered by its wall plane; one overlapping another of a different colour closer than
+## LAYER_GAP is moved away from it (forward, or back when it was already behind and stays in
+## front of the wall). Fronts sharing a plane (two buildings on one line) are compared too.
+const LAYER_GAP=.025
+const LAYER_CELL=4.
+static var layer_planes={}
+static func place_layer(xf:Transform3D,x0:float,x1:float,y0:float,y1:float,z:float,col:Color) -> float:
+	var n:Vector3=xf.basis.z.normalized();var tangent=Vector3(-n.z,0.,n.x)
+	var sign=signf(tangent.dot(xf.basis.x)) if not is_zero_approx(tangent.dot(xf.basis.x)) else 1.
+	var base_s=tangent.dot(xf.origin);var base_w=n.dot(xf.origin)
+	var s0=base_s+sign*x0;var s1=base_s+sign*x1
+	var rect=Rect2(minf(s0,s1),xf.origin.y+y0,absf(s1-s0),y1-y0)
+	if rect.get_area()<.0004:return z
+	var nk=Vector2i(roundi(n.x*50.),roundi(n.z*50.))
+	var cells=range(floori(rect.position.x/LAYER_CELL),floori(rect.end.x/LAYER_CELL)+1)
+	var w=base_w+z
+	for attempt in range(8):
+		var clash=false
+		for c in cells:
+			for e in layer_planes.get(Vector3i(nk.x,nk.y,c),[]):
+				if absf(float(e[1])-w)>=LAYER_GAP-.0001 or Color(e[2]).is_equal_approx(col):continue
+				var common:Rect2=Rect2(e[0]).intersection(rect)
+				if common.size.x<.02 or common.size.y<.02:continue
+				var ahead=float(e[1])+LAYER_GAP;var behind=float(e[1])-LAYER_GAP
+				w=ahead if w>=float(e[1]) or behind-base_w<.003 else behind
+				clash=true
+		if not clash:break
+	var entry=[rect,w,col]
+	for c in cells:
+		var k=Vector3i(nk.x,nk.y,c)
+		if not layer_planes.has(k):layer_planes[k]=[]
+		layer_planes[k].append(entry)
+	return w-base_w
 ## Builds every front of the map. Returns wall light fixtures.
 static func build(a:Node,plan:Dictionary) -> Array:
 	var index:int=a.map_index
+	layer_planes.clear()
 	var style=style_for(index)
 	var kits={}
 	var fixtures=[]
@@ -265,7 +316,7 @@ static func build(a:Node,plan:Dictionary) -> Array:
 		var u=Vector3(f[0],0,f[1]);var v=Vector3(f[2],0,f[3])
 		var mid=(u+v)*.5
 		var key=Vector2i(floori(mid.x/TILE),floori(mid.z/TILE))
-		if not kits.has(key):kits[key]=Kit.new()
+		if not kits.has(key):kits[key]=Kit.new();kits[key].separate=true
 		var kit:Kit=kits[key]
 		var d=(v-u);var length=d.length()
 		if length<.8:continue
@@ -283,7 +334,7 @@ static func build(a:Node,plan:Dictionary) -> Array:
 			var st:SurfaceTool=pair[0]
 			var mesh=st.commit()
 			if mesh.get_surface_count()==0:continue
-			var node=MeshInstance3D.new();node.name=pair[2];node.mesh=mesh;node.material_override=pair[1]
+			var node=MeshInstance3D.new();node.name=pair[2];node.mesh=mesh;node.material_override=WorldSurface.culled(pair[1])
 			# Skins (building colours) are always drawn; ornaments fade out far away.
 			node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			if pair[2]=="FacadeDetail":node.visibility_range_end=90.;node.visibility_range_end_margin=8.
@@ -334,13 +385,13 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 			# (fronts along x sit 2 cm higher: two crossing crowns at a corner never share a top)
 			crown=top+extra+(.02 if absf(kit.xf.basis.x.x)>.7 else 0.)
 			kit.slab(ex0,ex1,minf(y0,y1)+top-.02,minf(y0,y1)+crown,.3,wall,-.25)
-	# Plinth.
-	if base<=0. and not style.plinth.is_empty():
-		sloped_band(kit,x0,x1,y0,y1,0.,float(style.plinth[0]),.012,Color(style.plinth[1]))
+	# Plinth (a covered room's here; outside after the ground floor, which leaves its door clear).
+	var plinth=base<=0. and not style.plinth.is_empty()
+	if room and plinth:sloped_band(kit,x0,x1,y0,y1,0.,float(style.plinth[0]),.075,Color(style.plinth[1]))
 	if room:
 		# Interior of a covered room: wainscot and a picture rail.
 		sloped_band(kit,x0,x1,y0,y1,0.,1.0,.03,wall.darkened(.18))
-		sloped_band(kit,x0,x1,y0,y1,1.0,1.08,.05,trim)
+		sloped_band(kit,x0,x1,y0,y1,1.0,1.08,.065,trim) # (1.5.4: wainscot .05, rail .065, plinth .075 - never one plane)
 		if w>2.6 and hs%3==0:
 			# Homes and shops get shelves; working buildings get lockers/cabinets.
 			if style_name_of(style) in ["oldtown","hillside","canal","plaza","market","station","monastery","aqueduct","orchard","library","highrise"]:
@@ -356,12 +407,13 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 	var bays=maxi(1,floori(w/spacing))
 	if w<1.6:bays=0
 	# Storeys.
+	var door_gap=[]
 	for s in range(floors):
 		var bottom=base+s*storey
 		if indoor:bottom=0.
 		var ground=bottom<=.01
 		if ground and not over:
-			ground_floor(kit,style,p,x0,x1,y0,y1,bays,hs,fixtures)
+			door_gap=ground_floor(kit,style,p,x0,x1,y0,y1,bays,hs,fixtures)
 		elif not indoor:
 			for b in range(bays):
 				var cx=x0+w*(b+.5)/bays
@@ -372,6 +424,11 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 				banner(kit,(x0+x1)*.5,level+bottom+storey-.3,hs)
 		if style.get("cornice",false) and s>0 and not indoor:
 			sloped_band(kit,x0,x1,y0,y1,bottom,bottom+.14,.1,trim)
+	# 1.5.4 (the user: the base band flickered over a door's foot): it stops at the door
+	if plinth and not room:
+		var spans=[[x0,x1]] if door_gap.is_empty() else [[x0,maxf(x0,float(door_gap[0]))],[minf(x1,float(door_gap[1])),x1]]
+		for sp in spans:
+			if sp[1]-sp[0]>.05:sloped_band(kit,sp[0],sp[1],lerpf(y0,y1,(sp[0]-x0)/w),lerpf(y0,y1,(sp[1]-x0)/w),0.,float(style.plinth[0]),.075,Color(style.plinth[1]))
 	# (1.5.0, the user: windows and bands between the pillars of an opening: an
 	# indoor wall's clerestory and trim are measured from the floor - the wall
 	# over an opening has neither)
@@ -382,7 +439,12 @@ static func house(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:flo
 	extras(kit,style,p,x0,x1,y0,y1,level,crown,hs,fixtures)
 
 static func sloped_band(kit:Kit,x0:float,x1:float,y0:float,y1:float,lo:float,hi:float,depth:float,col:Color):
+	# (1.5.4, the user: bands with next to no depth flickered against what they met - at least
+	# 5 cm deep, and closed at both ends)
+	depth=maxf(depth,.05)
 	var z=.03+depth
+	kit.quad4(kit.detail,Vector3(x0,y0+lo,.03),Vector3(x0,y0+lo,z),Vector3(x0,y0+hi,z),Vector3(x0,y0+hi,.03),col.darkened(.06))
+	kit.quad4(kit.detail,Vector3(x1,y1+lo,z),Vector3(x1,y1+lo,.03),Vector3(x1,y1+hi,.03),Vector3(x1,y1+hi,z),col.darkened(.06))
 	kit.quad4(kit.detail,Vector3(x0,y0+lo,z),Vector3(x1,y1+lo,z),Vector3(x1,y1+hi,z),Vector3(x0,y0+hi,z),col)
 	kit.quad4(kit.detail,Vector3(x0,y0+hi,z),Vector3(x1,y1+hi,z),Vector3(x1,y1+hi,.03),Vector3(x0,y0+hi,.03),col.lightened(.06))
 	kit.quad4(kit.detail,Vector3(x0,y0+lo,.03),Vector3(x1,y1+lo,.03),Vector3(x1,y1+lo,z),Vector3(x0,y0+lo,z),col.darkened(.12))
@@ -522,10 +584,10 @@ static func window(kit:Kit,style:Dictionary,cx:float,y:float,hs:int,near_deck:bo
 			var depth=.42
 			kit.box(Vector3(cx,yb-.12,depth*.5),Vector3(ww+.3,.16,depth+.04),trim)
 			kit.box(Vector3(cx,yb+wh+.1,depth*.5),Vector3(ww+.36,.18,depth+.08),trim)
-			for side in [-1.,1.]:kit.box(Vector3(cx+side*(ww*.5+.07),yb+wh*.5,depth*.5),Vector3(.12,wh+.04,depth),frame)
+			for side in [-1.,1.]:kit.box(Vector3(cx+side*(ww*.5+.07),yb+wh*.5,depth-.045),Vector3(.12,wh+.04,.09),frame) # (1.5.4: corner posts only at the front - full-depth posts shared the side panes' plane and flickered)
 			kit.quad(Vector3(cx-ww*.5,yb,depth+.005),Vector3(ww,0,0),Vector3(0,wh,0),glass)
-			kit.quad(Vector3(cx-ww*.5-.13,yb,.03),Vector3(0,0,depth-.03),Vector3(0,wh,0),glass.darkened(.08))
-			kit.quad(Vector3(cx+ww*.5+.13,yb,depth),Vector3(0,0,-(depth-.03)),Vector3(0,wh,0),glass.darkened(.08))
+			kit.quad(Vector3(cx-ww*.5-.13,yb,.03),Vector3(0,0,depth-.12),Vector3(0,wh,0),glass.darkened(.08))
+			kit.quad(Vector3(cx+ww*.5+.13,yb,depth-.09),Vector3(0,0,-(depth-.12)),Vector3(0,wh,0),glass.darkened(.08))
 			for k in [-1.,0.,1.]:kit.box(Vector3(cx+k*ww*.33,yb+wh*.5,depth+.02),Vector3(.05,wh,.04),frame)
 			kit.box(Vector3(cx,yb+wh*.62,depth+.02),Vector3(ww,.05,.04),frame)
 			for side in [-1.,1.]:kit.box(Vector3(cx+side*ww*.3,yb-.32,.15),Vector3(.1,.26,.26),trim.darkened(.1)) # brackets
@@ -734,12 +796,12 @@ static func awning(kit:Kit,cx:float,y:float,aw:float,colors:Array,depth:=.85):
 	for side in [cx-aw*.5,cx+aw*.5]:
 		kit.quad4(kit.detail,Vector3(side,y-.45,.04),Vector3(side,y-.45,depth),Vector3(side,y,.04),Vector3(side,y,.04),a.darkened(.15))
 
-static func ground_floor(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:float,y1:float,bays:int,hs:int,fixtures:Array):
+static func ground_floor(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:float,y1:float,bays:int,hs:int,fixtures:Array) -> Array:
 	var level=maxf(y0,y1);var low=minf(y0,y1);var w=x1-x0
 	var kind=str(style.ground)
 	var near_deck=p.flags&4!=0
 	var indoor=bool(style.get("indoor",false))
-	if bays==0:return
+	if bays==0:return []
 	# Steep pieces: no doors (their sill would float); windows only.
 	var steep=absf(y1-y0)>.35
 	var door_bay=-1
@@ -750,6 +812,7 @@ static func ground_floor(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float
 		door_bay=-1
 		if kind in ["shop","arcade","glass","roller","dock","barn","gate"]:kind="plain"
 	if indoor:door_bay=-1 if hs%3 else door_bay
+	var door_gap=[]
 	# 1.4.6 (the user): a door never opens straight into a prop - where one
 	# stands in front of it, the bay keeps a window instead.
 	if door_bay>=0:
@@ -760,6 +823,9 @@ static func ground_floor(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float
 		var cx=x0+w*(b+.5)/bays
 		var y=lerpf(y0,y1,(cx-x0)/w)
 		if b==door_bay:
+			# (1.5.4: the span the door and its frame take - the base band stops there)
+			var half={"roller":1.75,"dock":1.75,"barn":1.45,"vault":1.55,"airlock":1.1,"archdoor":.9,"arcade":.9,"blindarch":.9,"gate":1.1,"bunker":1.05,"glass":1.0}.get(kind,.95)
+			door_gap=[cx-half,cx+half]
 			match kind:
 				"roller","dock":
 					door(kit,style,cx,y,minf(3.,w/bays-.6),2.8,hs+b,"roller")
@@ -804,6 +870,7 @@ static func ground_floor(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float
 			_:
 				if not indoor and not steep:window(kit,style,cx,level,hs+b*5,near_deck)
 				elif not indoor:window(kit,style,cx,level+.2,hs+b*5,near_deck)
+	return door_gap
 
 static func roof_edge(kit:Kit,style:Dictionary,x0:float,x1:float,y:float,trim:Color,wall:Color,hs:int):
 	match str(style.get("top","cornice")):
@@ -950,19 +1017,19 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"hazard":
 				if p.from<=0.:
 					var n=int(w/.5)
-					for k in range(n):kit.slab(x0+k*.5,x0+k*.5+.5,low+.05,low+.35,.07,Color("f0c23f") if k%2==0 else Color("2a2a2a"))
+					for k in range(n):kit.slab(x0+k*.5,x0+k*.5+.5,low+.05,low+.35,.11,Color("f0c23f") if k%2==0 else Color("2a2a2a"))
 			"numbers":
 				if hs%2==0 and w>3.:
 					var nx=(x0+x1)*.5;var ny=low+top-1.6
-					kit.slab(nx-.7,nx+.7,ny-.6,ny+.6,.04,Color("f4f1e8"))
+					kit.slab(nx-.7,nx+.7,ny-.6,ny+.6,.11,Color("f4f1e8"))
 					var digit=hs%10
-					kit.slab(nx-.35,nx+.35,ny+.3,ny+.42,.07,Color("2a2f33"))
-					kit.slab(nx-.06,nx+.06,ny-.42,ny+.42,.07,Color("2a2f33"))
-					if digit%2:kit.slab(nx-.35,nx+.35,ny-.42,ny-.3,.07,Color("2a2f33"))
+					kit.slab(nx-.35,nx+.35,ny+.3,ny+.42,.14,Color("2a2f33"))
+					kit.slab(nx-.06,nx+.06,ny-.42,ny+.42,.14,Color("2a2f33"))
+					if digit%2:kit.slab(nx-.35,nx+.35,ny-.42,ny-.3,.14,Color("2a2f33"))
 			"lifebuoy":
 				if hs%4==0 and not near_deck:
-					kit.disc(Vector3(x1-.8,low+1.6,.08),.35,Color("e8523f"),10)
-					kit.disc(Vector3(x1-.8,low+1.6,.085),.18,Color(pick(style.colors,hs)),8)
+					kit.disc(Vector3(x1-.8,low+1.6,.11),.35,Color("e8523f"),10)
+					kit.disc(Vector3(x1-.8,low+1.6,.135),.18,Color(pick(style.colors,hs)),8)
 			"girders":
 				for x in [x0+.2,x1-.2]:kit.slab(x-.15,x+.15,low,low+top,.12,Color("5a6570"))
 				for s in range(1,floors+1):kit.slab(x0,x1,low+s*storey-.2 if not indoor else low+top-.5,low+s*storey if not indoor else low+top-.3,.1,Color("5a6570"))
@@ -978,15 +1045,15 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"vents":
 				if hs%2==1 and w>2.:
 					var vx=x0+w*.3;var vy=low+(top-1.4 if not indoor else 4.4)
-					kit.slab(vx-.4,vx+.4,vy-.3,vy+.3,.06,Color("9aa4a8"))
-					for k in range(4):kit.slab(vx-.35,vx+.35,vy-.24+k*.15,vy-.2+k*.15,.09,Color("6a7478"))
+					kit.slab(vx-.4,vx+.4,vy-.3,vy+.3,.11,Color("9aa4a8"))
+					for k in range(4):kit.slab(vx-.35,vx+.35,vy-.24+k*.15,vy-.2+k*.15,.14,Color("6a7478"))
 			"stripe":
 				sloped_band(kit,x0,x1,y0,y1,1.1,1.3,.02,trim)
 			"trefoil":
 				if hs%3==0 and w>2.:
-					var c=Vector3((x0+x1)*.5,low+2.,.07)
+					var c=Vector3((x0+x1)*.5,low+2.,.11)
 					kit.disc(c,.45,Color("f0c23f"),3)
-					kit.disc(c+Vector3(0,0,.005),.1,Color("2a2a2a"),6)
+					kit.disc(c+Vector3(0,0,.025),.1,Color("2a2a2a"),6)
 			"signs":
 				if hs%2==0 and w>2. and not near_deck:
 					var sx=x1-.5;var sy=low+3.9
@@ -995,8 +1062,8 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"clock":
 				if w>6. and hs%3==0:
 					var c=Vector3((x0+x1)*.5,low+crown-1.2,.12)
-					kit.disc(c,.75,trim,12);kit.disc(c+Vector3(0,0,.01),.62,Color("f8f4e8"),12)
-					kit.slab(c.x-.03,c.x+.03,c.y,c.y+.45,.15,Color("2a2a2a"));kit.slab(c.x,c.x+.35,c.y-.03,c.y+.03,.15,Color("2a2a2a"))
+					kit.disc(c,.75,trim,12);kit.disc(c+Vector3(0,0,.025),.62,Color("f8f4e8"),12)
+					kit.slab(c.x-.03,c.x+.03,c.y,c.y+.45,.17,Color("2a2a2a"));kit.slab(c.x,c.x+.35,c.y-.03,c.y+.03,.17,Color("2a2a2a"))
 			"buttress":
 				for x in [x0+.35,x1-.35]:
 					kit.slab(x-.25,x+.25,low,low+2.,.14,Color(style.plinth[1]))
@@ -1011,7 +1078,7 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"bell":
 				if hs%5==0 and w>3.:
 					kit.arch_ring((x0+x1)*.5,low+crown-.8,.1,.45,.12,trim)
-					kit.disc(Vector3((x0+x1)*.5,low+crown-1.,.12),.25,Color("c9a03a"),8)
+					kit.disc(Vector3((x0+x1)*.5,low+crown-1.,.145),.25,Color("c9a03a"),8)
 			"hoist":
 				kit.slab((x0+x1)*.5-.06,(x0+x1)*.5+.06,low+crown-.3,low+crown-.18,.7,Color("3a2f28"))
 				kit.box(Vector3((x0+x1)*.5,low+crown-.45,.66),Vector3(.12,.2,.12),Color("3a3a3a"))
@@ -1040,7 +1107,7 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 							kit.box(Vector3(x+.25,low+.12+r*.22,.07),Vector3(.48,.22,.1),sb.darkened(.05*((k+r)%2)));x+=.52;k+=1
 			"camo":
 				if hs%3==0:
-					for k in range(4):kit.quad(Vector3(x0+.5+k*w/4.,low+1.+(k%2)*1.3,.05),Vector3(minf(1.4,w/4.),0,0),Vector3(0,.8,0),Color(["8a8f5a","a89a6a","6f7a4a","b5a06a"][(hs+k)%4]))
+					for k in range(4):kit.box(Vector3(x0+.5+k*w/4.+minf(1.4,w/4.)*.5,low+1.4+(k%2)*1.3,.1+(k%2)*.025),Vector3(minf(1.4,w/4.),.8,.015),Color(["8a8f5a","a89a6a","6f7a4a","b5a06a"][(hs+k)%4]))
 			"antenna":
 				if hs%4==0:
 					kit.slab(x1-.6,x1-.54,low+top,low+top+2.5,.06,Color("5a5f60"),-.3)
@@ -1048,11 +1115,11 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"rust":
 				for k in range(3):
 					var rx=x0+((hs*7+k*31)%100)/100.*maxf(.5,w-1.2);var ry=low+.4+((hs+k*13)%5)*.7
-					kit.quad(Vector3(rx,ry,.05+k*.012),Vector3(.9,0,0),Vector3(0,1.1,0),Color(["9a5a32","7a4a2a","a8683a"][k%3]))
+					kit.box(Vector3(rx+.45,ry+.55,.1+k*.025),Vector3(.9,1.1,.015),Color(["9a5a32","7a4a2a","a8683a"][k%3]))
 			"targets":
 				if hs%2==0 and w>2.4:
-					var c=Vector3((x0+x1)*.5,low+1.5,.08)
-					kit.disc(c,.55,Color("f4f1e8"),12);kit.disc(c+Vector3(0,0,.012),.4,Color("e05a3a"),12);kit.disc(c+Vector3(0,0,.024),.2,Color("f4f1e8"),10);kit.disc(c+Vector3(0,0,.036),.08,Color("e05a3a"),8)
+					var c=Vector3((x0+x1)*.5,low+1.5,.11)
+					kit.disc(c,.55,Color("f4f1e8"),12);kit.disc(c+Vector3(0,0,.025),.4,Color("e05a3a"),12);kit.disc(c+Vector3(0,0,.05),.2,Color("f4f1e8"),10);kit.disc(c+Vector3(0,0,.075),.08,Color("e05a3a"),8)
 			"planters":
 				if p.from<=0.:kit.slab(x0+.1,x1-.1,low,low+.5,.12,Color("8a6a4a"))
 			"vines":
@@ -1076,8 +1143,8 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 					kit.slab(x,x+.66,level,level+2.1,.14,Color("2a3036"))
 					for r in range(8):
 						var ry=level+.2+r*.23
-						kit.slab(x+.05,x+.61,ry,ry+.16,.15,Color("3a424a"))
-						kit.box(Vector3(x+.52,ry+.08,.155),Vector3(.04,.04,.01),Color(["3fe07a","2fb8e0","3fe07a","f0c23f"][(hs+r+int(x))%4]))
+						kit.slab(x+.05,x+.61,ry,ry+.16,.165,Color("3a424a"))
+						kit.box(Vector3(x+.52,ry+.08,.18),Vector3(.04,.04,.02),Color(["3fe07a","2fb8e0","3fe07a","f0c23f"][(hs+r+int(x))%4]))
 					x+=.72
 			"cable_tray":
 				kit.slab(x0,x1,level+2.6,level+2.7,.3,Color("8a949c"))
@@ -1086,21 +1153,21 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 					for k in range(int(minf(w-1.,3.)/.5)):
 						var lx=x0+.5+k*.5
 						kit.slab(lx,lx+.48,level,level+1.9,.1,Color("4f7a9a"))
-						kit.slab(lx+.1,lx+.38,level+1.6,level+1.65,.11,Color("2a3a4a"))
+						kit.slab(lx+.1,lx+.38,level+1.6,level+1.65,.125,Color("2a3a4a"))
 			"toolboards":
 				if hs%2==1 and w>2.:
 					var tx=x0+w*.5
-					kit.slab(tx-.9,tx+.9,level+1.2,level+2.2,.05,Color("c8a878"))
-					for k in range(5):kit.slab(tx-.75+k*.35,tx-.7+k*.35,level+1.4,level+2.,.07,Color(["c93f3f","3f5fc9","3a3a3a","c9a03a","3a3a3a"][k]))
+					kit.slab(tx-.9,tx+.9,level+1.2,level+2.2,.11,Color("c8a878"))
+					for k in range(5):kit.slab(tx-.75+k*.35,tx-.7+k*.35,level+1.4,level+2.,.135,Color(["c93f3f","3f5fc9","3a3a3a","c9a03a","3a3a3a"][k]))
 			"gauges":
 				if hs%2==0:
 					for k in range(3):
-						var c=Vector3(x0+.8+k*.7,level+1.6,.06)
-						kit.disc(c,.2,Color("f4f1e8"),10);kit.slab(c.x-.01,c.x+.12,c.y-.01,c.y+.01,.09,Color("c93f3f"))
+						var c=Vector3(x0+.8+k*.7,level+1.6,.11)
+						kit.disc(c,.2,Color("f4f1e8"),10);kit.slab(c.x-.01,c.x+.12,c.y-.01,c.y+.01,.135,Color("c93f3f"))
 			"cabinets":
 				if hs%3==0 and w>2.:
 					kit.slab(x1-1.6,x1-.4,level,level+1.8,.12,Color("b8c4c8"))
-					kit.slab(x1-1.0,x1-.99,level+.1,level+1.7,.13,Color("7a8a90"))
+					kit.slab(x1-1.0,x1-.99,level+.1,level+1.7,.145,Color("7a8a90"))
 			"wainscot":
 				sloped_band(kit,x0,x1,y0,y1,0.,1.1,.03,Color("8a6f55"))
 				sloped_band(kit,x0,x1,y0,y1,1.1,1.16,.05,Color("6a543f"))
@@ -1111,21 +1178,21 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 			"artwork":
 				if hs%2==1 and w>2.:
 					var ax=(x0+x1)*.5
-					kit.slab(ax-.7,ax+.7,level+1.4,level+2.3,.04,Color("3a3a3a"))
-					kit.quad(Vector3(ax-.6,level+1.5,.075),Vector3(1.2,0,0),Vector3(0,.7,0),Color(pick(["e0a05a","5a8ac9","c95a7a","6ab58a"],hs)))
+					kit.slab(ax-.7,ax+.7,level+1.4,level+2.3,.11,Color("3a3a3a"))
+					kit.box(Vector3(ax,level+1.85,.1275),Vector3(1.2,.7,.015),Color(pick(["e0a05a","5a8ac9","c95a7a","6ab58a"],hs)))
 			"lamps":
 				if hs%2==0:lantern(kit,x0+.5,level+2.5,fixtures,Color("ffdca0"))
 			"rivets":
 				var y=level+.6
 				while y<low+top-.4:
 					var x=x0+.3
-					while x<x1-.2:kit.box(Vector3(x,y,.04),Vector3(.05,.05,.02),Color("b8c0c6"));x+=.9
+					while x<x1-.2:kit.box(Vector3(x,y,.1),Vector3(.05,.05,.02),Color("b8c0c6"));x+=.9
 					y+=1.2
 			"deposit":
 				if hs%2==0 and w>2.:
 					for r in range(4):
 						for c in range(int(minf(w-1.,4.)/.4)):
-							kit.slab(x0+.5+c*.4,x0+.87+c*.4,level+.6+r*.35,level+.92+r*.35,.05,Color("c9b27a"))
+							kit.slab(x0+.5+c*.4,x0+.87+c*.4,level+.6+r*.35,level+.92+r*.35,.11,Color("c9b27a"))
 			"tyres":
 				if hs%2==0 and w>2.:
 					for k in range(3):
@@ -1139,19 +1206,19 @@ static func extras(kit:Kit,style:Dictionary,p:Dictionary,x0:float,x1:float,y0:fl
 					for x in [x0+.5,x1-.5]:kit.slab(x-.3,x+.3,py-.08,py+.58,.5,Color("5a6268"),.02)
 			"warning":
 				if hs%2==1 and w>2.:
-					var c=Vector3((x0+x1)*.5,level+2.2,.07)
-					kit.disc(c,.4,Color("f0c23f"),3);kit.slab(c.x-.03,c.x+.03,c.y-.12,c.y+.15,.08,Color("2a2a2a"))
+					var c=Vector3((x0+x1)*.5,level+2.2,.11)
+					kit.disc(c,.4,Color("f0c23f"),3);kit.slab(c.x-.03,c.x+.03,c.y-.12,c.y+.15,.135,Color("2a2a2a"))
 			"biohazard":
 				if hs%3==0 and w>2.:
-					var c=Vector3((x0+x1)*.5,level+2.6,.07)
-					kit.disc(c,.45,Color("e07a2f"),12);kit.disc(c+Vector3(0,0,.005),.2,Color("f2f2ea"),8);kit.disc(c+Vector3(0,0,.01),.08,Color("e07a2f"),6)
+					var c=Vector3((x0+x1)*.5,level+2.6,.11)
+					kit.disc(c,.45,Color("e07a2f"),12);kit.disc(c+Vector3(0,0,.025),.2,Color("f2f2ea"),8);kit.disc(c+Vector3(0,0,.05),.08,Color("e07a2f"),6)
 			"vaultdoor":
 				if hs%4==1 and w>4.:
-					var c=Vector3((x0+x1)*.5,level+1.5,.08)
-					kit.disc(c,1.45,Color("5a6268"),16);kit.disc(c+Vector3(0,0,.01),1.25,Color("b8a060"),16);kit.disc(c+Vector3(0,0,.02),.35,Color("8a949c"),10)
+					var c=Vector3((x0+x1)*.5,level+1.5,.11)
+					kit.disc(c,1.45,Color("5a6268"),16);kit.disc(c+Vector3(0,0,.025),1.25,Color("b8a060"),16);kit.disc(c+Vector3(0,0,.05),.35,Color("8a949c"),10)
 					for k in range(6):
 						var a=TAU*k/6.
-						kit.slab(c.x+cos(a)*.9-.07,c.x+cos(a)*.9+.07,c.y+sin(a)*.9-.07,c.y+sin(a)*.9+.07,.14,Color("d8d0b8"))
+						kit.slab(c.x+cos(a)*.9-.07,c.x+cos(a)*.9+.07,c.y+sin(a)*.9-.07,c.y+sin(a)*.9+.07,.175,Color("d8d0b8"))
 			"graffiti":
 				if hs%3==0 and w>3.:
-					for k in range(3):kit.quad(Vector3(x0+.8+k*.7,level+.6+(k%2)*.3,.05+k*.012),Vector3(.8,0,0),Vector3(0,.6,0),Color(["e05aa0","3fb8e0","f0c23f"][k]))
+					for k in range(3):kit.box(Vector3(x0+1.2+k*.7,level+.9+(k%2)*.3,.1+k*.025),Vector3(.8,.6,.015),Color(["e05aa0","3fb8e0","f0c23f"][k]))

@@ -30,9 +30,7 @@ static func available(game:Node,id:int,action:String) -> bool:
 			if p.role==3:
 				return game.devices.values().filter(func(d):return d.kind=="cover" and int(d.owner)==id).size()<GadgetLoadout.COVER_LIMIT[clampi(int(p.gadget),0,2)]
 			if p.role==4:return p.flash_count>0 if p.gadget==1 else p.smoke>0
-			if p.role==5:
-				var target=game.aim_player(id,4.,true)
-				return game.players[target if target else id].hp<Rules.max_hp(game.players[target if target else id])
+			if p.role==5:return not game.medkit_targets(id).is_empty()
 			return true
 		"bomb":return not BombLogic.action(game,id).is_empty() or (int(game.options.mode)==4 and game.phase=="combat" and int(game.bomb.get("carrier",0))==id)
 		"gadget_mode":return false
@@ -65,3 +63,8 @@ static func equipment_ready(game:Node,id:int,slot:int) -> bool:
 	if p.role==4 and not GrenadeLogic.equipped(p):
 		return game.phase=="combat" and game.can_attack(p) and p.gadget_ready<=game.clock and p.gadget_count>0 and (p.flash_count>0 if p.gadget==1 else p.smoke>0)
 	return available(game,id,"gadget")
+# 1.5.4 (the user): whether the interact button would do something now - a door in reach or
+# the bomb to plant or defuse (the touch button then blinks yellow)
+static func can_interact(game:Node,id:int) -> bool:
+	if not game.players.has(id) or not game.players[id].alive or game.phase!="combat":return false
+	return not BombLogic.action(game,id).is_empty() or InteractiveDoor.target(game,id)!=null

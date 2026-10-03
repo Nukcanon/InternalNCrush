@@ -63,7 +63,7 @@ static func detail_slot(kind:String,index:int) -> String:
 	match kind:
 		"wall","perimeter","tunnel","skin":return STYLE_WALL.get(style,"concrete_wall")
 		"ground","lower":return ground
-		"waterbed":return "gravel"
+		"waterbed","seabed":return "gravel"
 		"shallowbed":return "tiles_stone" # (1.4.6: a smooth pale bed, never the street's own ground)
 		"plaza":return {"sand":"paving","dirt":"paving","gravel":"concrete","asphalt":"concrete","steel_floor":"concrete"}.get(ground,ground)
 		"indoor":return "wood_floor" if fam in ["town","garden","library","historic"] else "tiles_stone" if fam in ["lab","quarry"] else "concrete"
@@ -138,6 +138,18 @@ void fragment(){
  ROUGHNESS=.9;
 }
 """
+## 1.5.4 (the user: flicker on every map): a copy of a surface material that draws front faces
+## only. The facade kits wind every face outward; with both sides drawn, a box's underside on
+## another's top or two touching sides fought for the same pixels.
+static var culled_shader:Shader
+static var culled_cache={}
+static func culled(mat:ShaderMaterial) -> ShaderMaterial:
+	var key=mat.get_instance_id()
+	if culled_cache.has(key):return culled_cache[key]
+	if culled_shader==null:
+		culled_shader=Shader.new();culled_shader.code=mat.shader.code.replace("render_mode cull_disabled,","render_mode cull_back,")
+	var copy:ShaderMaterial=mat.duplicate();copy.shader=culled_shader
+	culled_cache[key]=copy;return copy
 static func material(kind:String,index:int,vertex_paint:bool=false,zone:int=0) -> ShaderMaterial:
 	if kind=="quay_edge":kind="wall"
 	var key=str([kind,index,vertex_paint,zone])
@@ -151,7 +163,7 @@ static func material(kind:String,index:int,vertex_paint:bool=false,zone:int=0) -
 			# Bare walls (behind/above facades) share the map style's palette.
 			var style=DistrictFacade.style_for(index)
 			color=Color(style.colors[z%style.colors.size()]).darkened(.06);pattern=int(style.pattern);meters=2.4
-		"ground","lower","waterbed":
+		"ground","lower","waterbed","seabed":
 			var g=DistrictFacade.GROUNDS.get(DistrictFacade.style_name(index),[palette.ground[z],TILES])
 			color=Color(g[0]).lightened(.04*(z%2)).darkened(.03*(z/2));pattern=int(g[1]);meters=2.8 if kind=="ground" else 2.4
 		# 1.5 blueprints: paved plazas and covered-room floors read as their own spaces.

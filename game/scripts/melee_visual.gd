@@ -90,6 +90,38 @@ static func swing_wrist(age:float,hand:float=1.) -> Vector3:
 		else:p=finish.lerp(rest,smoothstep(MeleeCombat.CONTACT_END,MeleeCombat.DURATION,age))
 	p.x*=hand
 	return p
+## 1.5.4 (the user's clip of a Counter-Strike knife): first-person knife keys over one swing
+## (seconds from its start; it spans the swing interval). Camera space, right-handed:
+## the wrist, the forearm (wrist -> elbow) and the blade's way out of the fist. At rest the
+## fist sits low right with the blade tipped up and to the left, the free fist low left of
+## the middle. The slash whips the arm across to the left almost at once, sweeps it back
+## through the middle and down out of the view at the right, then the knife rises back
+## from below. The free fist drops out of the view for the swing and comes back after.
+const KNIFE_KEYS=[
+	[0.,Vector3(.23,-.35,-.45),Vector3(.35,-.35,.87),Vector3(-.84,.47,-.28)],
+	[.035,Vector3(-.15,-.21,-.58),Vector3(.62,-.22,.76),Vector3(-.95,.25,-.15)],
+	[.10,Vector3(.05,-.24,-.61),Vector3(.48,-.30,.82),Vector3(-.85,.40,-.30)],
+	[.17,Vector3(.30,-.37,-.50),Vector3(.32,-.45,.83),Vector3(-.50,.55,-.65)],
+	[.24,Vector3(.36,-.68,-.36),Vector3(.25,-.60,.76),Vector3(-.25,.45,-.85)],
+	[.48,Vector3(.36,-.68,-.36),Vector3(.25,-.60,.76),Vector3(-.25,.45,-.85)],
+	[.62,Vector3(.27,-.44,-.42),Vector3(.33,-.42,.84),Vector3(-.45,.75,-.48)],
+	[.74,Vector3(.23,-.35,-.45),Vector3(.35,-.35,.87),Vector3(-.84,.47,-.28)]]
+const KNIFE_FREE_REST=Vector3(-.22,-.39,-.46) # (1.5.4, the user: both fists moved left so their middle is the view's centre)
+const KNIFE_FREE_DOWN=Vector3(-.12,-.66,-.34)
+const KNIFE_SWING_TIME=.74
+static func knife_swing(age:float) -> Dictionary:
+	var k=KNIFE_KEYS;var at=k[0]
+	if age>=0. and age<KNIFE_SWING_TIME:
+		for i in range(k.size()-1):
+			if age<=float(k[i+1][0]):
+				var t=clampf((age-float(k[i][0]))/maxf(.001,float(k[i+1][0])-float(k[i][0])),0.,1.)
+				if i>0:t=smoothstep(0.,1.,t) # (the first whip is linear: it is that fast)
+				at=[age,Vector3(k[i][1]).lerp(k[i+1][1],t),Vector3(k[i][2]).normalized().slerp(Vector3(k[i+1][2]).normalized(),t),Vector3(k[i][3]).normalized().slerp(Vector3(k[i+1][3]).normalized(),t)]
+				break
+	# the free fist: down within 0.06 s, back over the last part of the return
+	var down=0.
+	if age>=0. and age<KNIFE_SWING_TIME:down=smoothstep(0.,.06,age)*(1.-smoothstep(.56,KNIFE_SWING_TIME,age))
+	return {"wrist":at[1],"forearm":at[2],"blade":at[3],"free":KNIFE_FREE_REST.lerp(KNIFE_FREE_DOWN,down),"free_down":down}
 func pose(age:float):
 	if not is_instance_valid(pivot) or in_hand:return
 	# Blade forward at rest; a wind-up back and up, then a downward diagonal cut

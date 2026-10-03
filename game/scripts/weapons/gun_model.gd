@@ -261,6 +261,50 @@ func set_slide(amount:float):
 func set_pump(amount:float):
 	if is_instance_valid(pump):pump.position=Vector3(0,0,PUMP_TRAVEL*clampf(amount,0.,1.)/maxf(.01,base.scale.z))
 func grip(side:String) -> Node3D:return right_grip if side=="R" else left_grip
+## 1.5.4 (the user): the heavy's bipod gadget is clamped under the primary's barrel - just
+## ahead of the front grip when the barrel has room there, else a little behind the muzzle
+## (legs then folded back). It hangs on the base, the node that carries the barrel, so it
+## never drifts from the gun - not while running nor reloading.
+func set_bipod(on:bool):
+	var part:Node3D=base.get_node_or_null("BipodMount") if is_instance_valid(base) else null
+	if part==null:
+		if not on or not is_instance_valid(base) or not is_instance_valid(muzzle):return
+		part=build_bipod()
+	part.visible=on
+func shown_in_gun(node:Node) -> bool:
+	var n=node
+	while n!=null and n!=self:
+		if n is Node3D and not (n as Node3D).visible:return false
+		n=n.get_parent()
+	return true
+func build_bipod() -> Node3D:
+	var tip:Vector3=relative(muzzle,self).origin
+	var hand:Vector3=relative(left_grip,self).origin if is_instance_valid(left_grip) else tip
+	var h:Dictionary=handles(str(look.get("base","")))
+	if h.has("front"):hand.z=Vector3(h.front).z*base.scale.z
+	# ahead of the front grip with the legs folded forward when they fit before the muzzle; else
+	# just behind the muzzle, legs folded back - parted round the grip if they reach it
+	var z=hand.z-.09;var back=false;var splay=.07
+	if z-tip.z<.23:
+		z=tip.z+.07;back=true
+		if z+.22>hand.z-.06:splay=.3
+	# the barrel's underside there, from the model's own triangles
+	var bottom=INF
+	for m in base.find_children("*","MeshInstance3D",true,false):
+		if m.mesh==null or not shown_in_gun(m):continue
+		var xf=relative(m,self)
+		for f in m.mesh.get_faces():
+			var q=xf*f
+			if absf(q.z-z)<.025 and absf(q.x-tip.x)<.05 and q.y<tip.y+.02:bottom=minf(bottom,q.y)
+	if bottom==INF:bottom=tip.y-.02
+	var palette:Dictionary=look.get("palette",{})
+	var dark:Color=palette.get("DarkGrey",Color("2e343a"));var accent:Color=palette.get("Grey2",Color("8c959c"))
+	var part=Node3D.new();part.name="BipodMount";base.add_child(part);part.transform=relative(base,self).affine_inverse()
+	GearModels.bipod(part,Vector3(tip.x,bottom+.004,z),1.,dark,dark.lightened(.25),accent,true,back,splay)
+	MeshFactory.merge_children(part)
+	for mesh in part.get_children():
+		if mesh is MeshInstance3D:mesh.material_override=HeroStyle.toon_material(outlined,.25);mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return part
 ## The laser rifle runs on two D-size cells (as in 1.3): the box magazine of
 ## the base model is replaced by a pair of yellow cells with red terminals on a
 ## latch plate. They are the magazine node, so the reload swaps them.
@@ -303,28 +347,36 @@ const PAIR_CONVERGE=4. # = Actor.HIP_CONVERGE
 func set_pair_spacing(width:float):
 	if dual_guns.size()<2:return
 	dual_rest=[Vector3.ZERO,Vector3(-width,0,.02)]
-	if dual_guns[1].rotation.x==0.:dual_guns[1].position=dual_rest[1]+pair_swing_offset(1)
 	# 1.4.5: each pistol turned in so its barrel line crosses the aim line at the
 	# hip's convergence distance (Actor.HIP_CONVERGE, in the guns' own units)
 	pair_toe=atan2(width*.5,PAIR_CONVERGE/maxf(.01,base.scale.x*scale.x))
-	for i in range(dual_guns.size()):
-		if dual_guns[i].rotation.x==0.:dual_guns[i].rotation.y=pair_toe*(1. if i==0 else -1.)
-# 1.4.5 DUET sprint: the pistols swing like running arms, one forward and a
-# little up while the other goes back and down (`amount` metres, +/-).
-var pair_swing_amount=0.
+	if not pair_reloading:set_pair_swing(pair_run,pair_phase)
+# 1.5.4 DUET sprint (the user's clip of a Call of Duty run): the pistols are carried muzzle up,
+# leaning in toward the middle, and pumped by turns with the running arms - one rises to
+# the lower middle of the view while the other drops out of it below (a full cycle per
+# two steps). un 0..1 blends in from the hip pose, phase is the gait (radians).
+const PAIR_RUN_PITCH=.85 # muzzle up (more bent the wrists past their limit and the left hand lost its grip)
+const PAIR_RUN_LEAN=.42 # muzzle in toward the middle
+const PAIR_RUN_LOW=Vector3(0,-.55,.20) # the bottom of a pump: out of the view
+const PAIR_RUN_HIGH=Vector3(0,.04,0.) # the top
+var pair_run=0.
+var pair_phase=0.
 var pair_toe=0.
+var pair_reloading=false
+func pair_pump(i:int) -> float:return smoothstep(0.,1.,.5+.5*sin(pair_phase+PI*i))
 func pair_swing_offset(i:int) -> Vector3:
-	var s=pair_swing_amount*(1. if i==0 else -1.)
-	# 1.5.0 (the user: like carrying something while running): a pistol swinging
-	# forward also moves out from the body, up to 6.5 cm at the front of its swing,
-	# and comes back in as it swings back (right pistol out to +x, left to -x).
-	var outward=.065*clampf(s/.05,0.,1.)*(1. if i==0 else -1.)
-	return Vector3(outward,s*.35,-s)
-func set_pair_swing(amount:float):
-	pair_swing_amount=amount
-	if dual_guns.size()<2 or dual_rest.size()<2:return
+	var outward=.10*(1. if i==0 else -1.) # (right pistol out to +x, the left to -x)
+	return (PAIR_RUN_LOW.lerp(PAIR_RUN_HIGH,pair_pump(i))+Vector3(outward,0,0))*pair_run
+func pair_run_rotation(i:int) -> Vector3:
+	# (the lean is about the view's axis after the muzzle is raised - as Euler angles it
+	# only rolled the pistol about its barrel)
+	var side=1. if i==0 else -1.
+	return (Basis(Vector3.BACK,PAIR_RUN_LEAN*side*pair_run)*Basis(Vector3.RIGHT,PAIR_RUN_PITCH*pair_run)*Basis(Vector3.UP,pair_toe*side*(1.-pair_run))).get_euler()
+func set_pair_swing(run:float,phase:float=0.):
+	pair_run=run;pair_phase=phase
+	if dual_guns.size()<2 or dual_rest.size()<2 or pair_reloading:return
 	for i in range(dual_guns.size()):
-		if dual_guns[i].rotation.x==0.:dual_guns[i].position=dual_rest[i]+pair_swing_offset(i)
+		dual_guns[i].position=dual_rest[i]+pair_swing_offset(i);dual_guns[i].rotation=pair_run_rotation(i)
 # Moves a base's grip markers onto the measured handles and returns the grip
 # shapes per hand (handle frame, base units): half extents, rounding and the
 # trigger point. Code-built bases (launchers, tools) carry their own shapes.
@@ -467,10 +519,11 @@ func show_load_round(t:float):
 	var r=ReloadMotion.round_point(self,t)
 	load_round.visible=bool(r[1]);load_round.position=r[0]
 func animate_pair(t:float):
+	pair_reloading=t>=0.
 	if dual_rest.size()!=dual_guns.size():
 		dual_rest=dual_guns.map(func(g):return g.position)
 	for i in range(dual_guns.size()):
 		var phase=0. if t<0. else clampf((t-.5*i)/.5,0.,1.) if (t>=.5*i and t<.5*(i+1)) else 0.
 		var away=sin(phase*PI)
 		dual_guns[i].position=dual_rest[i]+Vector3(0,-.7,.22)*smoothstep(0.,1.,away)+pair_swing_offset(i)*(1.-away)
-		dual_guns[i].rotation=Vector3(.6*away,pair_toe*(1. if i==0 else -1.)*(1.-away),0)
+		dual_guns[i].rotation=Vector3(.6*away,0,0)+pair_run_rotation(i)*(1.-away)

@@ -97,6 +97,7 @@ static func build(node:Node3D,kind:String,index:int,ordinal:int) -> AABB:
 	var kit=DistrictFacade.Kit.new()
 	var box=procedural(kit,kind,ordinal+index*7)
 	var visual=MeshInstance3D.new();visual.mesh=kit.detail.commit();visual.material_override=material;node.add_child(visual)
+	if kind=="pillar_statue":add_statue(node,ordinal+index*7)
 	return box
 ## 1.4.2 collision that follows the prop instead of one box round everything
 ## (a box on a fountain, a barrel group or a stepped crate stack left invisible
@@ -202,7 +203,7 @@ static func band_hulls(mesh:Mesh,bands:int) -> Array:
 # 1.4.5: how deep a placed prop may sink into a wall or another prop before it
 # is moved or removed (8 cm left visible clipping: crates inside containers).
 const SINK_LIMIT=.02
-const JOINTS=[["low_wall","pillar"],["sacktrench","sacktrench_small"],["sacktrench","sacktrench"],["sacktrench_small","sacktrench_small"]]
+const JOINTS=[["low_wall","pillar"],["low_wall","pillar_statue"],["low_wall","pillar_full"],["low_wall","pillar_post"],["sacktrench","sacktrench_small"],["sacktrench","sacktrench"],["sacktrench_small","sacktrench_small"]]
 static func joint(a:String,b:String) -> bool:
 	var pair=[a,b];pair.sort();return pair in JOINTS
 ## 1.4.6 (the user): a shot at any prop must strike the prop itself, never the
@@ -321,6 +322,27 @@ static func procedural(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 			k.box(Vector3(0,.12,0),Vector3(1.,.24,1.),c("8c8f8b"),true)
 			k.box(Vector3(0,3.3,0),Vector3(1.,.2,1.),c("8c8f8b"),true)
 			return AABB(Vector3(-.5,0,-.5),Vector3(1.,3.4,1.))
+		# 1.5.4 (the user: pillars that held nothing looked meaningless - they stay as cover):
+		# out in the open one carries a stone figure; in a covered room it reaches the ceiling.
+		"pillar_statue":
+			# (the figure on top is one of the Quaternius statues - add_statue)
+			k.box(Vector3(0,1.7,0),Vector3(.8,3.4,.8),c("a7aaa6"),true)
+			k.box(Vector3(0,.12,0),Vector3(1.,.24,1.),c("8c8f8b"),true)
+			k.box(Vector3(0,3.3,0),Vector3(1.,.2,1.),c("8c8f8b"),true)
+			return AABB(Vector3(-.5,0,-.5),Vector3(1.,4.8,1.))
+		"pillar_post":
+			k.box(Vector3(0,.95,0),Vector3(.7,1.9,.7),c("a7aaa6"),true)
+			k.box(Vector3(0,.12,0),Vector3(.86,.24,.86),c("8c8f8b"),true)
+			k.box(Vector3(0,1.9,0),Vector3(.86,.14,.86),c("8c8f8b"),true)
+			k.box(Vector3(0,2.02,0),Vector3(.2,.1,.2),c("3a4046"),true) # lamp: base, glass, hood
+			k.box(Vector3(0,2.2,0),Vector3(.26,.28,.26),c("f6e2a6"),true)
+			k.box(Vector3(0,2.38,0),Vector3(.34,.06,.34),c("3a4046"),true)
+			return AABB(Vector3(-.43,0,-.43),Vector3(.86,2.42,.86))
+		"pillar_full":
+			k.box(Vector3(0,1.8,0),Vector3(.8,3.6,.8),c("a7aaa6"),true)
+			k.box(Vector3(0,.12,0),Vector3(1.,.24,1.),c("8c8f8b"),true)
+			k.box(Vector3(0,3.47,0),Vector3(1.,.2,1.),c("8c8f8b"),true)
+			return AABB(Vector3(-.5,0,-.5),Vector3(1.,3.6,1.))
 		"low_wall":
 			k.box(Vector3(0,.55,0),Vector3(3.,1.1,.4),c(["b9ada0","a6a9a2","b39a86"][hs%3]),true)
 			k.box(Vector3(0,1.14,0),Vector3(3.1,.08,.5),c("8c8f8b"),true)
@@ -538,3 +560,30 @@ static func procedural(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 	# Fallback: a crate.
 	k.box(Vector3(0,.45,0),Vector3(.9,.9,.9),wood,true)
 	return AABB(Vector3(-.45,0,-.45),Vector3(.9,.9,.9))
+# 1.5.4 (the user: a real statue on the pillars, several kinds): Quaternius' CC0 horse, fox and
+# stag statues (assets/models/statues), one per pillar, about 1.3 m tall on its top. The
+# model's meshes are copied in as plain mesh nodes (the arena cache packs them).
+const STATUES=["horse_statue","fox_statue","stag_statue"]
+const STATUE_HEIGHT=1.3
+const STATUE_TOP=3.4
+static func add_statue(node:Node3D,hs:int):
+	var scene:PackedScene=load("res://assets/models/statues/%s.glb"%STATUES[absi(hs)%STATUES.size()])
+	if scene==null:return
+	var source:Node3D=scene.instantiate();var parts=[]
+	var walk:Array=[[source,Transform3D.IDENTITY]]
+	while not walk.is_empty():
+		var item=walk.pop_back();var n:Node=item[0];var xf:Transform3D=item[1]
+		if n is Node3D and n!=source:xf=xf*n.transform
+		if n is MeshInstance3D and n.mesh:parts.append([n.mesh,xf])
+		for child in n.get_children():walk.append([child,xf])
+	source.free()
+	if parts.is_empty():return
+	var box=AABB();var first=true
+	for part in parts:
+		var b:AABB=part[1]*part[0].get_aabb();box=b if first else box.merge(b);first=false
+	var k=STATUE_HEIGHT/maxf(.01,box.size.y)
+	k=minf(k,.95/maxf(.01,maxf(box.size.x,box.size.z)))
+	var holder=Node3D.new();holder.name="Statue";node.add_child(holder)
+	holder.scale=Vector3.ONE*k;holder.position=Vector3(-box.get_center().x*k,STATUE_TOP-box.position.y*k,-box.get_center().z*k)
+	for part in parts:
+		var m=MeshInstance3D.new();m.mesh=part[0];m.transform=part[1];holder.add_child(m)

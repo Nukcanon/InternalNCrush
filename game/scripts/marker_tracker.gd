@@ -37,4 +37,5 @@ static func tick(game:Node,id:int,dt:float):
 	p.marker_progress=float(p.get("marker_progress",0))+elapsed
 	if p.marker_progress>=DWELL_SECONDS-.00001:
 		TargetReveal.mark(game,target,id,6.);p.marker_progress=0.;p.marker_target=0
+		game.feedback(id,"mark","표식 완료 · 6초 동안 팀에 위치 공유") # (1.5.4, the user: a soft bell when the mark lands)
 		game.feedback(target,"","표식 감지 · 6초 동안 위치가 노출됩니다.")

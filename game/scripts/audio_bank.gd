@@ -96,6 +96,7 @@ func play(key:String,where:Vector3,world:bool,gain=0.):
 	if world and key=="bomb_beep":voice.unit_size=16.;voice.pitch_scale=1.
 	if key in ["bomb_planted","bomb_dropped","bomb_defused","win_blue","win_orange"]:voice.pitch_scale=1.
 	if world and key=="bomb_defuse":voice.max_distance=16.;voice.unit_size=3.;voice.pitch_scale=1.
+	if world and key=="bipod":voice.unit_size=2. # (fades out over its 10 m)
 	voice.play();played.emit(key,world)
 
 func category_gain(category:String) -> float:
@@ -109,7 +110,8 @@ static func audible_range(key:String) -> float:
 	if key in ["explosion","rocket_explosion","bomb_explosion","flash","smoke"]:return 220.
 	if key=="bomb_beep":return 90.
 	if key in ["link_loop","shield_loop"]:return 20. # (1.5.2, the user: the LINK and shield hums carry 20 m)
-	if key.begins_with("gun_") or key in ["rocket_launch","skill","turret_detect"]:return 160.
+	if key=="bipod":return 10. # (1.5.4, the user: heard within 10 m only)
+	if key.begins_with("gun_") or key in ["rocket_launch","skill","skill_end","turret_detect"]:return 160.
 	return 40.
 var loop_streams={}
 ## A looping copy of a clip marked "loop" in the manifest (LINK / FIX hum).

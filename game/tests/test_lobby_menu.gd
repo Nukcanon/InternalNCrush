@@ -33,11 +33,11 @@ func run():
 	g=load("res://scripts/game.gd").new();root.add_child(g)
 	var ui=g.ui
 	await capture("main")
-	for text in ["내부망 로비","인터넷 로비","봇 전투","연습장"]:expect(find_button(ui.panel,text)!=null,"main menu direct action "+text)
+	for text in ["내부망(LAN) 접속","인터넷(WAN) 접속","봇 전투","연습장"]:expect(find_button(ui.panel,text)!=null,"main menu direct action "+text)
 	var background=ui.background
 	var live=background.get_child(0) if visual and g.profile.menu_animation else null
 	var live_clock=live.match_game.clock if is_instance_valid(live) else 0.
-	find_button(ui.panel,"내부망 로비").pressed.emit();await settle()
+	find_button(ui.panel,"내부망(LAN) 접속").pressed.emit();await settle()
 	expect(ui.screen=="join" and ui.background==background,"LAN submenu preserves live backdrop")
 	var lan=ui.lan_lobby
 	expect(ui.panel.get_global_rect().position.y>=0 and ui.panel.get_global_rect().end.y<=720,"LAN window and its footer fit the logical viewport")

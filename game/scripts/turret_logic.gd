@@ -140,6 +140,13 @@ static func tick(game:Node,dt:float):
 		if not obstruction.is_empty():continue
 		if game.clock>=d.next_fire:
 			d.next_fire=game.clock+INTERVALS[d.level-1]
+			# 1.5.4 (the user: two barrels but every round left from between them): the barrels
+			# fire by turns, each round from its own muzzle (GearModels.turret: x +-.15, y -.05,
+			# z -.96 in the head) and still straight onto the aim point - no spread
+			var side=-1. if int(d.get("barrel",1))>0 else 1.;d.barrel=int(side)
+			var head=Basis(Vector3.UP,float(d.head_yaw))*Basis(Vector3.RIGHT,float(d.head_pitch))
+			muzzle=from+head*(Vector3(side*.15,-.05,-.96)*SCALES[d.level-1])
+			direction=(from+barrel_direction*maxf(2.,from.distance_to(aim))-muzzle).normalized()
 			var flight=Ballistics.trace(game,muzzle,direction,300. if remote else muzzle.distance_to(aim)+2.,exclude)
 			var hit:Dictionary=flight.hit;var end:Vector3=flight.end
 			var amount=bullet_damage(d.level)

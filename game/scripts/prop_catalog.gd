@@ -138,7 +138,7 @@ static func build(k:DistrictFacade.Kit,kind:String,hs:int) -> AABB:
 			var body=[Color("b5634a"),CONCRETE,Color("7a6a5a"),Color("8a9a8a")][absi(hs)%4]
 			P.cbox(k,Vector3(0,.3,0),Vector3(w,.6,.8),body,.06)
 			k.box(Vector3(0,.61,0),Vector3(w+.06,.06,.86),body.lightened(.1),true) # rim
-			k.box(Vector3(0,.62,0),Vector3(w-.14,.04,.66),Color("5a3f2a"),true) # soil
+			k.box(Vector3(0,.645,0),Vector3(w-.14,.04,.66),Color("5a3f2a"),true) # soil (1.5.4: its top 2.5 cm over the rim's - they shared a plane and flickered)
 			var n=int(w/.42)
 			for i in range(n):
 				var x=-w*.5+.24+i*(w-.48)/maxf(1.,n-1)

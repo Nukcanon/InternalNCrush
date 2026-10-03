@@ -47,11 +47,14 @@ static func leaf(k:DistrictFacade.Kit,family:String,hs:int):
 		"warehouse":[Color("c98a2e"),Color("5a7a9a"),Color("8a8f94")],"container":[Color("b5483a"),Color("2f6f9f"),Color("3f7f5f")],
 		"lab":[Color("eef2f3")],"vault":[Color("8a949c")],"fire_exit":[Color("b83a32"),Color("3f7a52")],"shoji":[Color("b98a5a")],"roller":[Color("9aa4aa"),Color("c9a24a")]}
 	var cols:Array=palette.get(family,[Color("7a4a2e")]);var col:Color=cols[absi(hs)%cols.size()]
+	# (1.5.4: the panels, bands and plates on a leaf stand 2.5 cm apart - DistrictFacade.place_layer -
+	# a few millimetres flickered from across the street)
+	DistrictFacade.layer_planes.clear();k.separate=true
 	k.box(Vector3(0,H*.5,0),Vector3(W,H,T*1.2),col,true)
 	for face in [1.,-1.]:
 		k.xf=Transform3D(Basis(Vector3.UP,0. if face>0. else PI),Vector3.ZERO)
 		face_detail(k,family,col,hs)
-	k.xf=Transform3D()
+	k.xf=Transform3D();k.separate=false;DistrictFacade.layer_planes.clear()
 # Front-face detail (z>0) - mirrored onto the back by `leaf`.
 static func face_detail(k:DistrictFacade.Kit,family:String,col:Color,hs:int):
 	var z=T*.6

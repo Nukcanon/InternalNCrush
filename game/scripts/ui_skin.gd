@@ -101,9 +101,10 @@ static func build(font:Font,touch:bool) -> Theme:
 	for key in ["font_color","font_hover_color","font_pressed_color","font_focus_color","font_hover_pressed_color"]:theme.set_color(key,"CheckBox",INK)
 	# Tabs.
 	theme.set_stylebox("panel","TabContainer",box(CARD_A,INK,3,3,16,Vector4(10,10,10,10)))
-	theme.set_stylebox("tab_selected","TabContainer",box(PRIMARY,INK,3,0,12,Vector4(18,8,18,8)))
-	theme.set_stylebox("tab_unselected","TabContainer",box(PAPER_DEEP,INK,3,0,12,Vector4(18,8,18,8)))
-	theme.set_stylebox("tab_hovered","TabContainer",box(PRIMARY.lightened(.35),INK,3,0,12,Vector4(18,8,18,8)))
+	# (1.5.4, the user: the tabs had no bottom edge)
+	theme.set_stylebox("tab_selected","TabContainer",box(PRIMARY,INK,3,3,12,Vector4(18,8,18,8)))
+	theme.set_stylebox("tab_unselected","TabContainer",box(PAPER_DEEP,INK,3,3,12,Vector4(18,8,18,8)))
+	theme.set_stylebox("tab_hovered","TabContainer",box(PRIMARY.lightened(.35),INK,3,3,12,Vector4(18,8,18,8)))
 	for key in ["font_selected_color","font_unselected_color","font_hovered_color"]:theme.set_color(key,"TabContainer",INK)
 	# Scrolling and separators.
 	var track=box(PAPER_DEEP,PAPER_DEEP,0,0,8,Vector4(6 if not touch else 10,0,6 if not touch else 10,0))

@@ -40,7 +40,7 @@ SINK = -2.0
 ROOM_CEILING = 3.6
 PARAPET = 0.95
 PILLAR_SIDE = 0.42   # 1.4.5: square pillars under the building mass over covered-room openings
-PILLAR_INSET = 0.21  # flush in the opening's corner (deeper, it closed 4 m passages for bots)
+PILLAR_INSET = 0.36  # just inside the opening's corner (1.5.4, the user: from .21 - its cap ran into the opening's trim strip; deeper, it closed 4 m passages for bots)
 PARAPET_T = 0.25
 # 1.5.0 (the user): deep water is fenced by 1.7 m iron bars on a low curb - a
 # move + jump (0.82 m) plus a mantle (0.8 m in the air) no longer clears it.
@@ -73,6 +73,296 @@ def expand(bp):
 
 
 SIGHT_BLOCK = set('#RH^')
+
+
+def corner_spawns(m, g0, teams, at, cells, visible, mirrored, gap=4, carve=False):
+    """1.5.4: the spawn spot search (see relocate_spawns). Returns (grid, label) or None.
+    gap: the least distance (cells) from an objective (small maps retry with 3).
+    carve: (the user: widen the space where a spawn moves) the row of building on the
+    map's outer side of a spot may be opened up to make the spawn's room."""
+    import copy
+    H, W = len(g0), len(g0[0])
+    floor = '.,' + (':' if m.indoor else '')
+    objectives = [(r, c) for r in range(H) for c in range(W) if g0[r][c] in 'ABC']
+    def spots(ch, rows):
+        out = []
+        for r in rows:
+            for c in range(W - 1):
+                quad = [(r, c), (r, c + 1), (r + 1, c), (r + 1, c + 1)]
+                opened = []
+                if not all(at(g0, rr, cc) in floor + ch for rr, cc in quad):
+                    # the outer row (toward the map's edge on this side) may be building, opened up
+                    outer = r + 1 if r >= H // 2 else r
+                    inner = r if outer == r + 1 else r + 1
+                    if not (carve and all(at(g0, inner, cc) in floor + ch for cc in (c, c + 1)) and all(at(g0, outer, cc) in floor + ch + '#' for cc in (c, c + 1))
+                            and all(at(g0, outer + (1 if outer == r + 1 else -1), cc) in '#R ' for cc in (c, c + 1))):
+                        continue
+                    opened = [(outer, cc) for cc in (c, c + 1) if at(g0, outer, cc) == '#']
+                if any(max(abs(rr - orr), abs(cc - occ)) < gap for rr, cc in quad for orr, occ in objectives):
+                    continue
+                room = sum(1 for dr in range(-1, 3) for dc in range(-1, 3) if at(g0, r + dr, c + dc) in floor + 'cbswtn' + ch or (r + dr, c + dc) in opened)
+                if room < (7 if carve else 12):
+                    continue  # (room to respawn: most of the 4x4 cells round it open)
+                out.append((r, c, room, opened))
+        return out
+    def place(g, ch, r, c, opened=()):
+        h = copy.deepcopy(g)
+        for rr, cc in cells(g, ch):
+            h[rr][cc] = ','
+        for rr, cc in opened:
+            h[rr][cc] = ','
+        for rr, cc in ((r, c), (r, c + 1), (r + 1, c), (r + 1, c + 1)):
+            h[rr][cc] = ch
+        return h
+    def corner(r, c, low):
+        # nearness to the map's outer edge on the team's side and to a side wall
+        depth = (r + 1) / (H - 1) if low else 1 - r / (H - 1)
+        return depth + abs((c + 1) - W / 2) / (W / 2)
+    if m.symmetric:
+        ch = teams[0]
+        rows = range(H // 2, H - 1)
+        best = None
+        for r, c, room, opened in spots(ch, rows):
+            if abs((c + 1) - W / 2) < W * .2 or r + 1 < H * .68:
+                continue  # (toward a side and out at its own end, not in the middle: the middle lines up with the other spawn)
+            h = mirrored(place(g0, ch, r, c, opened))
+            if visible(h):
+                continue
+            score = corner(r, c, True) + room * .02
+            if best is None or score > best[0]:
+                best = (score, h, 'corner %d,%d%s' % (r, c, ' opened' if opened else ''))
+        return (best[1], best[2]) if best else None
+    # defusal: each team keeps to the third of the map on its own side
+    a, b = cells(g0, teams[0]), cells(g0, teams[1])
+    if not a or not b:
+        return None
+    ra = sum(r for r, _ in a) / len(a); rb = sum(r for r, _ in b) / len(b)
+    ca = sum(c for _, c in a) / len(a); cb = sum(c for _, c in b) / len(b)
+    vertical = abs(ra - rb) >= abs(ca - cb)
+    def own(team_r, team_c, r, c):
+        if vertical:
+            return (r < H / 3) if team_r < H / 2 else (r >= 2 * H / 3 - 1)
+        return (c < W / 3) if team_c < W / 2 else (c >= 2 * W / 3 - 1)
+    def side_score(team_r, team_c, r, c):
+        if vertical:
+            depth = (1 - r / (H - 1)) if team_r < H / 2 else (r + 1) / (H - 1)
+            return depth + abs((c + 1) - W / 2) / (W / 2)
+        depth = (1 - c / (W - 1)) if team_c < W / 2 else (c + 1) / (W - 1)
+        return depth + abs((r + 1) - H / 2) / (H / 2)
+    ca_spots = [s for s in spots(teams[0], range(H - 1)) if own(ra, ca, s[0], s[1])]
+    cb_spots = [s for s in spots(teams[1], range(H - 1)) if own(rb, cb, s[0], s[1])]
+    ca_spots.sort(key=lambda s: -(side_score(ra, ca, s[0], s[1]) + s[2] * .02))
+    cb_spots.sort(key=lambda s: -(side_score(rb, cb, s[0], s[1]) + s[2] * .02))
+    for sa in ca_spots[:40]:
+        h1 = place(g0, teams[0], sa[0], sa[1], sa[3])
+        for sb in cb_spots[:40]:
+            h2 = place(h1, teams[1], sb[0], sb[1], sb[3])
+            if not visible(h2):
+                return (h2, 'corners %d,%d / %d,%d' % (sa[0], sa[1], sb[0], sb[1]))
+    return None
+
+
+OUTLINE_PAD = 4
+OUTLINE_SKIP = set()   # maps whose reshaped outline broke a route (main() retries them plain)
+
+
+def reshape_outline(m):
+    """1.5.4 (the user: no map may end in a plain rectangle - keep the middle and give every
+    map its own outline): the band along the outer wall is reshaped per map. A few stretches
+    of the edge streets give way to building (the wall steps in) and elsewhere the wall steps
+    out into small yards. Every change keeps the map whole - each spawn still reaches every
+    objective and every street, a lane beside a step-in keeps two cells, water, stairs,
+    terraces and markers are left alone - and regular maps change in half-turn pairs.
+    The grid is padded so the yards have room outside the old wall. Returns the changes."""
+    import random
+    pad = OUTLINE_PAD
+    g = [[' '] * (m.w + 2 * pad) for _ in range(m.h + 2 * pad)]
+    for r in range(m.h):
+        for c in range(m.w):
+            g[r + pad][c + pad] = m.g[r][c]
+    m.g = g
+    m.h += 2 * pad; m.w += 2 * pad
+    m.W = m.w * CELL; m.H = m.h * CELL; m.ox = m.W / 2; m.oz = m.H / 2
+    plain = set('.,cbswo')
+    dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    if m.index in OUTLINE_SKIP:
+        return {'in': 0, 'out': 0}
+
+    def level(ch):
+        # stairs, cover and markers join whatever floor they stand on
+        return None if ch in '/' or ch in COVER or ch in 'SNTDABC' else 1 if ch == '^' else -1 if ch == 'v' else 0
+
+    def outside(r, c):
+        return m.at(r, c) in ' x'
+
+    def ring(r, c):
+        return m.at(r, c) == '#' and any(outside(r + dr, c + dc) for dr in (-1, 0, 1) for dc in (-1, 0, 1))
+
+    def whole(grid):
+        cells = [(r, c) for r in range(m.h) for c in range(m.w) if grid[r][c] in WALK]
+        if not cells:
+            return False
+        start = next(((r, c) for r, c in cells if grid[r][c] in 'SNTD'), cells[0])
+        seen, stack = {start}, [start]
+        while stack:
+            a = stack.pop()
+            for dr, dc in dirs:
+                b = (a[0] + dr, a[1] + dc)
+                if b not in seen and 0 <= b[0] < m.h and 0 <= b[1] < m.w and grid[b[0]][b[1]] in WALK:
+                    la, lb = level(grid[a[0]][a[1]]), level(grid[b[0]][b[1]])
+                    if la is not None and lb is not None and la != lb:
+                        continue
+                    seen.add(b); stack.append(b)
+        return len(seen) == len(cells)
+
+    def pairs(cells):
+        out = list(cells)
+        if m.symmetric:
+            out += [m.mirror(r, c) for r, c in cells]
+        return out
+
+    def free(r, c, radius=1):
+        return not any(m.at(r + dr, c + dc) in '~=/^vSNTDABC' for dr in range(-radius, radius + 1) for dc in range(-radius, radius + 1))
+
+    rng = random.Random(9173 * m.index + 17)
+    candidates = []
+    for r in range(m.h):
+        for c in range(m.w):
+            if m.symmetric and m.canonical(r, c) != (r, c):
+                continue
+            for dr, dc in dirs:
+                # (dr, dc): from the ring cell inward
+                if not ring(r, c) or not outside(r - dr, c - dc):
+                    continue
+                along = (dc, dr)
+                for length in (7, 6, 5, 4, 3, 2):
+                    seg = [(r + along[0] * k, c + along[1] * k) for k in range(length)]
+                    if not all(ring(*p) for p in seg):
+                        continue
+                    inner = [(a + dr, b + dc) for a, b in seg]
+                    calm = all(free(*p, 1) for p in inner)
+                    # step in: the edge-street cells become building (two cells of street stay)
+                    deeper = [(a + 2 * dr, b + 2 * dc) for a, b in seg] + [(a + 3 * dr, b + 3 * dc) for a, b in seg]
+                    if calm and all(m.at(*p) in plain for p in inner) and all(m.walk(*p) for p in deeper):
+                        candidates.append(('in', inner, seg))
+                    # step out: the wall and two or three cells beyond become a yard, open to the
+                    # streets it touches (at least two cells of it)
+                    if length >= 4 and calm and sum(1 for p in inner if m.at(*p) in plain) >= 2:
+                        depth = 2 + (r * 3 + c * 5 + m.index) % 2
+                        beyond = [(a - dr * k, b - dc * k) for a, b in seg for k in range(1, depth)]
+                        if all(outside(*p) for p in beyond):
+                            candidates.append(('out', seg + beyond, (dr * (depth - 1), dc * (depth - 1), seg)))
+                    break
+    rng.shuffle(candidates)
+    want = {'in': 2 + m.index % 3, 'out': 3 + (m.index // 2) % 3}
+    done = {'in': 0, 'out': 0}
+    used = []
+    for kind, cells, extra in candidates:
+        if done[kind] >= want[kind]:
+            continue
+        if any(abs(p[0] - q[0]) + abs(p[1] - q[1]) < 4 for p in cells for q in used):
+            continue
+        before = [row[:] for row in m.g]
+        for r, c in pairs(cells):
+            if kind == 'in':
+                m.g[r][c] = '#'
+            else:
+                m.g[r][c] = '.'
+        if kind == 'out':
+            # a piece of cover at the back of the yard
+            dr, dc, seg = extra
+            back = seg[len(seg) // 2]
+            back = (back[0] - dr, back[1] - dc)
+            for r, c in pairs([back]):
+                m.g[r][c] = 'cbw'[(m.index + back[0] + back[1]) % 3]
+        if not whole(m.g):
+            m.g = before
+            continue
+        done[kind] += 1
+        used += cells
+    return done
+
+
+def open_waters(m):
+    """1.5.4 (the user: boats lay in basins walled in by buildings - open the water to the sea
+    and give it room): deep water lying against the outer wall is let out past it. The
+    boundary building between it and the edge of the grid gives way to water and the void
+    beyond to open water ('O': deep, deadly, never walkable), so the basin meets a sea that
+    runs on past the map to the horizon (build() extends its surface 300 m out).
+    Returns the number of open-water cells."""
+    dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    def ring(r, c):
+        return m.at(r, c) == '#' and any(m.at(r + dr, c + dc) in ' x' for dr in (-1, 0, 1) for dc in (-1, 0, 1))
+    opened = 0
+    for r, c in m.cells('~'):
+        for dr, dc in dirs:
+            path, rr, cc, walls = [], r + dr, c + dc, 0
+            ok = True
+            while 0 <= rr < m.h and 0 <= cc < m.w:
+                ch = m.g[rr][cc]
+                if ch in ' xO':
+                    path.append((rr, cc, 'O'))
+                elif ch == '#' and ring(rr, cc) and walls < 2 and all(p[2] == '~' for p in path):
+                    path.append((rr, cc, '~')); walls += 1
+                else:
+                    ok = False
+                    break
+                rr += dr; cc += dc
+            if not ok or not any(p[2] == 'O' for p in path):
+                continue
+            # a street beside the new opening keeps its wall: only cells with no walkable
+            # neighbour across the channel are opened
+            if any(m.walk(pr + dc, pc + dr) or m.walk(pr - dc, pc - dr) for pr, pc, ch in path if ch == '~'):
+                continue
+            for pr, pc, ch in path:
+                if m.g[pr][pc] != ch:
+                    m.g[pr][pc] = ch; opened += 1
+    return opened
+
+
+def central_pond(m):
+    """1.5.4 (the user: maps with safe shallow water have it only round the edge - put a pond
+    or a fountain pool in the middle too): on such maps the open 2x2 cells of plain ground
+    nearest the centre (two cells clear of objectives, spawns, stairs and deep water, with
+    ground all round so it reads as a pool in a square) become shallow water; regular maps
+    get the half-turn pair (or one pool on the centre itself). Returns the pool cells."""
+    if not m.cells('=') or m.indoor:
+        return []
+    best = None
+    cr, cc = (m.h - 1) / 2, (m.w - 1) / 2
+    for r in range(1, m.h - 2):
+        for c in range(1, m.w - 2):
+            block = [(r, c), (r + 1, c), (r, c + 1), (r + 1, c + 1)]
+            if not all(m.at(*p) in '.,' for p in block):
+                continue
+            ring = [(r + dr, c + dc) for dr in range(-1, 3) for dc in range(-1, 3) if (r + dr, c + dc) not in block]
+            if not all(m.at(*p) in '.,cbswonft' for p in ring):
+                continue
+            if any(m.at(r + dr, c + dc) in 'SNTDABC/~^v' for dr in range(-2, 4) for dc in range(-2, 4)):
+                continue
+            cells = block + ([m.mirror(*p) for p in block] if m.symmetric else [])
+            if m.symmetric and len(set(cells)) < len(cells) and set(cells) != set(block):
+                continue
+            d = abs(r + .5 - cr) + abs(c + .5 - cc)
+            if best is None or d < best[0]:
+                best = (d, sorted(set(cells)))
+    if best is None or best[0] > (m.w + m.h) * .18:
+        # a small fountain pool (one cell) where the middle has no room for a pond
+        for r in range(1, m.h - 1):
+            for c in range(1, m.w - 1):
+                if m.at(r, c) not in '.,' or not all(m.at(r + dr, c + dc) in '.,cbswonft' for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0)):
+                    continue
+                if any(m.at(r + dr, c + dc) in 'SNTDABC/~^v' for dr in range(-1, 2) for dc in range(-1, 2)):
+                    continue
+                d = abs(r - cr) + abs(c - cc)
+                cells = [(r, c)] + ([m.mirror(r, c)] if m.symmetric and m.mirror(r, c) != (r, c) else [])
+                if best is None or d < best[0]:
+                    best = (d, cells)
+    if best is None:
+        return []
+    for r, c in best[1]:
+        m.g[r][c] = '='
+    return best[1]
 
 
 def relocate_spawns(m):
@@ -136,9 +426,6 @@ def relocate_spawns(m):
                 out[r][c] = MARK_MIRROR.get(src, src)
         return out
 
-    if not visible(g0):
-        return None
-
     def move_marker(g, ch, dr, dc):
         cs = cells(g, ch)
         h = copy.deepcopy(g)
@@ -200,6 +487,15 @@ def relocate_spawns(m):
             return None
         return h
 
+    # 1.5.4 (the user: put the starting points where they can't see each other in a straight
+    # line - e.g. in opposite corners - with room around them to respawn, instead of the
+    # lane walls): every open 2x2 spot of a team's own part of the map is tried, and the
+    # one out of the other spawn's sight, far enough from the objectives, with the most
+    # open ground round it and nearest a corner of its side is kept.
+    picked = corner_spawns(m, g0, teams, at, cells, visible, mirrored) or corner_spawns(m, g0, teams, at, cells, visible, mirrored, 3) or corner_spawns(m, g0, teams, at, cells, visible, mirrored, 3, True)
+    if picked is not None:
+        m.g = picked[0]
+        return picked[1]
     movers = [teams[0]] if m.symmetric else list(teams)
     trials = []
     shifts = sorted(((dr, dc) for dr in range(-3, 4) for dc in range(-3, 4) if (dr, dc) != (0, 0)), key=lambda d: abs(d[0]) + abs(d[1]))
@@ -243,6 +539,9 @@ class Map:
         self.symmetric = bool(bp.get('symmetric'))
         self.hall = float(bp.get('hall', 7.2 if not any('^' in ''.join(r) for r in self.g) else 9.6))
         self.problems = []
+        self.outline = reshape_outline(self)
+        self.open_sea = open_waters(self)
+        self.pond = central_pond(self)
         self.spawn_move = relocate_spawns(self)
         self.ring_cells()
         self.levels()
@@ -575,16 +874,19 @@ def build(index):
             t0, t1 = k / steps, (k + 1) / steps
             ya, yb = y0 + (y1 - y0) * t0, y0 + (y1 - y0) * t1
             topy = max(ya, yb) + .012
+            # (1.5.4, the user: thin yellow strips showed through walls beside stairs - the treads
+            # and risers stop 3 cm short of the stair's sides, clear of any wall there)
+            s = .03
             if dc:
                 a0, a1 = x0 + CELL * t0, x0 + CELL * t1
-                tread = box(a0, z0, a1, z1)
+                tread = box(a0, z0 + s, a1, z1 - s)
                 edge = a0 if yb > ya else a1
-                riser = [(edge, z0), (edge, z1)]
+                riser = [(edge, z0 + s), (edge, z1 - s)]
             else:
                 a0, a1 = z0 + CELL * t0, z0 + CELL * t1
-                tread = box(x0, a0, x1, a1)
+                tread = box(x0 + s, a0, x1 - s, a1)
                 edge = a0 if yb > ya else a1
-                riser = [(x0, edge), (x1, edge)]
+                riser = [(x0 + s, edge), (x1 - s, edge)]
             floor(tread, lambda x, z, topy=topy: topy, 'stair_detail')
             # One riser face: world surfaces render both sides (cull_disabled), and a
             # second, reversed copy on the same plane z-fought under dynamic light.
@@ -678,7 +980,16 @@ def build(index):
                         top = m.top.get((r, c), 7.2)
                         # Seen from the open side: the wall faces away from the room.
                         wall(v, u, ROOM_CEILING, ROOM_CEILING, top, top, 'wall')
-                        wall(u, v, ROOM_CEILING - .25, ROOM_CEILING - .25, ROOM_CEILING, ROOM_CEILING, 'trim')
+                        # (1.5.4, the user: a strip with no depth - 5 cm deep now: its face stands
+                        # 5 cm into the room, with an underside and ends)
+                        n = (-d[1] * .05, -d[0] * .05)
+                        u2, v2 = (u[0] + n[0], u[1] + n[1]), (v[0] + n[0], v[1] + n[1])
+                        wall(u2, v2, ROOM_CEILING - .25, ROOM_CEILING - .25, ROOM_CEILING, ROOM_CEILING, 'trim')
+                        lo = ROOM_CEILING - .25
+                        emit([(u[0], lo, u[1]), (v[0], lo, v[1]), (v2[0], lo, v2[1])], 'trim')
+                        emit([(u[0], lo, u[1]), (v2[0], lo, v2[1]), (u2[0], lo, u2[1])], 'trim')
+                        wall(u, u2, lo, lo, ROOM_CEILING, ROOM_CEILING, 'trim')
+                        wall(v2, v, lo, lo, ROOM_CEILING, ROOM_CEILING, 'trim')
                         fronts.append(front(m, v, u, 0., 0., ROOM_CEILING, top, m.lot.get((r, c), 0), 2, m.lot_style.get((r, c))))
                         # 1.4.5: the mass above an opening stands on pillars at
                         # both ends of the opening (one per cell corner, just
@@ -760,11 +1071,22 @@ def build(index):
         ceiling(rooms, ROOM_CEILING, 'ceiling')
 
     # Water: surface and bed.
-    water_cells = m.cells('~')
+    water_cells = m.cells('~O')
     water = unary_union([box(c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL) for r, c in water_cells]) if water_cells else Polygon()
     if water_cells:
         floor(water, lambda x, z: WATER_BED, 'waterbed')
         floor(water, lambda x, z: WATER_Y, 'water')
+        # 1.5.4 open sea: open water at the edge of the grid runs on 300 m to the horizon
+        far = []
+        for r, c in m.cells('O'):
+            if c == 0: far.append(box(-300., r * CELL, 0., (r + 1) * CELL))
+            if c == m.w - 1: far.append(box(m.W, r * CELL, m.W + 300., (r + 1) * CELL))
+            if r == 0: far.append(box(c * CELL, -300., (c + 1) * CELL, 0.))
+            if r == m.h - 1: far.append(box(c * CELL, m.H, (c + 1) * CELL, m.H + 300.))
+        if far:
+            sea = unary_union(far).buffer(.01).simplify(.05)
+            floor(sea, lambda x, z: WATER_BED, 'seabed')   # (seen, never walked on: no collision)
+            floor(sea, lambda x, z: WATER_Y, 'water')
         for r, c in water_cells:
             for d in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 o = m.at(r + d[0], c + d[1])
@@ -804,7 +1126,8 @@ def build(index):
     if None in spawns or None in targets:
         raise SystemExit('map %d: missing spawn/objective markers' % index)
 
-    walls_across = baffles(m, spawns, [t for t in targets + [marker('A'), marker('B'), marker('C')] if t])
+    # 1.5.4 (the user): the lane walls are gone - the spawns are placed out of each other's sight instead
+    walls_across = []
     props = []
     trees = []
     kinds = bp.get('props', {})
@@ -828,6 +1151,9 @@ def build(index):
                 # Local (dx, dz) turned by the piece's yaw (Godot: +Y rotation).
                 wx = dx * math.cos(yaw) + dz * math.sin(yaw)
                 wz = -dx * math.sin(yaw) + dz * math.cos(yaw)
+                if part == 'pillar':  # (1.5.4, the user: a pillar holding nothing - a figure on it outdoors, up to the ceiling in a room;
+                    # the one ending a low wall is a lamp-topped gatepost, still standing height)
+                    part = 'pillar_full' if ch in INDOOR else 'pillar_statue' if kind == 'pillar' else 'pillar_post'
                 props.append([round(x + offset[0] + wx - ox, 4), round(z + offset[1] + wz - oz, 4), y, round(yaw + dyaw, 5), part])
     decor_count = len(props)
     props += wall_decor(m, index)
@@ -1067,12 +1393,14 @@ def wall_decor(m, index):
 # alongside a quay so they can be boarded (BoatModels: deck flush with the
 # quay, the parapet open where the boat lies). Sizes: (length, beam) metres.
 BOAT_SIZES = {'narrowboat': (11.0, 2.3), 'houseboat': (9.0, 3.4), 'launch': (6.5, 2.4), 'fishing': (9.0, 3.2), 'tug': (8.0, 3.4),
-              'lighter': (12.0, 4.2), 'patrol': (9.5, 3.0), 'workboat': (6.0, 2.4), 'wreck': (9.0, 3.2), 'punt': (4.5, 1.5)}
-BOAT_TYPES = {'canal': ['narrowboat', 'houseboat', 'launch'], 'oldtown': ['narrowboat', 'launch', 'houseboat'], 'market': ['narrowboat', 'houseboat'],
-              'harbour': ['fishing', 'tug', 'lighter'], 'logistics': ['lighter', 'tug', 'workboat'], 'shipyard': ['tug', 'lighter', 'fishing'],
-              'coastal_base': ['patrol', 'launch', 'lighter'], 'desert': ['patrol', 'workboat'], 'wreckyard': ['wreck', 'fishing'],
-              'nuclear': ['workboat'], 'power': ['workboat'], 'greenhouse': ['punt'], 'orchard': ['punt'], 'aqueduct': ['narrowboat', 'punt'],
-              'hillside': ['launch', 'punt']}
+              'lighter': (12.0, 4.2), 'patrol': (9.5, 3.0), 'workboat': (6.0, 2.4), 'wreck': (9.0, 3.2), 'punt': (4.5, 1.5),
+              # 1.5.4 (the user: boats far bigger, people walk about inside): walk-in deckhouses (BoatModels)
+              'ferry': (20.0, 6.0), 'freighter': (24.0, 7.0), 'trawler': (15.0, 5.0), 'barge': (18.0, 4.6)}
+BOAT_TYPES = {'canal': ['barge', 'narrowboat', 'houseboat'], 'oldtown': ['barge', 'narrowboat', 'launch'], 'market': ['barge', 'houseboat'],
+              'harbour': ['freighter', 'trawler', 'tug'], 'logistics': ['freighter', 'barge', 'lighter'], 'shipyard': ['freighter', 'trawler', 'tug'],
+              'coastal_base': ['ferry', 'patrol', 'launch'], 'desert': ['ferry', 'patrol'], 'wreckyard': ['trawler', 'wreck'],
+              'nuclear': ['barge', 'workboat'], 'power': ['barge', 'workboat'], 'greenhouse': ['barge', 'punt'], 'orchard': ['barge', 'punt'], 'aqueduct': ['barge', 'narrowboat'],
+              'hillside': ['trawler', 'launch']}
 
 
 def place_boats(m):
@@ -1084,7 +1412,7 @@ def place_boats(m):
     types = BOAT_TYPES.get(style, ['launch', 'workboat'])
     taken = set()
     boats, open_quays = [], set()
-    water = set(m.cells('~'))
+    water = set(m.cells('~O'))
     if not water:
         return boats, open_quays
     def quay_cell(r, c):
@@ -1121,7 +1449,9 @@ def place_boats(m):
         mirrored = [m.mirror(*p) for p in cells] if m.symmetric else []
         if any(p in taken for p in cells + mirrored) or (m.symmetric and set(cells) & set(mirrored)):
             continue
-        kind = fit[(r * 7 + c * 3 + m.index) % len(fit)]
+        # (1.5.4: the biggest boat that fits, so players can walk about it; ties by the map)
+        fit = sorted(fit, key=lambda t: -BOAT_SIZES[t][0] * BOAT_SIZES[t][1])
+        kind = fit[0] if len(fit) == 1 or (r + c + m.index) % 3 else fit[1]
         L, B = BOAT_SIZES[kind]
         # centre of the run; against the quay side when there is one
         x0, z0 = c * CELL, r * CELL
@@ -1505,7 +1835,13 @@ def preview_of(data):
 def main(indices):
     specs = json.loads((ARENAS / 'district_specs.json').read_text(encoding='utf-8'))
     for index in indices:
-        m, data, spec = build(index)
+        try:
+            m, data, spec = build(index)
+        except SystemExit as error:
+            # (1.5.4: a reshaped outline that cuts a route - the map keeps its plain outline)
+            print('V15 %02d outline dropped: %s' % (index, error))
+            OUTLINE_SKIP.add(index)
+            m, data, spec = build(index)
         OUT.joinpath('map_%02d.json' % index).write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
         OUT.joinpath('map_%02d.json.gz' % index).write_bytes(gzip.compress(json.dumps(data, ensure_ascii=False, separators=(',', ':')).encode('utf-8'), mtime=0))
         OUT.joinpath('plan_%02d.json' % index).write_text(json.dumps(preview_of(data), ensure_ascii=False, separators=(',', ':')), encoding='utf-8')

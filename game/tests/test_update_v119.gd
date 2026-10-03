@@ -39,7 +39,7 @@ func run():
 	g.clock+=2.6;GrenadeLogic.tick(g,.016);expect(g.fields.back().kind=="flash_pending","flash detonates at simulated endpoint")
 	p.gadget=8;p.gadget_ready=0.;GadgetLoadout.reset(p);GrenadeLogic.begin(g,1);GrenadeLogic.release(g,1)
 	grenade=g.grenades.back();grenade.pos=Vector3(10,.11,0);grenade.velocity=Vector3(4,-.5,0);grenade.released=g.clock-1.
-	GrenadeLogic.tick(g,.1);expect(grenade.velocity.x>3.,"ground contact preserves rolling speed")
+	GrenadeLogic.tick(g,.1);expect(grenade.velocity.x>1.5 and grenade.velocity.x<3.5,"1.5.4: rolling on the ground slows with friction, not at once (%.2f m/s)"%grenade.velocity.x)
 	g.grenades.clear();p.cooking=0.;p.role=0;p.slot=0;p.shield=0.;p.slow=0.;p.slide_ready=0.;a.position=Vector3.ZERO;a.velocity=Vector3.ZERO;a.input_state.jump=false;a.input_state.yaw=0.
 	for i in range(30):a.simulate(.016,g.clock,true);await physics_frame
 	expect(g.begin_slide(1,false,Vector2(-1,0)) and p.slide_direction.x<-.9,"double-tap slide follows requested left direction from rest")
